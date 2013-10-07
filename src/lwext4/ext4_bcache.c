@@ -43,7 +43,8 @@
 #include <stdlib.h>
 
 
-int	ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt, uint32_t itemsize)
+int	ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt,
+    uint32_t itemsize)
 {
     ext4_assert(bc && cnt && itemsize);
 
@@ -136,7 +137,8 @@ int ext4_bcache_fini_dynamic(struct	ext4_bcache *bc)
 }
 
 
-int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b, bool *is_new)
+int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
+    bool *is_new)
 {
     uint32_t i;
     ext4_assert(bc && b && is_new);
@@ -221,11 +223,13 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b, bool *is_new
         return EOK;
     }
 
-    ext4_dprintf(EXT4_DEBUG_BCACHE, "ext4_bcache_alloc: FAIL, unable to alloc block cache!\n");
+    ext4_dprintf(EXT4_DEBUG_BCACHE,
+        "ext4_bcache_alloc: FAIL, unable to alloc block cache!\n");
     return ENOMEM;
 }
 
-int ext4_bcache_free (struct ext4_bcache *bc, struct ext4_block *b, uint8_t free_delay)
+int ext4_bcache_free (struct ext4_bcache *bc, struct ext4_block *b,
+    uint8_t free_delay)
 {
     uint32_t i;
 
@@ -261,7 +265,8 @@ int ext4_bcache_free (struct ext4_bcache *bc, struct ext4_block *b, uint8_t free
         return EOK;
     }
 
-    ext4_dprintf(EXT4_DEBUG_BCACHE, "ext4_bcache_free: FAIL, block should be in cache memory !\n");
+    ext4_dprintf(EXT4_DEBUG_BCACHE,
+        "ext4_bcache_free: FAIL, block should be in cache memory !\n");
     return EFAULT;
 }
 

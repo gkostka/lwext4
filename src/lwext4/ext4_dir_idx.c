@@ -51,9 +51,11 @@ struct ext4_dx_sort_entry {
     void 	 *dentry;
 };
 
-static int ext4_dir_dx_hash_string(struct ext4_hash_info *hinfo, int len, const char *name)
+static int ext4_dir_dx_hash_string(struct ext4_hash_info *hinfo, int len,
+    const char *name)
 {
-    return ext2_htree_hash(name, len, hinfo->seed, hinfo->hash_version, &hinfo->hash, &hinfo->minor_hash);
+    return ext2_htree_hash(name, len, hinfo->seed, hinfo->hash_version,
+            &hinfo->hash, &hinfo->minor_hash);
 }
 
 
@@ -140,7 +142,7 @@ void 	ext4_dir_dx_entry_set_block(
 {
     entry->block = to_le32(block);
 }
-/*****************************************************************************/
+/****************************************************************************/
 
 int 	ext4_dir_dx_init(struct ext4_inode_ref *dir)
 {
@@ -275,7 +277,8 @@ static int ext4_dir_hinfo_init(struct ext4_hash_info *hinfo,
 
 static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
         struct ext4_inode_ref *inode_ref, struct ext4_block *root_block,
-        struct ext4_directory_dx_block **dx_block, struct ext4_directory_dx_block *dx_blocks)
+        struct ext4_directory_dx_block **dx_block,
+        struct ext4_directory_dx_block *dx_blocks)
 {
     struct ext4_directory_dx_block *tmp_dx_block = dx_blocks;
     struct ext4_directory_dx_root *root =
@@ -387,7 +390,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
         p--;
     }
 
-    /* Check hash collision (if not occured - no next block cannot be used) */
+    /* Check hash collision (if not occured - no next block cannot be used)*/
     uint32_t current_hash = ext4_dir_dx_entry_get_hash(p->position);
     if ((hash & 1) == 0) {
         if ((current_hash & ~1) != hash)
@@ -540,7 +543,8 @@ static int ext4_dir_dx_entry_comparator(const void *arg1, const void *arg2)
 }
 
 static void ext4_dir_dx_insert_entry(
-        struct ext4_directory_dx_block *index_block, uint32_t hash, uint32_t iblock)
+        struct ext4_directory_dx_block *index_block, uint32_t hash,
+        uint32_t iblock)
 {
     struct ext4_directory_dx_entry *old_index_entry = index_block->position;
     struct ext4_directory_dx_entry *new_index_entry = old_index_entry + 1;
@@ -564,7 +568,8 @@ static void ext4_dir_dx_insert_entry(
 
 static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
         struct ext4_hash_info *hinfo, struct ext4_block *old_data_block,
-        struct ext4_directory_dx_block *index_block, struct ext4_block *new_data_block)
+        struct ext4_directory_dx_block *index_block,
+        struct ext4_block *new_data_block)
 {
     int rc = EOK;
 
@@ -605,7 +610,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
             uint8_t len = ext4_dir_entry_ll_get_name_length(
                     &inode_ref->fs->sb, dentry);
 
-            rc = ext4_dir_dx_hash_string(&tmp_hinfo, len, (char *) dentry->name);
+            rc = ext4_dir_dx_hash_string(&tmp_hinfo, len, (char*)dentry->name);
             if(rc != EOK) {
                 free(sort_array);
                 free(entry_buffer);
@@ -741,7 +746,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
  *
  */
 static int ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
-        struct  ext4_directory_dx_block *dx_blocks, struct ext4_directory_dx_block *dx_block)
+        struct  ext4_directory_dx_block *dx_blocks,
+        struct ext4_directory_dx_block *dx_block)
 {
     struct ext4_directory_dx_entry *entries;
     if (dx_block == dx_blocks)

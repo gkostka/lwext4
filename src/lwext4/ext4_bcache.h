@@ -91,21 +91,21 @@ struct	ext4_bcache {
 };
 
 /**@brief	Static initializer of block cache structure.*/
-#define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)	\
-        static uint32_t	__name##_refctr[(__cnt)];					\
-        static uint32_t	__name##_lru_id[(__cnt)];					\
-        static uint8_t		__name##_free_delay[(__cnt)];			\
-        static uint64_t	__name##_lba[(__cnt)];						\
-        static uint8_t 	__name##_data[(__cnt) * (__itemsize)];		\
-        static struct ext4_bcache	__name = {						\
-                .cnt 	   = __cnt,										\
-                .itemsize  = __itemsize,								\
-                .lru_ctr   = 0,											\
-                .refctr	   = __name##_refctr,							\
-                .lru_id    = __name##_lru_id,							\
-                .lba	   = __name##_lba,								\
-                .free_delay= __name##_free_delay,						\
-                .data	   = __name##_data,								\
+#define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)      \
+        static uint32_t	__name##_refctr[(__cnt)];                   \
+        static uint32_t	__name##_lru_id[(__cnt)];                   \
+        static uint8_t		__name##_free_delay[(__cnt)];           \
+        static uint64_t	__name##_lba[(__cnt)];                      \
+        static uint8_t 	__name##_data[(__cnt) * (__itemsize)];      \
+        static struct ext4_bcache	__name = {                      \
+                .cnt 	   = __cnt,                                 \
+                .itemsize  = __itemsize,                            \
+                .lru_ctr   = 0,                                     \
+                .refctr	   = __name##_refctr,                       \
+                .lru_id    = __name##_lru_id,                       \
+                .lba	   = __name##_lba,                          \
+                .free_delay= __name##_free_delay,                   \
+                .data	   = __name##_data,                         \
         }
 
 
@@ -114,26 +114,30 @@ struct	ext4_bcache {
  * @param	cnt items count in block cache
  * @param	itemsize single item size (in bytes)
  * @return	standard error code*/
-int	ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt, uint32_t itemsize);
+int	ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt,
+    uint32_t itemsize);
 
 /**@brief	Dynamic de-initialization of block cache.
  * @param	bc block cache descriptor
  * @return	standard error code*/
 int ext4_bcache_fini_dynamic(struct	ext4_bcache *bc);
 
-/**@brief	Allocate block from block cache memory. Unreferenced block allocation is based
- * 			on LRU (Last Recently Used) algorithm.
+/**@brief	Allocate block from block cache memory.
+ *          Unreferenced block allocation is based on LRU
+ *          (Last Recently Used) algorithm.
  * @param 	bc	block cache descriptor
  * @param	b block to alloc
  * @param	is_new block is new (needs to be read)
  * @return  standard error code*/
-int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b, bool *is_new);
+int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
+    bool *is_new);
 
 /**@brief	Free block from cache memory (decrement reference counter).
  * @param 	bc	block cache descriptor
  * @param	b block to free
  * @return  standard error code*/
-int ext4_bcache_free (struct ext4_bcache *bc, struct ext4_block *b, uint8_t free_delay);
+int ext4_bcache_free (struct ext4_bcache *bc, struct ext4_block *b,
+    uint8_t free_delay);
 
 
 /**@brief	Return a full status of block cache.

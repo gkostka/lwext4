@@ -98,11 +98,11 @@ uint32_t ext4_dmask_get(void);
 
 
 #if CONFIG_DEBUG_ASSERT
-#define 	ext4_assert(_v)	do {						\
-        if(!(_v)){											\
-            printf("Assertion failed:\nModule: %s\nFunc: %s\nLine: %d\n", __FILE__, __FUNCTION__, __LINE__);	\
-            fflush(stdout);																					\
-        }																								\
+#define 	ext4_assert(_v)	do {						                    \
+        if(!(_v)){											                \
+            printf("Assertion failed:\nModule: %s\nFunc: %s\nLine: %d\n",   \
+                    __FILE__, __FUNCTION__, __LINE__);                      \
+        }                                                                   \
 }while(0)
 #else
 #define 	ext4_assert(_v)
