@@ -86,7 +86,7 @@
 #define SEEK_END	2
 #endif
 
-/********************************OS LOCK INFERFACE******************************/
+/********************************OS LOCK INFERFACE****************************/
 
 /**@brief	OS dependent lock interface.*/
 struct ext4_lock {
@@ -99,7 +99,7 @@ struct ext4_lock {
 };
 
 
-/********************************FILE DESCRIPTOR********************************/
+/********************************FILE DESCRIPTOR******************************/
 
 /**@brief	File descriptor*/
 typedef struct ext4_file {
@@ -120,7 +120,7 @@ typedef struct ext4_file {
     uint64_t fpos;
 }ext4_file;
 
-/*****************************DIRECTORY DESCRIPTOR******************************/
+/*****************************DIRECTORY DESCRIPTOR****************************/
 /**@brief	Directory entry types. Copy from ext4_types.h*/
 enum  {
     EXT4_DIRENTRY_UNKNOWN = 0,
@@ -155,14 +155,14 @@ typedef struct  {
 /********************************MOUNT OPERATIONS*****************************/
 
 /**@brief	Register a block device to a name.
- * 			@warning Block device has to be filled by
- * 			@ref EXT4_BLOCKDEV_STATIC_INSTANCE. Block cache may be created
- * 			@ref EXT4_BCACHE_STATIC_INSTANCE.
+ *          @warning Block device has to be filled by
+ *          @ref EXT4_BLOCKDEV_STATIC_INSTANCE. Block cache may be created
+ *          @ref EXT4_BCACHE_STATIC_INSTANCE.
  * 			Block cache may by created automaticly when bc parameter is 0.
- * @param	bd block device
- * @param	bd block device cache (0 = automatic cache mode)
- * @param	dev_name register name
- * @param	standard error code*/
+ * @param   bd block device
+ * @param   bd block device cache (0 = automatic cache mode)
+ * @param   dev_name register name
+ * @param   standard error code*/
 int	ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
         const char *dev_name);
 
@@ -180,7 +180,7 @@ int	ext4_mount(const char * dev_name,  char *mount_point);
  * @return  standard error code */
 int	ext4_umount(char *mount_point);
 
-/********************************FILE OPERATIONS******************************/
+/********************************FILE OPERATIONS*****************************/
 
 /**@brief	*/
 int	    ext4_fremove(const char *path);
@@ -224,7 +224,7 @@ uint64_t ext4_ftell (ext4_file *f);
 /**@brief	*/
 uint64_t ext4_fsize (ext4_file *f);
 
-/*********************************DIRECTORY OPERATION*************************/
+/*********************************DIRECTORY OPERATION************************/
 /**@brief	*/
 int ext4_mkdir(const char *path);
 
