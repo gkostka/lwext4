@@ -113,7 +113,7 @@ int	ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
     return ENOSPC;
 }
 
-/******************************************************************************/
+/****************************************************************************/
 
 
 static bool ext4_is_dots(const uint8_t *name, size_t name_size)
@@ -237,8 +237,9 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
     return EOK;
 }
 
-static int ext4_unlink(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
-        struct ext4_inode_ref *child_inode_ref, const char *name)
+static int ext4_unlink(struct ext4_mountpoint *mp,
+    struct ext4_inode_ref *parent, struct ext4_inode_ref *child_inode_ref,
+    const char *name)
 {
     bool has_children;
     int rc = ext4_has_children(&has_children, child_inode_ref);
@@ -301,7 +302,7 @@ static int ext4_unlink(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent
     return EOK;
 }
 
-/*****************************************************************************/
+/****************************************************************************/
 
 int			ext4_mount(const char * dev_name,  char *mount_point)
 {
@@ -418,7 +419,7 @@ int			ext4_umount(char *mount_point)
 }
 
 
-/********************************FILE OPERATIONS******************************/
+/********************************FILE OPERATIONS*****************************/
 
 static struct ext4_mountpoint*  ext4_get_mount(const char *path)
 {
@@ -492,7 +493,7 @@ static bool ext4_parse_flags(const char *flags, uint32_t *file_flags)
     return false;
 }
 
-/*****************************************************************************/
+/****************************************************************************/
 
 static int ext4_generic_open (ext4_file *f, const char *path,
         const char *flags, bool file_expect)
@@ -572,7 +573,8 @@ static int ext4_generic_open (ext4_file *f, const char *path,
             if(r != EOK){
                 /*Fali. Free new inode.*/
                 ext4_fs_free_inode(&child_ref);
-                /*We do not want to write new inode. But block has to be released.*/
+                /*We do not want to write new inode.
+                  But block has to be released.*/
                 child_ref.dirty = false;
                 ext4_fs_put_inode_ref(&child_ref);
                 break;
@@ -591,13 +593,15 @@ static int ext4_generic_open (ext4_file *f, const char *path,
             break;
 
         /*If expected file error*/
-        if((inode_type == EXT4_DIRECTORY_FILETYPE_REG_FILE) && !file_expect && is_goal){
+        if((inode_type == EXT4_DIRECTORY_FILETYPE_REG_FILE)
+                && !file_expect && is_goal){
             r = ENOENT;
             break;
         }
 
         /*If expected directory error*/
-        if((inode_type == EXT4_DIRECTORY_FILETYPE_DIR) && file_expect && is_goal){
+        if((inode_type == EXT4_DIRECTORY_FILETYPE_DIR)
+                && file_expect && is_goal){
             r = ENOENT;
             break;
         }
@@ -628,7 +632,8 @@ static int ext4_generic_open (ext4_file *f, const char *path,
         if(f->flags & O_TRUNC){
             /*Turncate.*/
             ext4_block_delay_cache_flush(mp->fs.bdev, 1);
-            /*Truncate may be IO heavy. Do it with delayed cache flush mode.*/
+            /*Truncate may be IO heavy.
+             Do it with delayed cache flush mode.*/
             r = ext4_fs_truncate_inode(&ref, 0);
             ext4_block_delay_cache_flush(mp->fs.bdev, 0);
 
@@ -654,7 +659,7 @@ static int ext4_generic_open (ext4_file *f, const char *path,
     return r;
 }
 
-/*****************************************************************************/
+/****************************************************************************/
 
 int ext4_fremove(const char *path)
 {
@@ -1119,7 +1124,7 @@ uint64_t ext4_fsize (ext4_file *f)
     return  f->fsize;
 }
 
-/*********************************DIRECTORY OPERATION***************************/
+/*********************************DIRECTORY OPERATION************************/
 
 int	ext4_dir_open (ext4_dir *d, const char *path)
 {

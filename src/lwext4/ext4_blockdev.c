@@ -89,7 +89,8 @@ int ext4_block_fini(struct	ext4_blockdev *bdev)
 }
 
 
-int ext4_block_get(struct	ext4_blockdev *bdev, struct	ext4_block *b, uint64_t lba)
+int ext4_block_get(struct	ext4_blockdev *bdev, struct	ext4_block *b,
+    uint64_t lba)
 {
     uint64_t pba;
     uint32_t pb_cnt;
@@ -175,7 +176,9 @@ int ext4_block_set(struct	ext4_blockdev *bdev, struct	ext4_block *b)
                     continue;
 
                 /*Buffer free was delayed and have no reference. Flush it.*/
-                r = ext4_block_set_direct(bdev, bdev->bc->data + bdev->bc->itemsize * i, bdev->bc->lba[i]);
+                r = ext4_block_set_direct(bdev,
+                        bdev->bc->data + bdev->bc->itemsize * i,
+                        bdev->bc->lba[i]);
                 if(r != EOK)
                     return r;
 
@@ -208,7 +211,8 @@ int ext4_block_set(struct	ext4_blockdev *bdev, struct	ext4_block *b)
     return EOK;
 }
 
-int ext4_block_get_direct(struct	ext4_blockdev *bdev, void *buf, uint64_t lba)
+int ext4_block_get_direct(struct	ext4_blockdev *bdev, void *buf,
+    uint64_t lba)
 {
     uint64_t pba;
     uint32_t pb_cnt;
@@ -225,7 +229,8 @@ int ext4_block_get_direct(struct	ext4_blockdev *bdev, void *buf, uint64_t lba)
 
 
 
-int ext4_block_set_direct(struct	ext4_blockdev *bdev, const void *buf, uint64_t lba)
+int ext4_block_set_direct(struct	ext4_blockdev *bdev, const void *buf,
+    uint64_t lba)
 {
     uint64_t pba;
     uint32_t pb_cnt;
@@ -241,7 +246,8 @@ int ext4_block_set_direct(struct	ext4_blockdev *bdev, const void *buf, uint64_t 
 }
 
 
-int	ext4_block_writebytes(struct	ext4_blockdev *bdev, uint64_t off, const void *buf, uint32_t len)
+int	ext4_block_writebytes(struct	ext4_blockdev *bdev, uint64_t off,
+    const void *buf, uint32_t len)
 {
     uint64_t block_idx;
     uint64_t block_end;
@@ -270,7 +276,8 @@ int	ext4_block_writebytes(struct	ext4_blockdev *bdev, uint64_t off, const void *
     unalg = (off & (bdev->ph_bsize - 1));
     if(unalg){
 
-        uint32_t wlen = (bdev->ph_bsize - unalg) > len ? len : (bdev->ph_bsize - unalg);
+        uint32_t wlen = (bdev->ph_bsize - unalg) > len ?
+                len : (bdev->ph_bsize - unalg);
 
         r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
 
@@ -326,7 +333,8 @@ int	ext4_block_writebytes(struct	ext4_blockdev *bdev, uint64_t off, const void *
 
 
 
-int ext4_block_readbytes(struct	ext4_blockdev *bdev, uint64_t off, void *buf, uint32_t len)
+int ext4_block_readbytes(struct	ext4_blockdev *bdev, uint64_t off, void *buf,
+    uint32_t len)
 {
 
     uint64_t block_idx;
@@ -355,7 +363,8 @@ int ext4_block_readbytes(struct	ext4_blockdev *bdev, uint64_t off, void *buf, ui
     unalg = (off & (bdev->ph_bsize - 1));
     if(unalg){
 
-        uint32_t rlen = (bdev->ph_bsize - unalg) > len ? len : (bdev->ph_bsize - unalg);
+        uint32_t rlen = (bdev->ph_bsize - unalg) > len ?
+                len : (bdev->ph_bsize - unalg);
 
         r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
 
@@ -399,7 +408,8 @@ int ext4_block_readbytes(struct	ext4_blockdev *bdev, uint64_t off, void *buf, ui
     return r;
 }
 
-int 	ext4_block_delay_cache_flush(struct	ext4_blockdev *bdev, uint8_t on_off)
+int 	ext4_block_delay_cache_flush(struct	ext4_blockdev *bdev,
+    uint8_t on_off)
 {
     int r;
     uint32_t i;
@@ -418,7 +428,9 @@ int 	ext4_block_delay_cache_flush(struct	ext4_blockdev *bdev, uint8_t on_off)
                 continue;
 
             /*Buffer free was delayed and have no reference. Flush it.*/
-            r = ext4_block_set_direct(bdev, bdev->bc->data + bdev->bc->itemsize * i, bdev->bc->lba[i]);
+            r = ext4_block_set_direct(bdev,
+                    bdev->bc->data + bdev->bc->itemsize * i,
+                    bdev->bc->lba[i]);
             if(r != EOK)
                 return r;
 

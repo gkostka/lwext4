@@ -97,7 +97,8 @@ int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev)
     /*Validate FS*/
     tmp = ext4_get16(&fs->sb, state);
     if (tmp & EXT4_SUPERBLOCK_STATE_ERROR_FS) {
-        ext4_dprintf(EXT4_DEBUG_FS, "Filesystem was not cleanly unmounted before \n");
+        ext4_dprintf(EXT4_DEBUG_FS,
+                "Filesystem was not cleanly unmounted before \n");
     }
 
     /* Mark system as mounted */
@@ -134,12 +135,14 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
     }
 
     /*Check features_incompatible*/
-    if ((ext4_get32(&fs->sb, features_incompatible) & (~EXT4_FEATURE_INCOMPAT_SUPP)) )
+    if ((ext4_get32(&fs->sb, features_incompatible) &
+            (~EXT4_FEATURE_INCOMPAT_SUPP)) )
         return ENOTSUP;
 
 
     /*Check features_read_only*/
-    if ((ext4_get32(&fs->sb, features_read_only) & (~EXT4_FEATURE_RO_COMPAT_SUPP))){
+    if ((ext4_get32(&fs->sb, features_read_only) &
+            (~EXT4_FEATURE_RO_COMPAT_SUPP))){
         *read_only = true;
         return EOK;
     }
@@ -160,7 +163,8 @@ uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s, uint32_t baddr)
 
 
 
-uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s, uint32_t index, uint32_t bgid)
+uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s, uint32_t index,
+    uint32_t bgid)
 {
     if(ext4_get32(s, first_data_block))
         index++;
@@ -178,7 +182,8 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
             bg_ref->block_group, &bg_ref->fs->sb);
 
     struct ext4_block block_bitmap;
-    int rc = ext4_block_get(bg_ref->fs->bdev, &block_bitmap, bitmap_block_addr);
+    int rc = ext4_block_get(bg_ref->fs->bdev, &block_bitmap,
+            bitmap_block_addr);
     if (rc != EOK)
         return rc;
 
@@ -193,7 +198,7 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
     uint32_t first_data_idx = ext4_fs_baddr2_index_in_group(
             &bg_ref->fs->sb, first_data);
 
-    /* Set bits from to first block to first data block - 1 to one (allocated) */
+    /*Set bits from to first block to first data block - 1 to one (allocated)*/
     /*TODO: Optimize it*/
     for (i = first_idx; i < first_data_idx; ++i)
         ext4_bmap_bit_set(block_bitmap.data, i);
@@ -212,7 +217,8 @@ static int ext4_fs_init_inode_bitmap(struct ext4_block_group_ref *bg_ref)
             bg_ref->block_group, &bg_ref->fs->sb);
 
     struct ext4_block block_bitmap;
-    int rc = ext4_block_get(bg_ref->fs->bdev, &block_bitmap, bitmap_block_addr);
+    int rc = ext4_block_get(bg_ref->fs->bdev, &block_bitmap,
+            bitmap_block_addr);
     if (rc != EOK)
         return rc;
 
@@ -278,7 +284,8 @@ static int ext4_fs_init_inode_table(struct ext4_block_group_ref *bg_ref)
 }
 
 
-int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid, struct ext4_block_group_ref *ref)
+int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid,
+    struct ext4_block_group_ref *ref)
 {
     /* Compute number of descriptors, that fits in one data block */
     uint32_t dsc_per_block = ext4_sb_get_block_size(&fs->sb) /
@@ -310,7 +317,7 @@ int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid, struct ext4_b
             return rc;
         }
         ext4_bg_clear_flag(ref->block_group,
-                EXT4_BLOCK_GROUP_BLOCK_UNINIT);
+            EXT4_BLOCK_GROUP_BLOCK_UNINIT);
 
         ref->dirty = true;
     }
@@ -324,7 +331,7 @@ int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid, struct ext4_b
         }
 
         ext4_bg_clear_flag(ref->block_group,
-                EXT4_BLOCK_GROUP_INODE_UNINIT);
+            EXT4_BLOCK_GROUP_INODE_UNINIT);
 
         if (!ext4_bg_has_flag(ref->block_group,
                 EXT4_BLOCK_GROUP_ITABLE_ZEROED)) {
@@ -335,7 +342,7 @@ int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid, struct ext4_b
             }
 
             ext4_bg_set_flag(ref->block_group,
-                    EXT4_BLOCK_GROUP_ITABLE_ZEROED);
+                EXT4_BLOCK_GROUP_ITABLE_ZEROED);
         }
 
         ref->dirty = true;
@@ -344,7 +351,8 @@ int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid, struct ext4_b
     return EOK;
 }
 
-static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid, struct ext4_bgroup *bg)
+static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
+    struct ext4_bgroup *bg)
 {
     /* If checksum not supported, 0 will be returned */
     uint16_t crc = 0;
@@ -402,7 +410,8 @@ int ext4_fs_put_block_group_ref(struct ext4_block_group_ref *ref)
     return ext4_block_set(ref->fs->bdev, &ref->block);
 }
 
-int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,  struct ext4_inode_ref *ref)
+int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
+    struct ext4_inode_ref *ref)
 {
     /* Compute number of i-nodes, that fits in one data block */
     uint32_t inodes_per_group = ext4_get32(&fs->sb, inodes_per_group);
@@ -440,7 +449,8 @@ int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,  struct ext4_inode
     uint32_t byte_offset_in_group = offset_in_group * inode_size;
 
     /* Compute block address */
-    uint64_t block_id = inode_table_start + (byte_offset_in_group / block_size);
+    uint64_t block_id = inode_table_start +
+            (byte_offset_in_group / block_size);
 
 
     rc = ext4_block_get(fs->bdev, &ref->block, block_id);
@@ -472,7 +482,8 @@ int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref)
     return  ext4_block_set(ref->fs->bdev, &ref->block);
 }
 
-int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref, bool is_directory)
+int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
+    bool is_directory)
 {
     /* Check if newly allocated i-node will be a directory */
     uint32_t i;
@@ -569,7 +580,7 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
     /* For extents must be data block destroyed by other way */
     if ((ext4_sb_check_feature_incompatible(&fs->sb,
             EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
-            (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
+            (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))){
         /* Data structures are released during truncate operation... */
         goto finish;
     }
@@ -700,7 +711,7 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
 }
 
 int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref,
-        uint64_t new_size)
+    uint64_t new_size)
 {
     struct ext4_sblock *sb = &inode_ref->fs->sb;
     uint32_t i;
@@ -759,7 +770,7 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref,
 }
 
 int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-        uint64_t iblock, uint32_t *fblock)
+    uint64_t iblock, uint32_t *fblock)
 {
     struct ext4_fs *fs = inode_ref->fs;
 
@@ -867,7 +878,7 @@ int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 }
 
 int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-        uint64_t iblock, uint32_t fblock)
+    uint64_t iblock, uint32_t fblock)
 {
     struct ext4_fs *fs = inode_ref->fs;
 
@@ -881,7 +892,8 @@ int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 
     /* Handle simple case when we are dealing with direct reference */
     if (iblock < EXT4_INODE_DIRECT_BLOCK_COUNT) {
-        ext4_inode_set_direct_block(inode_ref->inode, (uint32_t) iblock, fblock);
+        ext4_inode_set_direct_block(inode_ref->inode, (uint32_t) iblock,
+                fblock);
         inode_ref->dirty = true;
 
         return EOK;
@@ -924,7 +936,7 @@ int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 
         /* Update i-node */
         ext4_inode_set_indirect_block(inode_ref->inode, level - 1,
-                new_block_addr);
+            new_block_addr);
         inode_ref->dirty = true;
 
         /* Load newly allocated block */
@@ -1021,7 +1033,7 @@ int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 }
 
 int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
-        uint32_t iblock)
+    uint32_t iblock)
 {
     uint32_t fblock;
 
@@ -1122,7 +1134,7 @@ int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
 
 
 int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
-        uint32_t *fblock, uint32_t *iblock)
+    uint32_t *fblock, uint32_t *iblock)
 {
     /* Handle extents separately */
     if ((ext4_sb_check_feature_incompatible(&inode_ref->fs->sb,

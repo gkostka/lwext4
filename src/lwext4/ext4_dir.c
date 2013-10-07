@@ -113,10 +113,11 @@ void 	ext4_dir_entry_ll_set_inode_type(struct ext4_sblock *sb,
         de->inode_type = type;
 }
 
-/*****************************************************************************/
+/****************************************************************************/
 
 
-static int ext4_dir_iterator_set(struct ext4_directory_iterator *it, uint32_t block_size)
+static int ext4_dir_iterator_set(struct ext4_directory_iterator *it,
+    uint32_t block_size)
 {
     it->current = NULL;
 
@@ -148,7 +149,8 @@ static int ext4_dir_iterator_set(struct ext4_directory_iterator *it, uint32_t bl
     return EOK;
 }
 
-static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it, uint64_t pos)
+static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
+    uint64_t pos)
 {
     uint64_t size = ext4_inode_get_size(&it->inode_ref->fs->sb,
             it->inode_ref->inode);
@@ -160,7 +162,8 @@ static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it, uint64_t p
     if (pos >= size) {
         if (it->current_block.lb_id) {
 
-            int rc = ext4_block_set(it->inode_ref->fs->bdev, &it->current_block);
+            int rc = ext4_block_set(it->inode_ref->fs->bdev,
+                    &it->current_block);
             it->current_block.lb_id = 0;
 
             if (rc != EOK)
@@ -240,8 +243,9 @@ int ext4_dir_iterator_fini(struct ext4_directory_iterator *it)
     return EOK;
 }
 
-void ext4_dir_write_entry(struct ext4_sblock *sb, struct ext4_directory_entry_ll *entry,
-        uint16_t entry_len, struct ext4_inode_ref *child,  const char *name, size_t name_len)
+void ext4_dir_write_entry(struct ext4_sblock *sb,
+    struct ext4_directory_entry_ll *entry, uint16_t entry_len,
+    struct ext4_inode_ref *child,  const char *name, size_t name_len)
 {
     /* Check maximum entry length */
     uint32_t block_size = ext4_sb_get_block_size(sb);
@@ -486,8 +490,9 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name)
     return ext4_dir_destroy_result(parent, &result);
 }
 
-int ext4_dir_try_insert_entry(struct ext4_sblock *sb, struct ext4_block *target_block,
-        struct ext4_inode_ref *child, const char *name, uint32_t name_len)
+int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
+    struct ext4_block *target_block, struct ext4_inode_ref *child,
+    const char *name, uint32_t name_len)
 {
     /* Compute required length entry and align it to 4 bytes */
     uint32_t block_size = ext4_sb_get_block_size(sb);
@@ -498,7 +503,8 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb, struct ext4_block *target_
 
     /* Initialize pointers, stop means to upper bound */
     struct ext4_directory_entry_ll *dentry  = (void *)target_block->data;
-    struct ext4_directory_entry_ll *stop 	= (void *)(target_block->data + block_size);
+    struct ext4_directory_entry_ll *stop 	=
+            (void *)(target_block->data + block_size);
 
     /*
      * Walk through the block and check for invalid entries
@@ -555,7 +561,8 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb, struct ext4_block *target_
 
 
 int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
-        size_t name_len, const char *name, struct ext4_directory_entry_ll **res_entry)
+        size_t name_len, const char *name,
+        struct ext4_directory_entry_ll **res_entry)
 {
     /* Start from the first entry in block */
     struct ext4_directory_entry_ll *dentry =
@@ -591,14 +598,16 @@ int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
             return EINVAL;
 
         /* Jump to next entry */
-        dentry = (struct ext4_directory_entry_ll *) ((uint8_t *) dentry + dentry_len);
+        dentry = (struct ext4_directory_entry_ll *)
+                ((uint8_t *) dentry + dentry_len);
     }
 
     /* Entry not found */
     return ENOENT;
 }
 
-int ext4_dir_destroy_result(struct ext4_inode_ref *parent, struct ext4_directory_search_result *result)
+int ext4_dir_destroy_result(struct ext4_inode_ref *parent,
+    struct ext4_directory_search_result *result)
 {
     if (result->block.lb_id)
         return ext4_block_set(parent->fs->bdev, &result->block);

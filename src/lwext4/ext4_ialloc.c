@@ -48,7 +48,8 @@
 #include <ext4_block_group.h>
 #include <ext4_bitmap.h>
 
-static uint32_t ext4_ialloc_inode2index_in_group(struct ext4_sblock *sb, uint32_t inode)
+static uint32_t ext4_ialloc_inode2index_in_group(struct ext4_sblock *sb,
+    uint32_t inode)
 {
     uint32_t inodes_per_group = ext4_get32(sb, inodes_per_group);
     return (inode - 1) % inodes_per_group;
@@ -171,7 +172,8 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
             uint32_t inodes_in_group = ext4_inodes_in_group_cnt(sb, bgid);
             uint32_t index_in_group;
 
-            rc = ext4_bmap_bit_find_clr(bitmap_block.data, 0, inodes_in_group, &index_in_group);
+            rc = ext4_bmap_bit_find_clr(bitmap_block.data, 0, inodes_in_group,
+                    &index_in_group);
             /* Block group has not any free i-node */
             if (rc == ENOSPC) {
                 ext4_block_set(fs->bdev, &bitmap_block);
@@ -228,7 +230,8 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
 
 
             /* Compute the absolute i-nodex number */
-            *index = ext4_ialloc_index_in_group2inode(sb, index_in_group, bgid);
+            *index = ext4_ialloc_index_in_group2inode(sb,
+                    index_in_group, bgid);
 
             return EOK;
         }
