@@ -189,19 +189,19 @@ int	ext4_fremove(const char *path);
  * @param	filename, (has to start from mountpoint)
  * 			/my_partition/my_file
  * @param	flags open file flags
- *	|---------------------------------------------------------------|
- *	| 	r or rb                 O_RDONLY                            |
- *	|---------------------------------------------------------------|
- *	|	w or wb                 O_WRONLY|O_CREAT|O_TRUNC            |
- *	|---------------------------------------------------------------|
- *	|	a or ab                 O_WRONLY|O_CREAT|O_APPEND           |
- *	|---------------------------------------------------------------|
- *	|	r+ or rb+ or r+b        O_RDWR                              |
- *	|---------------------------------------------------------------|
- *	|	w+ or wb+ or w+b 		O_RDWR|O_CREAT|O_TRUNC              |
- *	|---------------------------------------------------------------|
- *	|	a+ or ab+ or a+b 		O_RDWR|O_CREAT|O_APPEND	            |
- *	|---------------------------------------------------------------|
+ *  |---------------------------------------------------------------|
+ *  |   r or rb                 O_RDONLY                            |
+ *  |---------------------------------------------------------------|
+ *  |   w or wb                 O_WRONLY|O_CREAT|O_TRUNC            |
+ *  |---------------------------------------------------------------|
+ *  |   a or ab                 O_WRONLY|O_CREAT|O_APPEND           |
+ *  |---------------------------------------------------------------|
+ *  |   r+ or rb+ or r+b        O_RDWR                              |
+ *  |---------------------------------------------------------------|
+ *  |   w+ or wb+ or w+b 		O_RDWR|O_CREAT|O_TRUNC              |
+ *  |---------------------------------------------------------------|
+ *  |   a+ or ab+ or a+b 		O_RDWR|O_CREAT|O_APPEND	            |
+ *  |---------------------------------------------------------------|
  *
  * @return	standard error code*/
 int	ext4_fopen (ext4_file *f, const char *path, const char *flags);
@@ -226,16 +226,16 @@ uint64_t ext4_fsize (ext4_file *f);
 
 /*********************************DIRECTORY OPERATION*************************/
 /**@brief	*/
-int	ext4_mkdir(const char *path);
+int ext4_mkdir(const char *path);
 
 /**@brief	*/
-int	ext4_rmdir(const char *path);
+int ext4_rmdir(const char *path);
 
 /**@brief	*/
-int	ext4_dir_open (ext4_dir *d, const char *path);
+int ext4_dir_open (ext4_dir *d, const char *path);
 
 /**@brief	*/
-int	ext4_dir_close(ext4_dir *d);
+int ext4_dir_close(ext4_dir *d);
 
 /**@brief	*/
 ext4_direntry* ext4_entry_get(ext4_dir *d, uint32_t id);
