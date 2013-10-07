@@ -54,7 +54,7 @@
  * @param	bg_ref block group reference
  * @return	block id of the first datablock in block group*/
 uint32_t ext4_balloc_get_first_data_block_in_group(struct ext4_sblock *s,
-        struct ext4_block_group_ref * bg_ref);
+         struct ext4_block_group_ref * bg_ref);
 
 /**@brief	Free block from inode.
  * @param	inode_ref inode reference
