@@ -91,11 +91,11 @@
 /**@brief	OS dependent lock interface.*/
 struct ext4_lock {
 
-	/**@brief	Lock access to mountpoint*/
-	void (*lock)(void);
+    /**@brief	Lock access to mountpoint*/
+    void (*lock)(void);
 
-	/**@brief	Unlock access to mountpoint*/
-	void (*unlock)(void);
+    /**@brief	Unlock access to mountpoint*/
+    void (*unlock)(void);
 };
 
 
@@ -104,52 +104,52 @@ struct ext4_lock {
 /**@brief	File descriptor*/
 typedef struct ext4_file {
 
-	/**@brief	Pountpoint handle.*/
-	struct ext4_mountpoint *mp;
+    /**@brief	Pountpoint handle.*/
+    struct ext4_mountpoint *mp;
 
-	/**@brief	File inode id*/
-	uint32_t inode;
+    /**@brief	File inode id*/
+    uint32_t inode;
 
-	/**@brief	Open flags.*/
-	uint32_t flags;
+    /**@brief	Open flags.*/
+    uint32_t flags;
 
-	/**@brief	File size.*/
-	uint64_t fsize;
+    /**@brief	File size.*/
+    uint64_t fsize;
 
-	/**@brief	File position*/
-	uint64_t fpos;
+    /**@brief	File position*/
+    uint64_t fpos;
 }ext4_file;
 
 /*****************************DIRECTORY DESCRIPTOR******************************/
 /**@brief	Directory entry types. Copy from ext4_types.h*/
 enum  {
-	EXT4_DIRENTRY_UNKNOWN = 0,
-	EXT4_DIRENTRY_REG_FILE,
-	EXT4_DIRENTRY_DIR,
-	EXT4_DIRENTRY_CHRDEV,
-	EXT4_DIRENTRY_BLKDEV,
-	EXT4_DIRENTRY_FIFO,
-	EXT4_DIRENTRY_SOCK,
-	EXT4_DIRENTRY_SYMLINK
+    EXT4_DIRENTRY_UNKNOWN = 0,
+    EXT4_DIRENTRY_REG_FILE,
+    EXT4_DIRENTRY_DIR,
+    EXT4_DIRENTRY_CHRDEV,
+    EXT4_DIRENTRY_BLKDEV,
+    EXT4_DIRENTRY_FIFO,
+    EXT4_DIRENTRY_SOCK,
+    EXT4_DIRENTRY_SYMLINK
 };
 
 /**@brief	Directory entry descriptor. Copy from ext4_types.h*/
 typedef struct {
-	uint32_t inode;
-	uint16_t entry_length;
-	uint8_t  name_length;
-	union {
-		uint8_t name_length_high;
-		uint8_t inode_type;
-	};
-	uint8_t name[255];
+    uint32_t inode;
+    uint16_t entry_length;
+    uint8_t  name_length;
+    union {
+        uint8_t name_length_high;
+        uint8_t inode_type;
+    };
+    uint8_t name[255];
 }ext4_direntry;
 
 typedef struct  {
-	/**@brief 	File descriptor*/
-	ext4_file		f;
-	/**@brief	Current direntry.*/
-	ext4_direntry	de;
+    /**@brief 	File descriptor*/
+    ext4_file		f;
+    /**@brief	Current direntry.*/
+    ext4_direntry	de;
 }ext4_dir;
 
 /********************************MOUNT OPERATIONS*****************************/
@@ -164,7 +164,7 @@ typedef struct  {
  * @param	dev_name register name
  * @param	standard error code*/
 int	ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
-                         const char *dev_name);
+        const char *dev_name);
 
 /**@brief	Mount a block device with EXT4 partition to the mountpoint.
  * @param	dev_name block device name (@ref ext4_device_register)
@@ -183,7 +183,7 @@ int	ext4_umount(char *mount_point);
 /********************************FILE OPERATIONS******************************/
 
 /**@brief	*/
-int	ext4_fremove(const char *path);
+int	    ext4_fremove(const char *path);
 
 /**@brief	File open function.
  * @param	filename, (has to start from mountpoint)
@@ -198,9 +198,9 @@ int	ext4_fremove(const char *path);
  *  |---------------------------------------------------------------|
  *  |   r+ or rb+ or r+b        O_RDWR                              |
  *  |---------------------------------------------------------------|
- *  |   w+ or wb+ or w+b 		O_RDWR|O_CREAT|O_TRUNC              |
+ *  |   w+ or wb+ or w+b        O_RDWR|O_CREAT|O_TRUNC              |
  *  |---------------------------------------------------------------|
- *  |   a+ or ab+ or a+b 		O_RDWR|O_CREAT|O_APPEND	            |
+ *  |   a+ or ab+ or a+b      O_RDWR|O_CREAT|O_APPEND               |
  *  |---------------------------------------------------------------|
  *
  * @return	standard error code*/
