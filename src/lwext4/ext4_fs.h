@@ -70,19 +70,19 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref, bo
 int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref);
 
 int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref,
-    uint64_t new_size);
+        uint64_t new_size);
 
 int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-    uint64_t iblock, uint32_t *fblock);
+        uint64_t iblock, uint32_t *fblock);
 
 int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-    uint64_t iblock, uint32_t fblock);
+        uint64_t iblock, uint32_t fblock);
 
 int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
-    uint32_t iblock);
+        uint32_t iblock);
 
 int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
-    uint32_t *fblock, uint32_t *iblock);
+        uint32_t *fblock, uint32_t *iblock);
 
 #endif /* EXT4_FS_H_ */
 

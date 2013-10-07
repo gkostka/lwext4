@@ -45,12 +45,12 @@ static uint32_t		__dbg_mask__;
 
 void	ext4_dmask_set(uint32_t m)
 {
-	__dbg_mask__ = m;
+    __dbg_mask__ = m;
 }
 
 uint32_t ext4_dmask_get(void)
 {
-	return __dbg_mask__;
+    return __dbg_mask__;
 }
 
 /**

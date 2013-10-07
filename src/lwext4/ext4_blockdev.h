@@ -51,67 +51,67 @@
 /**@brief	Definiton of the simple block device.*/
 struct	ext4_blockdev  {
 
-	/**@brief	Open device function
-	 * @param	bdev block device.*/
-	int			(*open)(struct	ext4_blockdev *bdev);
+    /**@brief	Open device function
+     * @param	bdev block device.*/
+    int			(*open)(struct	ext4_blockdev *bdev);
 
-	/**@brief	Block read function.
-	 * @param	bdev block device
-	 * @param	buf	output buffer
-	 * @param	blk_id	block id
-	 * @param	blk_cnt block count*/
-	int			(*bread)(struct	ext4_blockdev *bdev, void 	*buf, uint64_t blk_id, uint32_t blk_cnt);
+    /**@brief	Block read function.
+     * @param	bdev block device
+     * @param	buf	output buffer
+     * @param	blk_id	block id
+     * @param	blk_cnt block count*/
+    int			(*bread)(struct	ext4_blockdev *bdev, void 	*buf, uint64_t blk_id, uint32_t blk_cnt);
 
-	/**@brief	Block write function.
-	 * @param	buf input buffer
-	 * @param	blk_id block id
-	 * @param	blk_cnt block count*/
-	int			(*bwrite)(struct	ext4_blockdev *bdev, const void *buf, uint64_t blk_id, uint32_t blk_cnt);
+    /**@brief	Block write function.
+     * @param	buf input buffer
+     * @param	blk_id block id
+     * @param	blk_cnt block count*/
+    int			(*bwrite)(struct	ext4_blockdev *bdev, const void *buf, uint64_t blk_id, uint32_t blk_cnt);
 
-	/**@brief	Close device function.
-	 * @param	bdev block device.*/
-	int			(*close)(struct	ext4_blockdev *bdev);
+    /**@brief	Close device function.
+     * @param	bdev block device.*/
+    int			(*close)(struct	ext4_blockdev *bdev);
 
-	/**@brief	Block size (bytes): physical*/
-	uint32_t	ph_bsize;
+    /**@brief	Block size (bytes): physical*/
+    uint32_t	ph_bsize;
 
-	/**@brief	Block count: physical.*/
-	uint64_t	ph_bcnt;
+    /**@brief	Block count: physical.*/
+    uint64_t	ph_bcnt;
 
-	/**@brief	Block size buffer: physical.*/
-	uint8_t		*ph_bbuf;
+    /**@brief	Block size buffer: physical.*/
+    uint8_t		*ph_bbuf;
 
-	/**@brief	Block size (bytes) logical*/
-	uint32_t	lg_bsize;
+    /**@brief	Block size (bytes) logical*/
+    uint32_t	lg_bsize;
 
-	/**@brief	Block count: phisical.*/
-	uint64_t	lg_bcnt;
+    /**@brief	Block count: phisical.*/
+    uint64_t	lg_bcnt;
 
-	/**@brief	Flags of te block device.*/
-	uint8_t		flags;
+    /**@brief	Flags of te block device.*/
+    uint8_t		flags;
 
-	/**@brief	Block cache.*/
-	struct	ext4_bcache *bc;
+    /**@brief	Block cache.*/
+    struct	ext4_bcache *bc;
 
-	uint8_t		cache_flush_delay;
+    uint8_t		cache_flush_delay;
 
-	uint32_t	bread_ctr;
-	uint32_t	bwrite_ctr;
+    uint32_t	bread_ctr;
+    uint32_t	bwrite_ctr;
 };
 
 
 /**@brief	Static initialization fo the block device.*/
 #define EXT4_BLOCKDEV_STATIC_INSTANCE(__name, __bsize, __bcnt, __open, __bread, __bwrite, __close)	\
-	static uint8_t	__name##_ph_bbuf[(__bsize)];													\
-	static struct	ext4_blockdev __name = {														\
-		.open   = __open,																			\
-		.bread  = __bread,																			\
-		.bwrite = __bwrite,																			\
-		.close  = __close,																			\
-		.ph_bsize  = __bsize,																		\
-		.ph_bcnt   = __bcnt,																		\
-		.ph_bbuf   = __name##_ph_bbuf,																\
-}
+        static uint8_t	__name##_ph_bbuf[(__bsize)];													\
+        static struct	ext4_blockdev __name = {														\
+                .open   = __open,																			\
+                .bread  = __bread,																			\
+                .bwrite = __bwrite,																			\
+                .close  = __close,																			\
+                .ph_bsize  = __bsize,																		\
+                .ph_bcnt   = __bcnt,																		\
+                .ph_bbuf   = __name##_ph_bbuf,																\
+        }
 
 /**@brief	Block device initialization.
  * @param	bdev block device descriptor

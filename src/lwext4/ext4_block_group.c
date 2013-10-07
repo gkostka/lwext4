@@ -46,8 +46,8 @@
 
 uint16_t ext4_bg_crc16(uint16_t crc, const uint8_t *buffer, size_t len)
 {
-	// TODO
-	return 0;
+    // TODO
+    return 0;
 }
 
 /**

@@ -57,7 +57,7 @@
 #endif
 
 #ifndef O_CREAT
-#define O_CREAT		0100
+#define O_CREAT	    0100
 #endif
 
 #ifndef O_EXCL
