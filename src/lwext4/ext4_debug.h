@@ -88,8 +88,8 @@ uint32_t ext4_dmask_get(void);
 #if CONFIG_DEBUG_PRINTF
 /**@brief	Debug printf.*/
 #define 	ext4_dprintf(m, ...)	do {					\
-	(m & ext4_dmask_get()) ? printf(__VA_ARGS__) : (void)0;	\
-	fflush(stdout);											\
+        (m & ext4_dmask_get()) ? printf(__VA_ARGS__) : (void)0;	\
+        fflush(stdout);											\
 }while(0)
 #else
 #define 	ext4_dprintf(m, ...)
@@ -99,10 +99,10 @@ uint32_t ext4_dmask_get(void);
 
 #if CONFIG_DEBUG_ASSERT
 #define 	ext4_assert(_v)	do {						\
-	if(!(_v)){											\
-		printf("Assertion failed:\nModule: %s\nFunc: %s\nLine: %d\n", __FILE__, __FUNCTION__, __LINE__);	\
-		fflush(stdout);																					\
-	}																								\
+        if(!(_v)){											\
+            printf("Assertion failed:\nModule: %s\nFunc: %s\nLine: %d\n", __FILE__, __FUNCTION__, __LINE__);	\
+            fflush(stdout);																					\
+        }																								\
 }while(0)
 #else
 #define 	ext4_assert(_v)

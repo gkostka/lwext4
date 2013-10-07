@@ -44,69 +44,69 @@
 
 /**@brief	Single block descriptor.*/
 struct	ext4_block {
-	/**@brief	Dirty flag.*/
-	bool		dirty;
+    /**@brief	Dirty flag.*/
+    bool		dirty;
 
-	/**@brief	Logical block ID*/
-	uint64_t	lb_id;
+    /**@brief	Logical block ID*/
+    uint64_t	lb_id;
 
-	/**@brief	Data buffer.*/
-	uint8_t		*data;
+    /**@brief	Data buffer.*/
+    uint8_t		*data;
 };
 
 
 /**@brief	Block cache descriptor.*/
 struct	ext4_bcache {
 
-	/**@brief	Item count in block cache*/
-	uint32_t	cnt;
+    /**@brief	Item count in block cache*/
+    uint32_t	cnt;
 
-	/**@brief	Item size in block cache*/
-	uint32_t	itemsize;
+    /**@brief	Item size in block cache*/
+    uint32_t	itemsize;
 
-	/**@brief	Last recently used counter.*/
-	uint32_t	lru_ctr;
+    /**@brief	Last recently used counter.*/
+    uint32_t	lru_ctr;
 
-	/**@brief	Reference count table (cnt).*/
-	uint32_t	*refctr;
+    /**@brief	Reference count table (cnt).*/
+    uint32_t	*refctr;
 
-	/**@brief	Last recently used ID table (cnt)*/
-	uint32_t 	*lru_id;
+    /**@brief	Last recently used ID table (cnt)*/
+    uint32_t 	*lru_id;
 
-	/**@brief	Free delay mode table (cnt)*/
-	uint8_t 	*free_delay;
+    /**@brief	Free delay mode table (cnt)*/
+    uint8_t 	*free_delay;
 
-	/**@brief	Logical block table (cnt).*/
-	uint64_t	*lba;
+    /**@brief	Logical block table (cnt).*/
+    uint64_t	*lba;
 
-	/**@brief	Cache data buffers (cnt * itemsize)*/
-	uint8_t		*data;
+    /**@brief	Cache data buffers (cnt * itemsize)*/
+    uint8_t		*data;
 
-	/**@brief	Currently referenced datablocks*/
-	uint32_t	ref_blocks;
+    /**@brief	Currently referenced datablocks*/
+    uint32_t	ref_blocks;
 
-	/**@brief	Maximum referenced datablocks*/
-	uint32_t	max_ref_blocks;
+    /**@brief	Maximum referenced datablocks*/
+    uint32_t	max_ref_blocks;
 
 };
 
 /**@brief	Static initializer of block cache structure.*/
 #define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)	\
-	static uint32_t	__name##_refctr[(__cnt)];					\
-	static uint32_t	__name##_lru_id[(__cnt)];					\
-	static uint8_t		__name##_free_delay[(__cnt)];			\
-	static uint64_t	__name##_lba[(__cnt)];						\
-	static uint8_t 	__name##_data[(__cnt) * (__itemsize)];		\
-	static struct ext4_bcache	__name = {						\
-		.cnt 	   = __cnt,										\
-		.itemsize  = __itemsize,								\
-		.lru_ctr   = 0,											\
-		.refctr	   = __name##_refctr,							\
-		.lru_id    = __name##_lru_id,							\
-		.lba	   = __name##_lba,								\
-		.free_delay= __name##_free_delay,						\
-		.data	   = __name##_data,								\
-	}
+        static uint32_t	__name##_refctr[(__cnt)];					\
+        static uint32_t	__name##_lru_id[(__cnt)];					\
+        static uint8_t		__name##_free_delay[(__cnt)];			\
+        static uint64_t	__name##_lba[(__cnt)];						\
+        static uint8_t 	__name##_data[(__cnt) * (__itemsize)];		\
+        static struct ext4_bcache	__name = {						\
+                .cnt 	   = __cnt,										\
+                .itemsize  = __itemsize,								\
+                .lru_ctr   = 0,											\
+                .refctr	   = __name##_refctr,							\
+                .lru_id    = __name##_lru_id,							\
+                .lba	   = __name##_lba,								\
+                .free_delay= __name##_free_delay,						\
+                .data	   = __name##_data,								\
+        }
 
 
 /**@brief	Dynamic initialization of block cache.
