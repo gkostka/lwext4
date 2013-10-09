@@ -200,7 +200,7 @@ int	    ext4_fremove(const char *path);
  *  |---------------------------------------------------------------|
  *  |   w+ or wb+ or w+b        O_RDWR|O_CREAT|O_TRUNC              |
  *  |---------------------------------------------------------------|
- *  |   a+ or ab+ or a+b      O_RDWR|O_CREAT|O_APPEND               |
+ *  |   a+ or ab+ or a+b        O_RDWR|O_CREAT|O_APPEND             |
  *  |---------------------------------------------------------------|
  *
  * @return	standard error code*/

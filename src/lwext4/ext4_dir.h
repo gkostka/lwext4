@@ -84,13 +84,14 @@ void ext4_dir_write_entry(struct ext4_sblock *sb,
     struct ext4_directory_entry_ll *entry, uint16_t entry_len,
     struct ext4_inode_ref *child,  const char *name, size_t name_len);
 
-int  ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
-    struct ext4_inode_ref *child);
+int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
+        uint32_t name_len, struct ext4_inode_ref *child);
 
 int ext4_dir_find_entry(struct ext4_directory_search_result *result,
-    struct ext4_inode_ref *parent, const char *name);
+        struct ext4_inode_ref *parent, const char *name, uint32_t name_len);
 
-int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name);
+int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
+    uint32_t name_len);
 
 int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
     struct ext4_block *target_block, struct ext4_inode_ref *child,

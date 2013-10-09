@@ -50,6 +50,9 @@ struct	ext4_block {
     /**@brief	Logical block ID*/
     uint64_t	lb_id;
 
+    /**@brief   Cache id*/
+    uint32_t    cache_id;
+
     /**@brief	Data buffer.*/
     uint8_t		*data;
 };

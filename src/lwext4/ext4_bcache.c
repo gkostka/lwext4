@@ -169,8 +169,9 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
             /*Update usage marker*/
             bc->lru_id[i] = ++bc->lru_ctr;
 
-            /*Set valid cache data*/
+            /*Set valid cache data and id*/
             b->data = bc->data + i * bc->itemsize;
+            b->cache_id = i;
 
             return EOK;
         }
@@ -208,8 +209,9 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
         bc->refctr[cache_id]   = 1;
         bc->lru_id[cache_id] = ++bc->lru_ctr;
 
-        /*Set valid cache data*/
+        /*Set valid cache data and id*/
         b->data = bc->data + cache_id * bc->itemsize;
+        b->cache_id = cache_id;
 
         /*Statistics*/
         bc->ref_blocks++;
@@ -231,44 +233,36 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 int ext4_bcache_free (struct ext4_bcache *bc, struct ext4_block *b,
     uint8_t free_delay)
 {
-    uint32_t i;
-
     ext4_assert(bc && b);
 
     /*Check if valid.*/
     ext4_assert(b->lb_id);
 
     /*Block should be in cache.*/
-    for (i = 0; i < bc->cnt; ++i) {
+    ext4_assert(b->cache_id < bc->cnt);
 
-        if(bc->lba[i] != b->lb_id)
-            continue;
+    /*Check if someone don't try free unreferenced block cache.*/
+    ext4_assert(bc->refctr[b->cache_id]);
 
-        /*Check if someone don't try free unreferenced block cache.*/
-        ext4_assert(bc->refctr[i]);
+    /*Just decrease reference counter*/
+    if(bc->refctr[b->cache_id])
+        bc->refctr[b->cache_id]--;
 
-        /*Just decrease reference counter*/
-        if(bc->refctr[i])
-            bc->refctr[i]--;
+    if(free_delay)
+        bc->free_delay[b->cache_id] = free_delay;
 
+    /*Update statistics*/
+    if(!bc->refctr[b->cache_id] && !bc->free_delay[b->cache_id])
+        bc->ref_blocks--;
 
-        if(free_delay)
-            bc->free_delay[i] = free_delay;
+    b->lb_id    = 0;
+    b->data     = 0;
+    b->cache_id = 0;
 
-        /*Update statistics*/
-        if(!bc->refctr[i] && !bc->free_delay[i])
-            bc->ref_blocks--;
-
-        b->lb_id = 0;
-        b->data  = 0;
-
-        return EOK;
-    }
-
-    ext4_dprintf(EXT4_DEBUG_BCACHE,
-        "ext4_bcache_free: FAIL, block should be in cache memory !\n");
-    return EFAULT;
+    return EOK;
 }
+
+
 
 bool ext4_bcache_is_full(struct ext4_bcache *bc)
 {
