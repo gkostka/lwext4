@@ -269,7 +269,7 @@ void ext4_dir_write_entry(struct ext4_sblock *sb,
 }
 
 int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
-        struct ext4_inode_ref *child)
+        uint32_t name_len, struct ext4_inode_ref *child)
 {
     struct ext4_fs *fs = parent->fs;
 
@@ -301,7 +301,6 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
     uint32_t inode_size = ext4_inode_get_size(&fs->sb, parent->inode);
     uint32_t total_blocks = inode_size / block_size;
 
-    uint32_t name_len = strlen(name);
 
     /* Find block, where is space for new entry and try to add */
     bool success = false;
@@ -360,10 +359,8 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 }
 
 int ext4_dir_find_entry(struct ext4_directory_search_result *result,
-        struct ext4_inode_ref *parent, const char *name)
+        struct ext4_inode_ref *parent, const char *name, uint32_t name_len)
 {
-    uint32_t name_len = strlen(name);
-
     struct ext4_sblock *sb = &parent->fs->sb;
 
 
@@ -436,7 +433,8 @@ int ext4_dir_find_entry(struct ext4_directory_search_result *result,
     return ENOENT;
 }
 
-int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name)
+int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
+    uint32_t name_len)
 {
     /* Check if removing from directory */
     if (!ext4_inode_is_type(&parent->fs->sb, parent->inode,
@@ -445,7 +443,7 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name)
 
     /* Try to find entry */
     struct ext4_directory_search_result result;
-    int rc = ext4_dir_find_entry(&result, parent, name);
+    int rc = ext4_dir_find_entry(&result, parent, name, name_len);
     if (rc != EOK)
         return rc;
 

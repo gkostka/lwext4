@@ -48,7 +48,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ext4.h"
+#include <ext4.h>
 
 /**@brief	Mount point OS dependent lock*/
 #define EXT4_MP_LOCK(_m)    \
@@ -175,14 +175,14 @@ static int ext4_has_children(bool *has_children, struct ext4_inode_ref *enode)
 
 
 static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
-        struct ext4_inode_ref *child, const char *name)
+        struct ext4_inode_ref *child, const char *name, uint32_t name_len)
 {
     /* Check maximum name length */
-    if (strlen(name) > EXT4_DIRECTORY_FILENAME_LEN)
+    if(name_len > EXT4_DIRECTORY_FILENAME_LEN)
         return EINVAL;
 
     /* Add entry to parent directory */
-    int rc = ext4_dir_add_entry(parent, name,
+    int rc = ext4_dir_add_entry(parent, name, name_len,
             child);
     if (rc != EOK)
         return rc;
@@ -190,18 +190,18 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
     /* Fill new dir -> add '.' and '..' entries */
     if (ext4_inode_is_type(&mp->fs.sb, child->inode,
             EXT4_INODE_MODE_DIRECTORY)) {
-        rc = ext4_dir_add_entry(child, ".",
+        rc = ext4_dir_add_entry(child, ".", strlen("."),
                 child);
         if (rc != EOK) {
-            ext4_dir_remove_entry(parent, name);
+            ext4_dir_remove_entry(parent, name, strlen(name));
             return rc;
         }
 
-        rc = ext4_dir_add_entry(child, "..",
+        rc = ext4_dir_add_entry(child, "..", strlen(".."),
                 parent);
         if (rc != EOK) {
-            ext4_dir_remove_entry(parent, name);
-            ext4_dir_remove_entry(child, ".");
+            ext4_dir_remove_entry(parent, name, strlen(name));
+            ext4_dir_remove_entry(child, ".", strlen("."));
             return rc;
         }
 
@@ -239,7 +239,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 
 static int ext4_unlink(struct ext4_mountpoint *mp,
     struct ext4_inode_ref *parent, struct ext4_inode_ref *child_inode_ref,
-    const char *name)
+    const char *name, uint32_t name_len)
 {
     bool has_children;
     int rc = ext4_has_children(&has_children, child_inode_ref);
@@ -252,7 +252,7 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
 
     /* Remove entry from parent directory */
 
-    rc = ext4_dir_remove_entry(parent, name);
+    rc = ext4_dir_remove_entry(parent, name, name_len);
     if (rc != EOK)
         return rc;
 
@@ -501,7 +501,6 @@ static int ext4_generic_open (ext4_file *f, const char *path,
     struct ext4_mountpoint *mp = ext4_get_mount(path);
     struct ext4_directory_search_result result;
     struct ext4_inode_ref	ref;
-    char	entry_name[255];
     bool	is_goal = false;
     uint8_t	inode_type;
     int		r = ENOENT;
@@ -547,10 +546,7 @@ static int ext4_generic_open (ext4_file *f, const char *path,
             break;
         }
 
-        memcpy(entry_name, path, len);
-        entry_name[len] = 0;
-
-        r = ext4_dir_find_entry(&result, &ref, entry_name);
+        r = ext4_dir_find_entry(&result, &ref, path, len);
         if(r != EOK){
 
             if(r != ENOENT)
@@ -569,7 +565,7 @@ static int ext4_generic_open (ext4_file *f, const char *path,
             ext4_dir_destroy_result(&ref, &result);
 
             /*Link with root dir.*/
-            r = ext4_link(mp, &ref, &child_ref, entry_name);
+            r = ext4_link(mp, &ref, &child_ref, path, len);
             if(r != EOK){
                 /*Fali. Free new inode.*/
                 ext4_fs_free_inode(&child_ref);
@@ -665,7 +661,6 @@ int ext4_fremove(const char *path)
 {
     struct ext4_mountpoint *mp = ext4_get_mount(path);
     struct ext4_directory_search_result result;
-    char	entry_name[255];
     bool	is_goal = false;
     uint8_t	inode_type;
     int		r = ENOENT;
@@ -673,6 +668,7 @@ int ext4_fremove(const char *path)
 
     struct ext4_inode_ref	parent;
     struct ext4_inode_ref	child;
+    int len = 0;
 
     if(!mp)
         return ENOENT;
@@ -700,17 +696,14 @@ int ext4_fremove(const char *path)
 
     while(1){
 
-        int len = ext4_path_check(path, &is_goal);
+        len = ext4_path_check(path, &is_goal);
 
         if(!len){
             r = ENOENT;
             break;
         }
 
-        memcpy(entry_name, path, len);
-        entry_name[len] = 0;
-
-        r = ext4_dir_find_entry(&result, &parent, entry_name);
+        r = ext4_dir_find_entry(&result, &parent, path, len);
         if(r != EOK){
             ext4_dir_destroy_result(&parent, &result);
             break;
@@ -779,7 +772,7 @@ int ext4_fremove(const char *path)
         goto Finish;
 
     /*Unlink from parent.*/
-    r = ext4_unlink(mp, &parent, &child, entry_name);
+    r = ext4_unlink(mp, &parent, &child, path, len);
     if(r != EOK)
         goto Finish;
 

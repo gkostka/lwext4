@@ -155,9 +155,6 @@ int ext4_block_set(struct	ext4_blockdev *bdev, struct	ext4_block *b)
         return EOK;
     }
 
-    b->dirty = false;
-
-
     /*Free cache delay mode*/
     if(bdev->cache_flush_delay){
 
