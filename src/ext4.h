@@ -169,8 +169,9 @@ int	ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
 /**@brief	Mount a block device with EXT4 partition to the mountpoint.
  * @param	dev_name block device name (@ref ext4_device_register)
  * @param	mount_point pount point, for example
- * 			-	/my_partition
- * 			-	/my_second_partition
+ *          -   /
+ *          -   /my_partition/
+ *          -   /my_second_partition/
  *
  * @return standard error code */
 int	ext4_mount(const char * dev_name,  char *mount_point);
@@ -180,10 +181,29 @@ int	ext4_mount(const char * dev_name,  char *mount_point);
  * @return  standard error code */
 int	ext4_umount(char *mount_point);
 
+
+/**@brief   Some of the filesystem params.*/
+struct ext4_mount_stats {
+    uint32_t inodes_count;
+    uint32_t free_inodes_count;
+    uint64_t blocks_count;
+    uint64_t free_blocks_count;
+
+    uint32_t block_size;
+    uint32_t block_group_count;
+    uint32_t blocks_per_group;
+    uint32_t inodes_per_group;
+
+    char volume_name[16];
+};
+
+int ext4_mount_point_stats(const char *mount_point,
+    struct ext4_mount_stats *stats);
+
 /********************************FILE OPERATIONS*****************************/
 
 /**@brief	*/
-int	    ext4_fremove(const char *path);
+int ext4_fremove(const char *path);
 
 /**@brief	File open function.
  * @param	filename, (has to start from mountpoint)
@@ -204,19 +224,19 @@ int	    ext4_fremove(const char *path);
  *  |---------------------------------------------------------------|
  *
  * @return	standard error code*/
-int	ext4_fopen (ext4_file *f, const char *path, const char *flags);
+int ext4_fopen (ext4_file *f, const char *path, const char *flags);
 
 /**@brief	*/
-int	ext4_fclose(ext4_file *f);
+int ext4_fclose(ext4_file *f);
 
 /**@brief	*/
-int	ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
+int ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
 
 /**@brief	*/
-int	ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt);
+int ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt);
 
 /**@brief	*/
-int	ext4_fseek (ext4_file *f, uint64_t offset, uint32_t origin);
+int ext4_fseek (ext4_file *f, uint64_t offset, uint32_t origin);
 
 /**@brief	*/
 uint64_t ext4_ftell (ext4_file *f);

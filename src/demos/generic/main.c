@@ -121,6 +121,27 @@ static void dir_ls(const char *path)
 	ext4_dir_close(&d);
 }
 
+static void mp_stats(void)
+{
+    struct ext4_mount_stats stats;
+    ext4_mount_point_stats("/mp/", &stats);
+
+    printf("**********************************************\n");
+    printf("ext4_mount_point_stats\n");
+    printf("inodes_count        = %d\n", stats.inodes_count);
+    printf("free_inodes_count   = %d\n", stats.free_inodes_count);
+    printf("blocks_count        = %d\n", stats.blocks_count);
+    printf("free_blocks_count   = %d\n", stats.free_blocks_count);
+    printf("block_size          = %d\n", stats.block_size);
+    printf("block_group_count   = %d\n", stats.block_group_count);
+    printf("blocks_per_group    = %d\n", stats.blocks_per_group);
+    printf("inodes_per_group    = %d\n", stats.inodes_per_group);
+    printf("volume_name         = %s\n", stats.volume_name);
+
+    printf("**********************************************\n");
+
+}
+
 
 int main(int argc, char **argv)
 {
@@ -196,15 +217,23 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	r = ext4_mount("ext4_filesim", "/mp");
+	r = ext4_mount("ext4_filesim", "/mp/");
 	if(r != EOK){
 		printf("ext4_mount ERROR = %d\n", r);
 		return EXIT_FAILURE;
 	}
 
 
+	ext4_fremove("/mp/hello.txt");
 	ext4_fremove("/mp/test1");
+	mp_stats();
 	dir_ls("/mp/");
+
+    /*Add hello world file.*/
+    r = ext4_fopen(&f, "/mp/hello.txt", "wb");
+    r = ext4_fwrite(&f, "Hello World !\n", strlen("Hello World !\n"), 0);
+    r = ext4_fclose(&f);
+
 
 	printf("ext4_fopen: test1\n");
 
@@ -264,9 +293,10 @@ int main(int argc, char **argv)
 	r = ext4_fclose(&f);
 
 
+	mp_stats();
 	dir_ls("/mp/");
 
-	r = ext4_umount("/mp");
+	r = ext4_umount("/mp/");
 
 	printf("Test finish: OK\n");
     return EXIT_SUCCESS;
