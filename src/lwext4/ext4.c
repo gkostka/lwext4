@@ -71,7 +71,7 @@ struct ext4_mountpoint {
     struct ext4_fs	 fs;
 
     /**@brief	Dynamic alocation cache flag.*/
-    bool			cache_dynamic;
+    bool            cache_dynamic;
 };
 
 /**@brief	Block devices descriptor.*/
@@ -315,6 +315,9 @@ int			ext4_mount(const char * dev_name,  char *mount_point)
     struct ext4_bcache		*bc = 0;
     struct ext4_mountpoint	*mp = 0;
 
+    if(mount_point[strlen(mount_point) - 1] != '/')
+        return ENOTSUP;
+
     for (i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
         if(_bdevices[i].name){
             if(!strcmp(dev_name, _bdevices[i].name)){
@@ -418,6 +421,40 @@ int			ext4_umount(char *mount_point)
     return ext4_block_fini(mp->fs.bdev);
 }
 
+int ext4_mount_point_stats(const char *mount_point,
+    struct ext4_mount_stats *stats)
+{
+    uint32_t i;
+    struct ext4_mountpoint    *mp = 0;
+
+    for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
+        if(_mp[i].name){
+            if(!strcmp(_mp[i].name, mount_point))
+                mp = &_mp[i];
+            break;
+        }
+    }
+
+    if(!mp)
+        return ENOENT;
+
+
+    EXT4_MP_LOCK(mp);
+    stats->inodes_count      = ext4_get32(&mp->fs.sb, inodes_count);
+    stats->free_inodes_count = ext4_get32(&mp->fs.sb, free_inodes_count);
+    stats->blocks_count      = ext4_sb_get_blocks_cnt(&mp->fs.sb);
+    stats->free_blocks_count = ext4_sb_get_free_blocks_cnt(&mp->fs.sb);
+    stats->block_size        = ext4_sb_get_block_size(&mp->fs.sb);
+
+    stats->block_group_count = ext4_block_group_cnt(&mp->fs.sb);
+    stats->blocks_per_group  = ext4_get32(&mp->fs.sb, blocks_per_group);
+    stats->inodes_per_group  = ext4_get32(&mp->fs.sb, inodes_per_group);
+
+    memcpy(stats->volume_name, mp->fs.sb.volume_name, 16);
+    EXT4_MP_UNLOCK(mp);
+
+    return EOK;
+}
 
 /********************************FILE OPERATIONS*****************************/
 
@@ -516,12 +553,6 @@ static int ext4_generic_open (ext4_file *f, const char *path,
 
     /*Skip mount point*/
     path += strlen(mp->name);
-
-    /*Skip first /*/
-    if(*path != '/')
-        return ENOENT;
-
-    path++;
 
     EXT4_MP_LOCK(mp);
 
@@ -676,12 +707,6 @@ int ext4_fremove(const char *path)
 
     /*Skip mount point*/
     path += strlen(mp->name);
-
-    /*Skip first /*/
-    if(*path != '/')
-        return ENOENT;
-
-    path++;
 
     /*Lock mountpoint*/
     EXT4_MP_LOCK(mp);
