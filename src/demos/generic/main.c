@@ -142,6 +142,45 @@ static void mp_stats(void)
 
 }
 
+static void block_stats(void)
+{
+    uint32_t i;
+
+    printf("**********************************************\n");
+    printf("ext4 blockdev stats\n");
+    printf("bdev->bread_ctr          = %d\n", bd->bread_ctr);
+    printf("bdev->bwrite_ctr         = %d\n", bd->bwrite_ctr);
+
+
+    printf("bcache->ref_blocks       = %d\n", bc->ref_blocks);
+    printf("bcache->max_ref_blocks   = %d\n", bc->max_ref_blocks);
+    printf("bcache->lru_ctr          = %d\n", bc->lru_ctr);
+
+    printf("\n");
+    for (i = 0; i < bc->cnt; ++i) {
+        printf("bcache->refctr[%d]     = %d\n", i, bc->refctr[i]);
+    }
+
+    printf("\n");
+    for (i = 0; i < bc->cnt; ++i) {
+        printf("bcache->lru_id[%d]     = %d\n", i, bc->lru_id[i]);
+    }
+
+    printf("\n");
+    for (i = 0; i < bc->cnt; ++i) {
+        printf("bcache->free_delay[%d] = %d\n", i, bc->free_delay[i]);
+    }
+
+    printf("\n");
+    for (i = 0; i < bc->cnt; ++i) {
+        printf("bcache->lba[%d]        = %d\n", i, bc->lba[i]);
+    }
+
+
+
+    printf("**********************************************\n");
+}
+
 
 int main(int argc, char **argv)
 {
@@ -296,6 +335,7 @@ int main(int argc, char **argv)
 	mp_stats();
 	dir_ls("/mp/");
 
+	block_stats();
 	r = ext4_umount("/mp/");
 
 	printf("Test finish: OK\n");
