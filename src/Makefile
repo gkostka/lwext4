@@ -2,35 +2,35 @@
 all: generic bf518 cortex-m3 cortex-m4 generic
 
 bf518:
-	rm -R -f ../bf518
-	cd .. && mkdir bf518
-	cd ../bf518 && cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../src/toolchain/bf518.cmake ../src
-	cd ../bf518 && make
+	rm -R -f build_bf518
+	mkdir build_bf518
+	cd build_bf518 && cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../toolchain/bf518.cmake ..
+	cd build_bf518 && make
 
 cortex-m3:
-	rm -R -f ../cortex-m3
-	cd .. && mkdir cortex-m3
-	cd ../cortex-m3 && cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../src/toolchain/cortex-m3.cmake ../src
-	cd ../cortex-m3 && make
+	rm -R -f build_cortex-m3
+	mkdir build_cortex-m3
+	cd build_cortex-m3 && cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../toolchain/cortex-m3.cmake ..
+	cd build_cortex-m3 && make
 
 cortex-m4:
-	rm -R -f ../cortex-m4
-	cd .. && mkdir cortex-m4
-	cd ../cortex-m4 && cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../src/toolchain/cortex-m4.cmake ../src
-	cd ../cortex-m4 && make
+	rm -R -f build_cortex-m4
+	mkdir build_cortex-m4
+	cd build_cortex-m4 && cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=../toolchain/cortex-m4.cmake ..
+	cd build_cortex-m4 && make
 	
 	
 generic:
-	rm -R -f ../generic
-	cd .. && mkdir generic
-	cd ../generic && cmake -G"Unix Makefiles" ../src
-	cd ../generic && make
+	rm -R -f build_generic
+	mkdir build_generic
+	cd build_generic && cmake -G"Unix Makefiles" ../
+	cd build_generic && make
 	
 	
 clean:
-	rm -R -f ../bf518
-	rm -R -f ../cortex-m3
-	rm -R -f ../cortex-m4
-	rm -R -f ../generic
+	rm -R -f build_bf518
+	rm -R -f build_cortex-m3
+	rm -R -f build_cortex-m4
+	rm -R -f build_generic
 
 	
