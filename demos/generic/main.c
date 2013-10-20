@@ -46,6 +46,9 @@ static int rw_szie  = 1024;
 /**@brief	Read-write size*/
 static int rw_count = 1024;
 
+/**@brief   Directory test count*/
+static int dir_cnt  = 10;
+
 static bool cache_mode = false;
 
 
@@ -65,10 +68,11 @@ static const char *usage = "									\n\
 Welcome in ext4 generic demo.									\n\
 Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)	\n\
 Usage:															\n\
-	-i   - input file            (default = ext2)				\n\
-	-rws - single R/W size       (default = 1024)				\n\
-	-rwc - R/W count             (default = 1024)				\n\
-	-cache - 0 static, 1 dynamic (default = 0)					\n\
+	-i   - input file             (default = ext2)				\n\
+	-rws - single R/W size        (default = 1024)				\n\
+	-rwc - R/W count              (default = 1024)				\n\
+	-cache - 0 static, 1 dynamic  (default = 0)					\n\
+    -dirs  - directory test count (default = 0)                 \n\
 \n";
 
 static char* entry_to_str(uint8_t type)
@@ -106,7 +110,7 @@ static void dir_ls(const char *path)
 	printf("**********************************************\n");
 
 	ext4_dir_open(&d, path);
-	de = ext4_entry_get(&d, j++);
+	de = ext4_dir_entry_get(&d, j++);
 	printf("ls %s\n", path);
 
 	while(de){
@@ -115,7 +119,7 @@ static void dir_ls(const char *path)
 		printf(entry_to_str(de->inode_type));
 		printf(sss);
 		printf("\n");
-		de = ext4_entry_get(&d, j++);
+		de = ext4_dir_entry_get(&d, j++);
 	}
 	printf("**********************************************\n");
 	ext4_dir_close(&d);
@@ -128,14 +132,14 @@ static void mp_stats(void)
 
     printf("**********************************************\n");
     printf("ext4_mount_point_stats\n");
-    printf("inodes_count        = %d\n", stats.inodes_count);
-    printf("free_inodes_count   = %d\n", stats.free_inodes_count);
-    printf("blocks_count        = %d\n", stats.blocks_count);
-    printf("free_blocks_count   = %d\n", stats.free_blocks_count);
-    printf("block_size          = %d\n", stats.block_size);
-    printf("block_group_count   = %d\n", stats.block_group_count);
-    printf("blocks_per_group    = %d\n", stats.blocks_per_group);
-    printf("inodes_per_group    = %d\n", stats.inodes_per_group);
+    printf("inodes_count        = %u\n", stats.inodes_count);
+    printf("free_inodes_count   = %u\n", stats.free_inodes_count);
+    printf("blocks_count        = %u\n", (uint32_t)stats.blocks_count);
+    printf("free_blocks_count   = %u\n", (uint32_t)stats.free_blocks_count);
+    printf("block_size          = %u\n", stats.block_size);
+    printf("block_group_count   = %u\n", stats.block_group_count);
+    printf("blocks_per_group    = %u\n", stats.blocks_per_group);
+    printf("inodes_per_group    = %u\n", stats.inodes_per_group);
     printf("volume_name         = %s\n", stats.volume_name);
 
     printf("**********************************************\n");
@@ -148,22 +152,22 @@ static void block_stats(void)
 
     printf("**********************************************\n");
     printf("ext4 blockdev stats\n");
-    printf("bdev->bread_ctr          = %d\n", bd->bread_ctr);
-    printf("bdev->bwrite_ctr         = %d\n", bd->bwrite_ctr);
+    printf("bdev->bread_ctr          = %u\n", bd->bread_ctr);
+    printf("bdev->bwrite_ctr         = %u\n", bd->bwrite_ctr);
 
 
-    printf("bcache->ref_blocks       = %d\n", bc->ref_blocks);
-    printf("bcache->max_ref_blocks   = %d\n", bc->max_ref_blocks);
-    printf("bcache->lru_ctr          = %d\n", bc->lru_ctr);
+    printf("bcache->ref_blocks       = %u\n", bc->ref_blocks);
+    printf("bcache->max_ref_blocks   = %u\n", bc->max_ref_blocks);
+    printf("bcache->lru_ctr          = %u\n", bc->lru_ctr);
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->refctr[%d]     = %d\n", i, bc->refctr[i]);
+        printf("bcache->refctr[%d]     = %u\n", i, bc->refctr[i]);
     }
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->lru_id[%d]     = %d\n", i, bc->lru_id[i]);
+        printf("bcache->lru_id[%d]     = %u\n", i, bc->lru_id[i]);
     }
 
     printf("\n");
@@ -173,7 +177,7 @@ static void block_stats(void)
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->lba[%d]        = %d\n", i, bc->lba[i]);
+        printf("bcache->lba[%d]        = %u\n", i, (uint32_t)bc->lba[i]);
     }
 
 
@@ -181,6 +185,59 @@ static void block_stats(void)
     printf("**********************************************\n");
 }
 
+static bool dir_test(int len)
+{
+    ext4_file f;
+    int       r;
+    int       i;
+    char path[64];
+
+    printf("Remove directory /mp/dir1\n");
+    ext4_dir_rm("/mp/dir1");
+
+
+    printf("Directory create: /mp/dir1\n");
+    r = ext4_dir_mk("/mp/dir1");
+    if(r != EOK){
+        printf("Unable to create directory: /mp/dir1\n");
+        return false;
+    }
+
+
+    printf("Add files to: /mp/dir1\n");
+    for (i = 0; i < len; ++i) {
+        sprintf(path, "/mp/dir1/f%d", i);
+        r = ext4_fopen(&f, path, "wb");
+        if(r != EOK){
+            printf("Unable to create file in directory: /mp/dir1\n");
+            return false;
+        }
+    }
+
+    printf("Add directories to: /mp/dir1\n");
+    for (i = 0; i < len; ++i) {
+        sprintf(path, "/mp/dir1/d%d", i);
+        r = ext4_dir_mk(path);
+        if(r != EOK){
+            printf("Unable to create directory in directory: /mp/dir1\n");
+            return false;
+        }
+    }
+
+    printf("Add file directories in: /mp/dir1\n");
+
+    for (i = 0; i < len; ++i) {
+        sprintf(path, "/mp/dir1/d%d/ff", i);
+        r = ext4_fopen(&f, path, "wb");
+        if(r != EOK){
+            printf("Unable to create file in directory: /mp/dir1\n");
+            return false;
+        }
+    }
+
+    dir_ls("/mp/dir1");
+    return true;
+}
 
 int main(int argc, char **argv)
 {
@@ -197,10 +254,11 @@ int main(int argc, char **argv)
         {"rws",     required_argument, 0, 'b'},
         {"rwc",		required_argument, 0, 'c'},
         {"cache",   required_argument, 0, 'd'},
+        {"dirs",   required_argument,  0, 'e'},
         {0, 0, 0, 0}
       };
 
-    while(-1 != (c = getopt_long (argc, argv, "a:b:c:d:", long_options, &option_index))) {
+    while(-1 != (c = getopt_long (argc, argv, "a:b:c:d:e:", long_options, &option_index))) {
 
     	switch(c){
     		case 'a':
@@ -215,6 +273,9 @@ int main(int argc, char **argv)
     		case 'd':
     			cache_mode = atoi(optarg);
     			break;
+            case 'e':
+                dir_cnt = atoi(optarg);
+                break;
     		default:
     			printf(usage);
     			return EXIT_FAILURE;
@@ -262,6 +323,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+	dir_test(dir_cnt);
 
 	ext4_fremove("/mp/hello.txt");
 	ext4_fremove("/mp/test1");

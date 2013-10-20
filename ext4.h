@@ -42,34 +42,34 @@
 #include <ext4_blockdev.h>
 #include <stdint.h>
 
-/********************************FILE OPEN FLAGS********************************/
+/********************************FILE OPEN FLAGS*****************************/
 
 #ifndef O_RDONLY
-#define O_RDONLY	00
+#define O_RDONLY    00
 #endif
 
 #ifndef O_WRONLY
-#define O_WRONLY	01
+#define O_WRONLY    01
 #endif
 
 #ifndef O_RDWR
-#define O_RDWR		02
+#define O_RDWR      02
 #endif
 
 #ifndef O_CREAT
-#define O_CREAT	    0100
+#define O_CREAT     0100
 #endif
 
 #ifndef O_EXCL
-#define O_EXCL		0200
+#define O_EXCL      0200
 #endif
 
 #ifndef O_TRUNC
-#define O_TRUNC		01000
+#define O_TRUNC     01000
 #endif
 
 #ifndef O_APPEND
-#define O_APPEND	02000
+#define O_APPEND    02000
 #endif
 
 /********************************FILE SEEK FLAGS*****************************/
@@ -133,7 +133,7 @@ enum  {
     EXT4_DIRENTRY_SYMLINK
 };
 
-/**@brief	Directory entry descriptor. Copy from ext4_types.h*/
+/**@brief   Directory entry descriptor. Copy from ext4_types.h*/
 typedef struct {
     uint32_t inode;
     uint16_t entry_length;
@@ -182,7 +182,7 @@ int	ext4_mount(const char * dev_name,  char *mount_point);
 int	ext4_umount(char *mount_point);
 
 
-/**@brief   Some of the filesystem params.*/
+/**@brief   Some of the filesystem stats.*/
 struct ext4_mount_stats {
     uint32_t inodes_count;
     uint32_t free_inodes_count;
@@ -197,12 +197,18 @@ struct ext4_mount_stats {
     char volume_name[16];
 };
 
+/**@brief   Get file system params.
+ * @param   mount_point mount path
+ * @param   stats ext fs stats
+ * @return  standard error code */
 int ext4_mount_point_stats(const char *mount_point,
     struct ext4_mount_stats *stats);
 
 /********************************FILE OPERATIONS*****************************/
 
-/**@brief	*/
+/**@brief	Remove file by path.
+ * @param   path path to file
+ * @return  standard error code */
 int ext4_fremove(const char *path);
 
 /**@brief	File open function.
@@ -226,39 +232,76 @@ int ext4_fremove(const char *path);
  * @return	standard error code*/
 int ext4_fopen (ext4_file *f, const char *path, const char *flags);
 
-/**@brief	*/
+/**@brief	File close function.
+ * @param   f file handle
+ * @return  standard error code*/
 int ext4_fclose(ext4_file *f);
 
-/**@brief	*/
+/**@brief   Read data from file.
+ * @param   f file handle
+ * @param   buf output buffer
+ * @param   size bytes to read
+ * @param   rcnt readed bytes (may be NULL)
+ * @return  standard error code*/
 int ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
 
-/**@brief	*/
+/**@brief	Write data to file.
+ * @param   f file handle
+ * @param   buf data to write
+ * @param   size write length
+ * @param   wcnt bytes written (may be NULL)
+ * @return  standard error code*/
 int ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt);
 
-/**@brief	*/
+/**@brief	File seek operation.
+ * @param   f file handle
+ * @param   offset offset to seek
+ * @param   origin seek type:
+ *              @ref SEEK_SET
+ *              @ref SEEK_CUR
+ *              @ref SEEK_END
+ * @return  standard error code*/
 int ext4_fseek (ext4_file *f, uint64_t offset, uint32_t origin);
 
-/**@brief	*/
+/**@brief	Get file position.
+ * @param   f file handle
+ * @return  actual file position */
 uint64_t ext4_ftell (ext4_file *f);
 
-/**@brief	*/
+/**@brief	Get file size.
+ * @param   f file handle
+ * @return  file size */
 uint64_t ext4_fsize (ext4_file *f);
 
 /*********************************DIRECTORY OPERATION***********************/
-/**@brief	*/
-int ext4_mkdir(const char *path);
 
-/**@brief	*/
-int ext4_rmdir(const char *path);
+/**@brief	Recursive directory remove.
+ * @param   path directory path to remove
+ * @return  standard error code*/
+int ext4_dir_rm(const char *path);
 
-/**@brief	*/
+/**@brief   Create new directory.
+ * @param   name new directory name
+ * @return  standard error code*/
+int ext4_dir_mk(const char *path);
+
+/**@brief	Directory open.
+ * @param   d directory handle
+ * @param   path directory path
+ * @return  standard error code*/
 int ext4_dir_open (ext4_dir *d, const char *path);
 
-/**@brief	*/
+/**@brief	Directory close.
+ * @param   d directory handle
+ * @return  standard error code*/
 int ext4_dir_close(ext4_dir *d);
 
-/**@brief	*/
-ext4_direntry* ext4_entry_get(ext4_dir *d, uint32_t id);
+
+/**@brief	Return directory entry by id.
+ * @param   d directory handle
+ * @param   id entry id
+ * @return  directory entry id (NULL id no entry)*/
+ext4_direntry* ext4_dir_entry_get(ext4_dir *d, uint32_t id);
 
 #endif /* EXT4_H_ */
 
