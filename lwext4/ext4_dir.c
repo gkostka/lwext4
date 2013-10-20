@@ -228,9 +228,21 @@ int ext4_dir_iterator_init(struct ext4_directory_iterator *it,
 
 int ext4_dir_iterator_next(struct ext4_directory_iterator *it)
 {
-    uint16_t skip = ext4_dir_entry_ll_get_entry_length(it->current);
+    int r = EOK;
+    uint16_t skip;
 
-    return ext4_dir_iterator_seek(it, it->current_offset + skip);
+    while(r == EOK){
+        skip = ext4_dir_entry_ll_get_entry_length(it->current);
+        r = ext4_dir_iterator_seek(it, it->current_offset + skip);
+
+        if(!it->current)
+            break;
+		/*Skip NULL referenced entry*/
+        if(it->current->inode != 0)
+            break;
+    }
+
+    return r;
 }
 
 int ext4_dir_iterator_fini(struct ext4_directory_iterator *it)
