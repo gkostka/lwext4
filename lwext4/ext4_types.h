@@ -235,6 +235,8 @@ struct ext4_fs {
 
     uint64_t inode_block_limits[4];
     uint64_t inode_blocks_per_level[4];
+
+    uint32_t last_inode_bg_id;
 };
 
 
