@@ -180,7 +180,7 @@ uint64_t ext4_inode_get_blocks_count(struct ext4_sblock *sb,
             EXT4_FEATURE_RO_COMPAT_HUGE_FILE)) {
 
         /* 48-bit field */
-        count = ((uint64_t) to_le16(inode->osd2.linux2.blocks_high)) << 32;
+        count |= ((uint64_t) to_le16(inode->osd2.linux2.blocks_high)) << 32;
 
         if (ext4_inode_has_flag(inode, EXT4_INODE_FLAG_HUGE_FILE)) {
 

@@ -36,21 +36,28 @@
 #include <ext4_filedev.h>
 #include <ext4.h>
 
-
-
 char input_name[128] = "ext2";
 
 /**@brief	Read-write size*/
 static int rw_szie  = 1024;
 
 /**@brief	Read-write size*/
-static int rw_count = 1024;
+static int rw_count = 10000;
 
 /**@brief   Directory test count*/
 static int dir_cnt  = 10;
 
+/**@brief   Static or dynamic cache mode*/
 static bool cache_mode = false;
 
+/**@brief   Cleanup after test.*/
+static bool cleanup_flag = false;
+
+/**@brief   Block device stats.*/
+static bool bstat = false;
+
+/**@brief   Superblock stats.*/
+static bool sbstat = false;
 
 /**@brief	File write buffer*/
 static uint8_t	*wr_buff;
@@ -70,9 +77,12 @@ Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)	\n\
 Usage:															\n\
 	-i   - input file             (default = ext2)				\n\
 	-rws - single R/W size        (default = 1024)				\n\
-	-rwc - R/W count              (default = 1024)				\n\
-	-cache - 0 static, 1 dynamic  (default = 0)					\n\
-    -dirs  - directory test count (default = 0)                 \n\
+	-rwc - R/W count              (default = 10000) 			\n\
+	-cache  - 0 static, 1 dynamic  (default = 0)                \n\
+    -dirs   - directory test count (default = 10)               \n\
+    -clean  - clean up after test                               \n\
+    -bstat  - block device stats                                \n\
+    -sbstat - superblock stats                                  \n\
 \n";
 
 static char* entry_to_str(uint8_t type)
@@ -192,10 +202,6 @@ static bool dir_test(int len)
     int       i;
     char path[64];
 
-    printf("Remove directory /mp/dir1\n");
-    ext4_dir_rm("/mp/dir1");
-
-
     printf("Directory create: /mp/dir1\n");
     r = ext4_dir_mk("/mp/dir1");
     if(r != EOK){
@@ -214,29 +220,15 @@ static bool dir_test(int len)
         }
     }
 
-    printf("Add directories to: /mp/dir1\n");
-    for (i = 0; i < len; ++i) {
-        sprintf(path, "/mp/dir1/d%d", i);
-        r = ext4_dir_mk(path);
-        if(r != EOK){
-            printf("Unable to create directory in directory: /mp/dir1\n");
-            return false;
-        }
-    }
-
-    printf("Add file directories in: /mp/dir1\n");
-
-    for (i = 0; i < len; ++i) {
-        sprintf(path, "/mp/dir1/d%d/ff", i);
-        r = ext4_fopen(&f, path, "wb");
-        if(r != EOK){
-            printf("Unable to create file in directory: /mp/dir1\n");
-            return false;
-        }
-    }
-
     dir_ls("/mp/dir1");
     return true;
+}
+
+static void cleanup(void)
+{
+    ext4_fremove("/mp/hello.txt");
+    ext4_fremove("/mp/test1");
+    ext4_dir_rm("/mp/dir1");
 }
 
 int main(int argc, char **argv)
@@ -254,11 +246,14 @@ int main(int argc, char **argv)
         {"rws",     required_argument, 0, 'b'},
         {"rwc",		required_argument, 0, 'c'},
         {"cache",   required_argument, 0, 'd'},
-        {"dirs",   required_argument,  0, 'e'},
+        {"dirs",    required_argument, 0, 'e'},
+        {"clean",   no_argument,       0, 'f'},
+        {"bstat",   no_argument,       0, 'g'},
+        {"sbstat",  no_argument,       0, 'h'},
         {0, 0, 0, 0}
       };
 
-    while(-1 != (c = getopt_long (argc, argv, "a:b:c:d:e:", long_options, &option_index))) {
+    while(-1 != (c = getopt_long (argc, argv, "a:b:c:d:e:fgh", long_options, &option_index))) {
 
     	switch(c){
     		case 'a':
@@ -275,6 +270,15 @@ int main(int argc, char **argv)
     			break;
             case 'e':
                 dir_cnt = atoi(optarg);
+                break;
+            case 'f':
+                cleanup_flag = true;
+                break;
+            case 'g':
+                bstat = true;
+                break;
+            case 'h':
+                sbstat = true;
                 break;
     		default:
     			printf(usage);
@@ -323,12 +327,14 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	dir_test(dir_cnt);
+	cleanup();
 
-	ext4_fremove("/mp/hello.txt");
-	ext4_fremove("/mp/test1");
-	mp_stats();
-	dir_ls("/mp/");
+    if(sbstat)
+        mp_stats();
+
+
+    dir_ls("/mp/");
+	dir_test(dir_cnt);
 
     /*Add hello world file.*/
     r = ext4_fopen(&f, "/mp/hello.txt", "wb");
@@ -390,16 +396,20 @@ int main(int argc, char **argv)
 	}
 
 	printf("OK\n");
-
 	r = ext4_fclose(&f);
 
-
-	mp_stats();
 	dir_ls("/mp/");
 
-	block_stats();
-	r = ext4_umount("/mp/");
+	if(sbstat)
+	    mp_stats();
 
+	if(bstat)
+	    block_stats();
+
+	if(cleanup_flag)
+	    cleanup();
+
+	r = ext4_umount("/mp/");
 	printf("Test finish: OK\n");
     return EXIT_SUCCESS;
 
