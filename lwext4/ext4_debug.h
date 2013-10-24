@@ -72,6 +72,10 @@
 /**@brief	Debug mask: ext4_bcache.c*/
 #define EXT4_DEBUG_BCACHE			(1 << 9)
 
+/**@brief   Debug mask: ext4_extents.c*/
+#define EXT4_DEBUG_EXTENTS          (1 << 10)
+
+
 
 /**@brief	All debug printf enabled.*/
 #define EXT4_DEBUG_ALL				(0xFFFFFFFF)

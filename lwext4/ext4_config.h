@@ -44,12 +44,12 @@
 
 /**@brief	Enable directory indexing feature (EXT3 feature)*/
 #ifndef CONFIG_DIR_INDEX_ENABLE
-#define CONFIG_DIR_INDEX_ENABLE				0
+#define CONFIG_DIR_INDEX_ENABLE				1
 #endif
 
 /**@brief	Enable extents feature (EXT4 feature)*/
 #ifndef CONFIG_EXTENT_ENABLE
-#define CONFIG_EXTENT_ENABLE				0
+#define CONFIG_EXTENT_ENABLE				1
 #endif
 
 
