@@ -351,7 +351,7 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 
         uint16_t entry_space =
                 ext4_sb_get_block_size(&inode_ref->fs->sb) -
-                sizeof(struct ext4_directory_dx_dot_entry);
+                sizeof(struct ext4_fake_directory_entry);
 
         entry_space = entry_space / sizeof(struct ext4_directory_dx_entry);
 
@@ -606,7 +606,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
     void *entry_buffer_ptr = entry_buffer;
     while ((void *)dentry < (void *)(old_data_block->data + block_size)) {
         /* Read only valid entries */
-        if (ext4_dir_entry_ll_get_inode(dentry) != 0) {
+        if (ext4_dir_entry_ll_get_inode(dentry) && dentry->name_length) {
             uint8_t len = ext4_dir_entry_ll_get_name_length(
                     &inode_ref->fs->sb, dentry);
 
@@ -671,7 +671,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
     uint32_t mid = 0;
     uint32_t i;
     for ( i = 0; i < idx; ++i) {
-        if ((current_size + sort_array[i].rec_len) > (real_size / 2)) {
+        if ((current_size + sort_array[i].rec_len) > (block_size / 2)) {
             new_hash = sort_array[i].hash;
             mid = i;
             break;
@@ -747,9 +747,11 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
  */
 static int ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
         struct  ext4_directory_dx_block *dx_blocks,
-        struct ext4_directory_dx_block *dx_block)
+        struct ext4_directory_dx_block *dx_block,
+        struct ext4_directory_dx_block **new_dx_block)
 {
     struct ext4_directory_dx_entry *entries;
+
     if (dx_block == dx_blocks)
         entries =
                 ((struct  ext4_directory_dx_root *) dx_block->block.data)->entries;
@@ -801,8 +803,12 @@ static int ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
         struct ext4_directory_dx_node  *new_node 	= (void *)new_block.data;
         struct ext4_directory_dx_entry *new_entries = new_node->entries;
 
+        memset(&new_node->fake, 0, sizeof(struct ext4_fake_directory_entry));
+
         uint32_t block_size =
                 ext4_sb_get_block_size(&inode_ref->fs->sb);
+
+        new_node->fake.entry_length = block_size;
 
         /* Split leaf node */
         if (levels > 0) {
@@ -849,7 +855,10 @@ static int ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
 
             /* Finally insert new entry */
             ext4_dir_dx_insert_entry(dx_blocks, hash_right, new_iblock);
+            dx_blocks[0].block.dirty = true;
+            dx_blocks[1].block.dirty = true;
 
+            new_block.dirty = true;
             return ext4_block_set(inode_ref->fs->bdev, &new_block);
         } else {
             /* Create second level index */
@@ -879,9 +888,14 @@ static int ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
 
             /* Add new entry to the path */
             dx_block = dx_blocks + 1;
-            dx_block->position = dx_block->position - entries + new_entries;
+            dx_block->position = dx_blocks->position - entries + new_entries;
             dx_block->entries = new_entries;
             dx_block->block = new_block;
+
+            *new_dx_block = dx_block;
+
+            dx_blocks[0].block.dirty = true;
+            dx_blocks[1].block.dirty = true;
         }
     }
 
@@ -941,10 +955,19 @@ int 	ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
     if (rc != EOK)
         goto release_index;
 
+    /*
+     * Check if there is needed to split index node
+     * (and recursively also parent nodes)
+     */
+    rc = ext4_dir_dx_split_index(parent, dx_blocks, dx_block, &dx_block);
+    if (rc != EOK)
+        goto release_target_index;
+
     struct ext4_block target_block;
     rc = ext4_block_get(fs->bdev, &target_block, leaf_block_addr);
     if (rc != EOK)
         goto release_index;
+
 
     /* Check if insert operation passed */
     rc = ext4_dir_try_insert_entry(&fs->sb, &target_block, child,
@@ -952,13 +975,6 @@ int 	ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
     if (rc == EOK)
         goto release_target_index;
 
-    /*
-     * Check if there is needed to split index node
-     * (and recursively also parent nodes)
-     */
-    rc = ext4_dir_dx_split_index(parent, dx_blocks, dx_block);
-    if (rc != EOK)
-        goto release_target_index;
 
     /* Split entries to two blocks (includes sorting by hash value) */
     struct ext4_block new_block;
