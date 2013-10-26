@@ -354,7 +354,7 @@ int main(int argc, char **argv)
 
 	for (i = 0; i < rw_count; ++i) {
 
-		memset(wr_buff, i & 0xFF, rw_szie);
+		memset(wr_buff, i % 10 + '0', rw_szie);
 
 		r = ext4_fwrite(&f, wr_buff, rw_szie, &size);
 
@@ -380,7 +380,7 @@ int main(int argc, char **argv)
 	printf("ext4_read: %d * %d ..." , rw_count, rw_szie);
 
 	for (i = 0; i < rw_count; ++i) {
-		memset(wr_buff, i & 0xFF, rw_szie);
+		memset(wr_buff, i % 10 + '0', rw_szie);
 		r = ext4_fread(&f, rd_buff, rw_szie, &size);
 
 		if((r != EOK) || (size != rw_szie))
@@ -403,11 +403,12 @@ int main(int argc, char **argv)
 	if(sbstat)
 	    mp_stats();
 
-	if(bstat)
-	    block_stats();
 
 	if(cleanup_flag)
 	    cleanup();
+
+    if(bstat)
+        block_stats();
 
 	r = ext4_umount("/mp/");
 	printf("Test finish: OK\n");
