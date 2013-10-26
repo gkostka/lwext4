@@ -96,6 +96,7 @@ int ext4_block_get(struct	ext4_blockdev *bdev, struct	ext4_block *b,
     uint32_t pb_cnt;
     bool	 is_new;
     int 	 r;
+    uint32_t i;
     ext4_assert(bdev && b);
 
     if(!(bdev->flags & EXT4_BDEV_INITIALIZED))
@@ -106,6 +107,33 @@ int ext4_block_get(struct	ext4_blockdev *bdev, struct	ext4_block *b,
 
     b->dirty = 0;
     b->lb_id = lba;
+
+    /*If cache is full we have to flush it anyway :(*/
+    if(ext4_bcache_is_full(bdev->bc) && bdev->cache_flush_delay){
+        for (i = 0; i < bdev->bc->cnt; ++i) {
+            /*Check if buffer free was delayed.*/
+            if(!bdev->bc->free_delay[i])
+                continue;
+
+            /*Check reference counter.*/
+            if(bdev->bc->refctr[i])
+                continue;
+
+            /*Buffer free was delayed and have no reference. Flush it.*/
+            r = ext4_block_set_direct(bdev,
+                    bdev->bc->data + bdev->bc->itemsize * i,
+                    bdev->bc->lba[i]);
+            if(r != EOK)
+                return r;
+
+            /*No delayed anymore*/
+            bdev->bc->free_delay[i] = 0;
+
+            /*Reduce refered block count*/
+            bdev->bc->ref_blocks--;
+        }
+    }
+
 
     r = ext4_bcache_alloc(bdev->bc, b, &is_new);
     if(r != EOK)
@@ -141,7 +169,6 @@ int ext4_block_set(struct	ext4_blockdev *bdev, struct	ext4_block *b)
 {
     uint64_t pba;
     uint32_t pb_cnt;
-    uint32_t i;
     int r;
 
     ext4_assert(bdev && b);
@@ -159,35 +186,7 @@ int ext4_block_set(struct	ext4_blockdev *bdev, struct	ext4_block *b)
     if(bdev->cache_flush_delay){
 
         /*Free cahe block and mark as free delayed*/
-        ext4_bcache_free(bdev->bc, b, bdev->cache_flush_delay);
-
-        /*If cache is full we have to flush it anyway :(*/
-        if(ext4_bcache_is_full(bdev->bc)){
-            for (i = 0; i < bdev->bc->cnt; ++i) {
-                /*Check if buffer free was delayed.*/
-                if(!bdev->bc->free_delay[i])
-                    continue;
-
-                /*Check reference counter.*/
-                if(bdev->bc->refctr[i])
-                    continue;
-
-                /*Buffer free was delayed and have no reference. Flush it.*/
-                r = ext4_block_set_direct(bdev,
-                        bdev->bc->data + bdev->bc->itemsize * i,
-                        bdev->bc->lba[i]);
-                if(r != EOK)
-                    return r;
-
-                /*No delayed anymore*/
-                bdev->bc->free_delay[i] = 0;
-
-                /*Reduce refered block count*/
-                bdev->bc->ref_blocks--;
-            }
-        }
-
-        return EOK;
+        return ext4_bcache_free(bdev->bc, b, bdev->cache_flush_delay);
     }
 
     pba 	= (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
