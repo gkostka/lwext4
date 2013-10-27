@@ -73,6 +73,9 @@ static int filedev_open(struct ext4_blockdev *bdev)
 	if(!dev_file)
 		return EIO;
 
+	/*No buffering at file.*/
+	setbuf(dev_file, 0);
+
 	if(fseek(dev_file, 0, SEEK_END))
 		return EFAULT;
 

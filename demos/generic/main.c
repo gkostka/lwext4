@@ -208,7 +208,7 @@ static void block_stats(void)
 static clock_t get_ms(void)
 {
     struct timeval t;
-    gettimeofday(&t);
+    gettimeofday(&t, NULL);
     return (t.tv_sec * 1000) + (t.tv_usec / 1000);
 }
 
