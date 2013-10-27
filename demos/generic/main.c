@@ -477,7 +477,7 @@ static bool parse_opt(int argc, char **argv)
                 winpart = true;
                 break;
             default:
-                printf(usage);
+                printf("%s", usage);
                 return false;
 
         }
