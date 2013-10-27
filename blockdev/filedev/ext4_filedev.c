@@ -42,7 +42,7 @@ static const char *fname = "ext2";
 /**@brief	Image file descriptor.*/
 static FILE	*dev_file;
 
-#define DROP_LINUXCACHE_BUFFERS 0
+#define DROP_LINUXCACHE_BUFFERS 1
 
 
 /**********************BLOCKDEV INTERFACE**************************************/
@@ -103,7 +103,7 @@ static int filedev_bread(struct  ext4_blockdev *bdev, void *buf, uint64_t blk_id
 
 static void drop_cache(void)
 {
-#if defined(LINUX) && DROP_LINUXCACHE_BUFFERS
+#if defined(__linux__) && DROP_LINUXCACHE_BUFFERS
     int fd;
     char* data = "3";
 
