@@ -19,16 +19,16 @@ lwext4 supported/unsupported ext2/3/4 fs features
 =================================================
 FEATURE_INCOMPAT (unable to mount with unsupported feature):
  - COMPRESSION: no
- - FILETYPE: 	yes
- - RECOVER: 	no
- - JOURNAL_DEV:	no
- - META_BG:		no
- - EXTENTS: 	yes
- - 64BIT:		yes
- - MMP:			no
- - FLEX_BG 		no
- - EA_INODE:	no
- - DIRDATA:		no
+ - FILETYPE:    yes
+ - RECOVER:     no
+ - JOURNAL_DEV: no
+ - META_BG:     no
+ - EXTENTS:     yes
+ - 64BIT:       yes
+ - MMP:         no
+ - FLEX_BG:     no
+ - EA_INODE:    no
+ - DIRDATA:     no
  
 FEATURE_INCOMPAT (able to mount with unsupported feature):
  - DIR_PREALLOC:   no
@@ -166,8 +166,10 @@ lwext4 ports
 ============
 
 Blackfin BF518 EZKIT SD Card Demo: TBD
-ETM32F4-Dis SD Card Demo: TBD 
+STM32F4-Discovery SD Card Demo: TBD 
 
 
 lwext4 footprint
 ================                              
+
+TBD
