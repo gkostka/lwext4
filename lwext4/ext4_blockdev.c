@@ -53,7 +53,7 @@ int	ext4_block_init(struct	ext4_blockdev *bdev)
 
     /*Low level block init*/
     rc = bdev->open(bdev);
-    if(EOK != rc)
+    if(rc != EOK)
         return rc;
 
     bdev->flags |= EXT4_BDEV_INITIALIZED;
@@ -120,9 +120,9 @@ int ext4_block_get(struct	ext4_blockdev *bdev, struct	ext4_block *b,
                 continue;
 
             /*Buffer free was delayed and have no reference. Flush it.*/
-            r = ext4_block_set_direct(bdev,
+            r = ext4_blocks_set_direct(bdev,
                     bdev->bc->data + bdev->bc->itemsize * i,
-                    bdev->bc->lba[i]);
+                    bdev->bc->lba[i], 1);
             if(r != EOK)
                 return r;
 
@@ -207,8 +207,8 @@ int ext4_block_set(struct	ext4_blockdev *bdev, struct	ext4_block *b)
     return EOK;
 }
 
-int ext4_block_get_direct(struct	ext4_blockdev *bdev, void *buf,
-    uint64_t lba)
+int ext4_blocks_get_direct(struct	ext4_blockdev *bdev, void *buf,
+    uint64_t lba, uint32_t cnt)
 {
     uint64_t pba;
     uint32_t pb_cnt;
@@ -220,13 +220,13 @@ int ext4_block_get_direct(struct	ext4_blockdev *bdev, void *buf,
 
     bdev->bread_ctr++;
 
-    return bdev->bread(bdev, buf, pba, pb_cnt);
+    return bdev->bread(bdev, buf, pba, pb_cnt * cnt);
 }
 
 
 
-int ext4_block_set_direct(struct	ext4_blockdev *bdev, const void *buf,
-    uint64_t lba)
+int ext4_blocks_set_direct(struct	ext4_blockdev *bdev, const void *buf,
+    uint64_t lba, uint32_t cnt)
 {
     uint64_t pba;
     uint32_t pb_cnt;
@@ -238,7 +238,7 @@ int ext4_block_set_direct(struct	ext4_blockdev *bdev, const void *buf,
 
     bdev->bwrite_ctr++;
 
-    return bdev->bwrite(bdev, buf, pba, pb_cnt);
+    return bdev->bwrite(bdev, buf, pba, pb_cnt * cnt);
 }
 
 
@@ -424,9 +424,9 @@ int 	ext4_block_delay_cache_flush(struct	ext4_blockdev *bdev,
                 continue;
 
             /*Buffer free was delayed and have no reference. Flush it.*/
-            r = ext4_block_set_direct(bdev,
+            r = ext4_blocks_set_direct(bdev,
                     bdev->bc->data + bdev->bc->itemsize * i,
-                    bdev->bc->lba[i]);
+                    bdev->bc->lba[i], 1);
             if(r != EOK)
                 return r;
 

@@ -25,9 +25,13 @@ add_custom_target(size ALL DEPENDS lwext4 COMMAND ${SIZE} -B liblwext4.a)
 else()
 #Generic example target
 include_directories(blockdev/filedev)
+include_directories(blockdev/io_raw)
+
 aux_source_directory(blockdev/filedev FILEDEV_SRC)
+aux_source_directory(blockdev/io_raw IORAW_SRC)
 aux_source_directory(demos/generic GENERIC_SRC)
-add_executable(fileimage_demo ${GENERIC_SRC} ${FILEDEV_SRC})
+
+add_executable(fileimage_demo ${GENERIC_SRC} ${FILEDEV_SRC} ${IORAW_SRC})
 target_link_libraries(fileimage_demo lwext4)
 add_custom_target(size ALL DEPENDS lwext4 COMMAND size -B liblwext4.a)
 endif()

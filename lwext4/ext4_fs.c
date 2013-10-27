@@ -267,7 +267,7 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
         return EOK;
     }
     ext4_dprintf(EXT4_DEBUG_FS,
-        "\nSblock rev_level: \n%d\n", ext4_get32(&fs->sb, rev_level) );
+        "\nSblock rev_level: \n%d\n", (int)ext4_get32(&fs->sb, rev_level));
 
     ext4_dprintf(EXT4_DEBUG_FS,
         "\nSblock minor_rev_level: \n%d\n",

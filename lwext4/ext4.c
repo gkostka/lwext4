@@ -793,10 +793,13 @@ int	ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
     int		 r = EOK;
     uint32_t u;
     uint32_t fblock;
+    uint32_t fblock_start;
+    uint32_t fblock_cnt;
     struct ext4_block b;
     uint8_t	*u8_buf = buf;
     struct ext4_inode_ref ref;
     uint32_t sblock;
+    uint32_t sblock_end;
     uint32_t block_size;
 
     ext4_assert(f && f->mp);
@@ -824,9 +827,8 @@ int	ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
 
     block_size = ext4_sb_get_block_size(&f->mp->fs.sb);
     size = size > (f->fsize - f->fpos) ? (f->fsize - f->fpos) : size;
-
     sblock 	= (f->fpos) / block_size;
-
+    sblock_end = (f->fpos + size) / block_size;
     u = (f->fpos) % block_size;
 
 
@@ -858,25 +860,39 @@ int	ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
         sblock++;
     }
 
+    fblock_start = 0;
+    fblock_cnt = 0;
     while(size >= block_size){
+        while(sblock < sblock_end){
+            r = ext4_fs_get_inode_data_block_index(&ref, sblock, &fblock);
+            if(r != EOK)
+                goto Finish;
 
-        r = ext4_fs_get_inode_data_block_index(&ref, sblock, &fblock);
+            sblock++;
+
+            if(!fblock_start){
+                fblock_start = fblock;
+            }
+
+            if((fblock_start + fblock_cnt) != fblock)
+                break;
+
+            fblock_cnt++;
+        }
+
+        r = ext4_blocks_get_direct(f->mp->fs.bdev, u8_buf, fblock_start, fblock_cnt);
         if(r != EOK)
             goto Finish;
 
-        r = ext4_block_get_direct(f->mp->fs.bdev, u8_buf, fblock);
-        if(r != EOK)
-            goto Finish;
-
-
-        u8_buf  += block_size;
-        size    -= block_size;
-        f->fpos += block_size;
+        size    -= block_size * fblock_cnt;
+        u8_buf  += block_size * fblock_cnt;
+        f->fpos += block_size * fblock_cnt;
 
         if(rcnt)
-            *rcnt += block_size;
+            *rcnt += block_size * fblock_cnt;
 
-        sblock++;
+        fblock_start = fblock;
+        fblock_cnt = 1;
     }
 
     if(size){
@@ -915,8 +931,11 @@ int	ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
     uint8_t	*u8_buf = buf;
     struct ext4_inode_ref ref;
     uint32_t sblock;
+    uint32_t sblock_end;
     uint32_t file_blocks;
     uint32_t block_size;
+    uint32_t fblock_start;
+    uint32_t fblock_cnt;
 
     ext4_assert(f && f->mp);
 
@@ -942,6 +961,8 @@ int	ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
 
     block_size = ext4_sb_get_block_size(&f->mp->fs.sb);
 
+    sblock_end = (f->fpos + size) > f->fsize ? (f->fpos + size) : f->fsize;
+    sblock_end /= block_size;
     file_blocks = (f->fsize / block_size);
 
     if(f->fsize % block_size)
@@ -986,31 +1007,47 @@ int	ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
     if(r != EOK)
         goto Finish;
 
+    fblock_start = 0;
+    fblock_cnt = 0;
     while(size >= block_size){
 
-        if(sblock < file_blocks){
-            r = ext4_fs_get_inode_data_block_index(&ref, sblock, &fblock);
-            if(r != EOK)
+        while(sblock < sblock_end){
+            if(sblock < file_blocks){
+                r = ext4_fs_get_inode_data_block_index(&ref, sblock, &fblock);
+                if(r != EOK)
+                    break;
+            }
+            else {
+                r = ext4_fs_append_inode_block(&ref, &fblock, &sblock);
+                if(r != EOK)
+                    break;
+            }
+
+            sblock++;
+
+            if(!fblock_start){
+                fblock_start = fblock;
+            }
+
+            if((fblock_start + fblock_cnt) != fblock)
                 break;
-        }
-        else {
-            r = ext4_fs_append_inode_block(&ref, &fblock, &sblock);
-            if(r != EOK)
-                break;
+
+            fblock_cnt++;
         }
 
-        r = ext4_block_set_direct(f->mp->fs.bdev, u8_buf, fblock);
+        r = ext4_blocks_set_direct(f->mp->fs.bdev, u8_buf, fblock_start, fblock_cnt);
         if(r != EOK)
             break;
 
-        u8_buf  += block_size;
-        size    -= block_size;
-        f->fpos += block_size;
+        size    -= block_size * fblock_cnt;
+        u8_buf  += block_size * fblock_cnt;
+        f->fpos += block_size * fblock_cnt;
 
         if(wcnt)
-            *wcnt += block_size;
+            *wcnt += block_size * fblock_cnt;
 
-        sblock++;
+        fblock_start = fblock;
+        fblock_cnt = 1;
     }
 
     /*Stop delay cache flush mode*/

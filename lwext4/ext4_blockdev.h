@@ -164,8 +164,8 @@ int ext4_block_set(struct	ext4_blockdev *bdev, struct	ext4_block *b);
  * @param	buf output buffer
  * @param	lba logical block adderss
  * @return 	standard error code*/
-int ext4_block_get_direct(struct	ext4_blockdev *bdev, void *buf,
-    uint64_t lba);
+int ext4_blocks_get_direct(struct   ext4_blockdev *bdev, void *buf,
+    uint64_t lba, uint32_t cnt);
 
 
 /**@brief	Block write procedure (without cache)
@@ -173,8 +173,8 @@ int ext4_block_get_direct(struct	ext4_blockdev *bdev, void *buf,
  * @param	buf output buffer
  * @param	lba logical block address
  * @return 	standard error code*/
-int ext4_block_set_direct(struct	ext4_blockdev *bdev, const void *buf,
-    uint64_t lba);
+int ext4_blocks_set_direct(struct	ext4_blockdev *bdev, const void *buf,
+    uint64_t lba, uint32_t cnt);
 
 /**@brief	Write to block device (by direct adress).
  * @param	bdev block device descriptor
