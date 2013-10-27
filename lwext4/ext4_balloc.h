@@ -54,36 +54,36 @@
  * @param	bg_ref block group reference
  * @return	block id of the first datablock in block group*/
 uint32_t ext4_balloc_get_first_data_block_in_group(struct ext4_sblock *s,
-         struct ext4_block_group_ref * bg_ref);
+    struct ext4_block_group_ref * bg_ref);
 
 /**@brief	Free block from inode.
  * @param	inode_ref inode reference
  * @param	baddr block address
  * @return 	standard error code*/
-int 	ext4_balloc_free_block(struct ext4_inode_ref *inode_ref,
-        uint32_t baddr);
+int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref,
+    uint32_t baddr);
 
 /**@brief	Free blocks from inode.
  * @param	inode_ref inode reference
  * @param	baddr block address
  * @return 	standard error code*/
-int 	ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
-        uint32_t first, uint32_t count);
+int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
+    uint32_t first, uint32_t count);
 
 /**@brief	Allocate block procedure.
  * @param	inode_ref inode reference
  * @param	baddr allocated block address
  * @return 	standard error code*/
-int 	ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
-        uint32_t *baddr);
+int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
+    uint32_t *baddr);
 
 /**@brief	Try allocate selected block.
  * @param	inode_ref inode reference
  * @param	baddr block address to allocate
  * @param	free if baddr is not allocated
  * @return 	standard error code*/
-int 	ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
-        uint32_t baddr, bool *free);
+int ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
+    uint32_t baddr, bool *free);
 
 #endif /* EXT4_BALLOC_H_ */
 

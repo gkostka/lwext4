@@ -61,18 +61,21 @@ struct	ext4_blockdev  {
      * @param	blk_id	block id
      * @param	blk_cnt block count*/
     int			(*bread)(struct	ext4_blockdev *bdev, void *buf,
-                uint64_t blk_id, uint32_t blk_cnt);
+            uint64_t blk_id, uint32_t blk_cnt);
 
     /**@brief	Block write function.
      * @param	buf input buffer
      * @param	blk_id block id
      * @param	blk_cnt block count*/
     int			(*bwrite)(struct	ext4_blockdev *bdev, const void *buf,
-                uint64_t blk_id, uint32_t blk_cnt);
+            uint64_t blk_id, uint32_t blk_cnt);
 
     /**@brief	Close device function.
      * @param	bdev block device.*/
     int			(*close)(struct	ext4_blockdev *bdev);
+
+    /**@brief   Block cache.*/
+    struct  ext4_bcache *bc;
 
     /**@brief	Block size (bytes): physical*/
     uint32_t	ph_bsize;
@@ -92,19 +95,20 @@ struct	ext4_blockdev  {
     /**@brief	Flags of te block device.*/
     uint8_t		flags;
 
-    /**@brief	Block cache.*/
-    struct	ext4_bcache *bc;
-
+    /**@brief   Cache flush delay mode flag.*/
     uint8_t		cache_flush_delay;
 
+    /**@brief   Physical read counter*/
     uint32_t	bread_ctr;
+
+    /**@brief   Physical write counter*/
     uint32_t	bwrite_ctr;
 };
 
 
 /**@brief	Static initialization fo the block device.*/
 #define EXT4_BLOCKDEV_STATIC_INSTANCE(__name, __bsize, __bcnt, __open,  \
-                                            __bread, __bwrite, __close)	\
+        __bread, __bwrite, __close)	\
         static uint8_t	__name##_ph_bbuf[(__bsize)];                    \
         static struct	ext4_blockdev __name = {                        \
                 .open   = __open,                                       \

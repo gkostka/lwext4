@@ -48,52 +48,72 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/**@brief   TODO: ...*/
 uint8_t ext4_dir_dx_root_info_get_hash_version(
-        struct ext4_directory_dx_root_info *root_info);
-void 	ext4_dir_dx_root_info_set_hash_version(
-        struct ext4_directory_dx_root_info  *root_info, uint8_t v);
+    struct ext4_directory_dx_root_info *root_info);
 
+/**@brief   TODO: ...*/
+void ext4_dir_dx_root_info_set_hash_version(
+    struct ext4_directory_dx_root_info  *root_info, uint8_t v);
+
+/**@brief   TODO: ...*/
 uint8_t ext4_dir_dx_root_info_get_info_length(
-        struct ext4_directory_dx_root_info *root_info);
-void 	ext4_dir_dx_root_info_set_info_length(
-        struct ext4_directory_dx_root_info  *root_info, uint8_t len);
+    struct ext4_directory_dx_root_info *root_info);
 
+/**@brief   TODO: ...*/
+void ext4_dir_dx_root_info_set_info_length(
+    struct ext4_directory_dx_root_info  *root_info, uint8_t len);
+
+/**@brief   TODO: ...*/
 uint8_t ext4_dir_dx_root_info_get_indirect_levels(
-        struct ext4_directory_dx_root_info *root_info);
-void 	ext4_dir_dx_root_info_set_indirect_levels(
-        struct ext4_directory_dx_root_info *root_info, uint8_t lvl);
+    struct ext4_directory_dx_root_info *root_info);
 
+/**@brief   TODO: ...*/
+void ext4_dir_dx_root_info_set_indirect_levels(
+    struct ext4_directory_dx_root_info *root_info, uint8_t lvl);
 
-
+/**@brief   TODO: ...*/
 uint16_t ext4_dir_dx_countlimit_get_limit(
-        struct ext4_directory_dx_countlimit *climit);
-void 	ext4_dir_dx_countlimit_set_limit(
-        struct ext4_directory_dx_countlimit *climit, uint16_t limit);
+    struct ext4_directory_dx_countlimit *climit);
 
+/**@brief   TODO: ...*/
+void ext4_dir_dx_countlimit_set_limit(
+    struct ext4_directory_dx_countlimit *climit, uint16_t limit);
+
+/**@brief   TODO: ...*/
 uint16_t ext4_dir_dx_countlimit_get_count(
-        struct ext4_directory_dx_countlimit *climit);
-void 	ext4_dir_dx_countlimit_set_count(
-        struct ext4_directory_dx_countlimit *climit, uint16_t count);
+    struct ext4_directory_dx_countlimit *climit);
 
+/**@brief   TODO: ...*/
+void ext4_dir_dx_countlimit_set_count(
+    struct ext4_directory_dx_countlimit *climit, uint16_t count);
 
+/**@brief   TODO: ...*/
 uint32_t ext4_dir_dx_entry_get_hash(
-        struct ext4_directory_dx_entry *entry);
+    struct ext4_directory_dx_entry *entry);
+
+/**@brief   TODO: ...*/
 void ext4_dir_dx_entry_set_hash(
-        struct ext4_directory_dx_entry *entry, uint32_t hash);
+    struct ext4_directory_dx_entry *entry, uint32_t hash);
 
+/**@brief   TODO: ...*/
 uint32_t ext4_dir_dx_entry_get_block(
-        struct ext4_directory_dx_entry *entry);
-void 	ext4_dir_dx_entry_set_block(
-        struct ext4_directory_dx_entry *entry, uint32_t block);
+    struct ext4_directory_dx_entry *entry);
 
+/**@brief   TODO: ...*/
+void ext4_dir_dx_entry_set_block(
+    struct ext4_directory_dx_entry *entry, uint32_t block);
 
-int 	ext4_dir_dx_init(struct ext4_inode_ref *dir);
+/**@brief   TODO: ...*/
+int ext4_dir_dx_init(struct ext4_inode_ref *dir);
 
-int 	ext4_dir_dx_find_entry(struct ext4_directory_search_result * result,
-        struct ext4_inode_ref *inode_ref, size_t name_len, const char *name);
+/**@brief   TODO: ...*/
+int ext4_dir_dx_find_entry(struct ext4_directory_search_result * result,
+    struct ext4_inode_ref *inode_ref, size_t name_len, const char *name);
 
-int 	ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
-        struct ext4_inode_ref *child, const char *name);
+/**@brief   TODO: ...*/
+int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
+    struct ext4_inode_ref *child, const char *name);
 
 #endif /* EXT4_DIR_IDX_H_ */
 

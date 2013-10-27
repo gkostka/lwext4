@@ -48,15 +48,9 @@ int	ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt,
 {
     ext4_assert(bc && cnt && itemsize);
 
-    bc->lru_ctr= 0;
+    memset(bc, 0, sizeof(struct ext4_bcache));
 
-    bc->refctr	 	= 0;
-    bc->lru_id 		= 0;
-    bc->free_delay  = 0;
-    bc->lba	  	 	= 0;
-    bc->data	 	= 0;
-
-    bc->refctr   = malloc(cnt * sizeof(uint32_t));
+    bc->refctr = malloc(cnt * sizeof(uint32_t));
     if(!bc->refctr)
         goto error;
 
@@ -68,11 +62,11 @@ int	ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt,
     if(!bc->free_delay)
         goto error;
 
-    bc->lba 	 = malloc(cnt * sizeof(uint64_t));
+    bc->lba = malloc(cnt * sizeof(uint64_t));
     if(!bc->lba)
         goto error;
 
-    bc->data	 = malloc(cnt * itemsize);
+    bc->data = malloc(cnt * itemsize);
     if(!bc->data)
         goto error;
 
@@ -81,7 +75,7 @@ int	ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt,
     memset(bc->free_delay, 0, cnt * sizeof(uint8_t));
     memset(bc->lba, 0, cnt * sizeof(uint64_t));
 
-    bc->cnt      = cnt;
+    bc->cnt = cnt;
     bc->itemsize = itemsize;
     bc->ref_blocks = 0;
     bc->max_ref_blocks = 0;
@@ -105,6 +99,8 @@ int	ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt,
     if(bc->data)
         free(bc->data);
 
+    memset(bc, 0, sizeof(struct ext4_bcache));
+
     return ENOMEM;
 }
 
@@ -125,13 +121,7 @@ int ext4_bcache_fini_dynamic(struct	ext4_bcache *bc)
     if(bc->data)
         free(bc->data);
 
-    bc->lru_ctr= 0;
-
-    bc->refctr	 	= 0;
-    bc->lru_id 		= 0;
-    bc->free_delay  = 0;
-    bc->lba	  	 	= 0;
-    bc->data	 	= 0;
+    memset(bc, 0, sizeof(struct ext4_bcache));
 
     return EOK;
 }
@@ -150,7 +140,7 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
     }
 
     uint32_t cache_id = bc->cnt;
-    uint32_t alloc_id;
+    uint32_t alloc_id = 0;
 
     *is_new = false;
 

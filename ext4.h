@@ -154,7 +154,7 @@ typedef struct  {
 
 /********************************MOUNT OPERATIONS****************************/
 
-/**@brief	Register a block device to a name.
+/**@brief   Register a block device to a name.
  *          @warning Block device has to be filled by
  *          @ref EXT4_BLOCKDEV_STATIC_INSTANCE. Block cache may be created
  *          @ref EXT4_BCACHE_STATIC_INSTANCE.
@@ -166,7 +166,7 @@ typedef struct  {
 int	ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
         const char *dev_name);
 
-/**@brief	Mount a block device with EXT4 partition to the mountpoint.
+/**@brief   Mount a block device with EXT4 partition to the mountpoint.
  * @param	dev_name block device name (@ref ext4_device_register)
  * @param	mount_point pount point, for example
  *          -   /
@@ -176,7 +176,7 @@ int	ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
  * @return standard error code */
 int	ext4_mount(const char * dev_name,  char *mount_point);
 
-/**@brief	Umount operation.
+/**@brief   Umount operation.
  * @param	mount_point mount name
  * @return  standard error code */
 int	ext4_umount(char *mount_point);
@@ -206,12 +206,12 @@ int ext4_mount_point_stats(const char *mount_point,
 
 /********************************FILE OPERATIONS*****************************/
 
-/**@brief	Remove file by path.
+/**@brief   Remove file by path.
  * @param   path path to file
  * @return  standard error code */
 int ext4_fremove(const char *path);
 
-/**@brief	File open function.
+/**@brief   File open function.
  * @param	filename, (has to start from mountpoint)
  * 			/my_partition/my_file
  * @param	flags open file flags
@@ -232,7 +232,7 @@ int ext4_fremove(const char *path);
  * @return	standard error code*/
 int ext4_fopen (ext4_file *f, const char *path, const char *flags);
 
-/**@brief	File close function.
+/**@brief   File close function.
  * @param   f file handle
  * @return  standard error code*/
 int ext4_fclose(ext4_file *f);
@@ -245,7 +245,7 @@ int ext4_fclose(ext4_file *f);
  * @return  standard error code*/
 int ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
 
-/**@brief	Write data to file.
+/**@brief   Write data to file.
  * @param   f file handle
  * @param   buf data to write
  * @param   size write length
@@ -253,7 +253,7 @@ int ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
  * @return  standard error code*/
 int ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt);
 
-/**@brief	File seek operation.
+/**@brief   File seek operation.
  * @param   f file handle
  * @param   offset offset to seek
  * @param   origin seek type:
@@ -263,19 +263,19 @@ int ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt);
  * @return  standard error code*/
 int ext4_fseek (ext4_file *f, uint64_t offset, uint32_t origin);
 
-/**@brief	Get file position.
+/**@brief   Get file position.
  * @param   f file handle
  * @return  actual file position */
 uint64_t ext4_ftell (ext4_file *f);
 
-/**@brief	Get file size.
+/**@brief   Get file size.
  * @param   f file handle
  * @return  file size */
 uint64_t ext4_fsize (ext4_file *f);
 
 /*********************************DIRECTORY OPERATION***********************/
 
-/**@brief	Recursive directory remove.
+/**@brief   Recursive directory remove.
  * @param   path directory path to remove
  * @return  standard error code*/
 int ext4_dir_rm(const char *path);
@@ -285,19 +285,19 @@ int ext4_dir_rm(const char *path);
  * @return  standard error code*/
 int ext4_dir_mk(const char *path);
 
-/**@brief	Directory open.
+/**@brief   Directory open.
  * @param   d directory handle
  * @param   path directory path
  * @return  standard error code*/
 int ext4_dir_open (ext4_dir *d, const char *path);
 
-/**@brief	Directory close.
+/**@brief   Directory close.
  * @param   d directory handle
  * @return  standard error code*/
 int ext4_dir_close(ext4_dir *d);
 
 
-/**@brief	Return directory entry by id.
+/**@brief   Return directory entry by id.
  * @param   d directory handle
  * @param   id entry id
  * @return  directory entry id (NULL id no entry)*/

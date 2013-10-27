@@ -95,7 +95,7 @@ static inline uint32_t ext4_bg_get_free_blocks_count(struct ext4_bgroup *bg,
     return v;
 }
 
-static inline void 	 ext4_bg_set_free_blocks_count(struct ext4_bgroup *bg,
+static inline void ext4_bg_set_free_blocks_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
     bg->free_blocks_count_lo = to_le16((cnt << 16) >> 16);
@@ -114,7 +114,7 @@ static inline uint32_t ext4_bg_get_free_inodes_count(struct ext4_bgroup *bg,
     return v;
 }
 
-static inline void 	 ext4_bg_set_free_inodes_count(struct ext4_bgroup *bg,
+static inline void ext4_bg_set_free_inodes_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
     bg->free_inodes_count_lo = to_le16((cnt << 16) >> 16);
@@ -134,7 +134,7 @@ static inline uint32_t ext4_bg_get_used_dirs_count(struct ext4_bgroup *bg,
     return v;
 }
 
-static inline void 	 ext4_bg_set_used_dirs_count(struct ext4_bgroup *bg,
+static inline void ext4_bg_set_used_dirs_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
     bg->used_dirs_count_lo = to_le16((cnt << 16) >> 16);
@@ -155,7 +155,7 @@ static inline uint32_t ext4_bg_get_itable_unused(struct ext4_bgroup *bg,
     return v;
 }
 
-static inline void 	 ext4_bg_set_itable_unused(struct ext4_bgroup *bg,
+static inline void ext4_bg_set_itable_unused(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
     bg->itable_unused_lo = to_le16((cnt << 16) >> 16);
@@ -164,25 +164,25 @@ static inline void 	 ext4_bg_set_itable_unused(struct ext4_bgroup *bg,
 }
 
 
-static inline void 	 ext4_bg_set_checksum(struct ext4_bgroup *bg,
+static inline void ext4_bg_set_checksum(struct ext4_bgroup *bg,
     uint16_t crc)
 {
     bg->checksum = to_le16(crc);
 }
 
-static inline bool 	 ext4_bg_has_flag(struct ext4_bgroup *bg, uint32_t f)
+static inline bool ext4_bg_has_flag(struct ext4_bgroup *bg, uint32_t f)
 {
     return to_le16(bg->flags) & f;
 }
 
-static inline void 	 ext4_bg_set_flag(struct ext4_bgroup *bg, uint32_t f)
+static inline void ext4_bg_set_flag(struct ext4_bgroup *bg, uint32_t f)
 {
     uint16_t flags = to_le16(bg->flags);
     flags |= f;
     bg->flags = to_le16(flags);
 }
 
-static inline void 	 ext4_bg_clear_flag(struct ext4_bgroup *bg, uint32_t f)
+static inline void ext4_bg_clear_flag(struct ext4_bgroup *bg, uint32_t f)
 {
     uint16_t flags = to_le16(bg->flags);
     flags &= ~f;
