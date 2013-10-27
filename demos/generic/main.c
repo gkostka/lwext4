@@ -200,6 +200,11 @@ static void block_stats(void)
     printf("**********************************************\n");
 }
 
+static clock_t get_ms(void)
+{
+    return (clock() * 1000) / (CLOCKS_PER_SEC);
+}
+
 static bool dir_test(int len)
 {
     ext4_file f;
@@ -209,7 +214,7 @@ static bool dir_test(int len)
     clock_t diff;
     clock_t stop;
     clock_t start;
-    start = clock() / (CLOCKS_PER_SEC / 1000);
+    start = get_ms();
 
     printf("Directory create: /mp/dir1\n");
     r = ext4_dir_mk("/mp/dir1");
@@ -229,7 +234,7 @@ static bool dir_test(int len)
         }
     }
 
-    stop = clock() / (CLOCKS_PER_SEC / 1000);
+    stop =  get_ms();
     diff = stop - start;
     dir_ls("/mp/dir1");
     printf("dir_test time: %d ms\n", (int)diff);
@@ -256,7 +261,7 @@ static bool file_test(void)
 
     printf("ext4_fopen: test1\n");
 
-    start = clock() / (CLOCKS_PER_SEC / 1000);
+    start = get_ms();
     r = ext4_fopen(&f, "/mp/test1", "wb");
     if(r != EOK){
         printf("ext4_fopen ERROR = %d\n", r);
@@ -280,7 +285,7 @@ static bool file_test(void)
     }
 
     printf("OK\n");
-    stop = clock() / (CLOCKS_PER_SEC / 1000);
+    stop = get_ms();
     diff = stop - start;
     size_bytes = rw_szie * rw_count;
     size_bytes = (size_bytes * 1000) / 1024;
@@ -291,7 +296,7 @@ static bool file_test(void)
     printf("ext4_fopen: test1\n");
 
 
-    start = clock() / (CLOCKS_PER_SEC / 1000);
+    start = get_ms();
     r = ext4_fopen(&f, "/mp/test1", "r+");
     if(r != EOK){
         printf("ext4_fopen ERROR = %d\n", r);
@@ -316,7 +321,7 @@ static bool file_test(void)
         return false;
     }
     printf("OK\n");
-    stop = clock() / (CLOCKS_PER_SEC / 1000);
+    stop = get_ms();
     diff = stop - start;
     size_bytes = rw_szie * rw_count;
     size_bytes = (size_bytes * 1000) / 1024;
@@ -337,17 +342,17 @@ static void cleanup(void)
     ext4_fremove("/mp/hello.txt");
 
     printf("cleanup: remove /mp/test1\n");
-    start = clock() / (CLOCKS_PER_SEC / 1000);
+    start = get_ms();
     ext4_fremove("/mp/test1");
-    stop = clock() / (CLOCKS_PER_SEC / 1000);
+    stop = get_ms();
     diff = stop - start;
     printf("cleanup: time: %d ms\n", (int)diff);
 
 
     printf("cleanup: remove /mp/test1\n");
-    start = clock() / (CLOCKS_PER_SEC / 1000);
+    start =get_ms();
     ext4_dir_rm("/mp/dir1");
-    stop = clock() / (CLOCKS_PER_SEC / 1000);
+    stop = get_ms();
     diff = stop - start;
     printf("cleanup: time: %d ms\n", (int)diff);
 }
