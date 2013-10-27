@@ -71,7 +71,7 @@ EXT4_BLOCKDEV_STATIC_INSTANCE(
 );
 
 /******************************************************************************/
-EXT4_BCACHE_STATIC_INSTANCE(__cache, 8, 1024);
+EXT4_BCACHE_STATIC_INSTANCE(__cache, CONFIG_BLOCK_DEV_CACHE_SIZE, 1024);
 
 /******************************************************************************/
 static int io_raw_open(struct ext4_blockdev *bdev)

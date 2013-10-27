@@ -363,7 +363,7 @@ int			ext4_mount(const char * dev_name,  char *mount_point)
         mp->cache_dynamic = 1;
         bc = malloc(sizeof(struct ext4_bcache));
 
-        r = ext4_bcache_init_dynamic(bc, 8, bsize);
+        r = ext4_bcache_init_dynamic(bc, CONFIG_BLOCK_DEV_CACHE_SIZE, bsize);
         if(r != EOK){
             free(bc);
             ext4_block_fini(bd);
