@@ -82,19 +82,19 @@ static struct ext4_blockdev *bd;
 /**@brief	Block cache handle.*/
 static struct ext4_bcache   *bc;
 
-static const char *usage = "									\n\
-Welcome in ext4 generic demo.									\n\
-Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)	\n\
-Usage:															\n\
-    --i   - input file             (default = ext2)				\n\
-    --rws - single R/W size        (default = 1024)				\n\
-    --rwc - R/W count              (default = 10000) 			\n\
-    --cache  - 0 static, 1 dynamic  (default = 1)                \n\
-    --dirs   - directory test count (default = 0)                \n\
-    --clean  - clean up after test                               \n\
-    --bstat  - block device stats                                \n\
-    --sbstat - superblock stats                                  \n\
-    --wpart  - windows partition mode                            \n\
+static const char *usage = "                                    \n\
+Welcome in ext4 generic demo.                                   \n\
+Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)  \n\
+Usage:                                                          \n\
+    --i   - input file              (default = ext2)            \n\
+    --rws - single R/W size         (default = 1024 * 1024)     \n\
+    --rwc - R/W count               (default = 10)              \n\
+    --cache  - 0 static, 1 dynamic  (default = 1)               \n\
+    --dirs   - directory test count (default = 0)               \n\
+    --clean  - clean up after test                              \n\
+    --bstat  - block device stats                               \n\
+    --sbstat - superblock stats                                 \n\
+    --wpart  - windows partition mode                           \n\
 \n";
 
 static char* entry_to_str(uint8_t type)
