@@ -133,8 +133,8 @@ static void dir_ls(const char *path)
 	while(de){
 		memcpy(sss, de->name, de->name_length);
 		sss[de->name_length] = 0;
-		printf(entry_to_str(de->inode_type));
-		printf(sss);
+		printf("%s", entry_to_str(de->inode_type));
+		printf("%s", sss);
 		printf("\n");
 		de = ext4_dir_entry_get(&d, j++);
 	}
