@@ -49,8 +49,10 @@ extern "C" {
 #include <ext4_config.h>
 #include <ext4_types.h>
 
-
+/**@brief   TODO: ...*/
 int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir);
+
+/**@brief   TODO: ...*/
 int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir);
 
 #ifdef __cplusplus

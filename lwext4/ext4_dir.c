@@ -52,8 +52,8 @@ uint32_t ext4_dir_entry_ll_get_inode(struct ext4_directory_entry_ll *de)
     return to_le32(de->inode);
 }
 
-void 	 ext4_dir_entry_ll_set_inode(struct ext4_directory_entry_ll *de,
-        uint32_t inode)
+void ext4_dir_entry_ll_set_inode(struct ext4_directory_entry_ll *de,
+    uint32_t inode)
 {
     de->inode = to_le32(inode);
 }
@@ -64,15 +64,15 @@ uint16_t ext4_dir_entry_ll_get_entry_length(struct ext4_directory_entry_ll *de)
     return to_le16(de->entry_length);
 }
 
-void 	 ext4_dir_entry_ll_set_entry_length(struct ext4_directory_entry_ll *de,
-        uint16_t len)
+void ext4_dir_entry_ll_set_entry_length(struct ext4_directory_entry_ll *de,
+    uint16_t len)
 {
     de->entry_length = to_le16(len);
 }
 
 
 uint16_t ext4_dir_entry_ll_get_name_length(struct ext4_sblock *sb,
-        struct ext4_directory_entry_ll *de)
+    struct ext4_directory_entry_ll *de)
 {
     uint16_t v = de->name_length;
 
@@ -82,8 +82,8 @@ uint16_t ext4_dir_entry_ll_get_name_length(struct ext4_sblock *sb,
 
     return v;
 }
-void 	ext4_dir_entry_ll_set_name_length(struct ext4_sblock *sb,
-        struct ext4_directory_entry_ll *de, uint16_t len)
+void ext4_dir_entry_ll_set_name_length(struct ext4_sblock *sb,
+    struct ext4_directory_entry_ll *de, uint16_t len)
 {
     de->name_length = (len << 8) >> 8;
 
@@ -95,7 +95,7 @@ void 	ext4_dir_entry_ll_set_name_length(struct ext4_sblock *sb,
 
 
 uint8_t ext4_dir_entry_ll_get_inode_type(struct ext4_sblock *sb,
-        struct ext4_directory_entry_ll *de)
+    struct ext4_directory_entry_ll *de)
 {
     if ((ext4_get32(sb, rev_level) > 0) ||
             (ext4_get32(sb, minor_rev_level) >= 5))
@@ -105,8 +105,8 @@ uint8_t ext4_dir_entry_ll_get_inode_type(struct ext4_sblock *sb,
 }
 
 
-void 	ext4_dir_entry_ll_set_inode_type(struct ext4_sblock *sb,
-        struct ext4_directory_entry_ll *de, uint8_t type)
+void ext4_dir_entry_ll_set_inode_type(struct ext4_sblock *sb,
+    struct ext4_directory_entry_ll *de, uint8_t type)
 {
     if ((ext4_get32(sb, rev_level) > 0) ||
             (ext4_get32(sb, minor_rev_level) >= 5))
@@ -216,7 +216,7 @@ static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
 
 
 int ext4_dir_iterator_init(struct ext4_directory_iterator *it,
-        struct ext4_inode_ref *inode_ref, uint64_t pos)
+    struct ext4_inode_ref *inode_ref, uint64_t pos)
 {
     it->inode_ref = inode_ref;
     it->current = 0;
@@ -237,7 +237,7 @@ int ext4_dir_iterator_next(struct ext4_directory_iterator *it)
 
         if(!it->current)
             break;
-		/*Skip NULL referenced entry*/
+        /*Skip NULL referenced entry*/
         if(it->current->inode != 0)
             break;
     }
@@ -281,7 +281,7 @@ void ext4_dir_write_entry(struct ext4_sblock *sb,
 }
 
 int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
-        uint32_t name_len, struct ext4_inode_ref *child)
+    uint32_t name_len, struct ext4_inode_ref *child)
 {
     struct ext4_fs *fs = parent->fs;
 
@@ -361,7 +361,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
     memset(new_block.data, 0, block_size);
     struct ext4_directory_entry_ll *block_entry = (void *)new_block.data;
     ext4_dir_write_entry(&fs->sb, block_entry, block_size,
-            child, name, name_len);
+        child, name, name_len);
 
     /* Save new block */
     new_block.dirty = true;
@@ -371,7 +371,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 }
 
 int ext4_dir_find_entry(struct ext4_directory_search_result *result,
-        struct ext4_inode_ref *parent, const char *name, uint32_t name_len)
+    struct ext4_inode_ref *parent, const char *name, uint32_t name_len)
 {
     struct ext4_sblock *sb = &parent->fs->sb;
 
@@ -492,7 +492,7 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
         uint16_t del_entry_length =
                 ext4_dir_entry_ll_get_entry_length(result.dentry);
         ext4_dir_entry_ll_set_entry_length(tmp_dentry,
-                tmp_dentry_length + del_entry_length);
+            tmp_dentry_length + del_entry_length);
     }
 
     result.block.dirty = true;
@@ -553,10 +553,9 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
                 struct ext4_directory_entry_ll *new_entry =
                         (void *) dentry + used_space;
                 ext4_dir_write_entry(sb, new_entry,
-                        free_space, child, name, name_len);
+                    free_space, child, name, name_len);
 
                 target_block->dirty = true;
-
                 return EOK;
             }
         }
@@ -571,8 +570,8 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 
 
 int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
-        size_t name_len, const char *name,
-        struct ext4_directory_entry_ll **res_entry)
+    size_t name_len, const char *name,
+    struct ext4_directory_entry_ll **res_entry)
 {
     /* Start from the first entry in block */
     struct ext4_directory_entry_ll *dentry =
@@ -609,7 +608,7 @@ int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
 
         /* Jump to next entry */
         dentry = (struct ext4_directory_entry_ll *)
-                ((uint8_t *) dentry + dentry_len);
+                        ((uint8_t *) dentry + dentry_len);
     }
 
     /* Entry not found */

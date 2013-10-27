@@ -131,91 +131,74 @@ static void ext4_fs_debug_features_incomp(uint32_t features_incompatible)
 
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_COMPRESSION){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_COMPRESSION\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "COMPRESSION\n");
     }
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_FILETYPE){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_FILETYPE\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "FILETYPE\n");
     }
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_RECOVER){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_RECOVER\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "RECOVER\n");
     }
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_JOURNAL_DEV){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_JOURNAL_DEV\n");
+        ext4_dprintf(EXT4_DEBUG_FS,"JOURNAL_DEV\n");
     }
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_META_BG){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_META_BG\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "META_BG\n");
     }
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_EXTENTS){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_EXTENTS\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "EXTENTS\n");
     }
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_64BIT){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_64BIT\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "64BIT\n");
     }
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_MMP){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_MMP\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "MMP\n");
     }
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_FLEX_BG){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_FLEX_BG\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "FLEX_BG\n");
     }
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_EA_INODE){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_EA_INODE\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "EA_INODE\n");
     }
     if(features_incompatible &
             EXT4_FEATURE_INCOMPAT_DIRDATA){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_INCOMPAT_DIRDATA\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "DIRDATA\n");
     }
 }
 static void ext4_fs_debug_features_comp(uint32_t features_compatible)
 {
     if(features_compatible &
             EXT4_FEATURE_COMPAT_DIR_PREALLOC){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_COMPAT_DIR_PREALLOC\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "DIR_PREALLOC\n");
     }
     if(features_compatible &
             EXT4_FEATURE_COMPAT_IMAGIC_INODES){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_COMPAT_IMAGIC_INODES\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "IMAGIC_INODES\n");
     }
     if(features_compatible &
             EXT4_FEATURE_COMPAT_HAS_JOURNAL){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_COMPAT_HAS_JOURNAL\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "HAS_JOURNAL\n");
     }
     if(features_compatible &
             EXT4_FEATURE_COMPAT_EXT_ATTR){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_COMPAT_EXT_ATTR\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "EXT_ATTR\n");
     }
     if(features_compatible &
             EXT4_FEATURE_COMPAT_RESIZE_INODE){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_COMPAT_RESIZE_INODE\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "RESIZE_INODE\n");
     }
     if(features_compatible &
             EXT4_FEATURE_COMPAT_DIR_INDEX){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_COMPAT_DIR_INDEX\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "DIR_INDEX\n");
     }
 }
 
@@ -223,38 +206,31 @@ static void ext4_fs_debug_features_ro(uint32_t features_ro)
 {
     if(features_ro &
             EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "SPARSE_SUPER\n");
     }
     if(features_ro &
             EXT4_FEATURE_RO_COMPAT_LARGE_FILE){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_RO_COMPAT_LARGE_FILE\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "LARGE_FILE\n");
     }
     if(features_ro &
             EXT4_FEATURE_RO_COMPAT_BTREE_DIR){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_RO_COMPAT_BTREE_DIR\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "BTREE_DIR\n");
     }
     if(features_ro &
             EXT4_FEATURE_RO_COMPAT_HUGE_FILE){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_RO_COMPAT_HUGE_FILE\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "HUGE_FILE\n");
     }
     if(features_ro &
             EXT4_FEATURE_RO_COMPAT_GDT_CSUM){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_RO_COMPAT_GDT_CSUM\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "GDT_CSUM\n");
     }
     if(features_ro &
             EXT4_FEATURE_RO_COMPAT_DIR_NLINK){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_RO_COMPAT_DIR_NLINK\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "DIR_NLINK\n");
     }
     if(features_ro &
             EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE){
-        ext4_dprintf(EXT4_DEBUG_FS,
-                "EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE\n");
+        ext4_dprintf(EXT4_DEBUG_FS, "EXTRA_ISIZE\n");
     }
 }
 
@@ -307,7 +283,6 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
         *read_only = true;
         return EOK;
     }
-
     *read_only = false;
 
     return EOK;
