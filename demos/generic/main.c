@@ -349,7 +349,7 @@ static void cleanup(void)
     printf("cleanup: time: %d ms\n", (int)diff);
 
 
-    printf("cleanup: remove /mp/test1\n");
+    printf("cleanup: remove /mp/dir1\n");
     start =get_ms();
     ext4_dir_rm("/mp/dir1");
     stop = get_ms();
