@@ -33,10 +33,15 @@
 #include <getopt.h>
 #include <stdbool.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <ext4_filedev.h>
 #include <io_raw.h>
 #include <ext4.h>
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 /**@brief   Input stream name.*/
 char input_name[128] = "ext2";
@@ -202,7 +207,9 @@ static void block_stats(void)
 
 static clock_t get_ms(void)
 {
-    return (clock() * 1000) / (CLOCKS_PER_SEC);
+    struct timeval t;
+    gettimeofday(&t);
+    return (t.tv_sec * 1000) + (t.tv_usec / 1000);
 }
 
 static bool dir_test(int len)
