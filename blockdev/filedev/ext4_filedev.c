@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <fcntl.h>
 
 /**@brief	Default filename.*/
 static const char *fname = "ext2";
@@ -40,6 +41,8 @@ static const char *fname = "ext2";
 
 /**@brief	Image file descriptor.*/
 static FILE	*dev_file;
+
+#define DROP_LINUXCACHE_BUFFERS 0
 
 
 /**********************BLOCKDEV INTERFACE**************************************/
@@ -98,18 +101,32 @@ static int filedev_bread(struct  ext4_blockdev *bdev, void *buf, uint64_t blk_id
 	return EOK;
 }
 
-/******************************************************************************/
-static int filedev_bwrite(struct ext4_blockdev *bdev, const void *buf,
-		uint64_t blk_id, uint32_t blk_cnt)
+static void drop_cache(void)
 {
-	if(fseek(dev_file, blk_id * bdev->ph_bsize, SEEK_SET))
-		return EIO;
+#if defined(LINUX) && DROP_LINUXCACHE_BUFFERS
+    int fd;
+    char* data = "3";
 
-	if(!fwrite(buf, bdev->ph_bsize * blk_cnt, 1, dev_file))
-		return EIO;
-	return EOK;
+    sync();
+    fd = open("/proc/sys/vm/drop_caches", O_WRONLY);
+    write(fd, data, sizeof(char));
+    close(fd);
+#endif
 }
 
+/******************************************************************************/
+static int filedev_bwrite(struct ext4_blockdev *bdev, const void *buf,
+    uint64_t blk_id, uint32_t blk_cnt)
+{
+    if(fseek(dev_file, blk_id * bdev->ph_bsize, SEEK_SET))
+        return EIO;
+
+    if(!fwrite(buf, bdev->ph_bsize * blk_cnt, 1, dev_file))
+        return EIO;
+
+    drop_cache();
+    return EOK;
+}
 /******************************************************************************/
 static int filedev_close(struct  ext4_blockdev *bdev)
 {

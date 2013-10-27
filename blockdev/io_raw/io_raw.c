@@ -89,7 +89,7 @@ static int io_raw_open(struct ext4_blockdev *bdev)
             FILE_SHARE_WRITE | FILE_SHARE_READ,
             NULL,
             OPEN_EXISTING,
-            0,
+            FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH,
             NULL);
 
     if (dev_file == INVALID_HANDLE_VALUE){
