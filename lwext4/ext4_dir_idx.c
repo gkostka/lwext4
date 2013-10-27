@@ -89,7 +89,7 @@ uint8_t ext4_dir_dx_root_info_get_indirect_levels(
     return root_info->indirect_levels;
 }
 
-void 	ext4_dir_dx_root_info_set_indirect_levels(
+void ext4_dir_dx_root_info_set_indirect_levels(
     struct ext4_directory_dx_root_info *root_info, uint8_t lvl)
 {
     root_info->indirect_levels = lvl;
@@ -430,7 +430,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 
 
 
-int 	ext4_dir_dx_find_entry(struct ext4_directory_search_result * result,
+int ext4_dir_dx_find_entry(struct ext4_directory_search_result * result,
     struct ext4_inode_ref *inode_ref, size_t name_len, const char *name)
 {
     /* Load direct block 0 (index root) */
@@ -799,7 +799,7 @@ static int ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
         if (rc != EOK)
             return rc;
 
-        struct ext4_directory_dx_node  *new_node 	= (void *)new_block.data;
+        struct ext4_directory_dx_node  *new_node = (void *)new_block.data;
         struct ext4_directory_dx_entry *new_entries = new_node->entries;
 
         memset(&new_node->fake, 0, sizeof(struct ext4_fake_directory_entry));

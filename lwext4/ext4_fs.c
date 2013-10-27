@@ -384,8 +384,8 @@ static int ext4_fs_init_inode_table(struct ext4_block_group_ref *bg_ref)
 {
     struct ext4_sblock *sb = &bg_ref->fs->sb;
 
-    uint32_t inode_size 	  = ext4_get32(sb, inode_size);
-    uint32_t block_size 	  = ext4_sb_get_block_size(sb);
+    uint32_t inode_size = ext4_get32(sb, inode_size);
+    uint32_t block_size = ext4_sb_get_block_size(sb);
     uint32_t inodes_per_block = block_size / inode_size;
     uint32_t inodes_in_group  = ext4_inodes_in_group_cnt(sb, bg_ref->index);
     uint32_t table_blocks = inodes_in_group / inodes_per_block;
@@ -670,10 +670,10 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
     ext4_inode_set_uid(inode, 0);
     ext4_inode_set_gid(inode, 0);
     ext4_inode_set_size(inode, 0);
-    ext4_inode_set_access_time(inode, 		0);
+    ext4_inode_set_access_time(inode, 0);
     ext4_inode_set_change_inode_time(inode, 0);
     ext4_inode_set_modification_time(inode, 0);
-    ext4_inode_set_deletion_time(inode, 	0);
+    ext4_inode_set_deletion_time(inode, 0);
     ext4_inode_set_blocks_count(&fs->sb, inode, 0);
     ext4_inode_set_flags(inode, 0);
     ext4_inode_set_generation(inode, 0);
@@ -737,7 +737,7 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
     uint32_t block_size = ext4_sb_get_block_size(&fs->sb);
     uint32_t count = block_size / sizeof(uint32_t);
 
-    struct	ext4_block  block;
+    struct ext4_block  block;
 
     /* 2) Double indirect */
     fblock = ext4_inode_get_indirect_block(inode_ref->inode, 1);
@@ -768,7 +768,7 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
     }
 
     /* 3) Tripple indirect */
-    struct	ext4_block  subblock;
+    struct ext4_block  subblock;
     fblock = ext4_inode_get_indirect_block(inode_ref->inode, 2);
     if (fblock != 0) {
         int rc = ext4_block_get(fs->bdev, &block, fblock);
@@ -971,7 +971,7 @@ int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
         return EOK;
     }
 
-    struct	ext4_block block;
+    struct ext4_block block;
 
     /*
      * Navigate through other levels, until we find the block number
@@ -1065,8 +1065,8 @@ int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 
     uint32_t new_block_addr;
 
-    struct	ext4_block block;
-    struct	ext4_block new_block;
+    struct ext4_block block;
+    struct ext4_block new_block;
 
     /* Is needed to allocate indirect block on the i-node level */
     if (current_block == 0) {
@@ -1224,7 +1224,7 @@ int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
      * Navigate through other levels, until we find the block number
      * or find null reference meaning we are dealing with sparse file
      */
-    struct	ext4_block block;
+    struct ext4_block block;
 
     while (level > 0) {
 

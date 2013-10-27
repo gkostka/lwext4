@@ -46,10 +46,10 @@
 /**@brief   Input stream name.*/
 char input_name[128] = "ext2";
 
-/**@brief	Read-write size*/
+/**@brief   Read-write size*/
 static int rw_szie  = 1024 * 1024;
 
-/**@brief	Read-write size*/
+/**@brief   Read-write size*/
 static int rw_count = 10;
 
 /**@brief   Directory test count*/
@@ -70,16 +70,16 @@ static bool sbstat = false;
 /**@brief   Indicates that input is windows partition.*/
 static bool winpart = false;
 
-/**@brief	File write buffer*/
-static uint8_t	*wr_buff;
+/**@brief   File write buffer*/
+static uint8_t *wr_buff;
 
-/**@brief	File read buffer.*/
-static uint8_t	*rd_buff;
+/**@brief   File read buffer.*/
+static uint8_t *rd_buff;
 
-/**@brief	Block device handle.*/
+/**@brief   Block device handle.*/
 static struct ext4_blockdev *bd;
 
-/**@brief	Block cache handle.*/
+/**@brief   Block cache handle.*/
 static struct ext4_bcache   *bc;
 
 static const char *usage = "                                    \n\
@@ -99,52 +99,52 @@ Usage:                                                          \n\
 
 static char* entry_to_str(uint8_t type)
 {
-	switch(type){
-	case EXT4_DIRENTRY_UNKNOWN:
-		return "[UNK] ";
-	case EXT4_DIRENTRY_REG_FILE:
-		return "[FIL] ";
-	case EXT4_DIRENTRY_DIR:
-		return "[DIR] ";
-	case EXT4_DIRENTRY_CHRDEV:
-		return "[CHA] ";
-	case EXT4_DIRENTRY_BLKDEV:
-		return "[BLK] ";
-	case EXT4_DIRENTRY_FIFO:
-		return "[FIF] ";
-	case EXT4_DIRENTRY_SOCK:
-		return "[SOC] ";
-	case EXT4_DIRENTRY_SYMLINK:
-		return "[SYM] ";
-	default:
-		break;
-	}
-	return "[???]";
+    switch(type){
+    case EXT4_DIRENTRY_UNKNOWN:
+        return "[UNK] ";
+    case EXT4_DIRENTRY_REG_FILE:
+        return "[FIL] ";
+    case EXT4_DIRENTRY_DIR:
+        return "[DIR] ";
+    case EXT4_DIRENTRY_CHRDEV:
+        return "[CHA] ";
+    case EXT4_DIRENTRY_BLKDEV:
+        return "[BLK] ";
+    case EXT4_DIRENTRY_FIFO:
+        return "[FIF] ";
+    case EXT4_DIRENTRY_SOCK:
+        return "[SOC] ";
+    case EXT4_DIRENTRY_SYMLINK:
+        return "[SYM] ";
+    default:
+        break;
+    }
+    return "[???]";
 }
 
 static void dir_ls(const char *path)
 {
-	int j = 0;
-	char sss[255];
-	ext4_dir d;
-	ext4_direntry *de;
+    int j = 0;
+    char sss[255];
+    ext4_dir d;
+    ext4_direntry *de;
 
-	printf("**********************************************\n");
+    printf("**********************************************\n");
 
-	ext4_dir_open(&d, path);
-	de = ext4_dir_entry_get(&d, j++);
-	printf("ls %s\n", path);
+    ext4_dir_open(&d, path);
+    de = ext4_dir_entry_get(&d, j++);
+    printf("ls %s\n", path);
 
-	while(de){
-		memcpy(sss, de->name, de->name_length);
-		sss[de->name_length] = 0;
-		printf("%s", entry_to_str(de->inode_type));
-		printf("%s", sss);
-		printf("\n");
-		de = ext4_dir_entry_get(&d, j++);
-	}
-	printf("**********************************************\n");
-	ext4_dir_close(&d);
+    while(de){
+        memcpy(sss, de->name, de->name_length);
+        sss[de->name_length] = 0;
+        printf("%s", entry_to_str(de->inode_type));
+        printf("%s", sss);
+        printf("\n");
+        de = ext4_dir_entry_get(&d, j++);
+    }
+    printf("**********************************************\n");
+    ext4_dir_close(&d);
 }
 
 static void mp_stats(void)
@@ -397,8 +397,8 @@ static bool mount(void)
 {
     int r;
     if(winpart){
-         if(!open_winpartition())
-             return false;
+        if(!open_winpartition())
+            return false;
     }else{
         if(!open_filedev())
             return false;
@@ -445,52 +445,52 @@ static bool parse_opt(int argc, char **argv)
     int c;
 
     static struct option long_options[] =
-      {
-        {"in",      required_argument, 0, 'a'},
-        {"rws",     required_argument, 0, 'b'},
-        {"rwc",     required_argument, 0, 'c'},
-        {"cache",   required_argument, 0, 'd'},
-        {"dirs",    required_argument, 0, 'e'},
-        {"clean",   no_argument,       0, 'f'},
-        {"bstat",   no_argument,       0, 'g'},
-        {"sbstat",  no_argument,       0, 'h'},
-        {"wpart",   no_argument,       0, 'i'},
-        {0, 0, 0, 0}
-      };
+    {
+            {"in",      required_argument, 0, 'a'},
+            {"rws",     required_argument, 0, 'b'},
+            {"rwc",     required_argument, 0, 'c'},
+            {"cache",   required_argument, 0, 'd'},
+            {"dirs",    required_argument, 0, 'e'},
+            {"clean",   no_argument,       0, 'f'},
+            {"bstat",   no_argument,       0, 'g'},
+            {"sbstat",  no_argument,       0, 'h'},
+            {"wpart",   no_argument,       0, 'i'},
+            {0, 0, 0, 0}
+    };
 
     while(-1 != (c = getopt_long (argc, argv, "a:b:c:d:e:fghi", long_options, &option_index))) {
 
         switch(c){
-            case 'a':
-                strcpy(input_name, optarg);
-                break;
-            case 'b':
-                rw_szie = atoi(optarg);
-                break;
-            case 'c':
-                rw_count = atoi(optarg);
-                break;
-            case 'd':
-                cache_mode = atoi(optarg);
-                break;
-            case 'e':
-                dir_cnt = atoi(optarg);
-                break;
-            case 'f':
-                cleanup_flag = true;
-                break;
-            case 'g':
-                bstat = true;
-                break;
-            case 'h':
-                sbstat = true;
-                break;
-            case 'i':
-                winpart = true;
-                break;
-            default:
-                printf("%s", usage);
-                return false;
+        case 'a':
+            strcpy(input_name, optarg);
+            break;
+        case 'b':
+            rw_szie = atoi(optarg);
+            break;
+        case 'c':
+            rw_count = atoi(optarg);
+            break;
+        case 'd':
+            cache_mode = atoi(optarg);
+            break;
+        case 'e':
+            dir_cnt = atoi(optarg);
+            break;
+        case 'f':
+            cleanup_flag = true;
+            break;
+        case 'g':
+            bstat = true;
+            break;
+        case 'h':
+            sbstat = true;
+            break;
+        case 'i':
+            winpart = true;
+            break;
+        default:
+            printf("%s", usage);
+            return false;
 
         }
     }
@@ -520,20 +520,20 @@ int main(int argc, char **argv)
     dir_ls("/mp/");
     fflush(stdout);
     if(!dir_test(dir_cnt))
-	    return EXIT_FAILURE;
+        return EXIT_FAILURE;
 
     fflush(stdout);
-	if(!file_test())
-	    return EXIT_FAILURE;
+    if(!file_test())
+        return EXIT_FAILURE;
 
-	fflush(stdout);
-	dir_ls("/mp/");
+    fflush(stdout);
+    dir_ls("/mp/");
 
-	if(sbstat)
-	    mp_stats();
+    if(sbstat)
+        mp_stats();
 
-	if(cleanup_flag)
-	    cleanup();
+    if(cleanup_flag)
+        cleanup();
 
     if(bstat)
         block_stats();

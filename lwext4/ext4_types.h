@@ -230,8 +230,8 @@ struct ext4_sblock {
                 EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE)
 
 struct ext4_fs {
-    struct ext4_blockdev	*bdev;
-    struct ext4_sblock  	sb;
+    struct ext4_blockdev*bdev;
+    struct ext4_sblock sb;
 
     uint64_t inode_block_limits[4];
     uint64_t inode_blocks_per_level[4];
@@ -270,11 +270,11 @@ struct ext4_bgroup {
 } ;
 
 struct ext4_block_group_ref {
-    struct ext4_block 	block;
-    struct ext4_bgroup 	*block_group;
-    struct ext4_fs  	*fs;
-    uint32_t 			index;
-    bool 				dirty;
+    struct ext4_block block;
+    struct ext4_bgroup *block_group;
+    struct ext4_fs *fs;
+    uint32_t index;
+    bool dirty;
 };
 
 #define EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE  32
@@ -384,8 +384,8 @@ struct ext4_inode {
 #define EXT4_INODE_ROOT_INDEX  2
 
 struct ext4_inode_ref {
-    struct ext4_block 		 block;
-    struct ext4_inode 		*inode;
+    struct ext4_block  block;
+    struct ext4_inode *inode;
     struct ext4_fs  *fs;
     uint32_t index;
     bool dirty;
@@ -420,15 +420,15 @@ struct ext4_directory_entry_ll {
 } __attribute__((packed)) ;
 
 struct ext4_directory_iterator {
-    struct ext4_inode_ref 			*inode_ref;
-    struct ext4_block 	   			current_block;
-    uint64_t 						current_offset;
+    struct ext4_inode_ref *inode_ref;
+    struct ext4_block current_block;
+    uint64_t current_offset;
     struct ext4_directory_entry_ll  *current;
 };
 
 struct ext4_directory_search_result {
-    struct	ext4_block 		 		block;
-    struct  ext4_directory_entry_ll *dentry;
+    struct ext4_block block;
+    struct ext4_directory_entry_ll *dentry;
 };
 
 /* Structures for indexed directory */
@@ -478,7 +478,7 @@ struct ext4_directory_dx_node {
 };
 
 struct ext4_directory_dx_block {
-    struct ext4_block 		 	    block;
+    struct ext4_block block;
     struct ext4_directory_dx_entry *entries;
     struct ext4_directory_dx_entry *position;
 } ;
@@ -526,31 +526,31 @@ struct ext4_extent_header {
 } ;
 
 struct ext4_extent_path {
-    struct	ext4_block 		 	block;
-    uint16_t 					depth;
+    struct ext4_block block;
+    uint16_t depth;
     struct ext4_extent_header *header;
-    struct ext4_extent_index  *index;
-    struct ext4_extent 		  *extent;
+    struct ext4_extent_index *index;
+    struct ext4_extent *extent;
 } ;
 
 #define EXT4_EXTENT_MAGIC  0xF30A
 
-#define	EXT4_EXTENT_FIRST(header) \
+#define EXT4_EXTENT_FIRST(header) \
         ((struct ext4_extent *) (((void *) (header)) + sizeof(struct ext4_extent_header)))
 
-#define	EXT4_EXTENT_FIRST_INDEX(header) \
+#define EXT4_EXTENT_FIRST_INDEX(header) \
         ((struct ext4_extent_index *) (((void *) (header)) + sizeof(struct ext4_extent_header)))
 
 
 /* EXT3 HTree directory indexing */
-#define EXT2_HTREE_LEGACY					0
-#define EXT2_HTREE_HALF_MD4					1
-#define EXT2_HTREE_TEA						2
-#define EXT2_HTREE_LEGACY_UNSIGNED			3
-#define EXT2_HTREE_HALF_MD4_UNSIGNED		4
-#define EXT2_HTREE_TEA_UNSIGNED				5
+#define EXT2_HTREE_LEGACY                   0
+#define EXT2_HTREE_HALF_MD4                 1
+#define EXT2_HTREE_TEA                      2
+#define EXT2_HTREE_LEGACY_UNSIGNED          3
+#define EXT2_HTREE_HALF_MD4_UNSIGNED        4
+#define EXT2_HTREE_TEA_UNSIGNED             5
 
-#define EXT2_HTREE_EOF 						0x7FFFFFFF
+#define EXT2_HTREE_EOF                      0x7FFFFFFF
 
 
 struct ext4_hash_info {
@@ -578,7 +578,7 @@ static inline uint64_t to_le64(uint64_t n)
 
 static inline uint32_t to_le32(uint32_t n)
 {
-    return 	((n & 0xff) << 24) |
+    return  ((n & 0xff) << 24) |
             ((n & 0xff00) << 8) |
             ((n & 0xff0000) >> 8) |
             ((n & 0xff000000) >> 24);
@@ -586,27 +586,27 @@ static inline uint32_t to_le32(uint32_t n)
 
 static inline uint16_t to_le16(uint16_t n)
 {
-    return 	((n & 0xff) << 8) |
+    return  ((n & 0xff) << 8) |
             ((n & 0xff00) >> 8);
 }
 
 
 #else
-#define to_le64(_n)	_n
-#define to_le32(_n)	_n
-#define to_le16(_n)	_n
+#define to_le64(_n) _n
+#define to_le32(_n) _n
+#define to_le16(_n) _n
 #endif
 
 /****************************Access macros to ext4 structures*****************/
 
-#define ext4_get32(s, f)		to_le32((s)->f)
-#define ext4_get16(s, f)		to_le16((s)->f)
-#define ext4_get8(s, f)			(s)->f
+#define ext4_get32(s, f)        to_le32((s)->f)
+#define ext4_get16(s, f)        to_le16((s)->f)
+#define ext4_get8(s, f)         (s)->f
 
 
-#define ext4_set32(s, f, v)		do { (s)->f = to_le32(v); }while(0)
-#define ext4_set16(s, f, v)		do { (s)->f = to_le16(v); }while(0)
-#define ext4_set8 (s, f, v)		do { (s)->f = (v); 		  }while(0)
+#define ext4_set32(s, f, v)     do { (s)->f = to_le32(v); }while(0)
+#define ext4_set16(s, f, v)     do { (s)->f = to_le16(v); }while(0)
+#define ext4_set8 (s, f, v)     do { (s)->f = (v);        }while(0)
 
 #endif /* EXT4_TYPES_H_ */
 

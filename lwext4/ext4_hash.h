@@ -41,14 +41,14 @@
 
 #include <stdint.h>
 
-/**@brief	Directory entry name hash function.
- * @param	name entry name
- * @param	len entry name length
- * @param	hash_seed (from superblock)
- * @param	hash version (from superblock)
- * @param	hash_minor output value
- * @param	hash_major output value
- * @return 	standard error code*/
+/**@brief   Directory entry name hash function.
+ * @param   name entry name
+ * @param   len entry name length
+ * @param   hash_seed (from superblock)
+ * @param   hash version (from superblock)
+ * @param   hash_minor output value
+ * @param   hash_major output value
+ * @return  standard error code*/
 int ext2_htree_hash(const char *name, int len,
         const uint32_t *hash_seed, int hash_version,
         uint32_t *hash_major, uint32_t *hash_minor);

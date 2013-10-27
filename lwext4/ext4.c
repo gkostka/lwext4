@@ -61,21 +61,21 @@
 /**@brief   Mount point descrpitor.*/
 struct ext4_mountpoint {
 
-    /**@brief	Mount point name (@ref ext4_mount)*/
+    /**@brief   Mount point name (@ref ext4_mount)*/
     const char *name;
 
-    /**@brief	Os dependent lock/unlock functions.*/
+    /**@brief   Os dependent lock/unlock functions.*/
     struct ext4_lock *os_locks;
 
-    /**@brief	Ext4 filesystem internals.*/
+    /**@brief   Ext4 filesystem internals.*/
     struct ext4_fs fs;
 
-    /**@brief	Dynamic alocation cache flag.*/
+    /**@brief   Dynamic alocation cache flag.*/
     bool cache_dynamic;
 };
 
 /**@brief   Block devices descriptor.*/
-struct	_ext4_devices {
+struct _ext4_devices {
 
     /**@brief   Block device name (@ref ext4_device_register)*/
     const char *name;
@@ -87,11 +87,11 @@ struct	_ext4_devices {
     struct ext4_bcache *bc;
 };
 
-/**@brief	Block devices.*/
-struct	_ext4_devices _bdevices[CONFIG_EXT4_BLOCKDEVS_COUNT];
+/**@brief   Block devices.*/
+struct _ext4_devices _bdevices[CONFIG_EXT4_BLOCKDEVS_COUNT];
 
 
-/**@brief	Mountpoints.*/
+/**@brief   Mountpoints.*/
 struct ext4_mountpoint _mp[CONFIG_EXT4_MOUNTPOINTS_COUNT];
 
 
@@ -105,8 +105,8 @@ int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
     for (i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
         if(!_bdevices[i].name){
             _bdevices[i].name   = dev_name;
-            _bdevices[i].bd 	= bd;
-            _bdevices[i].bc 	= bc;
+            _bdevices[i].bd = bd;
+            _bdevices[i].bc = bc;
             return EOK;
         }
     }
@@ -388,11 +388,11 @@ int ext4_mount(const char * dev_name, char *mount_point)
 }
 
 
-int	ext4_umount(char *mount_point)
+int ext4_umount(char *mount_point)
 {
-    int	i;
-    int	r = EOK;
-    struct ext4_mountpoint	*mp = 0;
+    int i;
+    int r = EOK;
+    struct ext4_mountpoint *mp = 0;
 
     for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
         if(_mp[i].name){
@@ -502,7 +502,7 @@ static bool ext4_parse_flags(const char *flags, uint32_t *file_flags)
     }
 
     if(!strcmp(flags, "a") || !strcmp(flags, "ab")){
-        *file_flags = O_WRONLY | O_CREAT | O_APPEND	;
+        *file_flags = O_WRONLY | O_CREAT | O_APPEND;
         return true;
     }
 
@@ -531,10 +531,10 @@ static int ext4_generic_open (ext4_file *f, const char *path,
 {
     struct ext4_mountpoint *mp = ext4_get_mount(path);
     struct ext4_directory_search_result result;
-    struct ext4_inode_ref	ref;
-    bool	is_goal = false;
-    uint8_t	inode_type = EXT4_DIRECTORY_FILETYPE_DIR;
-    int		r = ENOENT;
+    struct ext4_inode_ref ref;
+    bool is_goal = false;
+    uint8_t inode_type = EXT4_DIRECTORY_FILETYPE_DIR;
+    int r = ENOENT;
     uint32_t next_inode;
 
     f->mp = 0;
@@ -585,7 +585,7 @@ static int ext4_generic_open (ext4_file *f, const char *path,
                 break;
 
             /*O_CREAT allows create new entry*/
-            struct ext4_inode_ref	child_ref;
+            struct ext4_inode_ref child_ref;
             r = ext4_fs_alloc_inode(&mp->fs, &child_ref, is_goal ? !file_expect : true);
             if(r != EOK)
                 break;
@@ -790,7 +790,7 @@ int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
     uint32_t fblock_start;
     uint32_t fblock_cnt;
     struct ext4_block b;
-    uint8_t	*u8_buf = buf;
+    uint8_t *u8_buf = buf;
     struct ext4_inode_ref ref;
     uint32_t sblock;
     uint32_t sblock_end;
@@ -821,7 +821,7 @@ int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
 
     block_size = ext4_sb_get_block_size(&f->mp->fs.sb);
     size = size > (f->fsize - f->fpos) ? (f->fsize - f->fpos) : size;
-    sblock 	= (f->fpos) / block_size;
+    sblock = (f->fpos) / block_size;
     sblock_end = (f->fpos + size) / block_size;
     u = (f->fpos) % block_size;
 
@@ -916,13 +916,13 @@ int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
     return r;
 }
 
-int	ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
+int ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
 {
     int r = EOK;
     uint32_t u;
     uint32_t fblock;
     struct ext4_block b;
-    uint8_t	*u8_buf = buf;
+    uint8_t *u8_buf = buf;
     struct ext4_inode_ref ref;
     uint32_t sblock;
     uint32_t sblock_end;
@@ -962,7 +962,7 @@ int	ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
     if(f->fsize % block_size)
         file_blocks++;
 
-    sblock 	= (f->fpos) / block_size;
+    sblock = (f->fpos) / block_size;
 
     u = (f->fpos) % block_size;
 

@@ -43,7 +43,7 @@
 #include <stdlib.h>
 
 
-int ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt,
+int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
     uint32_t itemsize)
 {
     ext4_assert(bc && cnt && itemsize);
@@ -104,7 +104,7 @@ int ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt,
     return ENOMEM;
 }
 
-int ext4_bcache_fini_dynamic(struct	ext4_bcache *bc)
+int ext4_bcache_fini_dynamic(struct ext4_bcache *bc)
 {
     if(bc->refctr)
         free(bc->refctr);
@@ -195,8 +195,8 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 
     if(cache_id != bc->cnt){
         /*There was unreferenced block*/
-        bc->lba[cache_id] 	   = b->lb_id;
-        bc->refctr[cache_id]   = 1;
+        bc->lba[cache_id] = b->lb_id;
+        bc->refctr[cache_id] = 1;
         bc->lru_id[cache_id] = ++bc->lru_ctr;
 
         /*Set valid cache data and id*/
@@ -245,8 +245,8 @@ int ext4_bcache_free (struct ext4_bcache *bc, struct ext4_block *b,
     if(!bc->refctr[b->cache_id] && !bc->free_delay[b->cache_id])
         bc->ref_blocks--;
 
-    b->lb_id    = 0;
-    b->data     = 0;
+    b->lb_id = 0;
+    b->data = 0;
     b->cache_id = 0;
 
     return EOK;

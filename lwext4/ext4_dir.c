@@ -439,8 +439,8 @@ int ext4_dir_find_entry(struct ext4_directory_search_result *result,
 
     /* Entry was not found */
 
-    result->block.lb_id =  0;
-    result->dentry 		=  NULL;
+    result->block.lb_id = 0;
+    result->dentry = NULL;
 
     return ENOENT;
 }
@@ -513,7 +513,7 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 
     /* Initialize pointers, stop means to upper bound */
     struct ext4_directory_entry_ll *dentry  = (void *)target_block->data;
-    struct ext4_directory_entry_ll *stop 	=
+    struct ext4_directory_entry_ll *stop =
             (void *)(target_block->data + block_size);
 
     /*

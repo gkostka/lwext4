@@ -69,7 +69,7 @@ uint32_t ext4_inode_get_mode(struct ext4_sblock *sb, struct ext4_inode *inode)
     return v;
 }
 
-void 	 ext4_inode_set_mode(struct ext4_sblock *sb, struct ext4_inode *inode,
+void ext4_inode_set_mode(struct ext4_sblock *sb, struct ext4_inode *inode,
     uint32_t mode)
 {
     inode->mode = to_le16((mode << 16) >> 16);
@@ -83,7 +83,7 @@ uint32_t ext4_inode_get_uid(struct ext4_inode *inode)
     return to_le32(inode->uid);
 }
 
-void 	 ext4_inode_set_uid(struct ext4_inode *inode, uint32_t uid)
+void ext4_inode_set_uid(struct ext4_inode *inode, uint32_t uid)
 {
     inode->uid = to_le32(uid);
 }
@@ -154,7 +154,7 @@ uint32_t ext4_inode_get_gid(struct ext4_inode *inode)
 }
 void ext4_inode_set_gid(struct ext4_inode *inode, uint32_t gid)
 {
-    inode->gid	= to_le32(gid);
+    inode->gid = to_le32(gid);
 }
 
 uint16_t ext4_inode_get_links_count(struct ext4_inode *inode)
@@ -234,14 +234,14 @@ uint32_t ext4_inode_get_flags(struct ext4_inode *inode)
 }
 void ext4_inode_set_flags(struct ext4_inode *inode, uint32_t flags)
 {
-    inode->flags = 	to_le32(flags);
+    inode->flags = to_le32(flags);
 }
 
 uint32_t ext4_inode_get_generation(struct ext4_inode *inode)
 {
     return to_le32(inode->generation);
 }
-void 	 ext4_inode_set_generation(struct ext4_inode *inode, uint32_t gen)
+void ext4_inode_set_generation(struct ext4_inode *inode, uint32_t gen)
 {
     inode->generation = to_le32(gen);
 }
