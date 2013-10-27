@@ -50,41 +50,41 @@
 
 #include <ext4.h>
 
-/**@brief	Mount point OS dependent lock*/
+/**@brief   Mount point OS dependent lock*/
 #define EXT4_MP_LOCK(_m)    \
         do { (_m)->os_locks ? (_m)->os_locks->lock() : 0; }while(0)
 
-/**@brief	Mount point OS dependent unlock*/
+/**@brief   Mount point OS dependent unlock*/
 #define EXT4_MP_UNLOCK(_m)  \
         do { (_m)->os_locks ? (_m)->os_locks->unlock() : 0; }while(0)
 
-/**@brief	Mount point descrpitor.*/
+/**@brief   Mount point descrpitor.*/
 struct ext4_mountpoint {
 
     /**@brief	Mount point name (@ref ext4_mount)*/
-    const char 		 *name;
+    const char *name;
 
     /**@brief	Os dependent lock/unlock functions.*/
     struct ext4_lock *os_locks;
 
     /**@brief	Ext4 filesystem internals.*/
-    struct ext4_fs	 fs;
+    struct ext4_fs fs;
 
     /**@brief	Dynamic alocation cache flag.*/
-    bool            cache_dynamic;
+    bool cache_dynamic;
 };
 
-/**@brief	Block devices descriptor.*/
+/**@brief   Block devices descriptor.*/
 struct	_ext4_devices {
 
-    /**@brief	Block device name (@ref ext4_device_register)*/
-    const char				*name;
+    /**@brief   Block device name (@ref ext4_device_register)*/
+    const char *name;
 
-    /**@brief	Block device handle.*/
-    struct ext4_blockdev	*bd;
+    /**@brief   Block device handle.*/
+    struct ext4_blockdev *bd;
 
-    /**@brief	Block cache handle.*/
-    struct ext4_bcache		*bc;
+    /**@brief   Block cache handle.*/
+    struct ext4_bcache *bc;
 };
 
 /**@brief	Block devices.*/
@@ -92,11 +92,11 @@ struct	_ext4_devices _bdevices[CONFIG_EXT4_BLOCKDEVS_COUNT];
 
 
 /**@brief	Mountpoints.*/
-struct ext4_mountpoint	_mp[CONFIG_EXT4_MOUNTPOINTS_COUNT];
+struct ext4_mountpoint _mp[CONFIG_EXT4_MOUNTPOINTS_COUNT];
 
 
 
-int	ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
+int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
     const char *dev_name)
 {
     uint32_t i;
@@ -355,7 +355,6 @@ int ext4_mount(const char * dev_name, char *mount_point)
     bsize = ext4_sb_get_block_size(&mp->fs.sb);
     ext4_block_set_lb_size(bd, bsize);
 
-
     mp->cache_dynamic = 0;
 
     if(!bc){
@@ -373,7 +372,6 @@ int ext4_mount(const char * dev_name, char *mount_point)
 
     if(bsize != bc->itemsize)
         return ENOTSUP;
-
 
     /*Bind block cache to block device*/
     r = ext4_block_bind_bcache(bd, bc);
@@ -467,7 +465,6 @@ static struct ext4_mountpoint* ext4_get_mount(const char *path)
     }
     return 0;
 }
-
 
 static int ext4_path_check(const char *path, bool* is_goal)
 {
@@ -683,7 +680,6 @@ static int ext4_generic_open (ext4_file *f, const char *path,
 
         if(f->flags & O_APPEND)
             f->fpos = f->fsize;
-
     }
 
     r = ext4_fs_put_inode_ref(&ref);
@@ -695,11 +691,11 @@ static int ext4_generic_open (ext4_file *f, const char *path,
 int ext4_fremove(const char *path)
 {
     ext4_file   f;
-    uint32_t    parent_inode;
-    uint32_t    name_off;
-    int     r;
-    int     len;
-    bool    is_goal;
+    uint32_t parent_inode;
+    uint32_t name_off;
+    int r;
+    int len;
+    bool is_goal;
     struct ext4_mountpoint *mp = ext4_get_mount(path);
 
     struct ext4_inode_ref child;
@@ -788,7 +784,7 @@ int ext4_fclose(ext4_file *f)
 }
 int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
 {
-    int		 r = EOK;
+    int r = EOK;
     uint32_t u;
     uint32_t fblock;
     uint32_t fblock_start;
@@ -922,7 +918,7 @@ int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
 
 int	ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
 {
-    int		 r = EOK;
+    int r = EOK;
     uint32_t u;
     uint32_t fblock;
     struct ext4_block b;
@@ -1096,13 +1092,10 @@ int	ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
 
 }
 
-
-
 int ext4_fseek(ext4_file *f, uint64_t offset, uint32_t origin)
 {
     switch(origin){
     case SEEK_SET:
-
         if(offset > f->fsize)
             return EINVAL;
 
@@ -1117,43 +1110,45 @@ int ext4_fseek(ext4_file *f, uint64_t offset, uint32_t origin)
     case SEEK_END:
         if(offset > f->fsize)
             return EINVAL;
+
         f->fpos = f->fsize - offset;
         return EOK;
 
     }
-
     return EINVAL;
 }
 
 uint64_t ext4_ftell (ext4_file *f)
 {
-    return  f->fpos;
+    return f->fpos;
 }
 
 uint64_t ext4_fsize (ext4_file *f)
 {
-    return  f->fsize;
+    return f->fsize;
 }
 
 /*********************************DIRECTORY OPERATION************************/
 
 int ext4_dir_rm(const char *path)
 {
-    int         r;
-    int         len;
-    ext4_file   f;
-    struct ext4_mountpoint *mp = ext4_get_mount(path);
-    struct ext4_inode_ref   current;
-    struct ext4_inode_ref   child;
+    int r;
+    int len;
+    ext4_file f;
 
+    struct ext4_mountpoint *mp = ext4_get_mount(path);
+    struct ext4_inode_ref current;
+    struct ext4_inode_ref child;
     struct ext4_directory_iterator it;
+
     uint32_t name_off;
     uint32_t inode_up;
     uint32_t inode_current;
     uint32_t depth = 1;
-    bool     has_children;
-    bool     is_goal;
-    bool     dir_end;
+
+    bool has_children;
+    bool is_goal;
+    bool dir_end;
 
     if(!mp)
         return ENOENT;
@@ -1313,7 +1308,7 @@ int ext4_dir_rm(const char *path)
 int ext4_dir_mk(const char *path)
 {
     int r;
-    ext4_file   f;
+    ext4_file f;
 
     struct ext4_mountpoint *mp = ext4_get_mount(path);
 
@@ -1362,7 +1357,7 @@ int ext4_dir_close(ext4_dir *d)
 
 ext4_direntry* ext4_dir_entry_get(ext4_dir *d, uint32_t id)
 {
-    int 	 r;
+    int r;
     uint32_t i;
     ext4_direntry *de = 0;
     struct ext4_inode_ref dir;

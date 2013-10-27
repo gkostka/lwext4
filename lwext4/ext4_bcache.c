@@ -43,7 +43,7 @@
 #include <stdlib.h>
 
 
-int	ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt,
+int ext4_bcache_init_dynamic(struct	ext4_bcache *bc, uint32_t cnt,
     uint32_t itemsize)
 {
     ext4_assert(bc && cnt && itemsize);

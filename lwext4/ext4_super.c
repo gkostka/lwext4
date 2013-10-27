@@ -73,7 +73,7 @@ uint32_t ext4_inodes_in_group_cnt(struct ext4_sblock *s, uint32_t bgid)
 {
     uint32_t block_group_count = ext4_block_group_cnt(s);
     uint32_t inodes_per_group  = ext4_get32(s, inodes_per_group);
-    uint32_t total_inodes =		 ext4_get32(s, inodes_count);
+    uint32_t total_inodes = ext4_get32(s, inodes_count);
 
 
     if (bgid < block_group_count - 1)
@@ -117,12 +117,10 @@ bool ext4_sb_check(struct ext4_sblock *s)
     if (ext4_get32(s, first_inode) < 11)
         return false;
 
-    if (ext4_sb_get_desc_size(s) <
-            EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE)
+    if (ext4_sb_get_desc_size(s) < EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE)
         return false;
 
-    if (ext4_sb_get_desc_size(s)  >
-    EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE)
+    if (ext4_sb_get_desc_size(s) > EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE)
         return false;
 
     return true;

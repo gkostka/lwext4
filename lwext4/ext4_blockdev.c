@@ -94,9 +94,10 @@ int ext4_block_get(struct	ext4_blockdev *bdev, struct	ext4_block *b,
 {
     uint64_t pba;
     uint32_t pb_cnt;
-    bool	 is_new;
-    int 	 r;
     uint32_t i;
+    bool is_new;
+    int r;
+
     ext4_assert(bdev && b);
 
     if(!(bdev->flags & EXT4_BDEV_INITIALIZED))
@@ -148,9 +149,8 @@ int ext4_block_get(struct	ext4_blockdev *bdev, struct	ext4_block *b,
     if(!b->data)
         return ENOMEM;
 
-    pba 	= (lba * bdev->lg_bsize) / bdev->ph_bsize;
-    pb_cnt  =  bdev->lg_bsize / bdev->ph_bsize;
-
+    pba = (lba * bdev->lg_bsize) / bdev->ph_bsize;
+    pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
     r = bdev->bread(bdev, b->data, pba, pb_cnt);
 
@@ -161,7 +161,6 @@ int ext4_block_get(struct	ext4_blockdev *bdev, struct	ext4_block *b,
     }
 
     bdev->bread_ctr++;
-
     return EOK;
 }
 
@@ -189,8 +188,8 @@ int ext4_block_set(struct	ext4_blockdev *bdev, struct	ext4_block *b)
         return ext4_bcache_free(bdev->bc, b, bdev->cache_flush_delay);
     }
 
-    pba 	= (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
-    pb_cnt  =  bdev->lg_bsize / bdev->ph_bsize;
+    pba = (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
+    pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
 
     r = bdev->bwrite(bdev, b->data, pba, pb_cnt);
@@ -215,15 +214,12 @@ int ext4_blocks_get_direct(struct	ext4_blockdev *bdev, void *buf,
 
     ext4_assert(bdev && buf);
 
-    pba 	= (lba * bdev->lg_bsize) / bdev->ph_bsize;
-    pb_cnt  =  bdev->lg_bsize / bdev->ph_bsize;
+    pba = (lba * bdev->lg_bsize) / bdev->ph_bsize;
+    pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
     bdev->bread_ctr++;
-
     return bdev->bread(bdev, buf, pba, pb_cnt * cnt);
 }
-
-
 
 int ext4_blocks_set_direct(struct	ext4_blockdev *bdev, const void *buf,
     uint64_t lba, uint32_t cnt)
@@ -233,8 +229,8 @@ int ext4_blocks_set_direct(struct	ext4_blockdev *bdev, const void *buf,
 
     ext4_assert(bdev && buf);
 
-    pba 	= (lba * bdev->lg_bsize) / bdev->ph_bsize;
-    pb_cnt  =  bdev->lg_bsize / bdev->ph_bsize;
+    pba = (lba * bdev->lg_bsize) / bdev->ph_bsize;
+    pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
     bdev->bwrite_ctr++;
 
@@ -247,11 +243,9 @@ int	ext4_block_writebytes(struct	ext4_blockdev *bdev, uint64_t off,
 {
     uint64_t block_idx;
     uint64_t block_end;
-
     uint32_t blen;
-
     uint32_t unalg;
-    int		 r = EOK;
+    int r = EOK;
 
     const uint8_t	*p = (void *)buf;
 
@@ -260,13 +254,11 @@ int	ext4_block_writebytes(struct	ext4_blockdev *bdev, uint64_t off,
     if(!(bdev->flags & EXT4_BDEV_INITIALIZED))
         return EIO;
 
-
     block_idx =  off / bdev->ph_bsize;
     block_end   =  block_idx + len / bdev->ph_bsize;
 
     if(!(block_end < bdev->ph_bcnt))
         return EINVAL;				/*Ups. Out of range operation*/
-
 
     /*OK lets deal with the first possible unaligned block*/
     unalg = (off & (bdev->ph_bsize - 1));
@@ -283,7 +275,6 @@ int	ext4_block_writebytes(struct	ext4_blockdev *bdev, uint64_t off,
         memcpy(bdev->ph_bbuf + unalg, p, wlen);
 
         r = bdev->bwrite(bdev, bdev->ph_bbuf, block_idx, 1);
-
         if(r != EOK)
             return r;
 
@@ -295,13 +286,12 @@ int	ext4_block_writebytes(struct	ext4_blockdev *bdev, uint64_t off,
 
     /*Aligned data*/
     blen = len / bdev->ph_bsize;
-
     r = bdev->bwrite(bdev, p, block_idx, blen);
 
     if(r != EOK)
         return r;
 
-    p 	+= bdev->ph_bsize * blen;
+    p += bdev->ph_bsize * blen;
     len -= bdev->ph_bsize * blen;
 
     block_idx += blen;
@@ -309,9 +299,7 @@ int	ext4_block_writebytes(struct	ext4_blockdev *bdev, uint64_t off,
 
     /*Rest of the data*/
     if(len){
-
         r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
-
         if(r != EOK)
             return r;
 
@@ -332,13 +320,11 @@ int	ext4_block_writebytes(struct	ext4_blockdev *bdev, uint64_t off,
 int ext4_block_readbytes(struct	ext4_blockdev *bdev, uint64_t off, void *buf,
     uint32_t len)
 {
-
     uint64_t block_idx;
     uint64_t block_end;
     uint32_t blen;
-
     uint32_t unalg;
-    int		 r = EOK;
+    int r = EOK;
 
     uint8_t	*p = (void *)buf;
 
@@ -347,13 +333,11 @@ int ext4_block_readbytes(struct	ext4_blockdev *bdev, uint64_t off, void *buf,
     if(!(bdev->flags & EXT4_BDEV_INITIALIZED))
         return EIO;
 
-
-    block_idx =  off / bdev->ph_bsize;
-    block_end   =  block_idx + len / bdev->ph_bsize;
+    block_idx = off / bdev->ph_bsize;
+    block_end = block_idx + len / bdev->ph_bsize;
 
     if(!(block_end < bdev->ph_bcnt))
         return EINVAL;				/*Ups. Out of range operation*/
-
 
     /*OK lets deal with the first possible unaligned block*/
     unalg = (off & (bdev->ph_bsize - 1));
@@ -363,7 +347,6 @@ int ext4_block_readbytes(struct	ext4_blockdev *bdev, uint64_t off, void *buf,
                 len : (bdev->ph_bsize - unalg);
 
         r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
-
         if(r != EOK)
             return r;
 
@@ -373,7 +356,6 @@ int ext4_block_readbytes(struct	ext4_blockdev *bdev, uint64_t off, void *buf,
         len -= rlen;
         block_idx++;
     }
-
 
     /*Aligned data*/
     blen = len / bdev->ph_bsize;
@@ -391,14 +373,11 @@ int ext4_block_readbytes(struct	ext4_blockdev *bdev, uint64_t off, void *buf,
 
     /*Rest of the data*/
     if(len){
-
         r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
-
         if(r != EOK)
             return r;
 
         memcpy(p, bdev->ph_bbuf, len);
-
     }
 
     return r;
@@ -437,7 +416,6 @@ int 	ext4_block_delay_cache_flush(struct	ext4_blockdev *bdev,
             bdev->bc->ref_blocks--;
         }
     }
-
     return EOK;
 }
 
