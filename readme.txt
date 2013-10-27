@@ -11,9 +11,9 @@ kostka.grzegorz@gmail.com
 Minimum memory requirements
 ===========================
 
-.text        ~ 15KB
-.data + .bss ~ 8KB
-.stack       ~ 1KB-2KB (not tested yet)
+.text         ~ 15KB
+.data + .bss  ~ 8KB
+.stack        ~ 1KB-2KB (not tested yet)
 
 ext2/3/4 vs FAT32
 =================
