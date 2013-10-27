@@ -50,6 +50,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/**@brief   TODO: ...*/
 static inline uint64_t ext4_bg_get_block_bitmap(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -61,6 +62,7 @@ static inline uint64_t ext4_bg_get_block_bitmap(struct ext4_bgroup *bg,
     return v;
 }
 
+/**@brief   TODO: ...*/
 static inline uint64_t ext4_bg_get_inode_bitmap(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -73,6 +75,7 @@ static inline uint64_t ext4_bg_get_inode_bitmap(struct ext4_bgroup *bg,
     return v;
 }
 
+/**@brief   TODO: ...*/
 static inline uint64_t ext4_bg_get_inode_table_first_block(
     struct ext4_bgroup *bg, struct ext4_sblock *s)
 {
@@ -84,6 +87,7 @@ static inline uint64_t ext4_bg_get_inode_table_first_block(
     return v;
 }
 
+/**@brief   TODO: ...*/
 static inline uint32_t ext4_bg_get_free_blocks_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -95,6 +99,7 @@ static inline uint32_t ext4_bg_get_free_blocks_count(struct ext4_bgroup *bg,
     return v;
 }
 
+/**@brief   TODO: ...*/
 static inline void ext4_bg_set_free_blocks_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
@@ -103,6 +108,7 @@ static inline void ext4_bg_set_free_blocks_count(struct ext4_bgroup *bg,
         bg->free_blocks_count_hi = to_le16(cnt >> 16);
 }
 
+/**@brief   TODO: ...*/
 static inline uint32_t ext4_bg_get_free_inodes_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -114,6 +120,7 @@ static inline uint32_t ext4_bg_get_free_inodes_count(struct ext4_bgroup *bg,
     return v;
 }
 
+/**@brief   TODO: ...*/
 static inline void ext4_bg_set_free_inodes_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
@@ -122,7 +129,7 @@ static inline void ext4_bg_set_free_inodes_count(struct ext4_bgroup *bg,
         bg->free_inodes_count_hi = to_le16(cnt >> 16);
 }
 
-
+/**@brief   TODO: ...*/
 static inline uint32_t ext4_bg_get_used_dirs_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -134,6 +141,7 @@ static inline uint32_t ext4_bg_get_used_dirs_count(struct ext4_bgroup *bg,
     return v;
 }
 
+/**@brief   TODO: ...*/
 static inline void ext4_bg_set_used_dirs_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
@@ -142,7 +150,7 @@ static inline void ext4_bg_set_used_dirs_count(struct ext4_bgroup *bg,
         bg->used_dirs_count_hi = to_le16(cnt >> 16);
 }
 
-
+/**@brief   TODO: ...*/
 static inline uint32_t ext4_bg_get_itable_unused(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -155,6 +163,7 @@ static inline uint32_t ext4_bg_get_itable_unused(struct ext4_bgroup *bg,
     return v;
 }
 
+/**@brief   TODO: ...*/
 static inline void ext4_bg_set_itable_unused(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
@@ -163,18 +172,20 @@ static inline void ext4_bg_set_itable_unused(struct ext4_bgroup *bg,
         bg->itable_unused_hi = to_le16(cnt >> 16);
 }
 
-
+/**@brief   TODO: ...*/
 static inline void ext4_bg_set_checksum(struct ext4_bgroup *bg,
     uint16_t crc)
 {
     bg->checksum = to_le16(crc);
 }
 
+/**@brief   TODO: ...*/
 static inline bool ext4_bg_has_flag(struct ext4_bgroup *bg, uint32_t f)
 {
     return to_le16(bg->flags) & f;
 }
 
+/**@brief   TODO: ...*/
 static inline void ext4_bg_set_flag(struct ext4_bgroup *bg, uint32_t f)
 {
     uint16_t flags = to_le16(bg->flags);
@@ -182,6 +193,7 @@ static inline void ext4_bg_set_flag(struct ext4_bgroup *bg, uint32_t f)
     bg->flags = to_le16(flags);
 }
 
+/**@brief   TODO: ...*/
 static inline void ext4_bg_clear_flag(struct ext4_bgroup *bg, uint32_t f)
 {
     uint16_t flags = to_le16(bg->flags);
@@ -189,7 +201,7 @@ static inline void ext4_bg_clear_flag(struct ext4_bgroup *bg, uint32_t f)
     bg->flags = to_le16(flags);
 }
 
-
+/**@brief   TODO: ...*/
 uint16_t ext4_bg_crc16(uint16_t crc, const uint8_t *buffer, size_t len);
 
 #endif /* EXT4_BLOCK_GROUP_H_ */

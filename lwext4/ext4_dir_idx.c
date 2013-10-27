@@ -48,7 +48,7 @@
 struct ext4_dx_sort_entry {
     uint32_t hash;
     uint32_t rec_len;
-    void 	 *dentry;
+    void *dentry;
 };
 
 static int ext4_dir_dx_hash_string(struct ext4_hash_info *hinfo, int len,
@@ -60,37 +60,37 @@ static int ext4_dir_dx_hash_string(struct ext4_hash_info *hinfo, int len,
 
 
 uint8_t ext4_dir_dx_root_info_get_hash_version(
-        struct ext4_directory_dx_root_info *root_info)
+    struct ext4_directory_dx_root_info *root_info)
 {
     return root_info->hash_version;
 }
 
 
-void 	ext4_dir_dx_root_info_set_hash_version(
-        struct ext4_directory_dx_root_info  *root_info, uint8_t v)
+void ext4_dir_dx_root_info_set_hash_version(
+    struct ext4_directory_dx_root_info  *root_info, uint8_t v)
 {
     root_info->hash_version = v;
 }
 
 uint8_t ext4_dir_dx_root_info_get_info_length(
-        struct ext4_directory_dx_root_info *root_info)
+    struct ext4_directory_dx_root_info *root_info)
 {
     return root_info->info_length;
 }
-void 	ext4_dir_dx_root_info_set_info_length(
-        struct ext4_directory_dx_root_info  *root_info, uint8_t len)
+void ext4_dir_dx_root_info_set_info_length(
+    struct ext4_directory_dx_root_info  *root_info, uint8_t len)
 {
     root_info->info_length = len;
 }
 
 uint8_t ext4_dir_dx_root_info_get_indirect_levels(
-        struct ext4_directory_dx_root_info *root_info)
+    struct ext4_directory_dx_root_info *root_info)
 {
     return root_info->indirect_levels;
 }
 
 void 	ext4_dir_dx_root_info_set_indirect_levels(
-        struct ext4_directory_dx_root_info *root_info, uint8_t lvl)
+    struct ext4_directory_dx_root_info *root_info, uint8_t lvl)
 {
     root_info->indirect_levels = lvl;
 }
@@ -98,53 +98,53 @@ void 	ext4_dir_dx_root_info_set_indirect_levels(
 
 
 uint16_t ext4_dir_dx_countlimit_get_limit(
-        struct ext4_directory_dx_countlimit *climit)
+    struct ext4_directory_dx_countlimit *climit)
 {
     return to_le16(climit->limit);
 }
-void 	ext4_dir_dx_countlimit_set_limit(
-        struct ext4_directory_dx_countlimit *climit, uint16_t limit)
+void ext4_dir_dx_countlimit_set_limit(
+    struct ext4_directory_dx_countlimit *climit, uint16_t limit)
 {
     climit->limit = to_le16(limit);
 }
 
 uint16_t ext4_dir_dx_countlimit_get_count(
-        struct ext4_directory_dx_countlimit *climit)
+    struct ext4_directory_dx_countlimit *climit)
 {
     return to_le16(climit->count);
 }
 
-void 	ext4_dir_dx_countlimit_set_count(
-        struct ext4_directory_dx_countlimit *climit, uint16_t count)
+void ext4_dir_dx_countlimit_set_count(
+    struct ext4_directory_dx_countlimit *climit, uint16_t count)
 {
     climit->count = to_le16(count);
 }
 
 
 uint32_t ext4_dir_dx_entry_get_hash(
-        struct ext4_directory_dx_entry *entry)
+    struct ext4_directory_dx_entry *entry)
 {
     return to_le32(entry->hash);
 }
 void ext4_dir_dx_entry_set_hash(
-        struct ext4_directory_dx_entry *entry, uint32_t hash)
+    struct ext4_directory_dx_entry *entry, uint32_t hash)
 {
     entry->hash = to_le32(hash);
 }
 
 uint32_t ext4_dir_dx_entry_get_block(
-        struct ext4_directory_dx_entry *entry)
+    struct ext4_directory_dx_entry *entry)
 {
     return to_le32(entry->block);
 }
-void 	ext4_dir_dx_entry_set_block(
-        struct ext4_directory_dx_entry *entry, uint32_t block)
+void ext4_dir_dx_entry_set_block(
+    struct ext4_directory_dx_entry *entry, uint32_t block)
 {
     entry->block = to_le32(block);
 }
 /****************************************************************************/
 
-int 	ext4_dir_dx_init(struct ext4_inode_ref *dir)
+int ext4_dir_dx_init(struct ext4_inode_ref *dir)
 {
     /* Load block 0, where will be index root located */
     uint32_t fblock;
@@ -164,7 +164,6 @@ int 	ext4_dir_dx_init(struct ext4_inode_ref *dir)
 
     /* Initialize root info structure */
     uint8_t hash_version = ext4_get8(&dir->fs->sb, default_hash_version);
-
 
     ext4_dir_dx_root_info_set_hash_version(info, hash_version);
     ext4_dir_dx_root_info_set_indirect_levels(info, 0);
@@ -223,8 +222,8 @@ int 	ext4_dir_dx_init(struct ext4_inode_ref *dir)
 }
 
 static int ext4_dir_hinfo_init(struct ext4_hash_info *hinfo,
-        struct ext4_block *root_block, struct ext4_sblock *sb, size_t name_len,
-        const char *name)
+    struct ext4_block *root_block, struct ext4_sblock *sb, size_t name_len,
+    const char *name)
 {
     struct ext4_directory_dx_root *root =
             (struct ext4_directory_dx_root *) root_block->data;
@@ -276,9 +275,9 @@ static int ext4_dir_hinfo_init(struct ext4_hash_info *hinfo,
 
 
 static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
-        struct ext4_inode_ref *inode_ref, struct ext4_block *root_block,
-        struct ext4_directory_dx_block **dx_block,
-        struct ext4_directory_dx_block *dx_blocks)
+    struct ext4_inode_ref *inode_ref, struct ext4_block *root_block,
+    struct ext4_directory_dx_block **dx_block,
+    struct ext4_directory_dx_block *dx_blocks)
 {
     struct ext4_directory_dx_block *tmp_dx_block = dx_blocks;
     struct ext4_directory_dx_root *root =
@@ -368,8 +367,8 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 }
 
 static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
-        uint32_t hash, struct ext4_directory_dx_block *dx_block,
-        struct ext4_directory_dx_block *dx_blocks)
+    uint32_t hash, struct ext4_directory_dx_block *dx_block,
+    struct ext4_directory_dx_block *dx_blocks)
 {
     uint32_t num_handles = 0;
     struct ext4_directory_dx_block *p = dx_block;
@@ -432,7 +431,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 
 
 int 	ext4_dir_dx_find_entry(struct ext4_directory_search_result * result,
-        struct ext4_inode_ref *inode_ref, size_t name_len, const char *name)
+    struct ext4_inode_ref *inode_ref, size_t name_len, const char *name)
 {
     /* Load direct block 0 (index root) */
     uint32_t root_block_addr;
@@ -543,8 +542,8 @@ static int ext4_dir_dx_entry_comparator(const void *arg1, const void *arg2)
 }
 
 static void ext4_dir_dx_insert_entry(
-        struct ext4_directory_dx_block *index_block, uint32_t hash,
-        uint32_t iblock)
+    struct ext4_directory_dx_block *index_block, uint32_t hash,
+    uint32_t iblock)
 {
     struct ext4_directory_dx_entry *old_index_entry = index_block->position;
     struct ext4_directory_dx_entry *new_index_entry = old_index_entry + 1;
@@ -567,9 +566,9 @@ static void ext4_dir_dx_insert_entry(
 }
 
 static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
-        struct ext4_hash_info *hinfo, struct ext4_block *old_data_block,
-        struct ext4_directory_dx_block *index_block,
-        struct ext4_block *new_data_block)
+    struct ext4_hash_info *hinfo, struct ext4_block *old_data_block,
+    struct ext4_directory_dx_block *index_block,
+    struct ext4_block *new_data_block)
 {
     int rc = EOK;
 
@@ -639,7 +638,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 
     /* Sort all entries */
     qsort(sort_array, idx, sizeof(struct ext4_dx_sort_entry),
-            ext4_dir_dx_entry_comparator);
+        ext4_dir_dx_entry_comparator);
 
     /* Allocate new block for store the second part of entries */
     uint32_t new_fblock;
@@ -729,7 +728,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
     free(entry_buffer);
 
     ext4_dir_dx_insert_entry(index_block, new_hash + continued,
-            new_iblock);
+        new_iblock);
 
     *new_data_block = new_data_block_tmp;
 
@@ -746,9 +745,9 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
  *
  */
 static int ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
-        struct  ext4_directory_dx_block *dx_blocks,
-        struct ext4_directory_dx_block *dx_block,
-        struct ext4_directory_dx_block **new_dx_block)
+    struct  ext4_directory_dx_block *dx_blocks,
+    struct ext4_directory_dx_block *dx_block,
+    struct ext4_directory_dx_block **new_dx_block)
 {
     struct ext4_directory_dx_entry *entries;
 
@@ -819,7 +818,7 @@ static int ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
 
             /* Copy data to new node */
             memcpy((void *) new_entries, (void *) (entries + count_left),
-                    count_right * sizeof(struct ext4_directory_dx_entry));
+                count_right * sizeof(struct ext4_directory_dx_entry));
 
             /* Initialize new node */
             struct ext4_directory_dx_countlimit *left_countlimit =
@@ -902,8 +901,8 @@ static int ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
     return EOK;
 }
 
-int 	ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
-        struct ext4_inode_ref *child, const char *name)
+int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
+    struct ext4_inode_ref *child, const char *name)
 {
     int rc2 = EOK;
 
