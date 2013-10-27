@@ -47,63 +47,78 @@
 #include <ext4_blockdev.h>
 #include <ext4_super.h>
 
-
 #include <stdint.h>
 
+/**@brief   TODO: ...*/
 uint32_t ext4_dir_entry_ll_get_inode(struct ext4_directory_entry_ll *de);
 
+/**@brief   TODO: ...*/
 void ext4_dir_entry_ll_set_inode(struct ext4_directory_entry_ll *de,
     uint32_t inode);
 
-
+/**@brief   TODO: ...*/
 uint16_t ext4_dir_entry_ll_get_entry_length(struct ext4_directory_entry_ll *de);
+
+/**@brief   TODO: ...*/
 void ext4_dir_entry_ll_set_entry_length(struct ext4_directory_entry_ll *de,
     uint16_t len);
 
-
+/**@brief   TODO: ...*/
 uint16_t ext4_dir_entry_ll_get_name_length(struct ext4_sblock *sb,
     struct ext4_directory_entry_ll *de);
+
+/**@brief   TODO: ...*/
 void ext4_dir_entry_ll_set_name_length(struct ext4_sblock *sb,
     struct ext4_directory_entry_ll *de, uint16_t len);
 
-
-
+/**@brief   TODO: ...*/
 uint8_t ext4_dir_entry_ll_get_inode_type(struct ext4_sblock *sb,
     struct ext4_directory_entry_ll *de);
-void 	ext4_dir_entry_ll_set_inode_type(struct ext4_sblock *sb,
+
+/**@brief   TODO: ...*/
+void ext4_dir_entry_ll_set_inode_type(struct ext4_sblock *sb,
     struct ext4_directory_entry_ll *de, uint8_t type);
 
-
+/**@brief   TODO: ...*/
 int ext4_dir_iterator_init(struct ext4_directory_iterator *it,
     struct ext4_inode_ref *inode_ref, uint64_t pos);
 
+/**@brief   TODO: ...*/
 int ext4_dir_iterator_next(struct ext4_directory_iterator *it);
+
+/**@brief   TODO: ...*/
 int ext4_dir_iterator_fini(struct ext4_directory_iterator *it);
 
+/**@brief   TODO: ...*/
 void ext4_dir_write_entry(struct ext4_sblock *sb,
     struct ext4_directory_entry_ll *entry, uint16_t entry_len,
     struct ext4_inode_ref *child,  const char *name, size_t name_len);
 
+/**@brief   TODO: ...*/
 int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
-        uint32_t name_len, struct ext4_inode_ref *child);
+    uint32_t name_len, struct ext4_inode_ref *child);
 
+/**@brief   TODO: ...*/
 int ext4_dir_find_entry(struct ext4_directory_search_result *result,
-        struct ext4_inode_ref *parent, const char *name, uint32_t name_len);
+    struct ext4_inode_ref *parent, const char *name, uint32_t name_len);
 
+/**@brief   TODO: ...*/
 int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
     uint32_t name_len);
 
+/**@brief   TODO: ...*/
 int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
     struct ext4_block *target_block, struct ext4_inode_ref *child,
     const char *name, uint32_t name_len);
 
+/**@brief   TODO: ...*/
 int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
     size_t name_len, const char *name,
     struct ext4_directory_entry_ll **res_entry);
 
+/**@brief   TODO: ...*/
 int ext4_dir_destroy_result(struct ext4_inode_ref *parent,
     struct ext4_directory_search_result *result);
-
 
 #endif /* EXT4_DIR_H_ */
 

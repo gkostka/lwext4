@@ -45,77 +45,119 @@
 #include <ext4_config.h>
 #include <stdint.h>
 
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_mode(struct ext4_sblock *sb, struct ext4_inode *inode);
+
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_mode(struct ext4_sblock *sb, struct ext4_inode *inode,
     uint32_t mode);
 
-
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_uid(struct ext4_inode *inode);
-void 	 ext4_inode_set_uid(struct ext4_inode *inode, uint32_t uid);
 
+/**@brief   TODO: ...*/
+void ext4_inode_set_uid(struct ext4_inode *inode, uint32_t uid);
 
+/**@brief   TODO: ...*/
 uint64_t ext4_inode_get_size(struct ext4_sblock *sb, struct ext4_inode *inode);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_size(struct ext4_inode *inode, uint64_t size);
 
-
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_access_time(struct ext4_inode *inode);
-void 	 ext4_inode_set_access_time(struct ext4_inode *inode, uint32_t time);
 
+/**@brief   TODO: ...*/
+void ext4_inode_set_access_time(struct ext4_inode *inode, uint32_t time);
 
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_change_inode_time(struct ext4_inode *inode);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_change_inode_time(struct ext4_inode *inode,
     uint32_t time);
 
-
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_modification_time(struct ext4_inode *inode);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_modification_time(struct ext4_inode *inode, uint32_t time);
 
-
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_deletion_time(struct ext4_inode *inode);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_deletion_time(struct ext4_inode *inode, uint32_t time);
 
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_gid(struct ext4_inode *inode);
-void 	 ext4_inode_set_gid(struct ext4_inode *inode, uint32_t gid);
 
+/**@brief   TODO: ...*/
+void ext4_inode_set_gid(struct ext4_inode *inode, uint32_t gid);
+
+/**@brief   TODO: ...*/
 uint16_t ext4_inode_get_links_count(struct ext4_inode *inode);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_links_count(struct ext4_inode *inode, uint16_t cnt);
 
-
+/**@brief   TODO: ...*/
 uint64_t ext4_inode_get_blocks_count(struct ext4_sblock *sb,
     struct ext4_inode *inode);
+
+/**@brief   TODO: ...*/
 int ext4_inode_set_blocks_count(struct ext4_sblock *sb,
     struct ext4_inode *inode, uint64_t cnt);
 
-
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_flags(struct ext4_inode *inode);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_flags(struct ext4_inode *inode, uint32_t flags);
 
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_generation(struct ext4_inode *inode);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_generation(struct ext4_inode *inode, uint32_t gen);
 
+/**@brief   TODO: ...*/
 uint64_t ext4_inode_get_file_acl(struct ext4_inode *inode,
     struct ext4_sblock *sb);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_file_acl(struct ext4_inode *inode,
     struct ext4_sblock *sb, uint64_t acl);
 
-
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_direct_block(struct ext4_inode *inode, uint32_t idx);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_direct_block(struct ext4_inode *inode, uint32_t idx,
     uint32_t block);
 
-
+/**@brief   TODO: ...*/
 uint32_t ext4_inode_get_indirect_block(struct ext4_inode *inode, uint32_t idx);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_indirect_block(struct ext4_inode *inode, uint32_t idx,
     uint32_t block);
 
+/**@brief   TODO: ...*/
 bool ext4_inode_is_type(struct ext4_sblock *sb, struct ext4_inode *inode,
     uint32_t type);
 
-
+/**@brief   TODO: ...*/
 bool ext4_inode_has_flag(struct ext4_inode *inode, uint32_t f);
+
+/**@brief   TODO: ...*/
 void ext4_inode_clear_flag(struct ext4_inode *inode, uint32_t f);
+
+/**@brief   TODO: ...*/
 void ext4_inode_set_flag(struct ext4_inode *inode, uint32_t f);
 
+/**@brief   TODO: ...*/
 bool ext4_inode_can_truncate(struct ext4_sblock *sb, struct ext4_inode *inode);
 
 
