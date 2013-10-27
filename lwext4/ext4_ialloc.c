@@ -86,7 +86,7 @@ int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
     uint32_t bitmap_block_addr = ext4_bg_get_inode_bitmap(
             bg_ref.block_group, sb);
 
-    struct	ext4_block bitmap_block;
+    struct ext4_block bitmap_block;
     rc = ext4_block_get(fs->bdev, &bitmap_block, bitmap_block_addr);
     if (rc != EOK)
         return rc;
@@ -173,7 +173,7 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
             uint32_t bitmap_block_addr = ext4_bg_get_inode_bitmap(
                     bg_ref.block_group, sb);
 
-            struct	ext4_block bitmap_block;
+            struct ext4_block bitmap_block;
             rc = ext4_block_get(fs->bdev, &bitmap_block, bitmap_block_addr);
             if (rc != EOK)
                 return rc;

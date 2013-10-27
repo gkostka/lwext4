@@ -59,8 +59,8 @@ uint32_t ext4_block_group_cnt(struct ext4_sblock *s)
 uint32_t ext4_blocks_in_group_cnt(struct ext4_sblock *s, uint32_t bgid)
 {
     uint32_t block_group_count = ext4_block_group_cnt(s);
-    uint32_t blocks_per_group  = ext4_get32(s, blocks_per_group);
-    uint64_t total_blocks 	   = ext4_sb_get_blocks_cnt(s);
+    uint32_t blocks_per_group = ext4_get32(s, blocks_per_group);
+    uint64_t total_blocks = ext4_sb_get_blocks_cnt(s);
 
     if (bgid < block_group_count - 1)
         return blocks_per_group;
@@ -82,13 +82,13 @@ uint32_t ext4_inodes_in_group_cnt(struct ext4_sblock *s, uint32_t bgid)
     return (total_inodes - ((block_group_count - 1) * inodes_per_group));
 }
 
-int	ext4_sb_write(struct ext4_blockdev *bdev, struct ext4_sblock *s)
+int ext4_sb_write(struct ext4_blockdev *bdev, struct ext4_sblock *s)
 {
     return ext4_block_writebytes(bdev, EXT4_SUPERBLOCK_OFFSET,
             s, EXT4_SUPERBLOCK_SIZE);
 }
 
-int	ext4_sb_read(struct ext4_blockdev *bdev, struct ext4_sblock *s)
+int ext4_sb_read(struct ext4_blockdev *bdev, struct ext4_sblock *s)
 {
     return ext4_block_readbytes(bdev, EXT4_SUPERBLOCK_OFFSET,
             s, EXT4_SUPERBLOCK_SIZE);

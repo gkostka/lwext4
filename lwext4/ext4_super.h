@@ -165,13 +165,13 @@ uint32_t ext4_inodes_in_group_cnt(struct ext4_sblock *s, uint32_t bgid);
  * @param   bdev block device descriptor.
  * @param   s superblock descruptor
  * @return  Standard error code */
-int	ext4_sb_write(struct ext4_blockdev *bdev, struct ext4_sblock *s);
+int ext4_sb_write(struct ext4_blockdev *bdev, struct ext4_sblock *s);
 
 /**@brief   Superblock read.
  * @param   bdev block device descriptor.
  * @param   s superblock descruptor
  * @return  Standard error code */
-int	ext4_sb_read(struct ext4_blockdev *bdev, struct ext4_sblock *s);
+int ext4_sb_read(struct ext4_blockdev *bdev, struct ext4_sblock *s);
 
 /**@brief   Superblock simple validation.
  * @param   s superblock dsecriptor

@@ -42,51 +42,51 @@
 #endif
 
 
-/**@brief	Enable directory indexing feature (EXT3 feature)*/
+/**@brief   Enable directory indexing feature (EXT3 feature)*/
 #ifndef CONFIG_DIR_INDEX_ENABLE
 #define CONFIG_DIR_INDEX_ENABLE     1
 #endif
 
-/**@brief	Enable extents feature (EXT4 feature)*/
+/**@brief   Enable extents feature (EXT4 feature)*/
 #ifndef CONFIG_EXTENT_ENABLE
 #define CONFIG_EXTENT_ENABLE        1
 #endif
 
 
 
-/**@brief	Include error codes from ext4_errno or sandard library.*/
+/**@brief   Include error codes from ext4_errno or sandard library.*/
 #ifndef CONFIG_HAVE_OWN_ERRNO
 #define CONFIG_HAVE_OWN_ERRNO       1
 #endif
 
 
-/**@brief	Debug printf enable (stdout)*/
+/**@brief   Debug printf enable (stdout)*/
 #ifndef CONFIG_DEBUG_PRINTF
 #define CONFIG_DEBUG_PRINTF         1
 #endif
 
-/**@brief	Assert printf enable (stdout)*/
+/**@brief   Assert printf enable (stdout)*/
 #ifndef CONFIG_DEBUG_ASSERT
 #define CONFIG_DEBUG_ASSERT         1
 #endif
 
-/**@brief	Statistics of block device*/
+/**@brief   Statistics of block device*/
 #ifndef CONFIG_BLOCK_DEV_ENABLE_STATS
 #define CONFIG_BLOCK_DEV_ENABLE_STATS   1
 #endif
 
-/**@brief	Cache size of block device.*/
+/**@brief   Cache size of block device.*/
 #ifndef CONFIG_BLOCK_DEV_CACHE_SIZE
 #define CONFIG_BLOCK_DEV_CACHE_SIZE     8
 #endif
 
 
-/**@brief	Ilosc urzadzen blokowych.*/
+/**@brief   Ilosc urzadzen blokowych.*/
 #ifndef CONFIG_EXT4_BLOCKDEVS_COUNT
 #define CONFIG_EXT4_BLOCKDEVS_COUNT     2
 #endif
 
-/**@brief	Ilosc punktow montowania systemu plikow*/
+/**@brief   Ilosc punktow montowania systemu plikow*/
 #ifndef CONFIG_EXT4_MOUNTPOINTS_COUNT
 #define CONFIG_EXT4_MOUNTPOINTS_COUNT   2
 #endif

@@ -32,7 +32,7 @@
 /**
  * @file  ext4.h
  * @brief Ext4 high level operations (files, directories, mountpoints...).
- * 		  Client has to include only this file.
+ *        Client has to include only this file.
  */
 
 #ifndef EXT4_H_
@@ -75,53 +75,53 @@
 /********************************FILE SEEK FLAGS*****************************/
 
 #ifndef SEEK_SET
-#define SEEK_SET	0
+#define SEEK_SET    0
 #endif
 
 #ifndef SEEK_CUR
-#define SEEK_CUR	1
+#define SEEK_CUR    1
 #endif
 
 #ifndef SEEK_END
-#define SEEK_END	2
+#define SEEK_END    2
 #endif
 
 /********************************OS LOCK INFERFACE***************************/
 
-/**@brief	OS dependent lock interface.*/
+/**@brief   OS dependent lock interface.*/
 struct ext4_lock {
 
-    /**@brief	Lock access to mountpoint*/
+    /**@brief   Lock access to mountpoint*/
     void (*lock)(void);
 
-    /**@brief	Unlock access to mountpoint*/
+    /**@brief   Unlock access to mountpoint*/
     void (*unlock)(void);
 };
 
 
 /********************************FILE DESCRIPTOR*****************************/
 
-/**@brief	File descriptor*/
+/**@brief   File descriptor*/
 typedef struct ext4_file {
 
-    /**@brief	Pountpoint handle.*/
+    /**@brief   Pountpoint handle.*/
     struct ext4_mountpoint *mp;
 
-    /**@brief	File inode id*/
+    /**@brief   File inode id*/
     uint32_t inode;
 
-    /**@brief	Open flags.*/
+    /**@brief   Open flags.*/
     uint32_t flags;
 
-    /**@brief	File size.*/
+    /**@brief   File size.*/
     uint64_t fsize;
 
-    /**@brief	File position*/
+    /**@brief   File position*/
     uint64_t fpos;
 }ext4_file;
 
 /*****************************DIRECTORY DESCRIPTOR***************************/
-/**@brief	Directory entry types. Copy from ext4_types.h*/
+/**@brief   Directory entry types. Copy from ext4_types.h*/
 enum  {
     EXT4_DIRENTRY_UNKNOWN = 0,
     EXT4_DIRENTRY_REG_FILE,
@@ -146,10 +146,10 @@ typedef struct {
 }ext4_direntry;
 
 typedef struct  {
-    /**@brief 	File descriptor*/
-    ext4_file		f;
-    /**@brief	Current direntry.*/
-    ext4_direntry	de;
+    /**@brief   File descriptor*/
+    ext4_file f;
+    /**@brief   Current direntry.*/
+    ext4_direntry de;
 }ext4_dir;
 
 /********************************MOUNT OPERATIONS****************************/
@@ -167,8 +167,8 @@ int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
         const char *dev_name);
 
 /**@brief   Mount a block device with EXT4 partition to the mountpoint.
- * @param	dev_name block device name (@ref ext4_device_register)
- * @param	mount_point pount point, for example
+ * @param   dev_name block device name (@ref ext4_device_register)
+ * @param   mount_point pount point, for example
  *          -   /
  *          -   /my_partition/
  *          -   /my_second_partition/
@@ -177,7 +177,7 @@ int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
 int ext4_mount(const char * dev_name,  char *mount_point);
 
 /**@brief   Umount operation.
- * @param	mount_point mount name
+ * @param   mount_point mount name
  * @return  standard error code */
 int ext4_umount(char *mount_point);
 
@@ -212,9 +212,9 @@ int ext4_mount_point_stats(const char *mount_point,
 int ext4_fremove(const char *path);
 
 /**@brief   File open function.
- * @param	filename, (has to start from mountpoint)
- * 			/my_partition/my_file
- * @param	flags open file flags
+ * @param   filename, (has to start from mountpoint)
+ *          /my_partition/my_file
+ * @param   flags open file flags
  *  |---------------------------------------------------------------|
  *  |   r or rb                 O_RDONLY                            |
  *  |---------------------------------------------------------------|
@@ -229,7 +229,7 @@ int ext4_fremove(const char *path);
  *  |   a+ or ab+ or a+b        O_RDWR|O_CREAT|O_APPEND             |
  *  |---------------------------------------------------------------|
  *
- * @return	standard error code*/
+ * @return  standard error code*/
 int ext4_fopen (ext4_file *f, const char *path, const char *flags);
 
 /**@brief   File close function.

@@ -53,7 +53,7 @@ FEATURE_INCOMPAT (able to mount with unsupported feature):
  - DIR_PREALLOC:   no
  - IMAGIC_INODES:  no
  - HAS_JOURNAL:    no
- - EXT_ATTR: 	   no
+ - EXT_ATTR:       no
  - RESIZE_INODE:   no
  - DIR_INDEX:      yes
 
@@ -67,8 +67,8 @@ FEATURE_RO (able to mount in read only with unsupported feature):
  - EXTRA_ISIZE:   yes
 
 Supported filetypes:
- - FIFO: 	  no
- - CHARDEV:	  no
+ - FIFO:      no
+ - CHARDEV:   no
  - DIRECTORY: yes
  - BLOCKDEV:  no
  - FILE:      yes
@@ -94,7 +94,7 @@ lwext4 project tree
 
 +toolchain     - specific toolchain cmake files
 
-+ext4.h	       - lwext4 client library header
++ext4.h        - lwext4 client library header
 CMakeLists.txt - CMake config file
 ext_images.7z  - ext2/3/4 100MB images
 Makefile       - helper makefile to call cmake
