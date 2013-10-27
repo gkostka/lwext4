@@ -3,9 +3,28 @@ About lwext4
 ============
 
 The main goal of the lwext4 project is to provide ext2/3/4 filesystem
-library for microcontrolers.
+library for microcontrolers with SD/MMC card support. Ext2/3/4, in my
+opinion is one of the best filesystem for SD/MMC.
 
 kostka.grzegorz@gmail.com
+
+Minimum memory requirements
+===========================
+
+.text 		 ~ 15KB
+.data + .bss ~ 8KB
+.stack		 ~ 1KB-2KB (not tested yet)
+
+ext2/3/4 vs FAT32
+=================
+ext2/3/4 > FAT32
+ - fseek operation on big file in FAT32 is IO heavy
+ - ext2/3/4 HTREE directories operations are faster than FAT32  
+ - ext4 extents makes truncate/remove opertion really fast
+ - more at https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout
+
+ext2/3/4 < FAT32
+ - FAT32 has smaller footprint
 
 Credits lwext4
 ==============
