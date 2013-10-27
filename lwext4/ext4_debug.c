@@ -40,10 +40,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-static uint32_t		__dbg_mask__;
+static uint32_t __dbg_mask__;
 
 
-void	ext4_dmask_set(uint32_t m)
+void ext4_dmask_set(uint32_t m)
 {
     __dbg_mask__ = m;
 }
