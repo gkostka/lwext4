@@ -33,7 +33,7 @@
 #include <string.h>
 
 /**@brief	Default filename.*/
-const char *fname = "ext2";
+static const char *fname = "ext2";
 
 /**@brief	Image block size.*/
 #define EXT4_FILEDEV_BSIZE		512
@@ -71,7 +71,7 @@ static int filedev_open(struct ext4_blockdev *bdev)
 	dev_file = fopen(fname, "r+b");
 
 	if(!dev_file)
-		return ENOENT;
+		return EIO;
 
 	if(fseek(dev_file, 0, SEEK_END))
 		return EFAULT;
