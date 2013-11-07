@@ -66,6 +66,11 @@ int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
     if(!bc->lba)
         goto error;
 
+    bc->dirty = malloc(cnt * sizeof(bool));
+    if(!bc->dirty)
+        goto error;
+
+
     bc->data = malloc(cnt * itemsize);
     if(!bc->data)
         goto error;
@@ -74,6 +79,7 @@ int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
     memset(bc->lru_id, 0, cnt * sizeof(uint32_t));
     memset(bc->free_delay, 0, cnt * sizeof(uint8_t));
     memset(bc->lba, 0, cnt * sizeof(uint64_t));
+    memset(bc->dirty, 0, cnt * sizeof(bool));
 
     bc->cnt = cnt;
     bc->itemsize = itemsize;
@@ -96,6 +102,9 @@ int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
     if(bc->lba)
         free(bc->lba);
 
+    if(bc->dirty)
+       free(bc->dirty);
+
     if(bc->data)
         free(bc->data);
 
@@ -117,6 +126,9 @@ int ext4_bcache_fini_dynamic(struct ext4_bcache *bc)
 
     if(bc->lba)
         free(bc->lba);
+
+    if(bc->dirty)
+       free(bc->dirty);
 
     if(bc->data)
         free(bc->data);
