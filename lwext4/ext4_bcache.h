@@ -82,6 +82,9 @@ struct ext4_bcache {
     /**@brief   Logical block table (cnt).*/
     uint64_t *lba;
 
+    /**@brief   Dirty mark (cnt).*/
+    bool *dirty;
+
     /**@brief   Cache data buffers (cnt * itemsize)*/
     uint8_t *data;
 
@@ -99,6 +102,7 @@ struct ext4_bcache {
         static uint32_t __name##_lru_id[(__cnt)];                   \
         static uint8_t  __name##_free_delay[(__cnt)];               \
         static uint64_t __name##_lba[(__cnt)];                      \
+        static bool     __name##_dirty[(__cnt)];                    \
         static uint8_t  __name##_data[(__cnt) * (__itemsize)];      \
         static struct ext4_bcache __name = {                        \
                 .cnt     = __cnt,                                   \
@@ -107,6 +111,7 @@ struct ext4_bcache {
                 .refctr    = __name##_refctr,                       \
                 .lru_id    = __name##_lru_id,                       \
                 .lba    = __name##_lba,                             \
+                .dirty    = __name##_dirty,                         \
                 .free_delay= __name##_free_delay,                   \
                 .data    = __name##_data,                           \
         }

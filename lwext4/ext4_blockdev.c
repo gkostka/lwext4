@@ -176,7 +176,7 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
         return EIO;
 
     /*Doesn,t need to write.*/
-    if(b->dirty == false){
+    if(b->dirty == false && !bdev->bc->dirty[b->cache_id]){
         ext4_bcache_free(bdev->bc, b, 0);
         return EOK;
     }
@@ -191,9 +191,13 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
     pba = (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
     pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
+    if(bdev->bc->refctr[b->cache_id] > 1){
+        bdev->bc->dirty[b->cache_id] = true;
+        return ext4_bcache_free(bdev->bc, b, 0);
+    }
 
     r = bdev->bwrite(bdev, b->data, pba, pb_cnt);
-
+    bdev->bc->dirty[b->cache_id] = false;
     if(r != EOK){
         b->dirty = false;
         ext4_bcache_free(bdev->bc, b, 0);
