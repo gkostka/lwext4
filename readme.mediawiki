@@ -1,4 +1,4 @@
-==About lwext4==
+==About==
 
 The main goal of the lwext4 project is to provide ext2/3/4 filesystem
 library for microcontrolers with SD/MMC card support. Ext2/3/4, in my
@@ -13,7 +13,7 @@ kostka.grzegorz@gmail.com
 =====RAM:=====
  - 8KB
 =====STACK:=====
- - 1KB-2KB (not tested yet)
+ - 2KB
 
 
 ==ext2/3/4 vs FAT32==
@@ -26,14 +26,14 @@ kostka.grzegorz@gmail.com
 ;ext2/3/4 < FAT32
 * FAT32 has smaller footprint
 
-==Credits lwext4==
+==Credits==
 
 A lot of the implementation of lwext4 was taken from HelenOS:
     http://helenos.org/
  
 Some of ideas and features are based on FreeBSD and Linux implementations.
 
-==lwext4 supported/unsupported ext2/3/4 fs features==
+==Supported ext2/3/4 fs features==
 
 ;FEATURE_INCOMPAT (unable to mount with unsupported feature):
  COMPRESSION: no
@@ -48,7 +48,7 @@ Some of ideas and features are based on FreeBSD and Linux implementations.
  EA_INODE:    no
  DIRDATA:     no
  
-;FEATURE_INCOMPAT (able to mount with unsupported feature):
+;FEATURE_COMPAT (able to mount with unsupported feature):
  DIR_PREALLOC:   no
  IMAGIC_INODES:  no
  HAS_JOURNAL:    no
@@ -56,7 +56,7 @@ Some of ideas and features are based on FreeBSD and Linux implementations.
  RESIZE_INODE:   no
  DIR_INDEX:      yes
 
-;FEATURE_RO (able to mount in read only with unsupported feature):
+;FEATURE_RO (able to mount in read only mode):
  SPARSE_SUPER:  yes
  LARGE_FILE:    yes
  BTREE_DIR:     no
@@ -74,12 +74,12 @@ Some of ideas and features are based on FreeBSD and Linux implementations.
  SOFTLINK:  no
  SOCKET:    no
 
-==Other:==
+==Other==
  - block_size: 1KB, 2KB, 4KB ... 64KB
  - little/big endian architecture support
 
 
-==lwext4 project tree==
+==Project tree==
 
  - blockdev         - block devices set, supported blockdevs
  -- filedev         - file based block device
@@ -98,7 +98,7 @@ Some of ideas and features are based on FreeBSD and Linux implementations.
  - Makefile         - helper makefile to call cmake
  - readme.mediawiki - yes, you are here ;)
   
-==lwext4 compile Windows==
+==Compile: Windows==
 ;Tools needed:
 * CMake:  http://www.cmake.org/cmake/resources/software.html
 * MinGw:  http://www.mingw.org/
@@ -114,7 +114,7 @@ Some of ideas and features are based on FreeBSD and Linux implementations.
  cd build_generic
  make
 
-==lwext4 compile Linux==
+==Compile: Linux==
 
 Tools needed:
  - CMake:  http://www.cmake.org/cmake/resources/software.html
@@ -129,7 +129,7 @@ Tools needed:
  cd build_generic
  make
 
-==lwext4 generic demo app==
+==Generic demo applicarion==
 
 Features:
  - load ext2/3/4 images
@@ -163,12 +163,12 @@ Usage:
     --wpart  - windows partition mode                           
 
 
-==lwext4 compile Cross==
+==Cross-Compile==
 
-Toolchain for ARM Cortex-m3/4: https://launchpad.net/gcc-arm-embedded
-Toolchain for Blackfin: http://blackfin.uclinux.org/doku.php
+ Toolchain for ARM Cortex-m3/4: https://launchpad.net/gcc-arm-embedded
+ Toolchain for Blackfin: http://blackfin.uclinux.org/doku.php
 
-Build bf158 library:
+Build bf518 library:
  make bf518
 
 Build cortex-m3 library:
@@ -177,10 +177,10 @@ Build cortex-m3 library:
 Build cortex-m4 library:
  make cortex-m4
 
-==lwext4 ports==
- -Blackfin BF518 EZKIT SD Card Demo: TBD
- -STM32F4-Discovery SD Card Demo: TBD 
+==Ports==
+ *Blackfin BF518 EZKIT SD Card Demo: TBD
+ *STM32F4-Discovery SD Card Demo: TBD 
 
-==lwext4 footprint==
+==Footprint==
                            
 TBD
