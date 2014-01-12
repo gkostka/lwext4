@@ -55,7 +55,7 @@
 #define LCD_SCROLL_ENABLED
 
 /* Define the LCD default text color */
-#define LCD_LOG_DEFAULT_COLOR    LCD_COLOR_WHITE
+#define LCD_LOG_DEFAULT_COLOR    LCD_COLOR_GREEN
 
 /* Define the display window settings */
 #define YWINDOW_MIN              3
@@ -65,7 +65,7 @@
 /* Define the cache depth */
 #define CACHE_SIZE               50
 
-#define DEFAULT_FONT            Font8x12
+#define DEFAULT_FONT             Font8x12
 
 /** @defgroup LCD_LOG_CONF_Exported_TypesDefinitions
   * @{

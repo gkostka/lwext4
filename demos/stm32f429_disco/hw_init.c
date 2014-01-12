@@ -31,6 +31,13 @@
 USB_OTG_CORE_HANDLE     USB_OTG_Core;
 USBH_HOST               USB_Host;
 
+static volatile uint32_t _systick_;
+
+void SysTick_Handler(void)
+{
+    _systick_++;
+}
+
 void hw_init(void)
 {
     pll_init();
@@ -38,6 +45,8 @@ void hw_init(void)
     /* Initialize the LEDs */
     STM_EVAL_LEDInit(LED3);
     STM_EVAL_LEDInit(LED4);
+
+    SysTick_Config(CFG_CCLK_FREQ / 1000);
 
     /*Init USB Host */
     USBH_Init(&USB_OTG_Core,
@@ -66,6 +75,11 @@ bool hw_usb_connected(void)
     return HCD_IsDeviceConnected(&USB_OTG_Core);
 }
 
+bool hw_usb_enum_done(void)
+{
+    return USB_Host_Application_Ready;
+}
+
 void hw_led_red(bool on)
 {
     on ? STM_EVAL_LEDOn(LED4) : STM_EVAL_LEDOff(LED4);
@@ -74,4 +88,9 @@ void hw_led_red(bool on)
 void hw_led_green(bool on)
 {
     on ? STM_EVAL_LEDOn(LED3) : STM_EVAL_LEDOff(LED3);
+}
+
+uint32_t hw_get_ms(void)
+{
+    return _systick_;
 }
