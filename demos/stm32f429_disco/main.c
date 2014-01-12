@@ -41,17 +41,20 @@
 #include <usb_msc_lwext4.h>
 #include <ext4.h>
 
-/**@brief   Input stream name.*/
-char input_name[128] = "ext2";
-
 /**@brief   Read-write size*/
 #define READ_WRITE_SZIZE 1024 * 8
+
+/**@brief   Delay test (slower LCD scroll)*/
+#define TEST_DELAY_MS    2000
+
+/**@brief   Input stream name.*/
+char input_name[128] = "ext2";
 
 /**@brief   Read-write size*/
 static int rw_szie  = READ_WRITE_SZIZE;
 
 /**@brief   Read-write size*/
-static int rw_count = 1000;
+static int rw_count = 100;
 
 /**@brief   Directory test count*/
 static int dir_cnt  = 10;
@@ -346,7 +349,7 @@ static void cleanup(void)
 
 
     printf("cleanup: remove /mp/dir1\n");
-    start =get_ms();
+    start = get_ms();
     ext4_dir_rm("/mp/dir1");
     stop = get_ms();
     diff = stop - start;
@@ -423,48 +426,56 @@ int main(void)
     printf("RW count: %d\n", rw_count);
     printf("Cache mode: %s\n", cache_mode ? "dynamic" : "static");
 
+
+    hw_wait_ms(TEST_DELAY_MS);
     if(!mount())
         return EXIT_FAILURE;
 
-
     cleanup();
 
-    if(sbstat)
+    if(sbstat){
+        hw_wait_ms(TEST_DELAY_MS);
         mp_stats();
+    }
 
+    hw_wait_ms(TEST_DELAY_MS);
     dir_ls("/mp/");
     if(!dir_test(dir_cnt))
         return EXIT_FAILURE;
 
+    hw_wait_ms(TEST_DELAY_MS);
     if(!file_test())
         return EXIT_FAILURE;
 
     dir_ls("/mp/");
 
-    if(sbstat)
+    if(sbstat){
+        hw_wait_ms(TEST_DELAY_MS);
         mp_stats();
+    }
 
-    if(cleanup_flag)
+    if(cleanup_flag){
+        hw_wait_ms(TEST_DELAY_MS);
         cleanup();
+    }
 
-    if(bstat)
+    if(bstat){
+        hw_wait_ms(TEST_DELAY_MS);
         block_stats();
+    }
 
     if(!umount())
         return EXIT_FAILURE;
 
-    printf("Test finish: OK\n");
+    printf("\nTest finished: OK\n");
     printf("Press RESET to restart\n");
-    while (1)
-    {
-        volatile int count;
-        for (count = 0; count < 1000000; count++);
+
+    while (1) {
+        hw_wait_ms(500);
         hw_led_green(1);
-        for (count = 0; count < 1000000; count++);
+        hw_wait_ms(500);
         hw_led_green(0);
 
     }
 }
 
-/**     @} (end addtogroup subgroup)    */
-/** @} (end addtogroup group)           */
