@@ -13,57 +13,32 @@
  *      @{
  **********************************************************/
 
-#include "config.h"
-#include "stm32f4xx.h"
-#include "stm32f429i_discovery_lcd.h"
-#include "lcd_log.h"
-#include "pll.h"
-#include <stdint.h>
+#include <config.h>
+#include <hw_init.h>
 
-
-uint32_t sEE_TIMEOUT_UserCallback(void)
-{
-    return 0;
-}
-
-int32_t bsp_init (void)
-{
-    /* Initialize the LEDs */
-    STM_EVAL_LEDInit(LED3);
-    STM_EVAL_LEDInit(LED4);
-
-    LCD_Init();
-    LCD_LayerInit();
-    LCD_DisplayOn();
-    LTDC_Cmd(ENABLE);
-    LCD_SetLayer(LCD_FOREGROUND_LAYER);
-    LCD_LOG_Init();
-
-    LCD_LOG_SetHeader((uint8_t *)"STM32F4 LWEXT4 DEMO");
-
-    return 0;
-}
-
+#include <stdio.h>
 
 int main(void)
 {
-    volatile uint32_t count, count_max = 10000000;
+    volatile int count;
+    hw_init();
 
-    pll_init();
-    bsp_init();
+    printf("Connect USB drive...\n");
+
+    while(!hw_usb_connected())
+        hw_usb_process();
+    printf("USB drive connected\n");
+
+    hw_led_red(1);
 
     int i = 0;
     while (1)
     {
-        for (count = 0; count < count_max; count++);
-        STM_EVAL_LEDOn(LED3);
-        STM_EVAL_LEDOn(LED4);
-        for (count = 0; count < count_max; count++);
-        STM_EVAL_LEDOff(LED3);
-        STM_EVAL_LEDOff(LED4);
-
-        __io_putchar((i++ % 10) + '0');__io_putchar('\n');
-
+        for (count = 0; count < 1000000; count++);
+        hw_led_green(1);
+        for (count = 0; count < 1000000; count++);
+        hw_led_green(0);
+        printf("%d\n", i++);
     }
 }
 

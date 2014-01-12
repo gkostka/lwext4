@@ -89,7 +89,7 @@
       
 #define sEE_OK                    0
 #define sEE_FAIL                  1   
- 
+#define USE_DEFAULT_TIMEOUT_CALLBACK
 
 /**
   * @}
