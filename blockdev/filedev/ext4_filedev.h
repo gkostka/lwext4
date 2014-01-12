@@ -40,6 +40,7 @@ struct ext4_bcache*   ext4_filecache_get(void);
 /**@brief   File blockdev get.*/
 struct ext4_blockdev* ext4_filedev_get(void);
 
+/**@brief   Filename set.*/
 void ext4_filedev_filename(const char *n);
 
 #endif /* EXT4_FILEDEV_H_ */
