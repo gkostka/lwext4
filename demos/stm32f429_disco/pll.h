@@ -19,7 +19,7 @@
 #include <config.h>
 
 
-/**@brief	...*/
+/**@brief	Clock initialization.*/
 void pll_init(void);
 
 
