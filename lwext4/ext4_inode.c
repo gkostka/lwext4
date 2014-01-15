@@ -44,7 +44,10 @@
 #include <ext4_inode.h>
 #include <ext4_super.h>
 
-/**@brief   TODO: ...*/
+/**@brief  Compute number of bits for block count.
+ * @param block_size Filesystem block_size
+ * @return Number of bits
+ */
 static uint32_t ext4_inode_block_bits_count(uint32_t block_size)
 {
     uint32_t bits = 8;

@@ -48,7 +48,11 @@
 #include <ext4_inode.h>
 
 
-
+/**@brief Compute number of block group from block address.
+ * @param sb         Superblock pointer.
+ * @param baddr Absolute address of block.
+ * @return Block group index
+ */
 static uint32_t ext4_balloc_get_bgid_of_block(struct ext4_sblock *s,
     uint32_t baddr)
 {
@@ -235,6 +239,11 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, uint32_t first,
     return EOK;
 }
 
+
+/**@brief Compute 'goal' for allocation algorithm.
+ * @param inode_ref Reference to inode, to allocate block for
+ * @return Goal block number
+ */
 static uint32_t ext4_balloc_find_goal(struct ext4_inode_ref *inode_ref)
 {
     uint32_t goal = 0;

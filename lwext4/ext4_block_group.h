@@ -50,7 +50,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/**@brief   TODO: ...*/
+/**@brief Get address of block with data block bitmap.
+ * @param bg pointer to block group
+ * @param s pointer to superblock
+ * @return Address of block with block bitmap
+ */
 static inline uint64_t ext4_bg_get_block_bitmap(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -62,7 +66,11 @@ static inline uint64_t ext4_bg_get_block_bitmap(struct ext4_bgroup *bg,
     return v;
 }
 
-/**@brief   TODO: ...*/
+/**@brief Get address of block with i-node bitmap.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @return Address of block with i-node bitmap
+ */
 static inline uint64_t ext4_bg_get_inode_bitmap(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -75,7 +83,11 @@ static inline uint64_t ext4_bg_get_inode_bitmap(struct ext4_bgroup *bg,
     return v;
 }
 
-/**@brief   TODO: ...*/
+/**@brief Get address of the first block of the i-node table.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @return Address of first block of i-node table
+ */
 static inline uint64_t ext4_bg_get_inode_table_first_block(
     struct ext4_bgroup *bg, struct ext4_sblock *s)
 {
@@ -87,7 +99,11 @@ static inline uint64_t ext4_bg_get_inode_table_first_block(
     return v;
 }
 
-/**@brief   TODO: ...*/
+/**@brief Get number of free blocks in block group.
+ * @param bg Pointer to block group
+ * @param sb Pointer to superblock
+ * @return Number of free blocks in block group
+ */
 static inline uint32_t ext4_bg_get_free_blocks_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -99,7 +115,11 @@ static inline uint32_t ext4_bg_get_free_blocks_count(struct ext4_bgroup *bg,
     return v;
 }
 
-/**@brief   TODO: ...*/
+/**@brief Set number of free blocks in block group.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @param cnt Number of free blocks in block group
+ */
 static inline void ext4_bg_set_free_blocks_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
@@ -108,7 +128,11 @@ static inline void ext4_bg_set_free_blocks_count(struct ext4_bgroup *bg,
         bg->free_blocks_count_hi = to_le16(cnt >> 16);
 }
 
-/**@brief   TODO: ...*/
+/**@brief Get number of free i-nodes in block group.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @return Number of free i-nodes in block group
+ */
 static inline uint32_t ext4_bg_get_free_inodes_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -120,7 +144,11 @@ static inline uint32_t ext4_bg_get_free_inodes_count(struct ext4_bgroup *bg,
     return v;
 }
 
-/**@brief   TODO: ...*/
+/**@brief Set number of free i-nodes in block group.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @param cnt Number of free i-nodes in block group
+ */
 static inline void ext4_bg_set_free_inodes_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
@@ -129,7 +157,11 @@ static inline void ext4_bg_set_free_inodes_count(struct ext4_bgroup *bg,
         bg->free_inodes_count_hi = to_le16(cnt >> 16);
 }
 
-/**@brief   TODO: ...*/
+/**@brief Get number of used directories in block group.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @return Number of used directories in block group
+ */
 static inline uint32_t ext4_bg_get_used_dirs_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -141,7 +173,11 @@ static inline uint32_t ext4_bg_get_used_dirs_count(struct ext4_bgroup *bg,
     return v;
 }
 
-/**@brief   TODO: ...*/
+/**@brief Set number of used directories in block group.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @param cnt Number of used directories in block group
+ */
 static inline void ext4_bg_set_used_dirs_count(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
@@ -150,7 +186,11 @@ static inline void ext4_bg_set_used_dirs_count(struct ext4_bgroup *bg,
         bg->used_dirs_count_hi = to_le16(cnt >> 16);
 }
 
-/**@brief   TODO: ...*/
+/**@brief Get number of unused i-nodes.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @return Number of unused i-nodes
+ */
 static inline uint32_t ext4_bg_get_itable_unused(struct ext4_bgroup *bg,
     struct ext4_sblock *s)
 {
@@ -163,7 +203,11 @@ static inline uint32_t ext4_bg_get_itable_unused(struct ext4_bgroup *bg,
     return v;
 }
 
-/**@brief   TODO: ...*/
+/**@brief Set number of unused i-nodes.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @param cnt Number of unused i-nodes
+ */
 static inline void ext4_bg_set_itable_unused(struct ext4_bgroup *bg,
     struct ext4_sblock *s, uint32_t cnt)
 {
@@ -172,20 +216,30 @@ static inline void ext4_bg_set_itable_unused(struct ext4_bgroup *bg,
         bg->itable_unused_hi = to_le16(cnt >> 16);
 }
 
-/**@brief   TODO: ...*/
+/**@brief  Set checksum of block group.
+ * @param bg Pointer to block group
+ * @param crc Cheksum of block group
+ */
 static inline void ext4_bg_set_checksum(struct ext4_bgroup *bg,
     uint16_t crc)
 {
     bg->checksum = to_le16(crc);
 }
 
-/**@brief   TODO: ...*/
+/**@brief Check if block group has a flag.
+ * @param bg Pointer to block group
+ * @param flag Flag to be checked
+ * @return True if flag is set to 1
+ */
 static inline bool ext4_bg_has_flag(struct ext4_bgroup *bg, uint32_t f)
 {
     return to_le16(bg->flags) & f;
 }
 
-/**@brief   TODO: ...*/
+/**@brief Set flag of block group.
+ * @param bg Pointer to block group
+ * @param flag Flag to be set
+ */
 static inline void ext4_bg_set_flag(struct ext4_bgroup *bg, uint32_t f)
 {
     uint16_t flags = to_le16(bg->flags);
@@ -193,7 +247,10 @@ static inline void ext4_bg_set_flag(struct ext4_bgroup *bg, uint32_t f)
     bg->flags = to_le16(flags);
 }
 
-/**@brief   TODO: ...*/
+/**@brief Clear flag of block group.
+ * @param bg Pointer to block group
+ * @param flag Flag to be cleared
+ */
 static inline void ext4_bg_clear_flag(struct ext4_bgroup *bg, uint32_t f)
 {
     uint16_t flags = to_le16(bg->flags);
@@ -201,7 +258,11 @@ static inline void ext4_bg_clear_flag(struct ext4_bgroup *bg, uint32_t f)
     bg->flags = to_le16(flags);
 }
 
-/**@brief   TODO: ...*/
+/**@brief Calculate CRC16 of the block group.
+ * @param crc Init value
+ * @param buffer Input buffer
+ * @param len Sizeof input buffer
+ * @return Computed CRC16*/
 uint16_t ext4_bg_crc16(uint16_t crc, const uint8_t *buffer, size_t len);
 
 #endif /* EXT4_BLOCK_GROUP_H_ */

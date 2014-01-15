@@ -115,7 +115,11 @@ void ext4_dir_entry_ll_set_inode_type(struct ext4_sblock *sb,
 
 /****************************************************************************/
 
-
+/**@brief Do some checks before returning iterator.
+ * @param it Iterator to be checked
+ * @param block_size Size of data block
+ * @return Error code
+ */
 static int ext4_dir_iterator_set(struct ext4_directory_iterator *it,
     uint32_t block_size)
 {
@@ -149,6 +153,12 @@ static int ext4_dir_iterator_set(struct ext4_directory_iterator *it,
     return EOK;
 }
 
+/**@brief Seek to next valid directory entry.
+ *        Here can be jumped to the next data block.
+ * @param it  Initialized iterator
+ * @param pos Position of the next entry
+ * @return Error code
+ */
 static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
     uint64_t pos)
 {
