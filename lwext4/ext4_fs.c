@@ -310,7 +310,10 @@ uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s, uint32_t index,
 
 
 
-
+/**@brief Initialize block bitmap in block group.
+ * @param bg_ref Reference to block group
+ * @return Error code
+ */
 static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 {
     uint32_t i;
@@ -346,6 +349,10 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
     return ext4_block_set(bg_ref->fs->bdev, &block_bitmap);
 }
 
+/**@brief Initialize i-node bitmap in block group.
+ * @param bg_ref Reference to block group
+ * @return Error code
+ */
 static int ext4_fs_init_inode_bitmap(struct ext4_block_group_ref *bg_ref)
 {
     /* Load bitmap */
@@ -380,6 +387,10 @@ static int ext4_fs_init_inode_bitmap(struct ext4_block_group_ref *bg_ref)
     return ext4_block_set(bg_ref->fs->bdev, &block_bitmap);
 }
 
+/**@brief Initialize i-node table in block group.
+ * @param bg_ref Reference to block group
+ * @return Error code
+ */
 static int ext4_fs_init_inode_table(struct ext4_block_group_ref *bg_ref)
 {
     struct ext4_sblock *sb = &bg_ref->fs->sb;
@@ -487,6 +498,12 @@ int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid,
     return EOK;
 }
 
+/**@brief  Compute checksum of block group descriptor.
+ * @param sb   Superblock
+ * @param bgid Index of block group in the filesystem
+ * @param bg   Block group to compute checksum for
+ * @return Checksum value
+ */
 static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
     struct ext4_bgroup *bg)
 {

@@ -48,60 +48,130 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/**@brief   TODO: ...*/
+/**@brief Initialize filesystem and read all needed data.
+ * @param fs Filesystem instance to be initialized
+ * @param bdev Identifier if device with the filesystem
+ * @return Error code
+ */
 int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev);
 
-/**@brief   TODO: ...*/
+/**@brief Destroy filesystem instance (used by unmount operation).
+ * @param fs Filesystem to be destroyed
+ * @return Error code
+ */
 int ext4_fs_fini(struct ext4_fs *fs);
 
-/**@brief   TODO: ...*/
+/**@brief Check filesystem's features, if supported by this driver
+ * Function can return EOK and set read_only flag. It mean's that
+ * there are some not-supported features, that can cause problems
+ * during some write operations.
+ * @param fs        Filesystem to be checked
+ * @param read_only Flag if filesystem should be mounted only for reading
+ * @return Error code
+ */
 int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only);
 
-/**@brief   TODO: ...*/
+/**@brief Convert block address to relative index in block group.
+ * @param sb Superblock pointer
+ * @param baddr Block number to convert
+ * @return Relative number of block
+ */
 uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s, uint32_t baddr);
 
-/**@brief   TODO: ...*/
+/**@brief Convert relative block address in group to absolute address.
+ * @param s Superblock pointer
+ * @param index Relative block address
+ * @param bgid Block group
+ * @return Absolute block address
+ */
 uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s, uint32_t index,
     uint32_t bgid);
 
-/**@brief   TODO: ...*/
+/**@brief Get reference to block group specified by index.
+ * @param fs   Filesystem to find block group on
+ * @param bgid Index of block group to load
+ * @param ref  Output pointer for reference
+ * @return Error code
+ */
 int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid,
     struct ext4_block_group_ref *ref);
 
-/**@brief   TODO: ...*/
+/**@brief Put reference to block group.
+ * @param ref Pointer for reference to be put back
+ * @return Error code
+ */
 int ext4_fs_put_block_group_ref(struct ext4_block_group_ref *ref);
 
-/**@brief   TODO: ...*/
+/**@brief Get reference to i-node specified by index.
+ * @param fs    Filesystem to find i-node on
+ * @param index Index of i-node to load
+ * @param ref   Output pointer for reference
+ * @return Error code
+ */
 int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
     struct ext4_inode_ref *ref);
 
-/**@brief   TODO: ...*/
+/**@brief Put reference to i-node.
+ * @param ref Pointer for reference to be put back
+ * @return Error code
+ */
 int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref);
 
-/**@brief   TODO: ...*/
+/**@brief Allocate new i-node in the filesystem.
+ * @param fs        Filesystem to allocated i-node on
+ * @param inode_ref Output pointer to return reference to allocated i-node
+ * @param flags     Flags to be set for newly created i-node
+ * @return Error code
+ */
 int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
     bool is_directory);
 
-/**@brief   TODO: ...*/
+/**@brief Release i-node and mark it as free.
+ * @param inode_ref I-node to be released
+ * @return Error code
+ */
 int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref);
 
-/**@brief   TODO: ...*/
+/**@brief Truncate i-node data blocks.
+ * @param inode_ref I-node to be truncated
+ * @param new_size  New size of inode (must be < current size)
+ * @return Error code
+ */
 int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref,
     uint64_t new_size);
 
-/**@brief   TODO: ...*/
+/**@brief Get physical block address by logical index of the block.
+ * @param inode_ref I-node to read block address from
+ * @param iblock    Logical index of block
+ * @param fblock    Output pointer for return physical block address
+ * @return Error code
+ */
 int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
     uint64_t iblock, uint32_t *fblock);
 
-/**@brief   TODO: ...*/
+/**@brief Set physical block address for the block logical address into the i-node.
+ * @param inode_ref I-node to set block address to
+ * @param iblock    Logical index of block
+ * @param fblock    Physical block address
+ * @return Error code
+ */
 int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
     uint64_t iblock, uint32_t fblock);
 
-/**@brief   TODO: ...*/
+/**@brief Release data block from i-node
+ * @param inode_ref I-node to release block from
+ * @param iblock    Logical block to be released
+ * @return Error code
+ */
 int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
     uint32_t iblock);
 
-/**@brief   TODO: ...*/
+/**@brief Append following logical block to the i-node.
+ * @param inode_ref I-node to append block to
+ * @param fblock    Output physical block address of newly allocated block
+ * @param iblock    Output logical number of newly allocated block
+ * @return Error code
+ */
 int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
     uint32_t *fblock, uint32_t *iblock);
 

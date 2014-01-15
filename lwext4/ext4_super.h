@@ -47,7 +47,6 @@
 #include <ext4_types.h>
 
 
-/****************************Unstandard access to superblock*****************/
 
 /**@brief   Blocks count get stored in superblock.
  * @param   s superblock descriptor

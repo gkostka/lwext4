@@ -45,11 +45,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+/**@brief Sort entry item.*/
 struct ext4_dx_sort_entry {
     uint32_t hash;
     uint32_t rec_len;
     void *dentry;
 };
+
 
 static int ext4_dir_dx_hash_string(struct ext4_hash_info *hinfo, int len,
     const char *name)
@@ -221,6 +223,14 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir)
     return ext4_block_set(dir->fs->bdev, &block);
 }
 
+/**@brief Initialize hash info structure necessary for index operations.
+ * @param hinfo      Pointer to hinfo to be initialized
+ * @param root_block Root block (number 0) of index
+ * @param sb         Pointer to superblock
+ * @param name_len   Length of name to be computed hash value from
+ * @param name       Name to be computed hash value from
+ * @return Standard error code
+ */
 static int ext4_dir_hinfo_init(struct ext4_hash_info *hinfo,
     struct ext4_block *root_block, struct ext4_sblock *sb, size_t name_len,
     const char *name)
@@ -273,7 +283,14 @@ static int ext4_dir_hinfo_init(struct ext4_hash_info *hinfo,
     return EOK;
 }
 
-
+/**@brief Walk through index tree and load leaf with corresponding hash value.
+ * @param hinfo      Initialized hash info structure
+ * @param inode_ref  Current i-node
+ * @param root_block Root block (iblock 0), where is root node located
+ * @param dx_block   Pointer to leaf node in dx_blocks array
+ * @param dx_blocks  Array with the whole path from root to leaf
+ * @return Standard error code
+ */
 static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
     struct ext4_inode_ref *inode_ref, struct ext4_block *root_block,
     struct ext4_directory_dx_block **dx_block,
@@ -366,6 +383,13 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
     return EOK;
 }
 
+/**@brief Check if the the next block would be checked during entry search.
+ * @param inode_ref Directory i-node
+ * @param hash      Hash value to check
+ * @param dx_block  Current block
+ * @param dx_blocks Array with path from root to leaf node
+ * @return Standard Error codee
+ */
 static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
     uint32_t hash, struct ext4_directory_dx_block *dx_block,
     struct ext4_directory_dx_block *dx_blocks)
@@ -527,6 +551,16 @@ int ext4_dir_dx_find_entry(struct ext4_directory_search_result * result,
     return rc;
 }
 
+
+/**@brief  Compare function used to pass in quicksort implementation.
+ *         It can compare two entries by hash value.
+ * @param arg1  First entry
+ * @param arg2  Second entry
+ * @param dummy Unused parameter, can be NULL
+ *
+ * @return Classic compare result
+ *         (0: equal, -1: arg1 < arg2, 1: arg1 > arg2)
+ */
 static int ext4_dir_dx_entry_comparator(const void *arg1, const void *arg2)
 {
     struct ext4_dx_sort_entry *entry1 = (void *)arg1;
@@ -541,6 +575,14 @@ static int ext4_dir_dx_entry_comparator(const void *arg1, const void *arg2)
         return 1;
 }
 
+
+/**@brief  Insert new index entry to block.
+ *         Note that space for new entry must be checked by caller.
+ * @param index_block Block where to insert new entry
+ * @param hash        Hash value covered by child node
+ * @param iblock      Logical number of child block
+ *
+ */
 static void ext4_dir_dx_insert_entry(
     struct ext4_directory_dx_block *index_block, uint32_t hash,
     uint32_t iblock)
@@ -565,6 +607,13 @@ static void ext4_dir_dx_insert_entry(
     index_block->block.dirty = true;
 }
 
+/**@brief Split directory entries to two parts preventing node overflow.
+ * @param inode_ref      Directory i-node
+ * @param hinfo          Hash info
+ * @param old_data_block Block with data to be split
+ * @param index_block    Block where index entries are located
+ * @param new_data_block Output value for newly allocated data block
+ */
 static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
     struct ext4_hash_info *hinfo, struct ext4_block *old_data_block,
     struct ext4_directory_dx_block *index_block,
@@ -735,14 +784,11 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
     return EOK;
 }
 
-/** Split index node and maybe some parent nodes in the tree hierarchy.
- *
+/**@brief  Split index node and maybe some parent nodes in the tree hierarchy.
  * @param inode_ref Directory i-node
  * @param dx_blocks Array with path from root to leaf node
  * @param dx_block  Leaf block to be split if needed
- *
  * @return Error code
- *
  */
 static int ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
     struct  ext4_directory_dx_block *dx_blocks,

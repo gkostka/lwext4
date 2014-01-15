@@ -48,6 +48,12 @@
 #include <ext4_block_group.h>
 #include <ext4_bitmap.h>
 
+
+/**@brief  Convert i-node number to relative index in block group.
+ * @param sb    Superblock
+ * @param inode I-node number to be converted
+ * @return Index of the i-node in the block group
+ */
 static uint32_t ext4_ialloc_inode2index_in_group(struct ext4_sblock *sb,
     uint32_t inode)
 {
@@ -55,6 +61,12 @@ static uint32_t ext4_ialloc_inode2index_in_group(struct ext4_sblock *sb,
     return (inode - 1) % inodes_per_group;
 }
 
+/**@brief Convert relative index of i-node to absolute i-node number.
+ * @param sb    Superblock
+ * @param index Index to be converted
+ * @return Absolute number of the i-node
+ *
+ */
 static uint32_t ext4_ialloc_index_in_group2inode(struct ext4_sblock *sb,
         uint32_t index, uint32_t bgid)
 {
@@ -62,6 +74,12 @@ static uint32_t ext4_ialloc_index_in_group2inode(struct ext4_sblock *sb,
     return bgid * inodes_per_group + (index + 1);
 }
 
+
+/**@brief Compute block group number from the i-node number.
+ * @param sb    Superblock
+ * @param inode I-node number to be found the block group for
+ * @return Block group number computed from i-node number
+ */
 static uint32_t ext4_ialloc_get_bgid_of_inode(struct ext4_sblock *sb,
         uint32_t inode)
 {
