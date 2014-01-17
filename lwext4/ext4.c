@@ -660,13 +660,8 @@ static int ext4_generic_open (ext4_file *f, const char *path,
 
         if((f->flags & O_TRUNC) &&
                 (inode_type == EXT4_DIRECTORY_FILETYPE_REG_FILE)){
-            /*Turncate.*/
-            ext4_block_delay_cache_flush(mp->fs.bdev, 1);
-            /*Truncate may be IO heavy.
-             Do it with delayed cache flush mode.*/
-            r = ext4_fs_truncate_inode(&ref, 0);
-            ext4_block_delay_cache_flush(mp->fs.bdev, 0);
 
+            r = ext4_fs_truncate_inode(&ref, 0);
             if(r != EOK){
                 ext4_fs_put_inode_ref(&ref);
                 return r;
@@ -766,7 +761,9 @@ int ext4_fopen (ext4_file *f, const char *path, const char *flags)
         return ENOENT;
 
     EXT4_MP_LOCK(mp);
+    ext4_block_delay_cache_flush(mp->fs.bdev, 1);
     r = ext4_generic_open(f, path, flags, true, 0, 0);
+    ext4_block_delay_cache_flush(mp->fs.bdev, 0);
     EXT4_MP_UNLOCK(mp);
     return r;
 }
