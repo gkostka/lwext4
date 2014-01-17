@@ -1167,6 +1167,9 @@ int ext4_dir_rm(const char *path)
 
     inode_current = f.inode;
     dir_end = false;
+
+    ext4_block_delay_cache_flush(mp->fs.bdev, 1);
+
     do {
         /*Load directory node.*/
         r = ext4_fs_get_inode_ref(&f.mp->fs, inode_current, &current);
@@ -1300,7 +1303,7 @@ int ext4_dir_rm(const char *path)
 
     }while(depth);
 
-
+    ext4_block_delay_cache_flush(mp->fs.bdev, 0);
     EXT4_MP_UNLOCK(mp);
     return r;
 }
