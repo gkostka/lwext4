@@ -76,7 +76,7 @@ struct ext4_bcache {
     /**@brief   Last recently used ID table (cnt)*/
     uint32_t *lru_id;
 
-    /**@brief   Free delay mode table (cnt)*/
+    /**@brief   Writeback free delay mode table (cnt)*/
     uint8_t *free_delay;
 
     /**@brief   Logical block table (cnt).*/
@@ -143,6 +143,7 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 /**@brief   Free block from cache memory (decrement reference counter).
  * @param   bc block cache descriptor
  * @param   b block to free
+ * @param   cache writeback mode
  * @return  standard error code*/
 int ext4_bcache_free (struct ext4_bcache *bc, struct ext4_block *b,
     uint8_t free_delay);

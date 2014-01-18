@@ -93,10 +93,10 @@ struct ext4_blockdev  {
     uint64_t    lg_bcnt;
 
     /**@brief   Flags of te block device.*/
-    uint8_t     flags;
+    uint32_t    flags;
 
-    /**@brief   Cache flush delay mode flag.*/
-    uint8_t     cache_flush_delay;
+    /**@brief   Cache write back mode refference counter.*/
+    uint32_t    cache_write_back;
 
     /**@brief   Physical read counter*/
     uint32_t    bread_ctr;
@@ -200,13 +200,13 @@ int ext4_block_writebytes(struct ext4_blockdev *bdev, uint64_t off,
 int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off,
     void *buf, uint32_t len);
 
-/**@brief   Enable/disable delayed cache flush mode.
+/**@brief   Enable/disable write back cache mode
  * @param   bdev block device descriptor
  * @param   on_off
  *              !0 - ENABLE
  *               0 - DISABLE (all delayed cache buffers will be flushed)
  * @return  standard error code*/
-int ext4_block_delay_cache_flush(struct ext4_blockdev *bdev, uint8_t on_off);
+int ext4_block_cache_write_back(struct ext4_blockdev *bdev, uint8_t on_off);
 
 #endif /* EXT4_BLOCKDEV_H_ */
 

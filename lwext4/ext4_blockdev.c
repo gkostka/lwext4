@@ -110,7 +110,7 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
     b->lb_id = lba;
 
     /*If cache is full we have to flush it anyway :(*/
-    if(ext4_bcache_is_full(bdev->bc) && bdev->cache_flush_delay){
+    if(ext4_bcache_is_full(bdev->bc) && bdev->cache_write_back){
         for (i = 0; i < bdev->bc->cnt; ++i) {
             /*Check if buffer free was delayed.*/
             if(!bdev->bc->free_delay[i])
@@ -182,10 +182,10 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
     }
 
     /*Free cache delay mode*/
-    if(bdev->cache_flush_delay){
+    if(bdev->cache_write_back){
 
         /*Free cahe block and mark as free delayed*/
-        return ext4_bcache_free(bdev->bc, b, bdev->cache_flush_delay);
+        return ext4_bcache_free(bdev->bc, b, bdev->cache_write_back);
     }
 
     pba = (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
@@ -319,8 +319,6 @@ int ext4_block_writebytes(struct ext4_blockdev *bdev, uint64_t off,
 }
 
 
-
-
 int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off, void *buf,
     uint32_t len)
 {
@@ -387,15 +385,20 @@ int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off, void *buf,
     return r;
 }
 
-int ext4_block_delay_cache_flush(struct ext4_blockdev *bdev,
+int ext4_block_cache_write_back(struct ext4_blockdev *bdev,
     uint8_t on_off)
 {
     int r;
     uint32_t i;
-    bdev->cache_flush_delay = on_off;
+
+    if(on_off)
+        bdev->cache_write_back++;
+
+    if(!on_off && bdev->cache_write_back)
+        bdev->cache_write_back--;
 
     /*Flush all delayed cache blocks*/
-    if(!on_off){
+    if(!bdev->cache_write_back){
         for (i = 0; i < bdev->bc->cnt; ++i) {
 
             /*Check if buffer free was delayed.*/

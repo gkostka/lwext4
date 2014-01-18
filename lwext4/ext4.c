@@ -95,7 +95,6 @@ struct _ext4_devices _bdevices[CONFIG_EXT4_BLOCKDEVS_COUNT];
 struct ext4_mountpoint _mp[CONFIG_EXT4_MOUNTPOINTS_COUNT];
 
 
-
 int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
     const char *dev_name)
 {
@@ -129,7 +128,6 @@ static bool ext4_is_dots(const uint8_t *name, size_t name_size)
 
 static int ext4_has_children(bool *has_children, struct ext4_inode_ref *enode)
 {
-
     struct ext4_fs *fs = enode->fs;
 
     /* Check if node is directory */
@@ -683,6 +681,20 @@ static int ext4_generic_open (ext4_file *f, const char *path,
 
 /****************************************************************************/
 
+int ext4_cache_write_back(const char *path, bool on)
+{
+    struct ext4_mountpoint *mp = ext4_get_mount(path);
+
+    if(!mp)
+        return ENOENT;
+
+    EXT4_MP_LOCK(mp);
+    ext4_block_cache_write_back(mp->fs.bdev, on);
+    EXT4_MP_UNLOCK(mp);
+    return EOK;
+}
+
+
 int ext4_fremove(const char *path)
 {
     ext4_file   f;
@@ -722,10 +734,10 @@ int ext4_fremove(const char *path)
     }
 
     /*Turncate.*/
-    ext4_block_delay_cache_flush(mp->fs.bdev, 1);
-    /*Truncate may be IO heavy. Do it with delayed cache flush mode.*/
+    ext4_block_cache_write_back(mp->fs.bdev, 1);
+    /*Truncate may be IO heavy. Do it writeback cache mode.*/
     r = ext4_fs_truncate_inode(&child, 0);
-    ext4_block_delay_cache_flush(mp->fs.bdev, 0);
+    ext4_block_cache_write_back(mp->fs.bdev, 0);
 
     if(r != EOK)
         goto Finish;
@@ -751,7 +763,6 @@ int ext4_fremove(const char *path)
     return r;
 }
 
-
 int ext4_fopen (ext4_file *f, const char *path, const char *flags)
 {
     struct ext4_mountpoint *mp = ext4_get_mount(path);
@@ -761,9 +772,9 @@ int ext4_fopen (ext4_file *f, const char *path, const char *flags)
         return ENOENT;
 
     EXT4_MP_LOCK(mp);
-    ext4_block_delay_cache_flush(mp->fs.bdev, 1);
+    ext4_block_cache_write_back(mp->fs.bdev, 1);
     r = ext4_generic_open(f, path, flags, true, 0, 0);
-    ext4_block_delay_cache_flush(mp->fs.bdev, 0);
+    ext4_block_cache_write_back(mp->fs.bdev, 0);
     EXT4_MP_UNLOCK(mp);
     return r;
 }
@@ -993,8 +1004,8 @@ int ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
     }
 
 
-    /*Start delay cache flush mode.*/
-    r = ext4_block_delay_cache_flush(f->mp->fs.bdev, 1);
+    /*Start write back cache mode.*/
+    r = ext4_block_cache_write_back(f->mp->fs.bdev, 1);
     if(r != EOK)
         goto Finish;
 
@@ -1041,8 +1052,8 @@ int ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
         fblock_cnt = 1;
     }
 
-    /*Stop delay cache flush mode*/
-    ext4_block_delay_cache_flush(f->mp->fs.bdev, 0);
+    /*Stop write back cache mode*/
+    ext4_block_cache_write_back(f->mp->fs.bdev, 0);
 
     if(r != EOK)
         goto Finish;
@@ -1165,7 +1176,7 @@ int ext4_dir_rm(const char *path)
     inode_current = f.inode;
     dir_end = false;
 
-    ext4_block_delay_cache_flush(mp->fs.bdev, 1);
+    ext4_block_cache_write_back(mp->fs.bdev, 1);
 
     do {
         /*Load directory node.*/
@@ -1300,7 +1311,7 @@ int ext4_dir_rm(const char *path)
 
     }while(depth);
 
-    ext4_block_delay_cache_flush(mp->fs.bdev, 0);
+    ext4_block_cache_write_back(mp->fs.bdev, 0);
     EXT4_MP_UNLOCK(mp);
     return r;
 }

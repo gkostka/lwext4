@@ -231,6 +231,7 @@ static bool dir_test(int len)
     }
 
 
+    ext4_cache_write_back("/mp/", 1);
     printf("Add files to: /mp/dir1\n");
     for (i = 0; i < len; ++i) {
         sprintf(path, "/mp/dir1/f%d", i);
@@ -240,6 +241,7 @@ static bool dir_test(int len)
             return false;
         }
     }
+    ext4_cache_write_back("/mp/", 0);
 
     stop =  get_ms();
     diff = stop - start;

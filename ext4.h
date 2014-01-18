@@ -204,6 +204,44 @@ struct ext4_mount_stats {
 int ext4_mount_point_stats(const char *mount_point,
     struct ext4_mount_stats *stats);
 
+
+/**@brief   Enable/disable write back cache mode.
+ * @warning Default model of cache is write trough. It means that when You do:
+ *
+ *          ext4_fopen(...);
+ *          ext4_fwrie(...);
+ *                           < --- data is flushed to physical drive
+ *
+ *          When you do:
+ *          ext4_cache_write_back(..., 1);
+ *          ext4_fopen(...);
+ *          ext4_fwrie(...);
+ *                           < --- data is NOT flushed to physical drive
+ *          ext4_cache_write_back(..., 0);
+ *                           < --- when write back mode is disabled all
+ *                                 cache data will be flushed
+ * To enable write back mode permanently just call this function
+ * once after ext4_mount (and disable before ext4_umount).
+ *
+ * Some of the function use write back cache mode internally.
+ * If you enable write back mode twice you have to disable it twice
+ * to flush all data:
+ *
+ *      ext4_cache_write_back(..., 1);
+ *      ext4_cache_write_back(..., 1);
+ *
+ *      ext4_cache_write_back(..., 0);
+ *      ext4_cache_write_back(..., 0);
+ *
+ * Write back mode is useful when you want to create a lot of empty
+ * files/directories.
+ *
+ * @param   path moutnpoint path
+ * @param   on enable/disable
+ *
+ * @return  standard error code */
+int ext4_cache_write_back(const char *path, bool on);
+
 /********************************FILE OPERATIONS*****************************/
 
 /**@brief   Remove file by path.
