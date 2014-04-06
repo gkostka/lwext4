@@ -284,6 +284,7 @@ t16:
 	$(LWEXT4_CLIENT) -c "fsize 0 8192"
 	
 	$(LWEXT4_CLIENT) -c "fclose 0"
+	$(LWEXT4_CLIENT) -c "fremove $(TEST_DIR)/test.txt"	
 		
 	$(LWEXT4_CLIENT) -c "dir_rm $(TEST_DIR)"
 	$(LWEXT4_CLIENT) -c "stats_check /"
@@ -317,6 +318,7 @@ t17:
 	$(LWEXT4_CLIENT) -c "fsize 0 65536"
 	
 	$(LWEXT4_CLIENT) -c "fclose 0"
+	$(LWEXT4_CLIENT) -c "fremove $(TEST_DIR)/test.txt"	
 		
 	$(LWEXT4_CLIENT) -c "dir_rm $(TEST_DIR)"
 	$(LWEXT4_CLIENT) -c "stats_check /"
@@ -350,6 +352,7 @@ t18:
 	$(LWEXT4_CLIENT) -c "fsize 0 524288"
 	
 	$(LWEXT4_CLIENT) -c "fclose 0"
+	$(LWEXT4_CLIENT) -c "fremove $(TEST_DIR)/test.txt"	
 		
 	$(LWEXT4_CLIENT) -c "dir_rm $(TEST_DIR)"
 	$(LWEXT4_CLIENT) -c "stats_check /"
@@ -383,6 +386,7 @@ t19:
 	$(LWEXT4_CLIENT) -c "fsize 0 4194304"
 	
 	$(LWEXT4_CLIENT) -c "fclose 0"
+	$(LWEXT4_CLIENT) -c "fremove $(TEST_DIR)/test.txt"	
 		
 	$(LWEXT4_CLIENT) -c "dir_rm $(TEST_DIR)"
 	$(LWEXT4_CLIENT) -c "stats_check /"
@@ -416,7 +420,8 @@ t20:
 	$(LWEXT4_CLIENT) -c "fsize 0 33554432"
 	
 	$(LWEXT4_CLIENT) -c "fclose 0"
-		
+	$(LWEXT4_CLIENT) -c "fremove $(TEST_DIR)/test.txt"	
+
 	$(LWEXT4_CLIENT) -c "dir_rm $(TEST_DIR)"
 	$(LWEXT4_CLIENT) -c "stats_check /"
 	$(LWEXT4_CLIENT) -c "umount /"	
