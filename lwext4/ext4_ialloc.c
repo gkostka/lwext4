@@ -158,7 +158,6 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
     uint32_t bgid = fs->last_inode_bg_id;
     uint32_t bg_count = ext4_block_group_cnt(sb);
     uint32_t sb_free_inodes = ext4_get32(sb, free_inodes_count);
-    uint32_t avg_free_inodes = sb_free_inodes / bg_count;
     bool     rewind = false;
 
     /* Try to find free i-node in all block groups */
@@ -186,7 +185,7 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
         uint32_t used_dirs = ext4_bg_get_used_dirs_count(bg, sb);
 
         /* Check if this block group is good candidate for allocation */
-        if (free_inodes >= avg_free_inodes) {
+        if (free_inodes > 0) {
             /* Load block with bitmap */
             uint32_t bitmap_block_addr = ext4_bg_get_inode_bitmap(
                     bg_ref.block_group, sb);
