@@ -423,12 +423,12 @@ unpack_images:
 	7za x ext_images.7z
 
 server_ext2:
-	$(LWEXT4_SERVER) -i ../ext_images/ext2
+	$(LWEXT4_SERVER) -i ext_images/ext2
 
 server_ext3:
-	$(LWEXT4_SERVER) -i ../ext_images/ext3
+	$(LWEXT4_SERVER) -i ext_images/ext3
 	
 server_ext4:
-	$(LWEXT4_SERVER) -i ../ext_images/ext4
+	$(LWEXT4_SERVER) -i ext_images/ext4
 
 all_tests: t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20
