@@ -1,7 +1,11 @@
 
-
+ifeq ($(OS),Windows_NT)
+LWEXT4_CLIENT = @build_generic\\lwext4_client
+LWEXT4_SERVER = @build_generic\\lwext4_server
+else
 LWEXT4_CLIENT = @build_generic/lwext4_client
 LWEXT4_SERVER = @build_generic/lwext4_server
+endif
 
 TEST_DIR = /test
 
