@@ -71,9 +71,6 @@ EXT4_BLOCKDEV_STATIC_INSTANCE(
 );
 
 /******************************************************************************/
-EXT4_BCACHE_STATIC_INSTANCE(__cache, CONFIG_BLOCK_DEV_CACHE_SIZE, 1024);
-
-/******************************************************************************/
 static int io_raw_open(struct ext4_blockdev *bdev)
 {
     char path[64];
@@ -179,13 +176,6 @@ static int io_raw_close(struct  ext4_blockdev *bdev)
     return EOK;
 }
 
-
-/******************************************************************************/
-
-struct  ext4_bcache* ext4_io_raw_cache_get(void)
-{
-    return &__cache;
-}
 /******************************************************************************/
 struct  ext4_blockdev* ext4_io_raw_dev_get(void)
 {
