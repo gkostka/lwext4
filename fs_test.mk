@@ -422,10 +422,6 @@ t20:
 	$(LWEXT4_CLIENT) -c "umount /"	
 	
 
-unpack_images:
-	rm -R -f ext_images
-	7za x ext_images.7z
-
 server_ext2:
 	$(LWEXT4_SERVER) -i ext_images/ext2
 
