@@ -45,6 +45,12 @@ static char *ext4_fname = "ext2";
 /**@brief   Verbose mode*/
 static int verbose = 0;
 
+/**@brief   Winpart mode*/
+static int winpart = 0;
+
+/**@brief   Blockdev handle*/
+static struct ext4_blockdev *bd;
+
 static char read_buffer[MAX_RW_BUFFER];
 static char write_buffer[MAX_RW_BUFFER];
 
@@ -56,6 +62,7 @@ Usage:                                                          \n\
     --image    (-i) - ext2/3/4 image file                       \n\
     --port     (-p) - server port                               \n\
     --verbose  (-v) - verbose mode                              \n\
+    --winpart  (-w) - windows_partition mode                    \n\
 \n";
 
 
@@ -266,10 +273,11 @@ static bool parse_opt(int argc, char **argv)
             {"image",   required_argument, 0, 'i'},
             {"port",    required_argument, 0, 'p'},
             {"verbose", required_argument, 0, 'v'},
+            {"winpart", required_argument, 0, 'w'},
             {0, 0, 0, 0}
     };
 
-    while(-1 != (c = getopt_long (argc, argv, "i:p:v:", long_options, &option_index))) {
+    while(-1 != (c = getopt_long (argc, argv, "i:p:v:w:", long_options, &option_index))) {
 
         switch(c){
         case 'i':
@@ -280,6 +288,9 @@ static bool parse_opt(int argc, char **argv)
             break;
         case 'v':
             verbose = atoi(optarg);
+            break;
+        case 'w':
+            winpart = atoi(optarg);
             break;
         default:
             printf("%s", usage);
@@ -300,7 +311,6 @@ int main(int argc, char *argv[])
     if(!parse_opt(argc, argv))
         return -1;
 
-    ext4_filedev_filename(ext4_fname);
     listenfd = server_open();
 
     printf("lwext4_server: listening on port: %d\n", connection_port);
@@ -337,16 +347,28 @@ int main(int argc, char *argv[])
 
 int _device_register(char *p)
 {
-    int bd;
+    int dev;
     int cache_mode;
     char dev_name[32];
 
-    if(sscanf(p, "%d %d %s", &bd, &cache_mode, dev_name) != 3){
+    if(sscanf(p, "%d %d %s", &dev, &cache_mode, dev_name) != 3){
         printf("Param list error\n");
         return -1;
     }
 
-    return ext4_device_register(ext4_filedev_get(), 0, dev_name);
+#ifdef WIN32
+    if(winpart){
+        ext4_io_raw_filename(ext4_fname);
+        bd = ext4_io_raw_dev_get();
+
+    }
+    else
+#endif
+    {
+        ext4_filedev_filename(ext4_fname);
+        bd = ext4_filedev_get();
+    }
+    return ext4_device_register(bd, 0, dev_name);
 }
 
 int _mount(char *p)
