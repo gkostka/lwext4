@@ -69,9 +69,6 @@ EXT4_BLOCKDEV_STATIC_INSTANCE(
 );
 
 /******************************************************************************/
-EXT4_BCACHE_STATIC_INSTANCE(__cache, CONFIG_BLOCK_DEV_CACHE_SIZE, 1024);
-
-/******************************************************************************/
 static int filedev_open(struct ext4_blockdev *bdev)
 {
     dev_file = fopen(fname, "r+b");
@@ -137,13 +134,6 @@ static int filedev_close(struct  ext4_blockdev *bdev)
     return EOK;
 }
 
-
-/******************************************************************************/
-
-struct ext4_bcache* ext4_filecache_get(void)
-{
-    return &__cache;
-}
 /******************************************************************************/
 struct ext4_blockdev* ext4_filedev_get(void)
 {

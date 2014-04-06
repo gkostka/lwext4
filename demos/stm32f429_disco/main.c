@@ -57,7 +57,7 @@ static int rw_szie  = READ_WRITE_SZIZE;
 static int rw_count = 100;
 
 /**@brief   Directory test count*/
-static int dir_cnt  = 10;
+static int dir_cnt  = 50;
 
 /**@brief   Static or dynamic cache mode*/
 static bool cache_mode = false;
@@ -215,6 +215,7 @@ static bool dir_test(int len)
     }
 
 
+    ext4_cache_write_back("/mp/", 1);
     printf("Add files to: /mp/dir1\n");
     for (i = 0; i < len; ++i) {
         sprintf(path, "/mp/dir1/f%d", i);
@@ -224,7 +225,7 @@ static bool dir_test(int len)
             return false;
         }
     }
-
+    ext4_cache_write_back("/mp/", 0);
     stop =  get_ms();
     diff = stop - start;
     dir_ls("/mp/dir1");

@@ -186,7 +186,7 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
         uint32_t used_dirs = ext4_bg_get_used_dirs_count(bg, sb);
 
         /* Check if this block group is good candidate for allocation */
-        if (free_inodes > 0) {
+        if (free_inodes >= avg_free_inodes) {
             /* Load block with bitmap */
             uint32_t bitmap_block_addr = ext4_bg_get_inode_bitmap(
                     bg_ref.block_group, sb);

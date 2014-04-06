@@ -61,8 +61,11 @@
 /**@brief   Mount point descrpitor.*/
 struct ext4_mountpoint {
 
+    /**@brief   Mount done flag.*/
+    bool    mounted;
+
     /**@brief   Mount point name (@ref ext4_mount)*/
-    const char *name;
+    char name[32];
 
     /**@brief   Os dependent lock/unlock functions.*/
     struct ext4_lock *os_locks;
@@ -78,7 +81,7 @@ struct ext4_mountpoint {
 struct _ext4_devices {
 
     /**@brief   Block device name (@ref ext4_device_register)*/
-    const char *name;
+    char name[32];
 
     /**@brief   Block device handle.*/
     struct ext4_blockdev *bd;
@@ -102,12 +105,15 @@ int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
     ext4_assert(bd && dev_name);
 
     for (i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
-        if(!_bdevices[i].name){
-            _bdevices[i].name   = dev_name;
+        if(!_bdevices[i].bd){
+            strcpy(_bdevices[i].name, dev_name);
             _bdevices[i].bd = bd;
             _bdevices[i].bc = bc;
             return EOK;
         }
+
+        if(!strcmp(_bdevices[i].name, dev_name))
+            return EOK;
     }
     return ENOSPC;
 }
@@ -330,10 +336,15 @@ int ext4_mount(const char * dev_name, char *mount_point)
         return ENODEV;
 
     for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
-        if(!_mp[i].name){
-            _mp[i].name = mount_point;
+        if(!_mp[i].mounted){
+            strcpy(_mp[i].name, mount_point);
+            _mp[i].mounted = 1;
             mp = &_mp[i];
             break;
+        }
+
+        if(!strcmp(_mp[i].name, mount_point)){
+            return EOK;
         }
     }
 
@@ -393,9 +404,8 @@ int ext4_umount(char *mount_point)
     struct ext4_mountpoint *mp = 0;
 
     for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
-        if(_mp[i].name){
-            if(!strcmp(_mp[i].name, mount_point))
-                mp = &_mp[i];
+        if(!strcmp(_mp[i].name, mount_point)){
+            mp = &_mp[i];
             break;
         }
     }
@@ -407,7 +417,7 @@ int ext4_umount(char *mount_point)
     if(r != EOK)
         return r;
 
-    mp->name = 0;
+    mp->mounted = 0;
 
     if(mp->cache_dynamic){
         ext4_bcache_fini_dynamic(mp->fs.bdev->bc);
@@ -424,11 +434,11 @@ int ext4_mount_point_stats(const char *mount_point,
     struct ext4_mountpoint    *mp = 0;
 
     for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
-        if(_mp[i].name){
-            if(!strcmp(_mp[i].name, mount_point))
-                mp = &_mp[i];
+        if(!strcmp(_mp[i].name, mount_point)){
+            mp = &_mp[i];
             break;
         }
+
     }
     if(!mp)
         return ENOENT;
@@ -456,10 +466,12 @@ static struct ext4_mountpoint* ext4_get_mount(const char *path)
 {
     int i;
     for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
-        if(_mp[i].name){
-            if(!strncmp(_mp[i].name, path, strlen(_mp[i].name)))
-                return &_mp[i];
-        }
+
+        if(!_mp[i].mounted)
+            continue;
+
+        if(!strncmp(_mp[i].name, path, strlen(_mp[i].name)))
+            return &_mp[i];
     }
     return 0;
 }

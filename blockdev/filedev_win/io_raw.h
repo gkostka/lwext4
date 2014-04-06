@@ -35,12 +35,10 @@
 #include <stdbool.h>
 
 
-/**@brief   IO raw get.*/
-struct  ext4_bcache*   ext4_io_raw_cache_get(void);
-
 /**@brief   IO raw blockdev get.*/
 struct  ext4_blockdev* ext4_io_raw_dev_get(void);
 
+/**@brief   Set filrname to open.*/
 void    ext4_io_raw_filename(const char *n);
 
 #endif /* IO_RAW_H_ */
