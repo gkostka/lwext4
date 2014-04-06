@@ -1,8 +1,8 @@
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -19,9 +19,11 @@
 #include <sys/types.h>
 #endif
 
-#include <ext4.h>
+
 #include <ext4_filedev.h>
 #include <io_raw.h>
+
+#include <ext4.h>
 
 static int winsock_init(void);
 static void winsock_fini(void);
@@ -35,7 +37,7 @@ static char* entry_to_str(uint8_t type);
 
 
 /**@brief   Default connection port*/
-static int connection_port = 8888;
+static int connection_port = 1234;
 
 /**@brief   Default filesystem filename.*/
 static char *ext4_fname = "ext2";
@@ -205,7 +207,7 @@ static int exec_op_code(char *opcode)
         clock_t t = get_ms();
         r = op_call[i].lwext4_call(opcode);
 
-        printf("rc: %d, time: %ums\n", r, get_ms() - t);
+        printf("rc: %d, time: %ums\n", r, (unsigned int)(get_ms() - t));
 
         break;
     }
@@ -322,7 +324,6 @@ int main(int argc, char *argv[])
         close(connfd);
     }
 
-    closesocket(listenfd);
     winsock_fini();
     return 0;
 }
@@ -786,7 +787,7 @@ int _multi_fcreate(char *p)
     int i;
     ext4_file   fd;
 
-    if(sscanf(p, "%s %s %d", &path, prefix, &cnt) != 3){
+    if(sscanf(p, "%s %s %d", path, prefix, &cnt) != 3){
         printf("Param list error\n");
         return -1;
     }
@@ -813,7 +814,7 @@ int _multi_fwrite(char *p)
     int i, d, wb;
     ext4_file   fd;
 
-    if(sscanf(p, "%s %s %d %d", &path, prefix, &cnt, &ll) != 4){
+    if(sscanf(p, "%s %s %d %d", path, prefix, &cnt, &ll) != 4){
         printf("Param list error\n");
         return -1;
     }
@@ -856,7 +857,7 @@ int _multi_fread(char *p)
     int i, d, rb;
     ext4_file   fd;
 
-    if(sscanf(p, "%s %s %d %d", &path, prefix, &cnt, &ll) != 4){
+    if(sscanf(p, "%s %s %d %d", path, prefix, &cnt, &ll) != 4){
         printf("Param list error\n");
         return -1;
     }
@@ -902,7 +903,7 @@ int _multi_fremove(char *p)
     char prefix[32];
     int  cnt, i, rc;
 
-    if(sscanf(p, "%s %s %d", &path, prefix, &cnt) != 3){
+    if(sscanf(p, "%s %s %d", path, prefix, &cnt) != 3){
         printf("Param list error\n");
         return -1;
     }
@@ -924,7 +925,7 @@ int _multi_dcreate(char *p)
     char prefix[32];
     int  cnt, i, rc;
 
-    if(sscanf(p, "%s %s %d", &path, prefix, &cnt) != 3){
+    if(sscanf(p, "%s %s %d", path, prefix, &cnt) != 3){
         printf("Param list error\n");
         return -1;
     }
@@ -946,7 +947,7 @@ int _multi_dremove(char *p)
     char prefix[32];
     int  cnt, i, rc;
 
-    if(sscanf(p, "%s %s %d", &path, prefix, &cnt) != 3){
+    if(sscanf(p, "%s %s %d", path, prefix, &cnt) != 3){
         printf("Param list error\n");
         return -1;
     }
@@ -967,7 +968,7 @@ int _stats_save(char *p)
 {
     char path[256];
 
-    if(sscanf(p, "%s", &path) != 1){
+    if(sscanf(p, "%s", path) != 1){
         printf("Param list error\n");
         return -1;
     }
@@ -982,7 +983,7 @@ int _stats_check(char *p)
 
     struct ext4_mount_stats  actual_stats;
 
-    if(sscanf(p, "%s", &path) != 1){
+    if(sscanf(p, "%s", path) != 1){
         printf("Param list error\n");
         return -1;
     }

@@ -27,7 +27,7 @@ static void winsock_fini(void);
 static char *server_addr = "127.0.0.1";
 
 /**@brief   Default connection port.*/
-static int connection_port = 8888;
+static int connection_port = 1234;
 
 /**@brief   Call op*/
 static char *op_code;
@@ -142,7 +142,6 @@ int main(int argc, char *argv[])
     if(rc)
         printf("\t%s\n",op_code);
 
-    closesocket(sockfd);
     return rc;
 }
 

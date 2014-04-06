@@ -45,7 +45,7 @@ static const char *fname = "ext2";
 /**@brief   Image file descriptor.*/
 static FILE *dev_file;
 
-#define DROP_LINUXCACHE_BUFFERS 1
+#define DROP_LINUXCACHE_BUFFERS 0
 
 
 /**********************BLOCKDEV INTERFACE**************************************/
