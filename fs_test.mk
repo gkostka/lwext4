@@ -1,6 +1,6 @@
 
 
-LWEXT4_CLIENT = @build_generic\\lwext4_client
+LWEXT4_CLIENT = @build_generic/lwext4_client
 
 TEST_DIR = /test
 
