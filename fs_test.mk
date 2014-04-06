@@ -10,7 +10,7 @@ endif
 TEST_DIR = /test
 
 t0:
-	@echo "T0: Device regoster test:" 
+	@echo "T0: Device register test:" 
 	$(LWEXT4_CLIENT) -c "device_register 0 0 bdev"
 
 t1:
@@ -389,7 +389,7 @@ t19:
 	$(LWEXT4_CLIENT) -c "umount /"	
 	
 t20:	
-	@echo "T10: 32MB file write/read:"
+	@echo "T20: 32MB file write/read:"
 	$(LWEXT4_CLIENT) -c "device_register 0 0 bdev"
 	$(LWEXT4_CLIENT) -c "mount bdev /"
 	$(LWEXT4_CLIENT) -c "stats_save /"
