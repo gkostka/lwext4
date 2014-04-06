@@ -56,7 +56,7 @@
 
 /**@brief   Include error codes from ext4_errno or sandard library.*/
 #ifndef CONFIG_HAVE_OWN_ERRNO
-#define CONFIG_HAVE_OWN_ERRNO       1
+#define CONFIG_HAVE_OWN_ERRNO       0
 #endif
 
 

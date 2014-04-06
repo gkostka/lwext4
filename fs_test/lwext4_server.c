@@ -234,6 +234,12 @@ static int server_open(void)
         exit(-1);
     }
 
+    int yes = 1;
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&yes, sizeof(int))) {
+        printf("setsockopt() error: %s\n", strerror(errno));
+        exit(-1);
+    }
+
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(connection_port);
