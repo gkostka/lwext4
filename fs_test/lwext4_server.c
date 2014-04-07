@@ -10,8 +10,9 @@
 #include <time.h>
 
 #ifdef WIN32
-#include <windows.h>
 #include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
 #else
 #include <sys/socket.h>
 #include <netinet/in.h>

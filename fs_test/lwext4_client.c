@@ -7,10 +7,9 @@
 #include <getopt.h>
 
 #ifdef WIN32
-#include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
+#include <windows.h>
 static int inet_pton(int af, const char *src, void *dst);
 
 #else
