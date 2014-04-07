@@ -57,7 +57,7 @@ static int rw_szie  = READ_WRITE_SZIZE;
 static int rw_count = 100;
 
 /**@brief   Directory test count*/
-static int dir_cnt  = 10;
+static int dir_cnt  = 50;
 
 /**@brief   Static or dynamic cache mode*/
 static bool cache_mode = false;
@@ -213,6 +213,7 @@ static bool dir_test(int len)
         printf("Unable to create directory: /mp/dir1\n");
         return false;
     }
+
 
 
     printf("Add files to: /mp/dir1\n");
@@ -431,6 +432,7 @@ int main(void)
     if(!mount())
         return EXIT_FAILURE;
 
+    ext4_cache_write_back("/mp/", 1);
     cleanup();
 
     if(sbstat){
@@ -464,6 +466,7 @@ int main(void)
         block_stats();
     }
 
+    ext4_cache_write_back("/mp/", 0);
     if(!umount())
         return EXIT_FAILURE;
 

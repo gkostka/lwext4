@@ -79,8 +79,11 @@ static uint8_t *rd_buff;
 /**@brief   Block device handle.*/
 static struct ext4_blockdev *bd;
 
+/**@brief   Static cache instance*/
+EXT4_BCACHE_STATIC_INSTANCE(_lwext4_cache, CONFIG_BLOCK_DEV_CACHE_SIZE, 1024);
+
 /**@brief   Block cache handle.*/
-static struct ext4_bcache   *bc;
+static struct ext4_bcache   *bc = &_lwext4_cache;
 
 static const char *usage = "                                    \n\
 Welcome in ext4 generic demo.                                   \n\
@@ -96,6 +99,10 @@ Usage:                                                          \n\
     --sbstat - superblock stats                                 \n\
     --wpart  - windows partition mode                           \n\
 \n";
+
+
+
+
 
 static char* entry_to_str(uint8_t type)
 {
@@ -370,8 +377,7 @@ static bool open_filedev(void)
 {
     ext4_filedev_filename(input_name);
     bd = ext4_filedev_get();
-    bc = ext4_filecache_get();
-    if(!bd || !bc){
+    if(!bd){
         printf("Block device ERROR\n");
         return false;
     }
@@ -383,14 +389,13 @@ static bool open_winpartition(void)
 #ifdef WIN32
     ext4_io_raw_filename(input_name);
     bd = ext4_io_raw_dev_get();
-    bc = ext4_io_raw_cache_get();
-    if(!bd || !bc){
+    if(!bd){
         printf("Block device ERROR\n");
         return false;
     }
     return true;
 #else
-    printf("open_winpartition: this mode shouls be used only under windows !\n");
+    printf("open_winpartition: this mode should be used only under windows !\n");
     return false;
 #endif
 }
