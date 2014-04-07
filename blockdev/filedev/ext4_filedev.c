@@ -45,7 +45,7 @@ static const char *fname = "ext2";
 /**@brief   Image file descriptor.*/
 static FILE *dev_file;
 
-#define DROP_LINUXCACHE_BUFFERS 1
+#define DROP_LINUXCACHE_BUFFERS 0
 
 
 /**********************BLOCKDEV INTERFACE**************************************/
@@ -67,9 +67,6 @@ EXT4_BLOCKDEV_STATIC_INSTANCE(
     filedev_bwrite,
     filedev_close
 );
-
-/******************************************************************************/
-EXT4_BCACHE_STATIC_INSTANCE(__cache, CONFIG_BLOCK_DEV_CACHE_SIZE, 1024);
 
 /******************************************************************************/
 static int filedev_open(struct ext4_blockdev *bdev)
@@ -137,13 +134,6 @@ static int filedev_close(struct  ext4_blockdev *bdev)
     return EOK;
 }
 
-
-/******************************************************************************/
-
-struct ext4_bcache* ext4_filecache_get(void)
-{
-    return &__cache;
-}
 /******************************************************************************/
 struct ext4_blockdev* ext4_filedev_get(void)
 {

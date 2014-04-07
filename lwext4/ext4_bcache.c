@@ -50,36 +50,9 @@ int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
 
     memset(bc, 0, sizeof(struct ext4_bcache));
 
-    bc->refctr = malloc(cnt * sizeof(uint32_t));
-    if(!bc->refctr)
-        goto error;
-
-    bc->lru_id = malloc(cnt * sizeof(uint32_t));
-    if(!bc->lru_id)
-        goto error;
-
-    bc->free_delay = malloc(cnt * sizeof(uint8_t));
-    if(!bc->free_delay)
-        goto error;
-
-    bc->lba = malloc(cnt * sizeof(uint64_t));
-    if(!bc->lba)
-        goto error;
-
-    bc->dirty = malloc(cnt * sizeof(bool));
-    if(!bc->dirty)
-        goto error;
-
-
     bc->data = malloc(cnt * itemsize);
     if(!bc->data)
         goto error;
-
-    memset(bc->refctr, 0, cnt * sizeof(uint32_t));
-    memset(bc->lru_id, 0, cnt * sizeof(uint32_t));
-    memset(bc->free_delay, 0, cnt * sizeof(uint8_t));
-    memset(bc->lba, 0, cnt * sizeof(uint64_t));
-    memset(bc->dirty, 0, cnt * sizeof(bool));
 
     bc->cnt = cnt;
     bc->itemsize = itemsize;
@@ -89,21 +62,6 @@ int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
     return EOK;
 
     error:
-
-    if(bc->refctr)
-        free(bc->refctr);
-
-    if(bc->lru_id)
-        free(bc->lru_id);
-
-    if(bc->free_delay)
-        free(bc->free_delay);
-
-    if(bc->lba)
-        free(bc->lba);
-
-    if(bc->dirty)
-       free(bc->dirty);
 
     if(bc->data)
         free(bc->data);
@@ -115,21 +73,6 @@ int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
 
 int ext4_bcache_fini_dynamic(struct ext4_bcache *bc)
 {
-    if(bc->refctr)
-        free(bc->refctr);
-
-    if(bc->lru_id)
-        free(bc->lru_id);
-
-    if(bc->free_delay)
-        free(bc->free_delay);
-
-    if(bc->lba)
-        free(bc->lba);
-
-    if(bc->dirty)
-       free(bc->dirty);
-
     if(bc->data)
         free(bc->data);
 

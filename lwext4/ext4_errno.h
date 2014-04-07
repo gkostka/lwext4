@@ -38,7 +38,7 @@
 
 #include <ext4_config.h>
 
-#ifndef CONFIG_HAVE_OWN_ERRNO
+#if !CONFIG_HAVE_OWN_ERRNO
 #include <errno.h>
 #else
 #define EPERM        1 /* Operation not permitted */
@@ -76,6 +76,10 @@
 #define EDOM        33 /* Math argument out of domain of func */
 #define ERANGE      34 /* Math result not representable */
 #define ENOTSUP     95  /* Not supported */
+#endif
+
+#ifndef ENOTSUP
+#define ENOTSUP     95
 #endif
 
 #ifndef EOK

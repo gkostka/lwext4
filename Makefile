@@ -32,11 +32,22 @@ cortex-m4:
 all: generic bf518 cortex-m3 cortex-m4 generic
 
 
-	
 clean:
 	rm -R -f build_bf518
 	rm -R -f build_cortex-m3
 	rm -R -f build_cortex-m4
 	rm -R -f build_generic
+	rm -R -f ext_images
+	
+unpack_images:
+	rm -R -f ext_images
+	7z x ext_images.7z
 
+	
+include fs_test.mk
+
+
+	
+
+	
 	

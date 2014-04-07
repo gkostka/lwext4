@@ -111,6 +111,10 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 
     /*If cache is full we have to flush it anyway :(*/
     if(ext4_bcache_is_full(bdev->bc) && bdev->cache_write_back){
+
+        uint32_t free_candidate = bdev->bc->cnt;
+        uint32_t min_lru = 0xFFFFFFFF;
+
         for (i = 0; i < bdev->bc->cnt; ++i) {
             /*Check if buffer free was delayed.*/
             if(!bdev->bc->free_delay[i])
@@ -120,15 +124,23 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
             if(bdev->bc->refctr[i])
                 continue;
 
+            if(bdev->bc->lru_id[i] < min_lru){
+                min_lru = bdev->bc->lru_id[i];
+                free_candidate = i;
+                continue;
+            }
+        }
+
+        if(free_candidate < bdev->bc->cnt){
             /*Buffer free was delayed and have no reference. Flush it.*/
             r = ext4_blocks_set_direct(bdev,
-                    bdev->bc->data + bdev->bc->itemsize * i,
-                    bdev->bc->lba[i], 1);
+                    bdev->bc->data + bdev->bc->itemsize * free_candidate,
+                    bdev->bc->lba[free_candidate], 1);
             if(r != EOK)
                 return r;
 
             /*No delayed anymore*/
-            bdev->bc->free_delay[i] = 0;
+            bdev->bc->free_delay[free_candidate] = 0;
 
             /*Reduce refered block count*/
             bdev->bc->ref_blocks--;
@@ -176,7 +188,7 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
         return EIO;
 
     /*Doesn,t need to write.*/
-    if(b->dirty == false && !bdev->bc->dirty[b->cache_id]){
+    if(!b->dirty && !bdev->bc->dirty[b->cache_id]){
         ext4_bcache_free(bdev->bc, b, 0);
         return EOK;
     }
@@ -188,13 +200,14 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
         return ext4_bcache_free(bdev->bc, b, bdev->cache_write_back);
     }
 
-    pba = (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
-    pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
-
     if(bdev->bc->refctr[b->cache_id] > 1){
         bdev->bc->dirty[b->cache_id] = true;
         return ext4_bcache_free(bdev->bc, b, 0);
     }
+
+
+    pba = (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
+    pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
     r = bdev->bwrite(bdev, b->data, pba, pb_cnt);
     bdev->bc->dirty[b->cache_id] = false;

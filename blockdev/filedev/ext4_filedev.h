@@ -34,13 +34,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/**@brief   Filecache get.*/
-struct ext4_bcache*   ext4_filecache_get(void);
-
 /**@brief   File blockdev get.*/
 struct ext4_blockdev* ext4_filedev_get(void);
 
-/**@brief   Filename set.*/
+/**@brief   Set filename to open.*/
 void ext4_filedev_filename(const char *n);
 
 #endif /* EXT4_FILEDEV_H_ */

@@ -158,7 +158,6 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
     uint32_t bgid = fs->last_inode_bg_id;
     uint32_t bg_count = ext4_block_group_cnt(sb);
     uint32_t sb_free_inodes = ext4_get32(sb, free_inodes_count);
-    uint32_t avg_free_inodes = sb_free_inodes / bg_count;
     bool     rewind = false;
 
     /* Try to find free i-node in all block groups */

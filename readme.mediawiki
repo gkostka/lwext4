@@ -95,6 +95,7 @@ Some of ideas and features are based on FreeBSD and Linux implementations.
  - ext4.h           - lwext4 client library header
  - CMakeLists.txt   - CMake config file
  - ext_images.7z    - ext2/3/4 100MB images
+ - fs_test.mk       - automatic tests definition
  - Makefile         - helper makefile to call cmake
  - readme.mediawiki - yes, you are here ;)
   
@@ -129,7 +130,7 @@ Tools needed:
  cd build_generic
  make
 
-==Generic demo applicarion==
+==Generic demo application==
 
 Features:
  - load ext2/3/4 images
@@ -162,6 +163,22 @@ Usage:
     --sbstat - superblock stats                                 
     --wpart  - windows partition mode                           
 
+==Client-server automatic test suite==
+
+Build:
+ make
+ cd build_generic
+ make
+ 
+Unpack images:
+ make unpack_images
+ 
+Run server:
+ make server_ext2
+ 
+Run tests:
+ make all_tests
+
 
 ==Cross-Compile==
 
@@ -170,17 +187,46 @@ Usage:
 
 Build bf518 library:
  make bf518
-
+ cd build_bf518
+ make lwext4
+ 
 Build cortex-m3 library:
  make cortex-m3
+ cd build_cortex-m3
+ make lwext4
 
 Build cortex-m4 library:
  make cortex-m4
+ cd build_cortex-m4
+ make lwext4
 
 ==Ports==
- *Blackfin BF518 EZKIT SD Card Demo: TBD
- *STM32F4-Discovery SD Card Demo: TBD 
+STM32F429-DISCO USB flash drive Demo 
+ 
+Build STM32F429 Demo:
+ make cortex-m4
+ cd build_cortex-m4
+ make all
 
 ==Footprint==
+
+ TOOLCHAIN: arm-none-eabi-gcc
+ OPT: Os  
+ OUTPUT:
+   text    data     bss     dec     hex filename
+   5728       0       0    5728    1660 ext4.c.obj (ex liblwext4.a)
+   2264       0       0    2264     8d8 ext4_balloc.c.obj (ex liblwext4.a)
+   1324       0       0    1324     52c ext4_bcache.c.obj (ex liblwext4.a)
+    936       0       0     936     3a8 ext4_bitmap.c.obj (ex liblwext4.a)
+   2016       0       0    2016     7e0 ext4_blockdev.c.obj (ex liblwext4.a)
+    624       0       0     624     270 ext4_block_group.c.obj (ex liblwext4.a)
+     24       0       4      28      1c ext4_debug.c.obj (ex liblwext4.a)
+   2264       0       0    2264     8d8 ext4_dir.c.obj (ex liblwext4.a)
+   3204       0       0    3204     c84 ext4_dir_idx.c.obj (ex liblwext4.a)
+   3104       0       0    3104     c20 ext4_extent.c.obj (ex liblwext4.a)
+   7360       0       0    7360    1cc0 ext4_fs.c.obj (ex liblwext4.a)
+   2496       0       0    2496     9c0 ext4_hash.c.obj (ex liblwext4.a)
+    684       0       0     684     2ac ext4_ialloc.c.obj (ex liblwext4.a)
+    652       0       0     652     28c ext4_inode.c.obj (ex liblwext4.a)
+    352       0       0     352     160 ext4_super.c.obj (ex liblwext4.a)                      
                            
-TBD
