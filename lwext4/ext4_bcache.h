@@ -71,19 +71,19 @@ struct ext4_bcache {
     uint32_t lru_ctr;
 
     /**@brief   Reference count table (cnt).*/
-    uint32_t *refctr;
+    uint32_t refctr[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
     /**@brief   Last recently used ID table (cnt)*/
-    uint32_t *lru_id;
+    uint32_t lru_id[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
     /**@brief   Writeback free delay mode table (cnt)*/
-    uint8_t *free_delay;
+    uint8_t free_delay[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
     /**@brief   Logical block table (cnt).*/
-    uint64_t *lba;
+    uint64_t lba[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
     /**@brief   Dirty mark (cnt).*/
-    bool *dirty;
+    bool dirty[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
     /**@brief   Cache data buffers (cnt * itemsize)*/
     uint8_t *data;
@@ -98,21 +98,11 @@ struct ext4_bcache {
 
 /**@brief   Static initializer of block cache structure.*/
 #define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)      \
-        static uint32_t __name##_refctr[(__cnt)];                   \
-        static uint32_t __name##_lru_id[(__cnt)];                   \
-        static uint8_t  __name##_free_delay[(__cnt)];               \
-        static uint64_t __name##_lba[(__cnt)];                      \
-        static bool     __name##_dirty[(__cnt)];                    \
         static uint8_t  __name##_data[(__cnt) * (__itemsize)];      \
         static struct ext4_bcache __name = {                        \
                 .cnt     = __cnt,                                   \
                 .itemsize  = __itemsize,                            \
                 .lru_ctr   = 0,                                     \
-                .refctr    = __name##_refctr,                       \
-                .lru_id    = __name##_lru_id,                       \
-                .lba    = __name##_lba,                             \
-                .dirty    = __name##_dirty,                         \
-                .free_delay= __name##_free_delay,                   \
                 .data    = __name##_data,                           \
         }
 
