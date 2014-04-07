@@ -426,6 +426,74 @@ t20:
 	$(LWEXT4_CLIENT) -c "stats_check /"
 	$(LWEXT4_CLIENT) -c "umount /"	
 	
+t21:	
+	@echo "T21: 128MB file write/read:"
+	$(LWEXT4_CLIENT) -c "device_register 0 0 bdev"
+	$(LWEXT4_CLIENT) -c "mount bdev /"
+	$(LWEXT4_CLIENT) -c "stats_save /"
+	$(LWEXT4_CLIENT) -c "dir_mk $(TEST_DIR)"
+	
+	$(LWEXT4_CLIENT) -c "fopen 0 $(TEST_DIR)/test.txt wb+"
+	
+	$(LWEXT4_CLIENT) -c "ftell 0 0"
+	$(LWEXT4_CLIENT) -c "fsize 0 0"
+	
+	$(LWEXT4_CLIENT) -c "fwrite 0 0 134217728 0"
+	
+	$(LWEXT4_CLIENT) -c "ftell 0 134217728"
+	$(LWEXT4_CLIENT) -c "fsize 0 134217728"
+	
+	$(LWEXT4_CLIENT) -c "fseek 0 0 0"
+	
+	$(LWEXT4_CLIENT) -c "ftell 0 0"
+	$(LWEXT4_CLIENT) -c "fsize 0 134217728"
+	
+	$(LWEXT4_CLIENT) -c "fread 0 0  134217728 0"
+	
+	$(LWEXT4_CLIENT) -c "ftell 0 134217728"
+	$(LWEXT4_CLIENT) -c "fsize 0 134217728"
+	
+	$(LWEXT4_CLIENT) -c "fclose 0"
+
+	$(LWEXT4_CLIENT) -c "fremove $(TEST_DIR)/test.txt"	
+	$(LWEXT4_CLIENT) -c "dir_rm $(TEST_DIR)"
+	$(LWEXT4_CLIENT) -c "stats_check /"
+	$(LWEXT4_CLIENT) -c "umount /"	
+	
+t22:	
+	@echo "T22: 1GB file write/read:"
+	$(LWEXT4_CLIENT) -c "device_register 0 0 bdev"
+	$(LWEXT4_CLIENT) -c "mount bdev /"
+	$(LWEXT4_CLIENT) -c "stats_save /"
+	$(LWEXT4_CLIENT) -c "dir_mk $(TEST_DIR)"
+	
+	$(LWEXT4_CLIENT) -c "fopen 0 $(TEST_DIR)/test.txt wb+"
+	
+	$(LWEXT4_CLIENT) -c "ftell 0 0"
+	$(LWEXT4_CLIENT) -c "fsize 0 0"
+	
+	$(LWEXT4_CLIENT) -c "fwrite 0 0 1073741824 0"
+	
+	$(LWEXT4_CLIENT) -c "ftell 0 1073741824"
+	$(LWEXT4_CLIENT) -c "fsize 0 1073741824"
+	
+	$(LWEXT4_CLIENT) -c "fseek 0 0 0"
+	
+	$(LWEXT4_CLIENT) -c "ftell 0 0"
+	$(LWEXT4_CLIENT) -c "fsize 0 1073741824"
+	
+	$(LWEXT4_CLIENT) -c "fread 0 0  1073741824 0"
+	
+	$(LWEXT4_CLIENT) -c "ftell 0 1073741824"
+	$(LWEXT4_CLIENT) -c "fsize 0 1073741824"
+	
+	$(LWEXT4_CLIENT) -c "fclose 0"
+	
+	$(LWEXT4_CLIENT) -c "fremove $(TEST_DIR)/test.txt"	
+	$(LWEXT4_CLIENT) -c "dir_rm $(TEST_DIR)"
+	$(LWEXT4_CLIENT) -c "stats_check /"
+	$(LWEXT4_CLIENT) -c "umount /"	
+	
 
 server_ext2:
 	$(LWEXT4_SERVER) -i ext_images/ext2

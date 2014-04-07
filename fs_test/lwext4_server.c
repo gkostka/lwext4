@@ -52,6 +52,8 @@ static int winpart = 0;
 /**@brief   Blockdev handle*/
 static struct ext4_blockdev *bd;
 
+static int cache_wb = 0;
+
 static char read_buffer[MAX_RW_BUFFER];
 static char write_buffer[MAX_RW_BUFFER];
 
@@ -60,10 +62,11 @@ static const char *usage = "                                    \n\
 Welcome in lwext4_server.                                       \n\
 Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)  \n\
 Usage:                                                          \n\
-    --image    (-i) - ext2/3/4 image file                       \n\
-    --port     (-p) - server port                               \n\
-    --verbose  (-v) - verbose mode                              \n\
-    --winpart  (-w) - windows_partition mode                    \n\
+    --image     (-i) - ext2/3/4 image file                      \n\
+    --port      (-p) - server port                              \n\
+    --verbose   (-v) - verbose mode                             \n\
+    --winpart   (-w) - windows_partition mode                   \n\
+    --cache_wb  (-c) - cache writeback_mode                     \n\
 \n";
 
 
@@ -275,10 +278,11 @@ static bool parse_opt(int argc, char **argv)
             {"port",    required_argument, 0, 'p'},
             {"verbose", required_argument, 0, 'v'},
             {"winpart", required_argument, 0, 'w'},
+            {"cache_wb",required_argument, 0, 'c'},
             {0, 0, 0, 0}
     };
 
-    while(-1 != (c = getopt_long (argc, argv, "i:p:v:w:", long_options, &option_index))) {
+    while(-1 != (c = getopt_long (argc, argv, "i:p:v:w:c:", long_options, &option_index))) {
 
         switch(c){
         case 'i':
@@ -290,8 +294,8 @@ static bool parse_opt(int argc, char **argv)
         case 'v':
             verbose = atoi(optarg);
             break;
-        case 'w':
-            winpart = atoi(optarg);
+        case 'c':
+            cache_wb = atoi(optarg);
             break;
         default:
             printf("%s", usage);
@@ -383,7 +387,10 @@ int _mount(char *p)
         return -1;
     }
 
-    return ext4_mount(dev_name, mount_point);
+    rc = ext4_mount(dev_name, mount_point);
+    if(cache_wb)
+        ext4_cache_write_back(mount_point, 1);
+    return rc;
 }
 
 int _umount(char *p)
@@ -394,6 +401,9 @@ int _umount(char *p)
         printf("Param list error\n");
         return -1;
     }
+
+    if(cache_wb)
+        ext4_cache_write_back(mount_point, 0);
 
     return ext4_umount(mount_point);
 }
