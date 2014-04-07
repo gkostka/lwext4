@@ -111,6 +111,10 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 
     /*If cache is full we have to flush it anyway :(*/
     if(ext4_bcache_is_full(bdev->bc) && bdev->cache_write_back){
+
+        uint32_t free_candidate = bdev->bc->cnt;
+        uint32_t min_lru = 0xFFFFFFFF;
+
         for (i = 0; i < bdev->bc->cnt; ++i) {
             /*Check if buffer free was delayed.*/
             if(!bdev->bc->free_delay[i])
@@ -120,15 +124,23 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
             if(bdev->bc->refctr[i])
                 continue;
 
+            if(bdev->bc->lru_id[i] < min_lru){
+                min_lru = bdev->bc->lru_id[i];
+                free_candidate = i;
+                continue;
+            }
+        }
+
+        if(free_candidate < bdev->bc->cnt){
             /*Buffer free was delayed and have no reference. Flush it.*/
             r = ext4_blocks_set_direct(bdev,
-                    bdev->bc->data + bdev->bc->itemsize * i,
-                    bdev->bc->lba[i], 1);
+                    bdev->bc->data + bdev->bc->itemsize * free_candidate,
+                    bdev->bc->lba[free_candidate], 1);
             if(r != EOK)
                 return r;
 
             /*No delayed anymore*/
-            bdev->bc->free_delay[i] = 0;
+            bdev->bc->free_delay[free_candidate] = 0;
 
             /*Reduce refered block count*/
             bdev->bc->ref_blocks--;
