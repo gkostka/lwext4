@@ -163,7 +163,7 @@ Usage:
     --sbstat - superblock stats                                 
     --wpart  - windows partition mode                           
 
-==Client-server automatic test suitr==
+==Client-server automatic test suite==
 
 Build:
  make
