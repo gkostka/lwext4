@@ -594,6 +594,9 @@ cleanup:
             ext4_block_set(inode_ref->fs->bdev, &path[i].block);
     }
 
+    if(!entries)
+        ext4_extent_header_set_depth(path->header, 0);
+
     /* Destroy temporary data structure */
     free(path);
 
