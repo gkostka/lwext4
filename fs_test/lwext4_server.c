@@ -282,7 +282,7 @@ static bool parse_opt(int argc, char **argv)
             {0, 0, 0, 0}
     };
 
-    while(-1 != (c = getopt_long (argc, argv, "i:p:v:w:c:", long_options, &option_index))) {
+    while(-1 != (c = getopt_long (argc, argv, "c:i:p:v:w:", long_options, &option_index))) {
 
         switch(c){
         case 'i':
@@ -296,6 +296,9 @@ static bool parse_opt(int argc, char **argv)
             break;
         case 'c':
             cache_wb = atoi(optarg);
+            break;
+        case 'w':
+            winpart = atoi(optarg);
             break;
         default:
             printf("%s", usage);
