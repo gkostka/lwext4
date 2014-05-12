@@ -146,7 +146,7 @@ uint8_t USBH_MSC_TestUnitReady (USB_OTG_CORE_HANDLE *pdev)
       USBH_MSC_BOTXferParam.DataLength = USBH_MSC_CSW_MAX_LENGTH;
       USBH_MSC_BOTXferParam.MSCStateCurrent = USBH_MSC_TEST_UNIT_READY;
       
-      for(index = CBW_CB_LENGTH; index != 0; index--)
+      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
       {
         USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
       }
@@ -218,7 +218,7 @@ uint8_t USBH_MSC_ReadCapacity10(USB_OTG_CORE_HANDLE *pdev)
       USBH_MSC_BOTXferParam.pRxTxBuff = USBH_DataInBuffer;
       USBH_MSC_BOTXferParam.MSCStateCurrent = USBH_MSC_READ_CAPACITY10;
       
-      for(index = CBW_CB_LENGTH; index != 0; index--)
+      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
       {
         USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
       }    
@@ -304,7 +304,7 @@ uint8_t USBH_MSC_ModeSense6(USB_OTG_CORE_HANDLE *pdev)
       USBH_MSC_BOTXferParam.pRxTxBuff = USBH_DataInBuffer;
       USBH_MSC_BOTXferParam.MSCStateCurrent = USBH_MSC_MODE_SENSE6;
       
-      for(index = CBW_CB_LENGTH; index != 0; index--)
+      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
       {
         USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
       }    
@@ -402,7 +402,7 @@ uint8_t USBH_MSC_RequestSense(USB_OTG_CORE_HANDLE *pdev)
       USBH_MSC_BOTXferParam.MSCStateCurrent = USBH_MSC_REQUEST_SENSE;
       
 
-      for(index = CBW_CB_LENGTH; index != 0; index--)
+      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
       {
         USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
       }    
@@ -494,7 +494,7 @@ uint8_t USBH_MSC_Write10(USB_OTG_CORE_HANDLE *pdev,
       USBH_MSC_BOTXferParam.pRxTxBuff = dataBuffer;
       
       
-      for(index = CBW_CB_LENGTH; index != 0; index--)  
+      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
       {
         USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
       }
@@ -584,7 +584,7 @@ uint8_t USBH_MSC_Read10(USB_OTG_CORE_HANDLE *pdev,
       
       USBH_MSC_BOTXferParam.pRxTxBuff = dataBuffer;
       
-      for(index = CBW_CB_LENGTH; index != 0; index--)
+      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
       {
         USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
       }

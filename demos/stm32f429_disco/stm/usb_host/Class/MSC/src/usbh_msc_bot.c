@@ -366,7 +366,7 @@ void USBH_MSC_HandleBOTXfer (USB_OTG_CORE_HANDLE *pdev ,USBH_HOST *phost)
         USBH_MSC_BOTXferParam.pRxTxBuff = USBH_MSC_CSWData.CSWArray;
         USBH_MSC_BOTXferParam.DataLength = USBH_MSC_CSW_MAX_LENGTH;
         
-        for(index = USBH_MSC_CSW_LENGTH; index != 0; index--)
+        for(index = USBH_MSC_CSW_LENGTH - 1; index != 0; index--)
         {
           USBH_MSC_CSWData.CSWArray[index] = 0;
         }
