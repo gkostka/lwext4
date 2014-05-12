@@ -584,6 +584,9 @@ int ext4_extent_release_blocks_from(struct ext4_inode_ref *inode_ref,
         --path_ptr;
     }
 
+    if(!entries)
+        ext4_extent_header_set_depth(path->header, 0);
+
 cleanup:
     /*
      * Put loaded blocks
@@ -593,9 +596,6 @@ cleanup:
         if (path[i].block.lb_id)
             ext4_block_set(inode_ref->fs->bdev, &path[i].block);
     }
-
-    if(!entries)
-        ext4_extent_header_set_depth(path->header, 0);
 
     /* Destroy temporary data structure */
     free(path);
