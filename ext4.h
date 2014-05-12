@@ -31,7 +31,7 @@
  */
 /**
  * @file  ext4.h
- * @brief Ext4 high level operations (files, directories, mountpoints...).
+ * @brief Ext4 high level operations (files, directories, mount points...).
  *        Client has to include only this file.
  */
 
@@ -91,10 +91,10 @@
 /**@brief   OS dependent lock interface.*/
 struct ext4_lock {
 
-    /**@brief   Lock access to mountpoint*/
+    /**@brief   Lock access to mount point*/
     void (*lock)(void);
 
-    /**@brief   Unlock access to mountpoint*/
+    /**@brief   Unlock access to mount point*/
     void (*unlock)(void);
 };
 
@@ -104,7 +104,7 @@ struct ext4_lock {
 /**@brief   File descriptor*/
 typedef struct ext4_file {
 
-    /**@brief   Pountpoint handle.*/
+    /**@brief   Mount point handle.*/
     struct ext4_mountpoint *mp;
 
     /**@brief   File inode id*/
@@ -148,7 +148,7 @@ typedef struct {
 typedef struct  {
     /**@brief   File descriptor*/
     ext4_file f;
-    /**@brief   Current direntry.*/
+    /**@brief   Current directory entry.*/
     ext4_direntry de;
 }ext4_dir;
 
@@ -158,7 +158,7 @@ typedef struct  {
  *          @warning Block device has to be filled by
  *          @ref EXT4_BLOCKDEV_STATIC_INSTANCE. Block cache may be created
  *          @ref EXT4_BCACHE_STATIC_INSTANCE.
- *          Block cache may by created automaticly when bc parameter is 0.
+ *          Block cache may by created automatically when bc parameter is 0.
  * @param   bd block device
  * @param   bd block device cache (0 = automatic cache mode)
  * @param   dev_name register name
@@ -166,9 +166,9 @@ typedef struct  {
 int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
         const char *dev_name);
 
-/**@brief   Mount a block device with EXT4 partition to the mountpoint.
+/**@brief   Mount a block device with EXT4 partition to the mount point.
  * @param   dev_name block device name (@ref ext4_device_register)
- * @param   mount_point pount point, for example
+ * @param   mount_point mount point, for example
  *          -   /
  *          -   /my_partition/
  *          -   /my_second_partition/
@@ -236,7 +236,7 @@ int ext4_mount_point_stats(const char *mount_point,
  * Write back mode is useful when you want to create a lot of empty
  * files/directories.
  *
- * @param   path moutnpoint path
+ * @param   path mount point path
  * @param   on enable/disable
  *
  * @return  standard error code */
@@ -250,7 +250,7 @@ int ext4_cache_write_back(const char *path, bool on);
 int ext4_fremove(const char *path);
 
 /**@brief   File open function.
- * @param   filename, (has to start from mountpoint)
+ * @param   filename, (has to start from mount point)
  *          /my_partition/my_file
  * @param   flags open file flags
  *  |---------------------------------------------------------------|
@@ -279,7 +279,7 @@ int ext4_fclose(ext4_file *f);
  * @param   f file handle
  * @param   buf output buffer
  * @param   size bytes to read
- * @param   rcnt readed bytes (may be NULL)
+ * @param   rcnt bytes read (may be NULL)
  * @return  standard error code*/
 int ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
 
