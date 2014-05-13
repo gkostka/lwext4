@@ -67,24 +67,22 @@ int _write(int file, char *ptr, int len)
 
 caddr_t _sbrk(int incr)
 {
-    extern char __heap_end asm("__heap_end");
-    static char *heap_end;
-    char *prev_heap_end;
+	extern char __heap_start;
+	extern char __heap_end;
+	static char *current_heap_end = &__heap_start;
+	char *previous_heap_end;
 
-    if (heap_end == 0)
-        heap_end = &__heap_end;
+	previous_heap_end = current_heap_end;
 
-    prev_heap_end = heap_end;
-    if ((unsigned int)(heap_end + incr) > (0x20000000 + 0x20000))
-    {
-        abort();
-        errno = ENOMEM;
-        return (caddr_t) -1;
-    }
+	if (current_heap_end + incr > &__heap_end)
+	{
+		errno = ENOMEM;
+		return (caddr_t) -1;
+	}
 
-    heap_end += incr;
+	current_heap_end += incr;
 
-    return (caddr_t) prev_heap_end;
+	return (caddr_t)previous_heap_end;
 }
 
 int _close(int file)
