@@ -1,0 +1,12 @@
+#fs_test executables
+add_executable(lwext4_server lwext4_server.c)
+target_link_libraries(lwext4_server lwext4)
+target_link_libraries(lwext4_server blockdev)
+if(WIN32)
+target_link_libraries(lwext4_server ws2_32)
+endif(WIN32)
+add_executable(lwext4_client lwext4_client.c)
+target_link_libraries(lwext4_client lwext4)
+if(WIN32)
+target_link_libraries(lwext4_client ws2_32)
+endif(WIN32)
