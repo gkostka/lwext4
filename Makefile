@@ -11,7 +11,7 @@ PROJECT_SETUP = "Eclipse CDT4 - Unix Makefiles"
 generic:
 	rm -R -f build_generic
 	mkdir build_generic
-	cd build_generic && cmake -G$(PROJECT_SETUP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
+	cd build_generic && cmake -G$(PROJECT_SETUP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_TOOLCHAIN_FILE=../toolchain/generic.cmake ..
 	
 bf518:
 	rm -R -f build_bf518

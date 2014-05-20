@@ -1,10 +1,10 @@
 
 ifeq ($(OS),Windows_NT)
-LWEXT4_CLIENT = @build_generic\\lwext4_client
-LWEXT4_SERVER = @build_generic\\lwext4_server
+LWEXT4_CLIENT = @build_generic\\fs_test\\lwext4_client
+LWEXT4_SERVER = @build_generic\\fs_test\\lwext4_server
 else
-LWEXT4_CLIENT = @build_generic/lwext4_client
-LWEXT4_SERVER = @build_generic/lwext4_server
+LWEXT4_CLIENT = @build_generic/fs_test/lwext4_client
+LWEXT4_SERVER = @build_generic/fs_test/lwext4_server
 endif
 
 TEST_DIR = /test
@@ -504,4 +504,4 @@ server_ext3:
 server_ext4:
 	$(LWEXT4_SERVER) -i ext_images/ext4
 
-all_tests: t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20
+tests: t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20

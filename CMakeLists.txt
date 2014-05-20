@@ -2,33 +2,33 @@ project(lwext4 C)
 cmake_minimum_required(VERSION 2.8)
 
 
+include_directories(lwext4)
+include_directories(blockdev/filedev)
+include_directories(blockdev/filedev_win)
 
-#LIBRARY
-include_directories(. lwext4)
-aux_source_directory(lwext4 LWEXT4_SRC)
-add_library(lwext4  ${LWEXT4_SRC})
+
+#Library build
+add_subdirectory(lwext4)
+#Detect all possible warnings for lwext4 target
+set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "-Wall -Wextra -pedantic")
 
 #Examples
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m3)
-    #Library size print
-    add_custom_target(lib_size ALL DEPENDS lwext4 COMMAND ${SIZE} -B liblwext4.a)
+if    (CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m3)
+    #cortex-m3 demos
+    #...
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m4)
-    #Library size print
-    add_custom_target(lib_size ALL DEPENDS lwext4 COMMAND ${SIZE} -B liblwext4.a)
-    #Discoery disco demo
-    include(demos/stm32f429_disco/stm32f429_demo.cmake)
+    #cortex-m4 demos
+    add_subdirectory(demos/stm32f429_disco)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  bf518)
-    #Library size print
-    add_custom_target(lib_size ALL DEPENDS lwext4 COMMAND ${SIZE} -B liblwext4.a)
+    #bf518 demos
+    #...
 else()
-    #Warning setup
-    set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "-Wall -Wextra -pedantic -std=gnu99")
-    #Library size print
-    add_custom_target(lib_size ALL DEPENDS lwext4 COMMAND size -B liblwext4.a)
     #Generic example target
-    include(demos/generic/generic.cmake)
-    include(fs_test/fs_test.cmake)
+    add_subdirectory(blockdev)
+    add_subdirectory(fs_test)
+    add_subdirectory(demos/generic)
 endif()
+
 
 #DISTRIBUTION
 set(CPACK_PACKAGE_VERSION_MAJOR "0")

@@ -34,6 +34,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include <ext4_filedev.h>
 #include <io_raw.h>
