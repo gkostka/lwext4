@@ -1,7 +1,7 @@
 
 #Release
 #Debug
-BUILD_TYPE = Debug
+BUILD_TYPE = Release
 
 #Check: http://www.cmake.org/Wiki/CMake_Generator_Specific_Information
 #"Unix Makefiles"
