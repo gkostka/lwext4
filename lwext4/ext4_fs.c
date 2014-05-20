@@ -513,8 +513,8 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
     /* Compute the checksum only if the filesystem supports it */
     if (ext4_sb_check_read_only(sb,
             EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) {
-        void *base = bg;
-        void *checksum = &bg->checksum;
+        uint8_t  *base = (uint8_t  *)bg;
+        uint8_t  *checksum = (uint8_t  *)&bg->checksum;
 
         uint32_t offset = (uint32_t) (checksum - base);
 

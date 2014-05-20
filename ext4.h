@@ -137,11 +137,8 @@ enum  {
 typedef struct {
     uint32_t inode;
     uint16_t entry_length;
-    uint8_t  name_length;
-    union {
-        uint8_t name_length_high;
-        uint8_t inode_type;
-    };
+    uint8_t name_length;
+    uint8_t inode_type;
     uint8_t name[255];
 }ext4_direntry;
 
