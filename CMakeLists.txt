@@ -2,6 +2,7 @@ project(lwext4 C)
 cmake_minimum_required(VERSION 2.8)
 
 
+
 #LIBRARY
 include_directories(. lwext4)
 aux_source_directory(lwext4 LWEXT4_SRC)
@@ -20,6 +21,8 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  bf518)
     #Library size print
     add_custom_target(lib_size ALL DEPENDS lwext4 COMMAND ${SIZE} -B liblwext4.a)
 else()
+    #Warning setup
+    set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "-Wall -Wextra -pedantic -std=gnu99")
     #Library size print
     add_custom_target(lib_size ALL DEPENDS lwext4 COMMAND size -B liblwext4.a)
     #Generic example target

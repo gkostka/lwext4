@@ -92,7 +92,7 @@ uint32_t ext4_dmask_get(void);
 #if CONFIG_DEBUG_PRINTF
 /**@brief   Debug printf.*/
 #define ext4_dprintf(m, ...)    do {                            \
-        (m & ext4_dmask_get()) ? printf(__VA_ARGS__) : (void)0; \
+        if(m & ext4_dmask_get())  printf(__VA_ARGS__); 			\
         fflush(stdout);                                         \
 }while(0)
 #else

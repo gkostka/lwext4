@@ -453,7 +453,7 @@ int _mount_point_stats(char *p)
     rc = ext4_mount_point_stats(mount_point, &stats);
 
     if(rc != EOK)
-        return;
+        return rc;
 
     if(verbose){
         printf("\tinodes_count = %d\n", stats.inodes_count);

@@ -78,7 +78,7 @@ uint16_t ext4_dir_entry_ll_get_name_length(struct ext4_sblock *sb,
 
     if ((ext4_get32(sb, rev_level) == 0) &&
             (ext4_get32(sb, minor_rev_level) < 5))
-        v |= ((uint16_t)de->name_length_high) << 8;
+        v |= ((uint16_t)de->in.name_length_high) << 8;
 
     return v;
 }
@@ -89,7 +89,7 @@ void ext4_dir_entry_ll_set_name_length(struct ext4_sblock *sb,
 
     if ((ext4_get32(sb, rev_level) == 0) &&
             (ext4_get32(sb, minor_rev_level) < 5))
-        de->name_length_high = len >> 8;
+        de->in.name_length_high = len >> 8;
 }
 
 
@@ -99,7 +99,7 @@ uint8_t ext4_dir_entry_ll_get_inode_type(struct ext4_sblock *sb,
 {
     if ((ext4_get32(sb, rev_level) > 0) ||
             (ext4_get32(sb, minor_rev_level) >= 5))
-        return de->inode_type;
+        return de->in.inode_type;
 
     return EXT4_DIRECTORY_FILETYPE_UNKNOWN;
 }
@@ -110,7 +110,7 @@ void ext4_dir_entry_ll_set_inode_type(struct ext4_sblock *sb,
 {
     if ((ext4_get32(sb, rev_level) > 0) ||
             (ext4_get32(sb, minor_rev_level) >= 5))
-        de->inode_type = type;
+        de->in.inode_type = type;
 }
 
 /****************************************************************************/
@@ -561,7 +561,7 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
                 /* Cut tail of current entry */
                 ext4_dir_entry_ll_set_entry_length(dentry, used_space);
                 struct ext4_directory_entry_ll *new_entry =
-                        (void *) dentry + used_space;
+                        (void *) ((uint8_t *)dentry + used_space);
                 ext4_dir_write_entry(sb, new_entry,
                     free_space, child, name, name_len);
 
@@ -571,7 +571,7 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
         }
 
         /* Jump to the next entry */
-        dentry = (void *) dentry + rec_len;
+        dentry = (void *) ((uint8_t *)dentry + rec_len);
     }
 
     /* No free space found for new entry */

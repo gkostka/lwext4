@@ -52,11 +52,11 @@
 
 /**@brief   Mount point OS dependent lock*/
 #define EXT4_MP_LOCK(_m)    \
-        do { (_m)->os_locks ? (_m)->os_locks->lock() : 0; }while(0)
+        do { if((_m)->os_locks)  (_m)->os_locks->lock(); }while(0)
 
 /**@brief   Mount point OS dependent unlock*/
 #define EXT4_MP_UNLOCK(_m)  \
-        do { (_m)->os_locks ? (_m)->os_locks->unlock() : 0; }while(0)
+        do { if((_m)->os_locks)  (_m)->os_locks->unlock(); }while(0)
 
 /**@brief   Mount point descrpitor.*/
 struct ext4_mountpoint {

@@ -403,6 +403,11 @@ struct ext4_inode_ref {
 #define EXT4_DIRECTORY_FILETYPE_SOCK      6
 #define EXT4_DIRECTORY_FILETYPE_SYMLINK   7
 
+union ext4_directory_entry_ll_internal{
+    uint8_t name_length_high;  /* Higher 8 bits of name length */
+    uint8_t inode_type;        /* Type of referenced inode (in rev >= 0.5) */
+} __attribute__ ((packed));
+
 /**
  * Linked list directory entry structure
  */
@@ -411,10 +416,7 @@ struct ext4_directory_entry_ll {
     uint16_t entry_length;  /* Distance to the next directory entry */
     uint8_t name_length;    /* Lower 8 bits of name length */
 
-    union {
-        uint8_t name_length_high;  /* Higher 8 bits of name length */
-        uint8_t inode_type;        /* Type of referenced inode (in rev >= 0.5) */
-    } __attribute__ ((packed));
+    union ext4_directory_entry_ll_internal in;
 
     uint8_t name[EXT4_DIRECTORY_FILENAME_LEN];  /* Entry name */
 } __attribute__((packed)) ;
@@ -462,7 +464,7 @@ struct ext4_directory_dx_entry {
 struct ext4_directory_dx_root {
     struct ext4_directory_dx_dot_entry dots[2];
     struct ext4_directory_dx_root_info info;
-    struct ext4_directory_dx_entry entries[0];
+    struct ext4_directory_dx_entry entries[];
 };
 
 struct ext4_fake_directory_entry {
@@ -474,7 +476,7 @@ struct ext4_fake_directory_entry {
 
 struct ext4_directory_dx_node {
     struct ext4_fake_directory_entry fake;
-    struct ext4_directory_dx_entry entries[0];
+    struct ext4_directory_dx_entry entries[];
 };
 
 struct ext4_directory_dx_block {
@@ -536,10 +538,10 @@ struct ext4_extent_path {
 #define EXT4_EXTENT_MAGIC  0xF30A
 
 #define EXT4_EXTENT_FIRST(header) \
-        ((struct ext4_extent *) (((void *) (header)) + sizeof(struct ext4_extent_header)))
+        ((struct ext4_extent *) (((char *) (header)) + sizeof(struct ext4_extent_header)))
 
 #define EXT4_EXTENT_FIRST_INDEX(header) \
-        ((struct ext4_extent_index *) (((void *) (header)) + sizeof(struct ext4_extent_header)))
+        ((struct ext4_extent_index *) (((char *) (header)) + sizeof(struct ext4_extent_header)))
 
 
 /* EXT3 HTree directory indexing */
@@ -550,7 +552,7 @@ struct ext4_extent_path {
 #define EXT2_HTREE_HALF_MD4_UNSIGNED        4
 #define EXT2_HTREE_TEA_UNSIGNED             5
 
-#define EXT2_HTREE_EOF                      0x7FFFFFFF
+#define EXT2_HTREE_EOF                      0x7FFFFFFFUL
 
 
 struct ext4_hash_info {

@@ -595,7 +595,7 @@ static void ext4_dir_dx_insert_entry(
     uint32_t count = ext4_dir_dx_countlimit_get_count(countlimit);
 
     struct ext4_directory_dx_entry *start_index = index_block->entries;
-    size_t bytes = (void *) (start_index + count) - (void *) (new_index_entry);
+    size_t bytes = (uint8_t *) (start_index + count) - (uint8_t *) (new_index_entry);
 
     memmove(new_index_entry + 1, new_index_entry, bytes);
 
@@ -625,7 +625,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
     uint32_t block_size =
             ext4_sb_get_block_size(&inode_ref->fs->sb);
 
-    void *entry_buffer = malloc(block_size);
+    uint8_t *entry_buffer = malloc(block_size);
     if (entry_buffer == NULL)
         return ENOMEM;
 
@@ -651,7 +651,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 
     /* Load all valid entries to the buffer */
     struct ext4_directory_entry_ll *dentry = (void *)old_data_block->data;
-    void *entry_buffer_ptr = entry_buffer;
+    uint8_t *entry_buffer_ptr = entry_buffer;
     while ((void *)dentry < (void *)(old_data_block->data + block_size)) {
         /* Read only valid entries */
         if (ext4_dir_entry_ll_get_inode(dentry) && dentry->name_length) {
@@ -681,8 +681,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
             idx++;
         }
 
-        dentry = (void *) dentry +
-                ext4_dir_entry_ll_get_entry_length(dentry);
+        dentry = (void *)((uint8_t *)dentry +
+                ext4_dir_entry_ll_get_entry_length(dentry));
     }
 
     /* Sort all entries */

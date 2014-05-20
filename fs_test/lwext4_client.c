@@ -101,6 +101,7 @@ static int client_connect(void)
         exit(-1);
     }
 
+    winsock_fini();
     return fd;
 }
 
