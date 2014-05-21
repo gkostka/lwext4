@@ -101,7 +101,6 @@ static int client_connect(void)
         exit(-1);
     }
 
-    winsock_fini();
     return fd;
 }
 
@@ -171,6 +170,7 @@ int main(int argc, char *argv[])
     if(rc)
         printf("\t%s\n",op_code);
 
+    winsock_fini();
     return rc;
 }
 
