@@ -194,7 +194,7 @@ ext2_legacy_hash(const char *name, int len, int unsigned_char)
 }
 
 static void
-ext2_prep_hashbuf(const char *src, int slen, uint32_t *dst, int dlen,
+ext2_prep_hashbuf(const char *src, uint32_t slen, uint32_t *dst, int dlen,
     int unsigned_char)
 {
     uint32_t padding = slen | (slen << 8) | (slen << 16) | (slen << 24);
@@ -204,7 +204,7 @@ ext2_prep_hashbuf(const char *src, int slen, uint32_t *dst, int dlen,
     const unsigned char *ubuf = (const unsigned char *)src;
     const signed char *sbuf = (const signed char *)src;
 
-    if (slen > dlen)
+    if (slen > (uint32_t)dlen)
         len = dlen;
     else
         len = slen;

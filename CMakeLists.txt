@@ -29,7 +29,10 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m4)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  bf518)
     #bf518 demos
     #...
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  generic)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  avrxmega7)
+    #avrxmega7 demos
+    #...
+else()
     #Generic example target
     add_subdirectory(blockdev)
     add_subdirectory(fs_test)
