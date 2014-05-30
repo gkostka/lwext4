@@ -255,6 +255,7 @@ static void ext4_extent_binsearch(struct ext4_extent_header *header,
 int ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
     uint32_t *fblock)
 {
+    int rc;
     /* Compute bound defined by i-node size */
     uint64_t inode_size =
         ext4_inode_get_size(&inode_ref->fs->sb, inode_ref->inode);
@@ -285,8 +286,11 @@ int ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
         /* Load child node and set values for the next iteration */
         uint64_t child = ext4_extent_index_get_leaf(index);
 
-        if (block.lb_id)
-            ext4_block_set(inode_ref->fs->bdev, &block);
+        if (block.lb_id){
+            rc = ext4_block_set(inode_ref->fs->bdev, &block);
+            if(rc != EOK)
+                return rc;
+        }
 
 
         int rc = ext4_block_get(inode_ref->fs->bdev, &block, child);
@@ -313,8 +317,11 @@ int ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
     }
 
     /* Cleanup */
-    if (block.lb_id)
-        ext4_block_set(inode_ref->fs->bdev, &block);
+    if (block.lb_id){
+        rc = ext4_block_set(inode_ref->fs->bdev, &block);
+        if(rc != EOK)
+            return rc;
+    }
 
     return EOK;
 }
@@ -389,8 +396,11 @@ cleanup:
      * From 1: 0 is a block with inode data
      */
     for (i = 1; i < tmp_path->depth; ++i) {
-        if (tmp_path[i].block.lb_id)
-            ext4_block_set(inode_ref->fs->bdev, &tmp_path[i].block);
+        if (tmp_path[i].block.lb_id){
+            int r = ext4_block_set(inode_ref->fs->bdev, &tmp_path[i].block);
+            if(r != EOK)
+                rc = r;
+        }
     }
 
     /* Destroy temporary data structure */
@@ -462,9 +472,7 @@ static int ext4_extent_release_branch(struct ext4_inode_ref *inode_ref,
     if (rc != EOK)
         return rc;
 
-    ext4_balloc_free_block(inode_ref, fblock);
-
-    return EOK;
+    return ext4_balloc_free_block(inode_ref, fblock);
 }
 
 
@@ -593,8 +601,11 @@ cleanup:
      * starting from 1: 0 is a block with inode data
      */
     for (i = 1; i <= path->depth; ++i) {
-        if (path[i].block.lb_id)
-            ext4_block_set(inode_ref->fs->bdev, &path[i].block);
+        if (path[i].block.lb_id){
+            int r = ext4_block_set(inode_ref->fs->bdev, &path[i].block);
+            if(r != EOK)
+                rc = r;
+        }
     }
 
     /* Destroy temporary data structure */
@@ -640,7 +651,11 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
             }
 
             /* Put back not modified old block */
-            ext4_block_set(inode_ref->fs->bdev, &path_ptr->block);
+            rc = ext4_block_set(inode_ref->fs->bdev, &path_ptr->block);
+            if (rc != EOK) {
+                ext4_balloc_free_block(inode_ref, fblock);
+                return rc;
+            }
 
             /* Initialize newly allocated block and remember it */
             memset(block.data, 0, block_size);
@@ -923,8 +938,11 @@ finish:
      * starting from 1: 0 is a block with inode data
      */
     for (i = 1; i <= path->depth; ++i) {
-        if (path[i].block.lb_id)
-            ext4_block_set(inode_ref->fs->bdev, &path[i].block);
+        if (path[i].block.lb_id){
+            int r = ext4_block_set(inode_ref->fs->bdev, &path[i].block);
+            if(r != EOK)
+                rc = r;
+        }
     }
 
     /* Destroy temporary data structure */

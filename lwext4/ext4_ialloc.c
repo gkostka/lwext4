@@ -192,8 +192,10 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
 
             struct ext4_block bitmap_block;
             rc = ext4_block_get(fs->bdev, &bitmap_block, bitmap_block_addr);
-            if (rc != EOK)
+            if (rc != EOK){
+                ext4_fs_put_block_group_ref(&bg_ref);
                 return rc;
+            }
 
             /* Try to allocate i-node in the bitmap */
             uint32_t inodes_in_group = ext4_inodes_in_group_cnt(sb, bgid);
@@ -203,8 +205,16 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
                     &index_in_group);
             /* Block group has not any free i-node */
             if (rc == ENOSPC) {
-                ext4_block_set(fs->bdev, &bitmap_block);
-                ext4_fs_put_block_group_ref(&bg_ref);
+                rc = ext4_block_set(fs->bdev, &bitmap_block);
+                if(rc != EOK){
+                    ext4_fs_put_block_group_ref(&bg_ref);
+                    return rc;
+                }
+
+                rc = ext4_fs_put_block_group_ref(&bg_ref);
+                if (rc != EOK)
+                    return rc;
+
                 continue;
             }
 
@@ -214,8 +224,10 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
             bitmap_block.dirty = true;
 
             ext4_block_set(fs->bdev, &bitmap_block);
-            if (rc != EOK)
+            if (rc != EOK){
+                ext4_fs_put_block_group_ref(&bg_ref);
                 return rc;
+            }
 
             /* Modify filesystem counters */
             free_inodes--;
@@ -267,6 +279,9 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
 
         /* Block group not modified, put it and jump to the next block group */
         ext4_fs_put_block_group_ref(&bg_ref);
+        if (rc != EOK)
+            return rc;
+
         ++bgid;
     }
 
