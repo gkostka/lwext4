@@ -142,15 +142,15 @@ Features:
 How to use:
 Windows/Linux fileimages:
  cd build_generic
- fileimage_demo --in ext2 
+ generic --in ext2 
 
 Windows volumes:
  cd build_generic
- fileimage_demo --in I: --wpart
+ generic --in I: --wpart
 
 Linux block devices:
  cd build_generic
- fileimage_demo --in /dev/your_block_device
+ generic --in /dev/your_block_device
 
 Usage:                                                          
     --i   - input file              (default = ext2)            
@@ -189,7 +189,17 @@ Build bf518 library:
  make bf518
  cd build_bf518
  make lwext4
- 
+
+Build avrxmega7 library:
+ make avrxmega7
+ cd build_avrxmega7
+ make lwext4
+
+Build cortex-m0 library:
+ make cortex-m0
+ cd build_cortex-m0
+ make lwext4
+
 Build cortex-m3 library:
  make cortex-m3
  cd build_cortex-m3
