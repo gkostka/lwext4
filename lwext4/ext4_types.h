@@ -485,7 +485,7 @@ struct ext4_directory_dx_block {
     struct ext4_directory_dx_entry *position;
 } ;
 
-#define EXT4_ERR_BAD_DX_DIR       (-75000)
+#define EXT4_ERR_BAD_DX_DIR       (-25000)
 
 
 /*
