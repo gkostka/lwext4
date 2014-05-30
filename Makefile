@@ -18,25 +18,36 @@ bf518:
 	mkdir build_bf518
 	cd build_bf518 && cmake -G$(PROJECT_SETUP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_TOOLCHAIN_FILE=../toolchain/bf518.cmake ..
 
+avrxmega7:
+	rm -R -f build_avrxmega7
+	mkdir build_avrxmega7
+	cd build_avrxmega7 && cmake -G$(PROJECT_SETUP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_TOOLCHAIN_FILE=../toolchain/avrxmega7.cmake ..
+
+cortex-m0:
+	rm -R -f build_cortex-m0
+	mkdir build_cortex-m0
+	cd build_cortex-m0 && cmake -G$(PROJECT_SETUP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_TOOLCHAIN_FILE=../toolchain/cortex-m0.cmake ..
+	
 cortex-m3:
 	rm -R -f build_cortex-m3
 	mkdir build_cortex-m3
 	cd build_cortex-m3 && cmake -G$(PROJECT_SETUP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_TOOLCHAIN_FILE=../toolchain/cortex-m3.cmake ..
 	
-
 cortex-m4:
 	rm -R -f build_cortex-m4
 	mkdir build_cortex-m4
 	cd build_cortex-m4 && cmake -G$(PROJECT_SETUP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_TOOLCHAIN_FILE=../toolchain/cortex-m4.cmake ..
+
+arm-sim:
+	rm -R -f build_arm-sim
+	mkdir build_arm-sim
+	cd build_arm-sim && cmake -G$(PROJECT_SETUP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_TOOLCHAIN_FILE=../toolchain/arm-sim.cmake ..
 	
 all: generic bf518 cortex-m3 cortex-m4 generic
 
 
 clean:
-	rm -R -f build_bf518
-	rm -R -f build_cortex-m3
-	rm -R -f build_cortex-m4
-	rm -R -f build_generic
+	rm -R -f build_*
 	rm -R -f ext_images
 	
 unpack_images:
