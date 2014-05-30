@@ -13,16 +13,23 @@ add_subdirectory(lwext4)
 set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "-Wall -Wextra -pedantic")
 
 #Examples
-if    (CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m3)
-    #cortex-m3 demos
+if    (CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m0)
+    #cortex-m0 demos
     #...
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m3)
+    #cortex-m3 demos
+
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  arm-sim)
+    #arm-sim demos
+    add_subdirectory(blockdev)
+    add_subdirectory(demos/generic)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m4)
     #cortex-m4 demos
     add_subdirectory(demos/stm32f429_disco)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  bf518)
     #bf518 demos
     #...
-else()
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  generic)
     #Generic example target
     add_subdirectory(blockdev)
     add_subdirectory(fs_test)
