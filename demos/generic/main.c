@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #include <time.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -162,14 +163,14 @@ static void mp_stats(void)
 
     printf("**********************************************\n");
     printf("ext4_mount_point_stats\n");
-    printf("inodes_count        = %u\n", stats.inodes_count);
-    printf("free_inodes_count   = %u\n", stats.free_inodes_count);
-    printf("blocks_count        = %u\n", (uint32_t)stats.blocks_count);
-    printf("free_blocks_count   = %u\n", (uint32_t)stats.free_blocks_count);
-    printf("block_size          = %u\n", stats.block_size);
-    printf("block_group_count   = %u\n", stats.block_group_count);
-    printf("blocks_per_group    = %u\n", stats.blocks_per_group);
-    printf("inodes_per_group    = %u\n", stats.inodes_per_group);
+    printf("inodes_count        = %"PRIu32"\n", stats.inodes_count);
+    printf("free_inodes_count   = %"PRIu32"\n", stats.free_inodes_count);
+    printf("blocks_count        = %"PRIu32"\n", (uint32_t)stats.blocks_count);
+    printf("free_blocks_count   = %"PRIu32"\n", (uint32_t)stats.free_blocks_count);
+    printf("block_size          = %"PRIu32"\n", stats.block_size);
+    printf("block_group_count   = %"PRIu32"\n", stats.block_group_count);
+    printf("blocks_per_group    = %"PRIu32"\n", stats.blocks_per_group);
+    printf("inodes_per_group    = %"PRIu32"\n", stats.inodes_per_group);
     printf("volume_name         = %s\n", stats.volume_name);
 
     printf("**********************************************\n");
@@ -182,32 +183,32 @@ static void block_stats(void)
 
     printf("**********************************************\n");
     printf("ext4 blockdev stats\n");
-    printf("bdev->bread_ctr          = %u\n", bd->bread_ctr);
-    printf("bdev->bwrite_ctr         = %u\n", bd->bwrite_ctr);
+    printf("bdev->bread_ctr          = %"PRIu32"\n", bd->bread_ctr);
+    printf("bdev->bwrite_ctr         = %"PRIu32"\n", bd->bwrite_ctr);
 
 
-    printf("bcache->ref_blocks       = %u\n", bc->ref_blocks);
-    printf("bcache->max_ref_blocks   = %u\n", bc->max_ref_blocks);
-    printf("bcache->lru_ctr          = %u\n", bc->lru_ctr);
+    printf("bcache->ref_blocks       = %"PRIu32"\n", bc->ref_blocks);
+    printf("bcache->max_ref_blocks   = %"PRIu32"\n", bc->max_ref_blocks);
+    printf("bcache->lru_ctr          = %"PRIu32"\n", bc->lru_ctr);
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->refctr[%d]     = %u\n", i, bc->refctr[i]);
+        printf("bcache->refctr[%"PRIu32"]     = %"PRIu32"\n", i, bc->refctr[i]);
     }
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->lru_id[%d]     = %u\n", i, bc->lru_id[i]);
+        printf("bcache->lru_id[%"PRIu32"]     = %"PRIu32"\n", i, bc->lru_id[i]);
     }
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->free_delay[%d] = %d\n", i, bc->free_delay[i]);
+        printf("bcache->free_delay[%"PRIu32"] = %d\n", i, bc->free_delay[i]);
     }
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->lba[%d]        = %u\n", i, (uint32_t)bc->lba[i]);
+        printf("bcache->lba[%"PRIu32"]        = %"PRIu32"\n", i, (uint32_t)bc->lba[i]);
     }
 
     printf("**********************************************\n");
@@ -308,7 +309,7 @@ static bool file_test(void)
     size_bytes = (size_bytes * 1000) / 1024;
     kbps = (size_bytes) / (diff + 1);
     printf("file_test write time: %d ms\n", (int)diff);
-    printf("file_test write speed: %d KB/s\n", kbps);
+    printf("file_test write speed: %"PRIu32" KB/s\n", kbps);
     r = ext4_fclose(&f);
     printf("ext4_fopen: test1\n");
 
@@ -344,7 +345,7 @@ static bool file_test(void)
     size_bytes = (size_bytes * 1000) / 1024;
     kbps = (size_bytes) / (diff + 1);
     printf("file_test read time: %d ms\n", (int)diff);
-    printf("file_test read speed: %d KB/s\n", kbps);
+    printf("file_test read speed: %"PRIu32" KB/s\n", kbps);
     r = ext4_fclose(&f);
 
     return true;
