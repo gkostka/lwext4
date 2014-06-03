@@ -201,6 +201,12 @@ struct ext4_mount_stats {
 int ext4_mount_point_stats(const char *mount_point,
     struct ext4_mount_stats *stats);
 
+/**@brief   Setup OS lock routines.
+ * @param   mount_point mount path
+ * @param   locks - lock and unlock functions
+ * @return  standard error code */
+int ext4_mount_setup_locks(const char * mount_point,
+    const struct ext4_lock *locks);
 
 /**@brief   Enable/disable write back cache mode.
  * @warning Default model of cache is write trough. It means that when You do:
