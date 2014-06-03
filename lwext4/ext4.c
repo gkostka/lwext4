@@ -68,7 +68,7 @@ struct ext4_mountpoint {
     char name[32];
 
     /**@brief   Os dependent lock/unlock functions.*/
-    struct ext4_lock *os_locks;
+    const struct ext4_lock *os_locks;
 
     /**@brief   Ext4 filesystem internals.*/
     struct ext4_fs fs;
@@ -438,7 +438,6 @@ int ext4_mount_point_stats(const char *mount_point,
             mp = &_mp[i];
             break;
         }
-
     }
     if(!mp)
         return ENOENT;
@@ -457,6 +456,25 @@ int ext4_mount_point_stats(const char *mount_point,
     memcpy(stats->volume_name, mp->fs.sb.volume_name, 16);
     EXT4_MP_UNLOCK(mp);
 
+    return EOK;
+}
+
+int ext4_mount_setup_locks(const char * mount_point,
+    const struct ext4_lock *locks)
+{
+    uint32_t i;
+    struct ext4_mountpoint    *mp = 0;
+
+    for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
+        if(!strcmp(_mp[i].name, mount_point)){
+            mp = &_mp[i];
+            break;
+        }
+    }
+    if(!mp)
+        return ENOENT;
+
+    mp->os_locks = locks;
     return EOK;
 }
 
