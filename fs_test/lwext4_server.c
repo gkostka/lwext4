@@ -26,7 +26,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <errno.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -53,6 +53,7 @@
 #include <io_raw.h>
 
 #include <ext4.h>
+#include <errno.h>
 
 static int winsock_init(void);
 static void winsock_fini(void);

@@ -418,7 +418,7 @@ static bool mount(void)
 
     if(!wr_buff || !rd_buff){
         printf("Read-Write allocation ERROR\n");
-        return EXIT_FAILURE;
+        return false;
     }
 
     ext4_dmask_set(EXT4_DEBUG_ALL);
@@ -519,7 +519,6 @@ int main(int argc, char **argv)
 
     if(!mount())
         return EXIT_FAILURE;
-
 
     cleanup();
 
