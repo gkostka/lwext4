@@ -61,11 +61,11 @@ static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id)
       break;
 
   case HOST_USER_CLASS_ACTIVE:
-      msc_connected = true;
+	  enum_done = true;
       break;
 
   case HOST_USER_CONNECTION:
-      enum_done = true;
+	  msc_connected = true;
       break;
   default:
       break;
@@ -79,6 +79,7 @@ static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id)
 void hw_init(void)
 {
     pll_init();
+    HAL_Init();
 
     /* Initialize the LEDs */
     BSP_LED_Init(LED3);
