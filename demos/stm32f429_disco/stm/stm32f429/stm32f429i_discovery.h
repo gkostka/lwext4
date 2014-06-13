@@ -2,26 +2,36 @@
   ******************************************************************************
   * @file    stm32f429i_discovery.h
   * @author  MCD Application Team
-  * @version V1.0.1
-  * @date    28-October-2013
+  * @version V2.0.1
+  * @date    26-February-2014
   * @brief   This file contains definitions for STM32F429I-DISCO Kit Leds, push-
   *          buttons hardware resources.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2013 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2014 STMicroelectronics</center></h2>
   *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
   *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
   */
@@ -35,19 +45,9 @@
 #endif
                                               
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx.h"
-#include "stm32f4xx_dma.h"
-#include "stm32f4xx_exti.h"
-#include "stm32f4xx_gpio.h"
-#include "stm32f4xx_rcc.h"
-#include "stm32f4xx_syscfg.h"
-#include "stm32f4xx_i2c.h"
-#include "stm32f4xx_spi.h"
-#include "stm32f4xx_dma2d.h"
-#include "stm32f4xx_ltdc.h"
-#include "misc.h"
+#include "stm32f4xx_hal.h"
    
-/** @addtogroup Utilities
+/** @addtogroup BSP
   * @{
   */
   
@@ -55,15 +55,11 @@
   * @{
   */
    
-/** @addtogroup STM32F429I_DISCOVERY
+/** @addtogroup STM32F429I_DISCOVERY LOW_LEVEL
   * @{
   */
    
-/** @addtogroup STM32F429I_DISCOVERY_LOW_LEVEL
-  * @{
-  */ 
-
-/** @defgroup STM32F429I_DISCOVERY_LOW_LEVEL_Exported_Types
+/** @defgroup STM32F429I_DISCOVERY LOW_LEVEL_Exported_Types
   * @{
   */
 typedef enum 
@@ -74,7 +70,7 @@ typedef enum
 
 typedef enum 
 {  
-  BUTTON_USER = 0,
+  BUTTON_KEY = 0,
 } Button_TypeDef;
 
 typedef enum 
@@ -82,11 +78,12 @@ typedef enum
   BUTTON_MODE_GPIO = 0,
   BUTTON_MODE_EXTI = 1
 } ButtonMode_TypeDef;     
+
 /**
   * @}
   */ 
 
-/** @defgroup STM32F429I_DISCOVERY_LOW_LEVEL_Exported_Constants
+/** @defgroup STM32F429I_DISCOVERY LOW_LEVEL_Exported_Constants
   * @{
   */ 
 
@@ -97,101 +94,229 @@ typedef enum
  #define USE_STM32F429I_DISCO
 #endif
 
-
-/** @addtogroup STM32F429I_DISCOVERY_LOW_LEVEL_LED
+/** @addtogroup STM32F429I_DISCOVERY LOW_LEVEL_LED
   * @{
   */
-#define LEDn                             2
+#define LEDn                                    2
   
-#define LED3_PIN                         GPIO_Pin_13
-#define LED3_GPIO_PORT                   GPIOG
-#define LED3_GPIO_CLK                    RCC_AHB1Periph_GPIOG  
+#define LED3_PIN                                GPIO_PIN_13
+#define LED3_GPIO_PORT                          GPIOG
+#define LED3_GPIO_CLK_ENABLE()                  __GPIOG_CLK_ENABLE()  
+#define LED3_GPIO_CLK_DISABLE()                 __GPIOG_CLK_DISABLE()  
 
-#define LED4_PIN                         GPIO_Pin_14
-#define LED4_GPIO_PORT                   GPIOG
-#define LED4_GPIO_CLK                    RCC_AHB1Periph_GPIOG  
+
+#define LED4_PIN                                GPIO_PIN_14
+#define LED4_GPIO_PORT                          GPIOG
+#define LED4_GPIO_CLK_ENABLE()                  __GPIOG_CLK_ENABLE()  
+#define LED4_GPIO_CLK_DISABLE()                 __GPIOG_CLK_DISABLE()  
+
+#define LEDx_GPIO_CLK_ENABLE(__INDEX__)         (((__INDEX__) == 0) ? LED3_GPIO_CLK_ENABLE() : LED4_GPIO_CLK_ENABLE())
+#define LEDx_GPIO_CLK_DISABLE(__INDEX__)        (((__INDEX__) == 0) ? LED3_GPIO_CLK_DISABLE() : LED4_GPIO_CLK_DISABLE())
 /**
   * @}
   */ 
   
-/** @addtogroup STM32F429I_DISCOVERY_LOW_LEVEL_BUTTON
+/** @addtogroup STM32F429I_DISCOVERY LOW_LEVEL_BUTTON
   * @{
   */  
-#define BUTTONn                          1  
+#define BUTTONn                                 1
 
 /**
  * @brief Wakeup push-button
  */
-#define USER_BUTTON_PIN                GPIO_Pin_0
-#define USER_BUTTON_GPIO_PORT          GPIOA
-#define USER_BUTTON_GPIO_CLK           RCC_AHB1Periph_GPIOA
-#define USER_BUTTON_EXTI_LINE          EXTI_Line0
-#define USER_BUTTON_EXTI_PORT_SOURCE   EXTI_PortSourceGPIOA
-#define USER_BUTTON_EXTI_PIN_SOURCE    EXTI_PinSource0
-#define USER_BUTTON_EXTI_IRQn          EXTI0_IRQn 
+#define KEY_BUTTON_PIN                         GPIO_PIN_0
+#define KEY_BUTTON_GPIO_PORT                   GPIOA
+#define KEY_BUTTON_GPIO_CLK_ENABLE()           __GPIOA_CLK_ENABLE()
+#define KEY_BUTTON_GPIO_CLK_DISABLE()          __GPIOA_CLK_DISABLE()
+#define KEY_BUTTON_EXTI_IRQn                   EXTI0_IRQn
+
+#define BUTTONx_GPIO_CLK_ENABLE(__INDEX__)      (KEY_BUTTON_GPIO_CLK_ENABLE())
+#define BUTTONx_GPIO_CLK_DISABLE(__INDEX__)     (KEY_BUTTON_GPIO_CLK_DISABLE())
 /**
   * @}
   */
 
-/** @addtogroup STM32F429I_DISCOVERY_LOW_LEVEL_I2C_EE
+/** @addtogroup STM32F429I_DISCOVERY LOW_LEVEL_BUS
+  * @{
+  */  
+/* Exported constanIO --------------------------------------------------------*/
+#define IO_I2C_ADDRESS                      0x82 
+#define TS_I2C_ADDRESS                      0x82
+
+#ifdef EE_M24LR64
+#define EEPROM_I2C_ADDRESS_A01              0xA0
+#define EEPROM_I2C_ADDRESS_A02              0xA6
+#endif /* EE_M24LR64 */ 
+
+
+/*##################### I2Cx ###################################*/
+/* User can use this section to tailor I2Cx instance used and associated 
+   resources */
+#define DISCOVERY_I2Cx                          I2C3
+#define DISCOVERY_I2Cx_CLOCK_ENABLE()           __I2C3_CLK_ENABLE()
+#define DISCOVERY_I2Cx_FORCE_RESET()            __I2C3_FORCE_RESET()
+#define DISCOVERY_I2Cx_RELEASE_RESET()          __I2C3_RELEASE_RESET()
+#define DISCOVERY_I2Cx_SDA_GPIO_CLK_ENABLE()    __GPIOC_CLK_ENABLE()
+#define DISCOVERY_I2Cx_SCL_GPIO_CLK_ENABLE()    __GPIOA_CLK_ENABLE() 
+#define DISCOVERY_I2Cx_SDA_GPIO_CLK_DISABLE()   __GPIOC_CLK_DISABLE()
+
+/* Definition for DISCO I2Cx Pins */
+#define DISCOVERY_I2Cx_SCL_PIN                  GPIO_PIN_8
+#define DISCOVERY_I2Cx_SCL_GPIO_PORT            GPIOA
+#define DISCOVERY_I2Cx_SCL_SDA_AF               GPIO_AF4_I2C3
+#define DISCOVERY_I2Cx_SDA_PIN                  GPIO_PIN_9
+#define DISCOVERY_I2Cx_SDA_GPIO_PORT            GPIOC
+
+/* Definition for IOE I2Cx's NVIC */
+#define DISCOVERY_I2Cx_EV_IRQn                  I2C3_EV_IRQn
+#define DISCOVERY_I2Cx_ER_IRQn                  I2C3_ER_IRQn
+
+/* I2C clock speed configuration (in Hz) 
+  WARNING: 
+   Make sure that this define is not already declared in other files (ie. 
+  stm324x9i_disco.h file). It can be used in parallel by other modules. */
+#ifndef I2C_SPEED
+ #define I2C_SPEED                          100000
+#endif /* I2C_SPEED */
+
+#define I2Cx_TIMEOUT_MAX                    0x3000 /*<! The value of the maximal timeout for I2C waiting loops */
+
+/*##################### SPIx ###################################*/
+#define DISCOVERY_SPIx                          SPI5
+#define DISCOVERY_SPIx_CLK_ENABLE()             __SPI5_CLK_ENABLE()
+#define DISCOVERY_SPIx_GPIO_PORT                GPIOF                      /* GPIOF */
+#define DISCOVERY_SPIx_AF                       GPIO_AF5_SPI5
+#define DISCOVERY_SPIx_GPIO_CLK_ENABLE()        __GPIOF_CLK_ENABLE()
+#define DISCOVERY_SPIx_GPIO_CLK_DISABLE()       __GPIOF_CLK_DISABLE()
+#define DISCOVERY_SPIx_SCK_PIN                  GPIO_PIN_7                 /* PF.07 */
+#define DISCOVERY_SPIx_MISO_PIN                 GPIO_PIN_8                 /* PF.08 */
+#define DISCOVERY_SPIx_MOSI_PIN                 GPIO_PIN_9                 /* PF.09 */
+/* Maximum Timeout values for flags waiting loops. These timeouts are not based
+   on accurate values, they just guarantee that the application will not remain
+   stuck if the SPI communication is corrupted.
+   You may modify these timeout values depending on CPU frequency and application
+   conditions (interrupts routines ...). */   
+#define SPIx_TIMEOUT_MAX              ((uint32_t)0x1000)
+
+
+/*##################### IOE ###################################*/
+/** 
+  * @brief  IOE Control pin  
+  */ 
+/* Definition for external IT for STMPE811 */
+#define STMPE811_INT_PIN                        GPIO_PIN_15
+#define STMPE811_INT_GPIO_PORT                  GPIOA
+#define STMPE811_INT_CLK_ENABLE()               __GPIOA_CLK_ENABLE()
+#define STMPE811_INT_CLK_DISABLE()              __GPIOA_CLK_DISABLE()
+#define STMPE811_INT_EXTI                       EXTI15_10_IRQn
+#define STMPE811_INT_EXTIHandler                EXTI15_10_IRQHandler
+/**
+  * @}
+  */ 
+
+/*##################### LCD ###################################*/
+/* Chip Select macro definition */
+#define LCD_CS_LOW()       HAL_GPIO_WritePin(LCD_NCS_GPIO_PORT, LCD_NCS_PIN, GPIO_PIN_RESET)
+#define LCD_CS_HIGH()      HAL_GPIO_WritePin(LCD_NCS_GPIO_PORT, LCD_NCS_PIN, GPIO_PIN_SET)
+
+/* Set WRX High to send data */
+#define LCD_WRX_LOW()      HAL_GPIO_WritePin(LCD_WRX_GPIO_PORT, LCD_WRX_PIN, GPIO_PIN_RESET)
+#define LCD_WRX_HIGH()     HAL_GPIO_WritePin(LCD_WRX_GPIO_PORT, LCD_WRX_PIN, GPIO_PIN_SET)
+
+/* Set WRX High to send data */
+#define LCD_RDX_LOW()      HAL_GPIO_WritePin(LCD_RDX_GPIO_PORT, LCD_RDX_PIN, GPIO_PIN_RESET)
+#define LCD_RDX_HIGH()     HAL_GPIO_WritePin(LCD_RDX_GPIO_PORT, LCD_RDX_PIN, GPIO_PIN_SET)
+
+/** 
+  * @brief  LCD Control pin  
+  */ 
+#define LCD_NCS_PIN                GPIO_PIN_2
+#define LCD_NCS_GPIO_PORT          GPIOC
+#define LCD_NCS_GPIO_CLK_ENABLE()  __GPIOC_CLK_ENABLE()
+#define LCD_NCS_GPIO_CLK_DISABLE() __GPIOC_CLK_DISABLE()
+/**
+  * @}
+  */ 
+/** 
+  * @brief  LCD Command/data pin  
+  */
+#define LCD_WRX_PIN                GPIO_PIN_13
+#define LCD_WRX_GPIO_PORT          GPIOD
+#define LCD_WRX_GPIO_CLK_ENABLE()  __GPIOD_CLK_ENABLE()
+#define LCD_WRX_GPIO_CLK_DISABLE() __GPIOD_CLK_DISABLE()
+  
+#define LCD_RDX_PIN                GPIO_PIN_12
+#define LCD_RDX_GPIO_PORT          GPIOD
+#define LCD_RDX_GPIO_CLK_ENABLE()  __GPIOD_CLK_ENABLE()
+#define LCD_RDX_GPIO_CLK_DISABLE() __GPIOD_CLK_DISABLE()
+/**
+  * @}
+  */ 
+
+
+/*##################### GYRO ##########################*/
+/* Read/Write command */
+#define READWRITE_CMD              ((uint8_t)0x80) 
+/* Multiple byte read/write command */ 
+#define MULTIPLEBYTE_CMD           ((uint8_t)0x40)
+/* Dummy Byte Send by the SPI Master device in order to generate the Clock to the Slave device */
+#define DUMMY_BYTE                 ((uint8_t)0x00)
+
+/* Chip Select macro definition */
+#define GYRO_CS_LOW()       HAL_GPIO_WritePin(GYRO_CS_GPIO_PORT, GYRO_CS_PIN, GPIO_PIN_RESET)
+#define GYRO_CS_HIGH()      HAL_GPIO_WritePin(GYRO_CS_GPIO_PORT, GYRO_CS_PIN, GPIO_PIN_SET)
+
+/**
+  * @brief  GYRO SPI Interface pins
+  */
+#define GYRO_CS_PIN                    GPIO_PIN_1                  /* PC.01 */
+#define GYRO_CS_GPIO_PORT              GPIOC                       /* GPIOC */
+#define GYRO_CS_GPIO_CLK_ENABLE()      __GPIOC_CLK_ENABLE()
+#define GYRO_CS_GPIO_CLK_DISABLE()     __GPIOC_CLK_DISABLE()
+
+#define GYRO_INT_GPIO_CLK_ENABLE()         __GPIOA_CLK_ENABLE()
+#define GYRO_INT_GPIO_CLK_DISABLE()        __GPIOA_CLK_DISABLE()
+#define GYRO_INT_GPIO_PORT                 GPIOA                       /* GPIOA */
+#define GYRO_INT1_PIN                      GPIO_PIN_1                  /* PA.01 */
+#define GYRO_INT1_EXTI_IRQn                EXTI1_IRQn 
+#define GYRO_INT2_PIN                      GPIO_PIN_2                  /* PA.02 */
+#define GYRO_INT2_EXTI_IRQn                EXTI2_IRQn 
+/**
+  * @}
+  */ 
+
+
+#ifdef EE_M24LR64
+/** @addtogroup STM32F429I_DISCOVERY LOW_LEVEL_I2C_EE
   * @{
   */
 /**
   * @brief  I2C EEPROM Interface pins
-  */  
-#define sEE_I2C                          I2C3
-#define sEE_I2C_CLK                      RCC_APB1Periph_I2C3
-#define sEE_I2C_SCL_PIN                  GPIO_Pin_8                  /* PA.08 */
-#define sEE_I2C_SCL_GPIO_PORT            GPIOA                       /* GPIOA */
-#define sEE_I2C_SCL_GPIO_CLK             RCC_AHB1Periph_GPIOA
-#define sEE_I2C_SCL_SOURCE               GPIO_PinSource8
-#define sEE_I2C_SCL_AF                   GPIO_AF_I2C3
-#define sEE_I2C_SDA_PIN                  GPIO_Pin_9                  /* PC.09 */
-#define sEE_I2C_SDA_GPIO_PORT            GPIOC                       /* GPIOC */
-#define sEE_I2C_SDA_GPIO_CLK             RCC_AHB1Periph_GPIOC
-#define sEE_I2C_SDA_SOURCE               GPIO_PinSource9
-#define sEE_I2C_SDA_AF                   GPIO_AF_I2C3
-#define sEE_M24C64_32
-
-#define sEE_I2C_DMA                      DMA1   
-#define sEE_I2C_DMA_CHANNEL              DMA_Channel_3
-#define sEE_I2C_DMA_STREAM_TX            DMA1_Stream4
-#define sEE_I2C_DMA_STREAM_RX            DMA1_Stream2   
-#define sEE_I2C_DMA_CLK                  RCC_AHB1Periph_DMA1
-#define sEE_I2C_DR_Address               ((uint32_t)0x40005C10)
-#define sEE_USE_DMA
+  */
+#define EEPROM_I2C_DMA                          DMA1   
+#define EEPROM_I2C_DMA_CHANNEL                  DMA_CHANNEL_3
+#define EEPROM_I2C_DMA_STREAM_TX                DMA1_Stream4
+#define EEPROM_I2C_DMA_STREAM_RX                DMA1_Stream2
+#define EEPROM_I2C_DMA_CLK_ENABLE()             __DMA1_CLK_ENABLE()
    
-#define sEE_I2C_DMA_TX_IRQn              DMA1_Stream4_IRQn
-#define sEE_I2C_DMA_RX_IRQn              DMA1_Stream2_IRQn
-#define sEE_I2C_DMA_TX_IRQHandler        DMA1_Stream4_IRQHandler
-#define sEE_I2C_DMA_RX_IRQHandler        DMA1_Stream2_IRQHandler   
-#define sEE_I2C_DMA_PREPRIO              0
-#define sEE_I2C_DMA_SUBPRIO              0   
-   
-#define sEE_TX_DMA_FLAG_FEIF             DMA_FLAG_FEIF4
-#define sEE_TX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF4
-#define sEE_TX_DMA_FLAG_TEIF             DMA_FLAG_TEIF4
-#define sEE_TX_DMA_FLAG_HTIF             DMA_FLAG_HTIF4
-#define sEE_TX_DMA_FLAG_TCIF             DMA_FLAG_TCIF4
-#define sEE_RX_DMA_FLAG_FEIF             DMA_FLAG_FEIF2
-#define sEE_RX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF2
-#define sEE_RX_DMA_FLAG_TEIF             DMA_FLAG_TEIF2
-#define sEE_RX_DMA_FLAG_HTIF             DMA_FLAG_HTIF2
-#define sEE_RX_DMA_FLAG_TCIF             DMA_FLAG_TCIF2
-   
-#define sEE_DIRECTION_TX                 0
-#define sEE_DIRECTION_RX                 1  
-
-/* I2C clock speed configuration (in Hz), used by I2C EEPROM memory and IO Expander drivers */
-#ifndef I2C_SPEED
- #define I2C_SPEED                        100000
-#endif /* I2C_SPEED */
+#define EEPROM_I2C_DMA_TX_IRQn                  DMA1_Stream4_IRQn
+#define EEPROM_I2C_DMA_RX_IRQn                  DMA1_Stream2_IRQn
+#define EEPROM_I2C_DMA_TX_IRQHandler            DMA1_Stream4_IRQHandler
+#define EEPROM_I2C_DMA_RX_IRQHandler            DMA1_Stream2_IRQHandler
+#define EEPROM_I2C_DMA_PREPRIO                  0
+/**
+  * @}
+  */ 
 
 /**
   * @}
   */  
+#endif /*EE_M24LR64*/
+/**
+  * @}
+  */
 
-/** @defgroup STM32F429I_DISCOVERY_LOW_LEVEL_Exported_Macros
+/** @defgroup STM32F429I_DISCOVERY LOW_LEVEL_Exported_Macros
   * @{
   */  
 /**
@@ -199,18 +324,16 @@ typedef enum
   */ 
 
 
-/** @defgroup STM32F429I_DISCOVERY_LOW_LEVEL_Exported_Functions
+/** @defgroup STM32F429I_DISCOVERY LOW_LEVEL_Exported_Functions
   * @{
   */
-void STM_EVAL_LEDInit(Led_TypeDef Led);
-void STM_EVAL_LEDOn(Led_TypeDef Led);
-void STM_EVAL_LEDOff(Led_TypeDef Led);
-void STM_EVAL_LEDToggle(Led_TypeDef Led);
-void STM_EVAL_PBInit(Button_TypeDef Button, ButtonMode_TypeDef Button_Mode);
-uint32_t STM_EVAL_PBGetState(Button_TypeDef Button);
-void sEE_LowLevel_DeInit(void);
-void sEE_LowLevel_Init(void);
-void sEE_LowLevel_DMAConfig(uint32_t pBuffer, uint32_t BufferSize, uint32_t Direction);
+uint32_t  BSP_GetVersion(void);  
+void      BSP_LED_Init(Led_TypeDef Led);
+void      BSP_LED_On(Led_TypeDef Led);
+void      BSP_LED_Off(Led_TypeDef Led);
+void      BSP_LED_Toggle(Led_TypeDef Led);
+void      BSP_PB_Init(Button_TypeDef Button, ButtonMode_TypeDef ButtonMode);
+uint32_t  BSP_PB_GetState(Button_TypeDef Button);
 /**
   * @}
   */
@@ -232,12 +355,5 @@ void sEE_LowLevel_DMAConfig(uint32_t pBuffer, uint32_t BufferSize, uint32_t Dire
   * @}
   */
 
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-  */ 
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

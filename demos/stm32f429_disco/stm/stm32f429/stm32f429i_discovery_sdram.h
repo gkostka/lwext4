@@ -2,33 +2,43 @@
   ******************************************************************************
   * @file    stm32f429i_discovery_sdram.h
   * @author  MCD Application Team
-  * @version V1.0.1
-  * @date    28-October-2013
+  * @version V2.0.1
+  * @date    26-February-2014
   * @brief   This file contains all the functions prototypes for the 
-  *          stm324x9i_disco_sdram.c driver.
+  *          stm32F429I_DISCOVERY_sdram.c driver.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2013 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2014 STMicroelectronics</center></h2>
   *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
   *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
   */   
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __STM32429I_DISCO_SDRAM_H
-#define __STM32429I_DISCO_SDRAM_H
+#ifndef __STM32F429I_DISCOVERY_SDRAM_H
+#define __STM32F429I_DISCOVERY_SDRAM_H
 
 #ifdef __cplusplus
  extern "C" {
@@ -37,76 +47,79 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f429i_discovery.h"
 
-/** @addtogroup Utilities
+/** @addtogroup BSP
   * @{
   */
   
-/** @addtogroup STM32F4_EVAL
-  * @{
-  */ 
-
 /** @addtogroup STM32F429I_DISCOVERY
   * @{
   */
-  
-/** @addtogroup STM32F429I_DISCOVERY_SDRAM
-  * @{
-  */  
-  
-/** @defgroup STM32429I_DISCO_SDRAM_Private_Defines
+ 
+/** @defgroup STM32F429I_DISCOVERY_SDRAM STM32F429I_DISCOVERY_SDRAM
   * @{
   */
+  
+/* Exported types ------------------------------------------------------------*/
+  
+/** @defgroup STM32F429I_DISCOVERY_SDRAM_Exported_Types STM32F429I_DISCOVERY_SDRAM_Exported_Types
+  * @{
+  */
+/**
+  * @}
+  */
 
+/* Exported constants --------------------------------------------------------*/ 
+
+/** @defgroup STM32F429I_DISCOVERY_SDRAM_Exported_Constants STM32F429I_DISCOVERY_SDRAM_Exported_Constants
+  * @{
+  */ 
 /**
   * @brief  FMC SDRAM Bank address
   */   
-#define SDRAM_BANK_ADDR     ((uint32_t)0xD0000000)
+#define SDRAM_DEVICE_ADDR         ((uint32_t)0xD0000000)
+#define SDRAM_DEVICE_SIZE         ((uint32_t)0x800000)  /* SDRAM device size in MBytes */
   
 /**
   * @brief  FMC SDRAM Memory Width
   */  
-/* #define SDRAM_MEMORY_WIDTH   FMC_SDMemory_Width_8b  */
-#define SDRAM_MEMORY_WIDTH    FMC_SDMemory_Width_16b 
+/* #define SDRAM_MEMORY_WIDTH   FMC_SDRAM_MEM_BUS_WIDTH_8  */
+#define SDRAM_MEMORY_WIDTH      FMC_SDRAM_MEM_BUS_WIDTH_16
 
 /**
   * @brief  FMC SDRAM CAS Latency
   */  
-/* #define SDRAM_CAS_LATENCY   FMC_CAS_Latency_2  */
-#define SDRAM_CAS_LATENCY    FMC_CAS_Latency_3
+/* #define SDRAM_CAS_LATENCY    FMC_SDRAM_CAS_LATENCY_2  */
+#define SDRAM_CAS_LATENCY       FMC_SDRAM_CAS_LATENCY_3 
 
 /**
   * @brief  FMC SDRAM Memory clock period
   */  
-#define SDCLOCK_PERIOD    FMC_SDClock_Period_2        /* Default configuration used with LCD */
-/* #define SDCLOCK_PERIOD    FMC_SDClock_Period_3 */
+#define SDCLOCK_PERIOD          FMC_SDRAM_CLOCK_PERIOD_2    /* Default configuration used with LCD */
+/* #define SDCLOCK_PERIOD       FMC_SDRAM_CLOCK_PERIOD_3 */
 
 /**
   * @brief  FMC SDRAM Memory Read Burst feature
   */  
-#define SDRAM_READBURST    FMC_Read_Burst_Disable    /* Default configuration used with LCD */
-/* #define SDRAM_READBURST    FMC_Read_Burst_Enable  */
+#define SDRAM_READBURST         FMC_SDRAM_RBURST_DISABLE    /* Default configuration used with LCD */
+/* #define SDRAM_READBURST      FMC_SDRAM_RBURST_ENABLE  */
 
 /**
   * @brief  FMC SDRAM Bank Remap
   */    
-/* #define SDRAM_BANK_REMAP */   
+/* #define SDRAM_BANK_REMAP */
 
 
+/* Set the refresh rate counter */
+/* (15.62 us x Freq) - 20 */
+#define REFRESH_COUNT           ((uint32_t)1386)   /* SDRAM refresh counter */
+#define SDRAM_TIMEOUT           ((uint32_t)0xFFFF)
 
-/**
- * @brief Uncomment the line below if you want to use user defined Delay function
- *        (for precise timing), otherwise default _delay_ function defined within
- *         this driver is used (less precise timing).  
- */
- 
-/* #define USE_Delay */
-
-#ifdef USE_Delay
-  #define __Delay     Delay      /*  User can provide more timing precise __Delay function
-                                    (with 10ms time base), using SysTick for example */
-#else
-  #define __Delay     delay      /*  Default __Delay function with less precise timing */
-#endif
+/* DMA definitions for SDRAM DMA transfer */
+#define __DMAx_CLK_ENABLE       __DMA2_CLK_ENABLE
+#define SDRAM_DMAx_CHANNEL      DMA_CHANNEL_0
+#define SDRAM_DMAx_STREAM       DMA2_Stream0
+#define SDRAM_DMAx_IRQn         DMA2_Stream0_IRQn
+#define SDRAM_DMAx_IRQHandler   DMA2_Stream0_IRQHandler
 
 /**
   * @brief  FMC SDRAM Mode definition register defines
@@ -120,35 +133,42 @@
 #define SDRAM_MODEREG_CAS_LATENCY_2              ((uint16_t)0x0020)
 #define SDRAM_MODEREG_CAS_LATENCY_3              ((uint16_t)0x0030)
 #define SDRAM_MODEREG_OPERATING_MODE_STANDARD    ((uint16_t)0x0000)
-#define SDRAM_MODEREG_WRITEBURST_MODE_PROGRAMMED ((uint16_t)0x0000) 
-#define SDRAM_MODEREG_WRITEBURST_MODE_SINGLE     ((uint16_t)0x0200)      
+#define SDRAM_MODEREG_WRITEBURST_MODE_PROGRAMMED ((uint16_t)0x0000)
+#define SDRAM_MODEREG_WRITEBURST_MODE_SINGLE     ((uint16_t)0x0200)
 
 /**
   * @}
-  */  
+  */
 
-/** @defgroup STM32429I_DISCO_SDRAM_Exported_Functions
+/* Exported macro ------------------------------------------------------------*/
+  
+/** @defgroup STM32F429I_DISCOVERY_SDRAM_Exported_Macro STM32F429I_DISCOVERY_SDRAM_Exported_Macro
   * @{
+  */
+
+/**
+  * @}
   */ 
-void  SDRAM_Init(void);
-void  SDRAM_GPIOConfig(void);
-void  SDRAM_InitSequence(void);
-void  SDRAM_WriteBuffer(uint32_t* pBuffer, uint32_t uwWriteAddress, uint32_t uwBufferSize);
-void  SDRAM_ReadBuffer(uint32_t* pBuffer, uint32_t uwReadAddress, uint32_t uwBufferSize);
+
+/* Exported functions --------------------------------------------------------*/
+
+/** @defgroup STM32F429I_DISCOVERY_SDRAM_Exported_Functions STM32F429I_DISCOVERY_SDRAM_Exported_Functions
+  * @{
+  */
+void              BSP_SDRAM_Init(void);
+void              BSP_SDRAM_Initialization_sequence(uint32_t RefreshCount);
+void              BSP_SDRAM_ReadData(uint32_t uwStartAddress, uint32_t* pData, uint32_t uwDataSize);
+void              BSP_SDRAM_ReadData_DMA(uint32_t uwStartAddress, uint32_t* pData, uint32_t uwDataSize);
+void              BSP_SDRAM_WriteData(uint32_t uwStartAddress, uint32_t* pData, uint32_t uwDataSize);
+void              BSP_SDRAM_WriteData_DMA(uint32_t uwStartAddress, uint32_t* pData, uint32_t uwDataSize);
+HAL_StatusTypeDef BSP_SDRAM_Sendcmd(FMC_SDRAM_CommandTypeDef *SdramCmd);
+void              BSP_SDRAM_DMA_IRQHandler(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __STM32429I_DISCO_SDRAM_H */
-
-/**
-  * @}
-  */ 
-  
-/**
-  * @}
-  */
+#endif /* __STM32F429I_DISCOVERY_SDRAM_H */
 
 /**
   * @}
@@ -162,4 +182,7 @@ void  SDRAM_ReadBuffer(uint32_t* pBuffer, uint32_t uwReadAddress, uint32_t uwBuf
   * @}
   */   
 
+/**
+  * @}
+  */   
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -2,41 +2,42 @@
   ******************************************************************************
   * @file    stm32f429i_discovery.c
   * @author  MCD Application Team
-  * @version V1.0.1
-  * @date    28-October-2013
+  * @version V2.0.1
+  * @date    26-February-2014
   * @brief   This file provides set of firmware functions to manage Leds and
   *          push-button available on STM32F429I-DISCO Kit from STMicroelectronics.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2013 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2014 STMicroelectronics</center></h2>
   *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
   *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
   */  
   
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f429i_discovery.h"
-
-
-/** @addtogroup Utilities
-  * @{
-  */ 
-
-/** @addtogroup STM32F4_DISCOVERY
-  * @{
-  */   
 
 /** @addtogroup STM32F429I_DISCOVERY
   * @{
@@ -48,69 +49,135 @@
   * @{
   */ 
 
-/** @defgroup STM32F429I-DISCOVERY_LOW_LEVEL_Private_TypesDefinitions
+/** @defgroup STM32F429I_DISCOVERY LOW_LEVEL_Private_TypesDefinitions
   * @{
   */ 
 /**
   * @}
   */ 
 
+/** @defgroup STM32F429I_DISCOVERY LOW_LEVEL_Private_Defines
+  * @{
+  */ 
+  
+  /**
+  * @brief STM32F429I DISCO BSP Driver version number V2.0.1
+  */
+#define __STM32F429I_DISCO_BSP_VERSION_MAIN   (0x02) /*!< [31:24] main version */
+#define __STM32F429I_DISCO_BSP_VERSION_SUB1   (0x00) /*!< [23:16] sub1 version */
+#define __STM32F429I_DISCO_BSP_VERSION_SUB2   (0x01) /*!< [15:8]  sub2 version */
+#define __STM32F429I_DISCO_BSP_VERSION_RC     (0x00) /*!< [7:0]  release candidate */ 
+#define __STM32F429I_DISCO_BSP_VERSION        ((__STM32F429I_DISCO_BSP_VERSION_MAIN << 24)\
+                                             |(__STM32F429I_DISCO_BSP_VERSION_SUB1 << 16)\
+                                             |(__STM32F429I_DISCO_BSP_VERSION_SUB2 << 8 )\
+                                             |(__STM32F429I_DISCO_BSP_VERSION_RC))
+  
+  
+/**
+  * @}
+  */ 
 
-/** @defgroup STM32F429I-DISCOVERY_LOW_LEVEL_Private_Defines
+/** @defgroup STM32F429I-DISCOVERY LOW_LEVEL_Private_Macros
   * @{
   */ 
 /**
   * @}
   */ 
 
-
-/** @defgroup STM32F429I-DISCOVERY_LOW_LEVEL_Private_Macros
+/** @defgroup STM32F429I_DISCOVERY LOW_LEVEL_Private_Variables
   * @{
   */ 
-/**
-  * @}
-  */ 
+GPIO_TypeDef* GPIO_PORT[LEDn] = {LED3_GPIO_PORT, 
+                                 LED4_GPIO_PORT};
+const uint16_t GPIO_PIN[LEDn] = {LED3_PIN, 
+                                 LED4_PIN};
+GPIO_TypeDef* BUTTON_PORT[BUTTONn] = {KEY_BUTTON_GPIO_PORT}; 
+const uint16_t BUTTON_PIN[BUTTONn] = {KEY_BUTTON_PIN}; 
+const uint8_t BUTTON_IRQn[BUTTONn] = {KEY_BUTTON_EXTI_IRQn};
 
+uint32_t I2cxTimeout = I2Cx_TIMEOUT_MAX; /*<! Value of Timeout when I2C communication fails */  
+uint32_t SpixTimeout = SPIx_TIMEOUT_MAX; /*<! Value of Timeout when SPI communication fails */  
 
-/** @defgroup STM32F429I-DISCOVERY_LOW_LEVEL_Private_Variables
-  * @{
-  */ 
-GPIO_TypeDef* GPIO_PORT[LEDn] = {LED3_GPIO_PORT, LED4_GPIO_PORT};
-const uint16_t GPIO_PIN[LEDn] = {LED3_PIN, LED4_PIN};
-const uint32_t GPIO_CLK[LEDn] = {LED3_GPIO_CLK, LED4_GPIO_CLK};
+I2C_HandleTypeDef I2cHandle;
+static SPI_HandleTypeDef SpiHandle;
 
-GPIO_TypeDef* BUTTON_PORT[BUTTONn] = {USER_BUTTON_GPIO_PORT}; 
-
-const uint16_t BUTTON_PIN[BUTTONn] = {USER_BUTTON_PIN}; 
-
-const uint32_t BUTTON_CLK[BUTTONn] = {USER_BUTTON_GPIO_CLK};
-
-const uint16_t BUTTON_EXTI_LINE[BUTTONn] = {USER_BUTTON_EXTI_LINE};
-
-const uint8_t BUTTON_PORT_SOURCE[BUTTONn] = {USER_BUTTON_EXTI_PORT_SOURCE};
-								 
-const uint8_t BUTTON_PIN_SOURCE[BUTTONn] = {USER_BUTTON_EXTI_PIN_SOURCE}; 
-const uint8_t BUTTON_IRQn[BUTTONn] = {USER_BUTTON_EXTI_IRQn};
-
-DMA_InitTypeDef    sEEDMA_InitStructure; 
-NVIC_InitTypeDef   NVIC_InitStructure;
 
 /**
   * @}
   */ 
 
-
-/** @defgroup STM32F429I-DISCOVERY_LOW_LEVEL_Private_FunctionPrototypes
+/** @defgroup STM32F429I_DISCOVERY LOW_LEVEL_Private_FunctionPrototypes
   * @{
   */ 
+static void               I2Cx_Init(void);
+static void               I2Cx_ITConfig(void);
+static void               I2Cx_WriteData(uint8_t Addr, uint8_t Reg, uint8_t Value);
+static void               I2Cx_WriteBuffer(uint8_t Addr, uint8_t Reg,  uint8_t *pBuffer, uint16_t Length);
+static uint8_t            I2Cx_ReadData(uint8_t Addr, uint8_t Reg);
+static uint8_t            I2Cx_ReadBuffer(uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint16_t Length);
+static void               I2Cx_Error (void);
+static void               I2Cx_MspInit(I2C_HandleTypeDef *hi2c);  
+#ifdef EE_M24LR64
+static HAL_StatusTypeDef  I2Cx_WriteBufferDMA(uint8_t Addr, uint16_t Reg,  uint8_t *pBuffer, uint16_t Length);
+static HAL_StatusTypeDef  I2Cx_ReadBufferDMA(uint8_t Addr, uint16_t Reg, uint8_t *pBuffer, uint16_t Length);
+static HAL_StatusTypeDef  I2Cx_IsDeviceReady(uint16_t DevAddress, uint32_t Trials);
+#endif /*EE_M24LR64*/
+
+static void               SPIx_Init(void);
+static void               SPIx_Write(uint16_t Value);
+static uint32_t           SPIx_Read(uint8_t ReadSize);
+static uint8_t            SPIx_WriteRead(uint8_t Byte);
+static void               SPIx_Error (void);
+static void               SPIx_MspInit(SPI_HandleTypeDef *hspi);
+
+/*Link function for LCD peripheral */
+void                      LCD_IO_Init(void);
+void                      LCD_IO_WriteData(uint16_t RegValue);
+void                      LCD_IO_WriteReg(uint8_t Reg);
+uint32_t                  LCD_IO_ReadData(uint16_t RegValue, uint8_t ReadSize);
+void                      LCD_Delay (uint32_t delay);
+
+/* IOExpander IO functions */
+void                      IOE_Init(void);
+void                      IOE_ITConfig (void);
+void                      IOE_Delay(uint32_t Delay);
+void                      IOE_Write(uint8_t Addr, uint8_t Reg, uint8_t Value);
+uint8_t                   IOE_Read(uint8_t Addr, uint8_t Reg);
+uint16_t                  IOE_ReadMultiple(uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint16_t Length);
+void                      IOE_WriteMultiple (uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint16_t Length);
+
+/* Link function for GYRO peripheral */
+void                      GYRO_IO_Init(void);
+void                      GYRO_IO_Write(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite);
+void                      GYRO_IO_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead);
+
+#ifdef EE_M24LR64
+/* Link function for I2C EEPROM peripheral */
+void                      EEPROM_IO_Init(void);
+HAL_StatusTypeDef         EEPROM_IO_WriteData(uint16_t DevAddress, uint16_t MemAddress, uint8_t* pBuffer, uint32_t BufferSize);
+HAL_StatusTypeDef         EEPROM_IO_ReadData(uint16_t DevAddress, uint16_t MemAddress, uint8_t* pBuffer, uint32_t BufferSize);
+HAL_StatusTypeDef         EEPROM_IO_IsDeviceReady(uint16_t DevAddress, uint32_t Trials);
+#endif /*EE_M24LR64*/
 
 /**
   * @}
   */ 
 
-/** @defgroup STM32F429I-DISCOVERY_LOW_LEVEL_Private_Functions
+
+/** @defgroup STM32F429I_DISCOVERY LOW_LEVEL_Private_Functions
   * @{
   */ 
+
+/**
+  * @brief  This method returns the STM32F429I DISCO BSP Driver revision
+  * @param  None
+  * @retval version : 0xXYZR (8bits for each decimal, R for RC)
+  */
+uint32_t BSP_GetVersion(void)
+{
+  return __STM32F429I_DISCO_BSP_VERSION;
+}
+
 
 /**
   * @brief  Configures LED GPIO.
@@ -120,20 +187,22 @@ NVIC_InitTypeDef   NVIC_InitStructure;
   *     @arg LED4
   * @retval None
   */
-void STM_EVAL_LEDInit(Led_TypeDef Led)
+void BSP_LED_Init(Led_TypeDef Led)
 {
-  GPIO_InitTypeDef  GPIO_InitStructure;
+  GPIO_InitTypeDef  GPIO_InitStruct;
   
   /* Enable the GPIO_LED Clock */
-  RCC_AHB1PeriphClockCmd(GPIO_CLK[Led], ENABLE);
+  LEDx_GPIO_CLK_ENABLE(Led);
 
   /* Configure the GPIO_LED pin */
-  GPIO_InitStructure.GPIO_Pin = GPIO_PIN[Led];
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_Init(GPIO_PORT[Led], &GPIO_InitStructure);
+  GPIO_InitStruct.Pin = GPIO_PIN[Led];
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+  
+  HAL_GPIO_Init(GPIO_PORT[Led], &GPIO_InitStruct);
+  
+  HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET); 
 }
 
 /**
@@ -144,9 +213,9 @@ void STM_EVAL_LEDInit(Led_TypeDef Led)
   *     @arg LED4 
   * @retval None
   */
-void STM_EVAL_LEDOn(Led_TypeDef Led)
+void BSP_LED_On(Led_TypeDef Led)
 {
-  GPIO_PORT[Led]->BSRRL = GPIO_PIN[Led];
+  HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_SET); 
 }
 
 /**
@@ -157,9 +226,9 @@ void STM_EVAL_LEDOn(Led_TypeDef Led)
   *     @arg LED4
   * @retval None
   */
-void STM_EVAL_LEDOff(Led_TypeDef Led)
+void BSP_LED_Off(Led_TypeDef Led)
 {
-  GPIO_PORT[Led]->BSRRH = GPIO_PIN[Led];  
+  HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET); 
 }
 
 /**
@@ -170,15 +239,15 @@ void STM_EVAL_LEDOff(Led_TypeDef Led)
   *     @arg LED4  
   * @retval None
   */
-void STM_EVAL_LEDToggle(Led_TypeDef Led)
+void BSP_LED_Toggle(Led_TypeDef Led)
 {
-  GPIO_PORT[Led]->ODR ^= GPIO_PIN[Led];
+  HAL_GPIO_TogglePin(GPIO_PORT[Led], GPIO_PIN[Led]);
 }
 
 /**
   * @brief  Configures Button GPIO and EXTI Line.
   * @param  Button: Specifies the Button to be configured.
-  *   This parameter should be: BUTTON_USER
+  *   This parameter should be: BUTTON_KEY
   * @param  Button_Mode: Specifies Button mode.
   *   This parameter can be one of following parameters:   
   *     @arg BUTTON_MODE_GPIO: Button will be used as simple IO 
@@ -186,226 +255,895 @@ void STM_EVAL_LEDToggle(Led_TypeDef Led)
   *                            generation capability  
   * @retval None
   */
-void STM_EVAL_PBInit(Button_TypeDef Button, ButtonMode_TypeDef Button_Mode)
+void BSP_PB_Init(Button_TypeDef Button, ButtonMode_TypeDef ButtonMode)
 {
-  GPIO_InitTypeDef GPIO_InitStructure;
-  EXTI_InitTypeDef EXTI_InitStructure;
-  NVIC_InitTypeDef NVIC_InitStructure;
+  GPIO_InitTypeDef GPIO_InitStruct;
 
   /* Enable the BUTTON Clock */
-  RCC_AHB1PeriphClockCmd(BUTTON_CLK[Button], ENABLE);
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+  BUTTONx_GPIO_CLK_ENABLE(Button);
+  __SYSCFG_CLK_ENABLE();
 
-  /* Configure Button pin as input */
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
-  GPIO_InitStructure.GPIO_Pin = BUTTON_PIN[Button];
-  GPIO_Init(BUTTON_PORT[Button], &GPIO_InitStructure);
-
-  if (Button_Mode == BUTTON_MODE_EXTI)
+  if (ButtonMode == BUTTON_MODE_GPIO)
   {
-    /* Connect Button EXTI Line to Button GPIO Pin */
-    SYSCFG_EXTILineConfig(BUTTON_PORT_SOURCE[Button], BUTTON_PIN_SOURCE[Button]);
+  /* Configure Button pin as input */
+    GPIO_InitStruct.Pin = BUTTON_PIN[Button];
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+    HAL_GPIO_Init(BUTTON_PORT[Button], &GPIO_InitStruct);
+  }
 
-    /* Configure Button EXTI line */
-    EXTI_InitStructure.EXTI_Line = BUTTON_EXTI_LINE[Button];
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;  
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTI_InitStructure);
+  if (ButtonMode == BUTTON_MODE_EXTI)
+  {
+     /* Configure Button pin as input with External interrupt */
+    GPIO_InitStruct.Pin = BUTTON_PIN[Button];
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; 
+    HAL_GPIO_Init(BUTTON_PORT[Button], &GPIO_InitStruct);
 
     /* Enable and set Button EXTI Interrupt to the lowest priority */
-    NVIC_InitStructure.NVIC_IRQChannel = BUTTON_IRQn[Button];
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x0F;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x0F;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-
-    NVIC_Init(&NVIC_InitStructure); 
+    HAL_NVIC_SetPriority((IRQn_Type)(BUTTON_IRQn[Button]), 0x0F, 0x00);
+    HAL_NVIC_EnableIRQ((IRQn_Type)(BUTTON_IRQn[Button]));
   }
 }
 
 /**
   * @brief  Returns the selected Button state.
   * @param  Button: Specifies the Button to be checked.
-  *   This parameter should be: BUTTON_USER  
+  *   This parameter should be: BUTTON_KEY  
   * @retval The Button GPIO pin value.
   */
-uint32_t STM_EVAL_PBGetState(Button_TypeDef Button)
+uint32_t BSP_PB_GetState(Button_TypeDef Button)
 {
-  return GPIO_ReadInputDataBit(BUTTON_PORT[Button], BUTTON_PIN[Button]);
+  return HAL_GPIO_ReadPin(BUTTON_PORT[Button], BUTTON_PIN[Button]);
+}
+
+
+/******************************************************************************
+                            BUS OPERATIONS
+*******************************************************************************/
+
+/******************************* I2C Routines**********************************/
+
+/**
+  * @brief Discovery I2Cx MSP Initialization
+  * @param hi2c: I2C handle
+  * @retval None
+  */
+static void I2Cx_MspInit(I2C_HandleTypeDef *hi2c)
+{
+  GPIO_InitTypeDef  GPIO_InitStruct;  
+#ifdef EE_M24LR64
+  static DMA_HandleTypeDef hdma_tx;
+  static DMA_HandleTypeDef hdma_rx;
+  
+  I2C_HandleTypeDef* pI2cHandle;
+  pI2cHandle = &I2cHandle;
+#endif /*EE_M24LR64*/
+
+  if (hi2c->Instance == DISCOVERY_I2Cx)
+  {
+    /*##-1- Configure the GPIOs ################################################*/  
+
+    /* Enable GPIO clock */
+    DISCOVERY_I2Cx_SDA_GPIO_CLK_ENABLE();
+    DISCOVERY_I2Cx_SCL_GPIO_CLK_ENABLE();
+      
+    /* Configure I2C Tx as alternate function  */
+    GPIO_InitStruct.Pin       = DISCOVERY_I2Cx_SCL_PIN;
+    GPIO_InitStruct.Mode      = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull      = GPIO_NOPULL;
+    GPIO_InitStruct.Speed     = GPIO_SPEED_FAST;
+    GPIO_InitStruct.Alternate = DISCOVERY_I2Cx_SCL_SDA_AF;
+    HAL_GPIO_Init(DISCOVERY_I2Cx_SCL_GPIO_PORT, &GPIO_InitStruct);
+      
+    /* Configure I2C Rx as alternate function  */
+    GPIO_InitStruct.Pin = DISCOVERY_I2Cx_SDA_PIN;
+    HAL_GPIO_Init(DISCOVERY_I2Cx_SDA_GPIO_PORT, &GPIO_InitStruct);
+    
+    
+    /*##-2- Configure the Discovery I2Cx peripheral #######################################*/ 
+    /* Enable I2C3 clock */
+    DISCOVERY_I2Cx_CLOCK_ENABLE();
+    
+    /* Force the I2C Periheral Clock Reset */  
+    DISCOVERY_I2Cx_FORCE_RESET();
+      
+    /* Release the I2C Periheral Clock Reset */  
+    DISCOVERY_I2Cx_RELEASE_RESET(); 
+    
+    /* Enable and set Discovery I2Cx Interrupt to the highest priority */
+    HAL_NVIC_SetPriority(DISCOVERY_I2Cx_EV_IRQn, 0x00, 0);
+    HAL_NVIC_EnableIRQ(DISCOVERY_I2Cx_EV_IRQn);
+    
+    /* Enable and set Discovery I2Cx Interrupt to the highest priority */
+    HAL_NVIC_SetPriority(DISCOVERY_I2Cx_ER_IRQn, 0x00, 0);
+    HAL_NVIC_EnableIRQ(DISCOVERY_I2Cx_ER_IRQn);  
+
+#ifdef EE_M24LR64
+    /*!< I2C DMA TX and RX channels configuration */
+    /* Enable the DMA clock */
+    EEPROM_I2C_DMA_CLK_ENABLE();
+    
+    /* Configure the DMA stream for the EE I2C peripheral TX direction */
+    /* Configure the DMA Stream */
+    hdma_tx.Instance                  = EEPROM_I2C_DMA_STREAM_TX;
+    /* Set the parameters to be configured */
+    hdma_tx.Init.Channel              = EEPROM_I2C_DMA_CHANNEL;  
+    hdma_tx.Init.Direction            = DMA_MEMORY_TO_PERIPH;
+    hdma_tx.Init.PeriphInc            = DMA_PINC_DISABLE;
+    hdma_tx.Init.MemInc               = DMA_MINC_ENABLE;
+    hdma_tx.Init.PeriphDataAlignment  = DMA_PDATAALIGN_BYTE;
+    hdma_tx.Init.MemDataAlignment     = DMA_MDATAALIGN_BYTE;
+    hdma_tx.Init.Mode                 = DMA_NORMAL;
+    hdma_tx.Init.Priority             = DMA_PRIORITY_VERY_HIGH;
+    hdma_tx.Init.FIFOMode             = DMA_FIFOMODE_ENABLE;         
+    hdma_tx.Init.FIFOThreshold        = DMA_FIFO_THRESHOLD_FULL;
+    hdma_tx.Init.MemBurst             = DMA_MBURST_SINGLE;
+    hdma_tx.Init.PeriphBurst          = DMA_PBURST_SINGLE; 
+
+    /* Associate the initilalized hdma_rx handle to the the husart handle*/
+    __HAL_LINKDMA(pI2cHandle, hdmatx, hdma_tx);
+    
+    /* Configure the DMA Stream */
+    HAL_DMA_Init(&hdma_tx);
+    
+    /* Configure and enable I2C DMA TX Channel interrupt */
+    HAL_NVIC_SetPriority((IRQn_Type)(EEPROM_I2C_DMA_TX_IRQn), EEPROM_I2C_DMA_PREPRIO, 0);
+    HAL_NVIC_EnableIRQ((IRQn_Type)(EEPROM_I2C_DMA_TX_IRQn));
+    
+    /* Configure the DMA stream for the EE I2C peripheral TX direction */
+    /* Configure the DMA Stream */
+    hdma_rx.Instance                  = EEPROM_I2C_DMA_STREAM_RX;
+    /* Set the parameters to be configured */
+    hdma_rx.Init.Channel              = EEPROM_I2C_DMA_CHANNEL;  
+    hdma_rx.Init.Direction            = DMA_PERIPH_TO_MEMORY;
+    hdma_rx.Init.PeriphInc            = DMA_PINC_DISABLE;
+    hdma_rx.Init.MemInc               = DMA_MINC_ENABLE;
+    hdma_rx.Init.PeriphDataAlignment  = DMA_PDATAALIGN_BYTE;
+    hdma_rx.Init.MemDataAlignment     = DMA_MDATAALIGN_BYTE;
+    hdma_rx.Init.Mode                 = DMA_NORMAL;
+    hdma_rx.Init.Priority             = DMA_PRIORITY_VERY_HIGH;
+    hdma_rx.Init.FIFOMode             = DMA_FIFOMODE_ENABLE;         
+    hdma_rx.Init.FIFOThreshold        = DMA_FIFO_THRESHOLD_FULL;
+    hdma_rx.Init.MemBurst             = DMA_MBURST_SINGLE;
+    hdma_rx.Init.PeriphBurst          = DMA_PBURST_SINGLE; 
+
+    /* Associate the initilalized hdma_rx handle to the the husart handle*/
+    __HAL_LINKDMA(pI2cHandle, hdmarx, hdma_rx);
+    
+    /* Configure the DMA Stream */
+    HAL_DMA_Init(&hdma_rx);
+    
+    /* Configure and enable I2C DMA RX Channel interrupt */
+    HAL_NVIC_SetPriority((IRQn_Type)(EEPROM_I2C_DMA_RX_IRQn), EEPROM_I2C_DMA_PREPRIO, 0);
+    HAL_NVIC_EnableIRQ((IRQn_Type)(EEPROM_I2C_DMA_RX_IRQn));
+#endif /*EE_M24LR64*/
+  }
 }
 
 /**
-  * @brief  DeInitializes peripherals used by the I2C EEPROM driver.
+  * @brief Discovery I2Cx Bus initialization
+  * @param None
+  * @retval None
+  */
+static void I2Cx_Init(void)
+{
+  if(HAL_I2C_GetState(&I2cHandle) == HAL_I2C_STATE_RESET)
+  {
+    I2cHandle.Instance              = DISCOVERY_I2Cx;
+    I2cHandle.Init.ClockSpeed       = I2C_SPEED;
+    I2cHandle.Init.DutyCycle        = I2C_DUTYCYCLE_2;
+    I2cHandle.Init.OwnAddress1      = 0;
+    I2cHandle.Init.AddressingMode   = I2C_ADDRESSINGMODE_7BIT;
+    I2cHandle.Init.DualAddressMode  = I2C_DUALADDRESS_DISABLED;
+    I2cHandle.Init.OwnAddress2      = 0;
+    I2cHandle.Init.GeneralCallMode  = I2C_GENERALCALL_DISABLED;
+    I2cHandle.Init.NoStretchMode    = I2C_NOSTRETCH_DISABLED;  
+      
+    /* Init the I2C */
+    I2Cx_MspInit(&I2cHandle);
+    HAL_I2C_Init(&I2cHandle);
+  }
+}
+
+/**
+  * @brief Interruption pin configuration for I2C communication
+  * @param None
+  * @retval None
+  */
+static void I2Cx_ITConfig(void)
+{
+  GPIO_InitTypeDef  GPIO_InitStruct;
+    
+  /* Enable the GPIO EXTI Clock */
+  STMPE811_INT_CLK_ENABLE();
+  
+  GPIO_InitStruct.Pin   = STMPE811_INT_PIN;
+  GPIO_InitStruct.Pull  = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+  GPIO_InitStruct.Mode  = GPIO_MODE_IT_FALLING;
+  HAL_GPIO_Init(STMPE811_INT_GPIO_PORT, &GPIO_InitStruct);
+    
+  /* Enable and set GPIO EXTI Interrupt to the lowest priority */
+  HAL_NVIC_SetPriority((IRQn_Type)(STMPE811_INT_EXTI), 0x00, 0x00);
+  HAL_NVIC_EnableIRQ((IRQn_Type)(STMPE811_INT_EXTI));
+}
+
+
+/**
+  * @brief  Write a value in a register of the device through BUS.
+  * @param  Addr: Device address on BUS Bus.  
+  * @param  Reg: The target register address to write
+  * @param  Value: The target register value to be written 
+  * @retval None 
+  */
+static void I2Cx_WriteData(uint8_t Addr, uint8_t Reg, uint8_t Value)
+  {
+  HAL_StatusTypeDef status = HAL_OK;
+  
+  status = HAL_I2C_Mem_Write(&I2cHandle, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT, &Value, 1, I2cxTimeout); 
+  
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Re-Initiaize the BUS */
+    I2Cx_Error();
+  }        
+}
+
+/**
+  * @brief  Write a value in a register of the device through BUS.
+  * @param  Addr: Device address on BUS Bus.  
+  * @param  Reg: The target register address to write
+  * @param  pBuffer: The target register value to be written 
+  * @param  Length: buffer size to be written
+  * @retval None
+  */
+static void I2Cx_WriteBuffer(uint8_t Addr, uint8_t Reg,  uint8_t *pBuffer, uint16_t Length)
+  {
+  HAL_StatusTypeDef status = HAL_OK;
+  
+  status = HAL_I2C_Mem_Write(&I2cHandle, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT, pBuffer, Length, I2cxTimeout); 
+
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Re-Initiaize the BUS */
+    I2Cx_Error();
+  }        
+}
+
+/**
+  * @brief  Read a register of the device through BUS
+  * @param  Addr Device address on BUS
+  * @param  Reg The target register address to read
+  * @retval read register value
+  */
+static uint8_t I2Cx_ReadData(uint8_t Addr, uint8_t Reg)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+  uint8_t value = 0;
+  
+  status = HAL_I2C_Mem_Read(&I2cHandle, Addr, Reg, I2C_MEMADD_SIZE_8BIT, &value, 1, I2cxTimeout);
+ 
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Re-Initiaize the BUS */
+    I2Cx_Error();
+  
+  }
+  return value;
+}
+
+/**
+  * @brief  Reads multiple data on the BUS.
+  * @param  Addr  : I2C Address
+  * @param  Reg   : Reg Address 
+  * @param  pBuffer : pointer to read data buffer
+  * @param  Length : length of the data
+  * @retval 0 if no problems to read multiple data
+  */
+static uint8_t I2Cx_ReadBuffer(uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint16_t Length)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+
+  status = HAL_I2C_Mem_Read(&I2cHandle, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT, pBuffer, Length, I2cxTimeout);
+  
+  /* Check the communication status */
+  if(status == HAL_OK)
+  {
+    return 0;
+  }
+  else
+  {
+    /* Re-Initiaize the BUS */
+    I2Cx_Error();
+
+    return 1;
+  }
+}
+
+#ifdef EE_M24LR64
+/**
+  * @brief  Write a value in a register of the device through BUS in using DMA mode
+  * @param  Addr: Device address on BUS Bus.  
+  * @param  Reg: The target register address to write
+  * @param  pBuffer: The target register value to be written 
+  * @param  Length: buffer size to be written
+  * @retval HAL status
+  */
+static HAL_StatusTypeDef I2Cx_WriteBufferDMA(uint8_t Addr, uint16_t Reg,  uint8_t *pBuffer, uint16_t Length)
+  {
+  HAL_StatusTypeDef status = HAL_OK;
+  
+  status = HAL_I2C_Mem_Write_DMA(&I2cHandle, Addr, Reg, I2C_MEMADD_SIZE_16BIT, pBuffer, Length);
+
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Re-Initiaize the BUS */
+    I2Cx_Error();
+  }
+
+  return status;
+}
+
+/**
+  * @brief  Reads multiple data on the BUS in using DMA mode
+  * @param  Addr  : I2C Address
+  * @param  Reg   : Reg Address 
+  * @param  pBuffer : pointer to read data buffer
+  * @param  Length : length of the data
+  * @retval HAL status
+  */
+static HAL_StatusTypeDef I2Cx_ReadBufferDMA(uint8_t Addr, uint16_t Reg, uint8_t *pBuffer, uint16_t Length)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+
+  status = HAL_I2C_Mem_Read_DMA(&I2cHandle, Addr, Reg, I2C_MEMADD_SIZE_16BIT, pBuffer, Length);
+  
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Re-Initiaize the BUS */
+    I2Cx_Error();
+  }
+  
+  return status;
+}
+
+/**
+* @brief  Checks if target device is ready for communication. 
+* @note   This function is used with Memory devices
+* @param  DevAddress: Target device address
+* @param  Trials: Number of trials
+* @retval HAL status
+*/
+static HAL_StatusTypeDef I2Cx_IsDeviceReady(uint16_t DevAddress, uint32_t Trials)
+{ 
+  return (HAL_I2C_IsDeviceReady(&I2cHandle, DevAddress, Trials, I2cxTimeout));
+}
+
+#endif /*EE_M24LR64*/
+
+/**
+  * @brief Discovery I2Cx error treatment function
+  * @param None
+  * @retval None
+  */
+static void I2Cx_Error (void)
+{
+  /* De-initialize the SPI comunication BUS */
+  HAL_I2C_DeInit(&I2cHandle);
+  
+  /* Re- Initiaize the SPI comunication BUS */
+  I2Cx_Init();
+}
+
+
+/******************************* SPI Routines**********************************/
+/**
+  * @brief SPIx Bus initialization
+  * @param None
+  * @retval None
+  */
+static void SPIx_Init(void)
+{
+  if(HAL_SPI_GetState(&SpiHandle) == HAL_SPI_STATE_RESET)
+  {
+    /* SPI Config */
+    SpiHandle.Instance = DISCOVERY_SPIx;
+    /* SPI baudrate is set to 5.6 MHz (PCLK2/SPI_BaudRatePrescaler = 90/16 = 5.625 MHz) 
+       to verify these constraints:
+       - ILI9341 LCD SPI interface max baudrate is 10MHz for write and 6.66MHz for read
+       - l3gd20 SPI interface max baudrate is 10MHz for write/read
+       - PCLK2 frequency is set to 90 MHz 
+    */  
+    SpiHandle.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+
+    /* On STM32F429I-DISCO, LCD ID cannot be read then keep a common configuration */
+    /* for LCD and GYRO (SPI_DIRECTION_2LINES) */
+    /* Note: To read a register a LCD, SPI_DIRECTION_1LINE should be set */
+    SpiHandle.Init.Direction      = SPI_DIRECTION_2LINES;
+    SpiHandle.Init.CLKPhase       = SPI_PHASE_1EDGE;
+    SpiHandle.Init.CLKPolarity    = SPI_POLARITY_LOW;
+    SpiHandle.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLED;
+    SpiHandle.Init.CRCPolynomial  = 7;
+    SpiHandle.Init.DataSize       = SPI_DATASIZE_8BIT;
+    SpiHandle.Init.FirstBit       = SPI_FIRSTBIT_MSB;
+    SpiHandle.Init.NSS            = SPI_NSS_SOFT;
+    SpiHandle.Init.TIMode         = SPI_TIMODE_DISABLED;
+    SpiHandle.Init.Mode           = SPI_MODE_MASTER;
+  
+    SPIx_MspInit(&SpiHandle);
+    HAL_SPI_Init(&SpiHandle);
+  }
+  
+}
+
+/**
+  * @brief SPI Read 4 bytes from device
+  * @param  ReadSize Number of bytes to read (max 4 bytes)
+  * @retval Value read on the SPI
+  */
+static uint32_t SPIx_Read(uint8_t ReadSize)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+  uint32_t readvalue;
+  
+  status = HAL_SPI_Receive(&SpiHandle, (uint8_t*) &readvalue, ReadSize, SpixTimeout);
+  
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Re-Initiaize the BUS */
+    SPIx_Error();
+  }
+
+  return readvalue;
+}
+
+/**
+  * @brief SPI Write a byte to device
+  * @param Value: value to be written
+  * @retval None
+  */
+static void SPIx_Write(uint16_t Value)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+
+  status = HAL_SPI_Transmit(&SpiHandle, (uint8_t*) &Value, 1, SpixTimeout);
+
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Re-Initiaize the BUS */
+    SPIx_Error();
+  }
+}
+
+/**
+  * @brief  Sends a Byte through the SPI interface and return the Byte received 
+  *         from the SPI bus.
+  * @param  Byte : Byte send.
+  * @retval The received byte value
+  */
+static uint8_t SPIx_WriteRead(uint8_t Byte)
+{
+
+  uint8_t receivedbyte = 0;
+  
+  /* Send a Byte through the SPI peripheral */
+  /* Read byte from the SPI bus */
+  if(HAL_SPI_TransmitReceive(&SpiHandle, (uint8_t*) &Byte, (uint8_t*) &receivedbyte, 1, SpixTimeout) != HAL_OK)
+  {
+    SPIx_Error();
+  }
+  
+  return receivedbyte;
+}
+
+
+/**
+  * @brief SPI error treatment function
+  * @param None
+  * @retval None
+  */
+static void SPIx_Error (void)
+{
+  /* De-initialize the SPI comunication BUS */
+  HAL_SPI_DeInit(&SpiHandle);
+  
+  /* Re- Initiaize the SPI comunication BUS */
+  SPIx_Init();
+}
+
+
+/**
+  * @brief SPI MSP Init
+  * @param hspi: SPI handle
+  * @retval None
+  */
+static void SPIx_MspInit(SPI_HandleTypeDef *hspi)
+{
+  GPIO_InitTypeDef   GPIO_InitStructure;
+
+  /* Enable SPIx clock  */
+  DISCOVERY_SPIx_CLK_ENABLE();
+
+  /* enable DISCOVERY_SPI gpio clock */
+  DISCOVERY_SPIx_GPIO_CLK_ENABLE();
+
+  /* configure SPI SCK, MOSI and MISO */    
+  GPIO_InitStructure.Pin    = (DISCOVERY_SPIx_SCK_PIN | DISCOVERY_SPIx_MOSI_PIN | DISCOVERY_SPIx_MISO_PIN);
+  GPIO_InitStructure.Mode   = GPIO_MODE_AF_PP;
+  GPIO_InitStructure.Pull   = GPIO_PULLDOWN;
+  GPIO_InitStructure.Speed  = GPIO_SPEED_MEDIUM;
+  GPIO_InitStructure.Alternate = DISCOVERY_SPIx_AF;
+  HAL_GPIO_Init(DISCOVERY_SPIx_GPIO_PORT, &GPIO_InitStructure);      
+}
+
+/********************************* LINK LCD ***********************************/
+
+/**
+  * @brief  Configures the LCD_SPI interface.
   * @param  None
   * @retval None
   */
-void sEE_LowLevel_DeInit(void)
+void LCD_IO_Init(void)
 {
-  GPIO_InitTypeDef  GPIO_InitStructure; 
-   
-  /* sEE_I2C Peripheral Disable */
-  I2C_Cmd(sEE_I2C, DISABLE);
- 
-  /* sEE_I2C DeInit */
-  I2C_DeInit(sEE_I2C);
+  GPIO_InitTypeDef GPIO_InitStructure;
 
-  /*!< sEE_I2C Periph clock disable */
-  RCC_APB1PeriphClockCmd(sEE_I2C_CLK, DISABLE);
+  /* Configure NCS in Output Push-Pull mode */
+  LCD_WRX_GPIO_CLK_ENABLE();
+  GPIO_InitStructure.Pin     = LCD_WRX_PIN;
+  GPIO_InitStructure.Mode    = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStructure.Pull    = GPIO_NOPULL;
+  GPIO_InitStructure.Speed   = GPIO_SPEED_FAST;
+  HAL_GPIO_Init(LCD_WRX_GPIO_PORT, &GPIO_InitStructure);
+
+  LCD_RDX_GPIO_CLK_ENABLE();
+  GPIO_InitStructure.Pin     = LCD_RDX_PIN;
+  GPIO_InitStructure.Mode    = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStructure.Pull    = GPIO_NOPULL;
+  GPIO_InitStructure.Speed   = GPIO_SPEED_FAST;
+  HAL_GPIO_Init(LCD_RDX_GPIO_PORT, &GPIO_InitStructure);
+
+  /* Configure the LCD Control pins ------------------------------------------*/
+  LCD_NCS_GPIO_CLK_ENABLE();
     
-  /*!< GPIO configuration */  
-  /*!< Configure sEE_I2C pins: SCL */
-  GPIO_InitStructure.GPIO_Pin = sEE_I2C_SCL_PIN;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  GPIO_Init(sEE_I2C_SCL_GPIO_PORT, &GPIO_InitStructure);
+  /* Configure NCS in Output Push-Pull mode */
+  GPIO_InitStructure.Pin     = LCD_NCS_PIN;
+  GPIO_InitStructure.Mode    = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStructure.Pull    = GPIO_NOPULL;
+  GPIO_InitStructure.Speed   = GPIO_SPEED_FAST;
+  HAL_GPIO_Init(LCD_NCS_GPIO_PORT, &GPIO_InitStructure);
+    
+  /* Set or Reset the control line */
+  LCD_CS_LOW();
+  LCD_CS_HIGH();
 
-  /*!< Configure sEE_I2C pins: SDA */
-  GPIO_InitStructure.GPIO_Pin = sEE_I2C_SDA_PIN;
-  GPIO_Init(sEE_I2C_SDA_GPIO_PORT, &GPIO_InitStructure);
-
-  /* Configure and enable I2C DMA TX Stream interrupt */
-  NVIC_InitStructure.NVIC_IRQChannel = sEE_I2C_DMA_TX_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = sEE_I2C_DMA_PREPRIO;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = sEE_I2C_DMA_SUBPRIO;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
-  NVIC_Init(&NVIC_InitStructure);
-
-  /* Configure and enable I2C DMA RX Stream interrupt */
-  NVIC_InitStructure.NVIC_IRQChannel = sEE_I2C_DMA_RX_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = sEE_I2C_DMA_PREPRIO;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = sEE_I2C_DMA_SUBPRIO;
-  NVIC_Init(&NVIC_InitStructure);   
-  
-  /* Disable and Deinitialize the DMA Streams */
-  DMA_Cmd(sEE_I2C_DMA_STREAM_TX, DISABLE);
-  DMA_Cmd(sEE_I2C_DMA_STREAM_RX, DISABLE);
-  DMA_DeInit(sEE_I2C_DMA_STREAM_TX);
-  DMA_DeInit(sEE_I2C_DMA_STREAM_RX);
+  SPIx_Init();
 }
 
+/**
+  * @brief  Write register value.
+  * @param  None
+  * @retval None
+  */
+void LCD_IO_WriteData(uint16_t RegValue) 
+{
+  /* Set WRX to send data */
+  LCD_WRX_HIGH();
+  
+  /* Reset LCD control line(/CS) and Send data */  
+  LCD_CS_LOW();
+  SPIx_Write(RegValue);
+  
+  /* Deselect : Chip Select high */
+  LCD_CS_HIGH();
+}
+
+/**
+  * @brief  register address.
+  * @param  None
+  * @retval None
+  */
+void LCD_IO_WriteReg(uint8_t Reg) 
+{
+  /* Reset WRX to send command */
+  LCD_WRX_LOW();
+  
+  /* Reset LCD control line(/CS) and Send command */
+  LCD_CS_LOW();
+  SPIx_Write(Reg);
+  
+  /* Deselect : Chip Select high */
+  LCD_CS_HIGH();
+}
+
+/**
+  * @brief  Read register value.
+  * @param  RegValue Address of the register to read
+  * @param  ReadSize Number of bytes to read
+  * @retval Content of the register value
+  */
+uint32_t LCD_IO_ReadData(uint16_t RegValue, uint8_t ReadSize) 
+{
+  uint32_t readvalue = 0;
+
+  /* Select : Chip Select low */
+  LCD_CS_LOW();
+
+  /* Reset WRX to send command */
+  LCD_WRX_LOW();
+  
+  SPIx_Write(RegValue);
+  
+  readvalue = SPIx_Read(ReadSize);
+
+  /* Set WRX to send data */
+  LCD_WRX_HIGH();
+
+  /* Deselect : Chip Select high */
+  LCD_CS_HIGH();
+  
+  return readvalue;
+}
+
+/**
+  * @brief  
+  * @param  None
+  * @retval None
+  */
+void LCD_Delay (uint32_t Delay)
+{
+  HAL_Delay (Delay);
+}
+
+/******************************************************************************
+                            LINK OPERATIONS
+*******************************************************************************/
+
+/********************************* LINK IOE ***********************************/
+/**
+  * @brief  IOE Low Level Initialization
+  * @param  None
+  * @retval None
+  */
+void IOE_Init (void) 
+{
+  I2Cx_Init();
+}
+
+
+/**
+  * @brief  IOE Low Level Interrupt configuration
+  * @param  None
+  * @retval None
+  */
+void IOE_ITConfig (void)
+{
+  I2Cx_ITConfig();
+}
+
+/**
+  * @brief  IOE Write single data operation
+  * @param  Addr  : I2C Address
+  * @param  Reg   : Reg Address 
+  * @param  Value : Data to be written
+  * @retval None.
+  */
+void IOE_Write (uint8_t Addr, uint8_t Reg, uint8_t Value)
+{
+  I2Cx_WriteData(Addr, Reg, Value);
+}
+
+/**
+  * @brief  IOE Read single data
+  * @param  Addr  : I2C Address
+  * @param  Reg   : Reg Address 
+  * @retval read data.
+  */
+uint8_t IOE_Read (uint8_t Addr, uint8_t Reg)
+{
+  return I2Cx_ReadData(Addr, Reg);
+}
+
+/**
+  * @brief  IOE Write multiple data
+  * @param  Addr  : I2C Address
+  * @param  Reg   : Reg Address 
+  * @param  pBuffer : pointer to data buffer
+  * @param  Length : length of the data
+  * @retval None.
+  */
+void IOE_WriteMultiple (uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint16_t Length)
+{
+  I2Cx_WriteBuffer(Addr, Reg, pBuffer, Length);
+}
+
+/**
+  * @brief  IOE Read multiple data
+  * @param  Addr  : I2C Address
+  * @param  Reg   : Reg Address 
+  * @param  pBuffer : pointer to data buffer
+  * @param  Length : length of the data
+  * @retval 0 if no problems to read multiple data
+  */
+uint16_t IOE_ReadMultiple (uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint16_t Length)
+{
+ return I2Cx_ReadBuffer(Addr, Reg, pBuffer, Length);
+}
+
+/**
+  * @brief IOE Delay 
+  * @param  delay in ms
+  * @retval None
+  */
+void IOE_Delay (uint32_t Delay)
+{
+  HAL_Delay (Delay);
+}
+
+/********************************* LINK GYRO *****************************/
+/**
+  * @brief  Configures the GYRO SPI interface.
+  * @param  None
+  * @retval None
+  */
+void GYRO_IO_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStructure;
+  
+  /* Configure the Gyroscope Control pins ------------------------------------------*/
+  /* Enable CS GPIO clock and  Configure GPIO PIN for Gyroscope Chip select */  
+  GYRO_CS_GPIO_CLK_ENABLE();  
+  GPIO_InitStructure.Pin = GYRO_CS_PIN;
+  GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStructure.Pull  = GPIO_NOPULL;
+  GPIO_InitStructure.Speed = GPIO_SPEED_MEDIUM;
+  HAL_GPIO_Init(GYRO_CS_GPIO_PORT, &GPIO_InitStructure);
+  
+  /* Deselect : Chip Select high */
+  GYRO_CS_HIGH();
+  
+  /* Enable INT1, INT2 GPIO clock and Configure GPIO PINs to detect Interrupts */
+  GYRO_INT_GPIO_CLK_ENABLE();
+  GPIO_InitStructure.Pin = GYRO_INT1_PIN | GYRO_INT2_PIN;
+  GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStructure.Speed = GPIO_SPEED_FAST;
+  GPIO_InitStructure.Pull= GPIO_NOPULL;
+  HAL_GPIO_Init(GYRO_INT_GPIO_PORT, &GPIO_InitStructure);
+
+  SPIx_Init();
+}
+
+/**
+  * @brief  Writes one byte to the GYRO.
+  * @param  pBuffer : pointer to the buffer  containing the data to be written to the GYRO.
+  * @param  WriteAddr : GYRO's internal address to write to.
+  * @param  NumByteToWrite: Number of bytes to write.
+  * @retval None
+  */
+void GYRO_IO_Write(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite)
+{
+  /* Configure the MS bit: 
+       - When 0, the address will remain unchanged in multiple read/write commands.
+       - When 1, the address will be auto incremented in multiple read/write commands.
+  */
+  if(NumByteToWrite > 0x01)
+  {
+    WriteAddr |= (uint8_t)MULTIPLEBYTE_CMD;
+  }
+  /* Set chip select Low at the start of the transmission */
+  GYRO_CS_LOW();
+  
+  /* Send the Address of the indexed register */
+  SPIx_WriteRead(WriteAddr);
+  
+  /* Send the data that will be written into the device (MSB First) */
+  while(NumByteToWrite >= 0x01)
+  {
+    SPIx_WriteRead(*pBuffer);
+    NumByteToWrite--;
+    pBuffer++;
+  }
+  
+  /* Set chip select High at the end of the transmission */ 
+  GYRO_CS_HIGH();
+}
+
+/**
+  * @brief  Reads a block of data from the GYRO.
+  * @param  pBuffer : pointer to the buffer that receives the data read from the GYRO.
+  * @param  ReadAddr : GYRO's internal address to read from.
+  * @param  NumByteToRead : number of bytes to read from the GYRO.
+  * @retval None
+  */
+void GYRO_IO_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead)
+{  
+  if(NumByteToRead > 0x01)
+  {
+    ReadAddr |= (uint8_t)(READWRITE_CMD | MULTIPLEBYTE_CMD);
+  }
+  else
+  {
+    ReadAddr |= (uint8_t)READWRITE_CMD;
+  }
+  /* Set chip select Low at the start of the transmission */
+  GYRO_CS_LOW();
+  
+  /* Send the Address of the indexed register */
+  SPIx_WriteRead(ReadAddr);
+  
+  /* Receive the data that will be read from the device (MSB First) */
+  while(NumByteToRead > 0x00)
+  {
+    /* Send dummy byte (0x00) to generate the SPI clock to GYRO (Slave device) */
+    *pBuffer = SPIx_WriteRead(DUMMY_BYTE);
+    NumByteToRead--;
+    pBuffer++;
+  }
+  
+  /* Set chip select High at the end of the transmission */ 
+  GYRO_CS_HIGH();
+}  
+
+
+#ifdef EE_M24LR64
+/********************************* LINK I2C EEPROM *****************************/
 /**
   * @brief  Initializes peripherals used by the I2C EEPROM driver.
   * @param  None
   * @retval None
   */
-void sEE_LowLevel_Init(void)
+void EEPROM_IO_Init(void)
 {
-  GPIO_InitTypeDef  GPIO_InitStructure; 
-   
-  /*!< sEE_I2C Periph clock enable */
-  RCC_APB1PeriphClockCmd(sEE_I2C_CLK, ENABLE);
-  
-  /*!< sEE_I2C_SCL_GPIO_CLK and sEE_I2C_SDA_GPIO_CLK Periph clock enable */
-  RCC_AHB1PeriphClockCmd(sEE_I2C_SCL_GPIO_CLK | sEE_I2C_SDA_GPIO_CLK, ENABLE);
-  
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
-  
-  /* Reset sEE_I2C IP */
-  RCC_APB1PeriphResetCmd(sEE_I2C_CLK, ENABLE);  
-  /* Release reset signal of sEE_I2C IP */
-  RCC_APB1PeriphResetCmd(sEE_I2C_CLK, DISABLE);
-    
-  /*!< GPIO configuration */  
-  /*!< Configure sEE_I2C pins: SCL */   
-  GPIO_InitStructure.GPIO_Pin = sEE_I2C_SCL_PIN;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-  GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-  GPIO_Init(sEE_I2C_SCL_GPIO_PORT, &GPIO_InitStructure);
-
-  /*!< Configure sEE_I2C pins: SDA */
-  GPIO_InitStructure.GPIO_Pin = sEE_I2C_SDA_PIN;
-  GPIO_Init(sEE_I2C_SDA_GPIO_PORT, &GPIO_InitStructure);
-
-  /* Connect PXx to I2C_SCL*/
-  GPIO_PinAFConfig(sEE_I2C_SCL_GPIO_PORT, sEE_I2C_SCL_SOURCE, sEE_I2C_SCL_AF);
-
-  /* Connect PXx to I2C_SDA*/
-  GPIO_PinAFConfig(sEE_I2C_SDA_GPIO_PORT, sEE_I2C_SDA_SOURCE, sEE_I2C_SDA_AF);  
-  
-  /* Configure and enable I2C DMA TX Channel interrupt */
-  NVIC_InitStructure.NVIC_IRQChannel = sEE_I2C_DMA_TX_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = sEE_I2C_DMA_PREPRIO;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = sEE_I2C_DMA_SUBPRIO;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
-
-  /* Configure and enable I2C DMA RX Channel interrupt */
-  NVIC_InitStructure.NVIC_IRQChannel = sEE_I2C_DMA_RX_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = sEE_I2C_DMA_PREPRIO;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = sEE_I2C_DMA_SUBPRIO;
-  NVIC_Init(&NVIC_InitStructure);  
-  
-  /*!< I2C DMA TX and RX channels configuration */
-  /* Enable the DMA clock */
-  RCC_AHB1PeriphClockCmd(sEE_I2C_DMA_CLK, ENABLE);
-  
-  /* Clear any pending flag on Rx Stream  */
-  DMA_ClearFlag(sEE_I2C_DMA_STREAM_TX, sEE_TX_DMA_FLAG_FEIF | sEE_TX_DMA_FLAG_DMEIF | sEE_TX_DMA_FLAG_TEIF | \
-                                       sEE_TX_DMA_FLAG_HTIF | sEE_TX_DMA_FLAG_TCIF);
-  /* Disable the EE I2C Tx DMA stream */
-  DMA_Cmd(sEE_I2C_DMA_STREAM_TX, DISABLE);
-  /* Configure the DMA stream for the EE I2C peripheral TX direction */
-  DMA_DeInit(sEE_I2C_DMA_STREAM_TX);
-  sEEDMA_InitStructure.DMA_Channel = sEE_I2C_DMA_CHANNEL;
-  sEEDMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)sEE_I2C_DR_Address;
-  sEEDMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)0;    /* This parameter will be configured durig communication */;
-  sEEDMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral; /* This parameter will be configured durig communication */
-  sEEDMA_InitStructure.DMA_BufferSize = 0xFFFF;              /* This parameter will be configured durig communication */
-  sEEDMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-  sEEDMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-  sEEDMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-  sEEDMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-  sEEDMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-  sEEDMA_InitStructure.DMA_Priority = DMA_Priority_VeryHigh;
-  sEEDMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Enable;
-  sEEDMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
-  sEEDMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-  sEEDMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-  DMA_Init(sEE_I2C_DMA_STREAM_TX, &sEEDMA_InitStructure);
-
-  /* Clear any pending flag on Rx Stream */
-  DMA_ClearFlag(sEE_I2C_DMA_STREAM_RX, sEE_RX_DMA_FLAG_FEIF | sEE_RX_DMA_FLAG_DMEIF | sEE_RX_DMA_FLAG_TEIF | \
-                                       sEE_RX_DMA_FLAG_HTIF | sEE_RX_DMA_FLAG_TCIF);
-  /* Disable the EE I2C DMA Rx stream */
-  DMA_Cmd(sEE_I2C_DMA_STREAM_RX, DISABLE);
-  /* Configure the DMA stream for the EE I2C peripheral RX direction */
-  DMA_DeInit(sEE_I2C_DMA_STREAM_RX);
-  DMA_Init(sEE_I2C_DMA_STREAM_RX, &sEEDMA_InitStructure);
-  
-  /* Enable the DMA Channels Interrupts */
-  DMA_ITConfig(sEE_I2C_DMA_STREAM_TX, DMA_IT_TC, ENABLE);
-  DMA_ITConfig(sEE_I2C_DMA_STREAM_RX, DMA_IT_TC, ENABLE);      
+  I2Cx_Init();
 }
 
 /**
-  * @brief  Initializes DMA channel used by the I2C EEPROM driver.
-  * @param  None
-  * @retval None
+  * @brief  Write data to I2C EEPROM driver in using DMA channel
+  * @param  DevAddress: Target device address
+  * @param  MemAddress: Internal memory address
+  * @param  pBuffer: Pointer to data buffer
+  * @param  BufferSize: Amount of data to be sent
+  * @retval HAL status
   */
-void sEE_LowLevel_DMAConfig(uint32_t pBuffer, uint32_t BufferSize, uint32_t Direction)
-{ 
-  /* Initialize the DMA with the new parameters */
-  if (Direction == sEE_DIRECTION_TX)
-  {
-    /* Configure the DMA Tx Stream with the buffer address and the buffer size */
-    sEEDMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)pBuffer;
-    sEEDMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;    
-    sEEDMA_InitStructure.DMA_BufferSize = (uint32_t)BufferSize;  
-    DMA_Init(sEE_I2C_DMA_STREAM_TX, &sEEDMA_InitStructure);  
-  }
-  else
-  { 
-    /* Configure the DMA Rx Stream with the buffer address and the buffer size */
-    sEEDMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)pBuffer;
-    sEEDMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralToMemory;
-    sEEDMA_InitStructure.DMA_BufferSize = (uint32_t)BufferSize;      
-    DMA_Init(sEE_I2C_DMA_STREAM_RX, &sEEDMA_InitStructure);    
-  }
+HAL_StatusTypeDef EEPROM_IO_WriteData(uint16_t DevAddress, uint16_t MemAddress, uint8_t* pBuffer, uint32_t BufferSize)
+{
+  return (I2Cx_WriteBufferDMA(DevAddress, MemAddress,  pBuffer, BufferSize));
 }
 
+/**
+  * @brief  Read data from I2C EEPROM driver in using DMA channel
+  * @param  DevAddress: Target device address
+  * @param  MemAddress: Internal memory address
+  * @param  pBuffer: Pointer to data buffer
+  * @param  BufferSize: Amount of data to be read
+  * @retval HAL status
+  */
+HAL_StatusTypeDef EEPROM_IO_ReadData(uint16_t DevAddress, uint16_t MemAddress, uint8_t* pBuffer, uint32_t BufferSize)
+{
+  return (I2Cx_ReadBufferDMA(DevAddress, MemAddress, pBuffer, BufferSize));
+}
+
+/**
+* @brief  Checks if target device is ready for communication. 
+* @note   This function is used with Memory devices
+* @param  DevAddress: Target device address
+* @param  Trials: Number of trials
+* @retval HAL status
+*/
+HAL_StatusTypeDef EEPROM_IO_IsDeviceReady(uint16_t DevAddress, uint32_t Trials)
+{ 
+  return (I2Cx_IsDeviceReady(DevAddress, Trials));
+}
+
+#endif /*EE_M24LR64*/
 /**
   * @}
   */ 

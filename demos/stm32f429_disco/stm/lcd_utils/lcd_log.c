@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    lcd_log.c
   * @author  MCD Application Team
-  * @version V5.0.2
-  * @date    05-March-2012
+  * @version V1.0.0
+  * @date    18-February-2014
   * @brief   This file provides all the LCD Log firmware functions.
   *          
   *          The LCD Log module allows to automatically set a header and footer
@@ -19,24 +19,35 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2014 STMicroelectronics</center></h2>
   *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
   *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
   */
 
 /* Includes ------------------------------------------------------------------*/
+#include  <stdio.h>
 #include  "lcd_log.h"
 
 /** @addtogroup Utilities
@@ -72,6 +83,8 @@
 * @}
 */ 
 
+/* Define the display window settings */
+#define     YWINDOW_MIN         4
 
 /** @defgroup LCD_LOG_Private_Macros
 * @{
@@ -86,7 +99,7 @@
 */ 
 
 LCD_LOG_line LCD_CacheBuffer [LCD_CACHE_DEPTH]; 
-uint16_t LCD_LineColor;
+uint32_t LCD_LineColor;
 uint16_t LCD_CacheBuffer_xptr;
 uint16_t LCD_CacheBuffer_yptr_top;
 uint16_t LCD_CacheBuffer_yptr_bottom;
@@ -108,7 +121,7 @@ uint16_t LCD_ScrollBackStep;
 /** @defgroup LCD_LOG_Private_FunctionPrototypes
 * @{
 */ 
-static void LCD_LOG_UpdateDisplay (void);
+
 /**
 * @}
 */ 
@@ -120,31 +133,28 @@ static void LCD_LOG_UpdateDisplay (void);
 
 
 /**
-* @brief  Init the LCD Log module 
-* @param  None
-* @retval None
-*/
+  * @brief  Initializes the LCD Log module 
+  * @param  None
+  * @retval None
+  */
 
 void LCD_LOG_Init ( void)
 {
   /* Deinit LCD cache */
   LCD_LOG_DeInit();
+  
   /* Clear the LCD */
-  LCD_Clear(LCD_COLOR_BLACK);
-
-  LCD_SetTextColor(LCD_COLOR_WHITE);
-  LCD_SetBackColor(LCD_COLOR_BLACK);
-  LCD_SetFont (&DEFAULT_FONT);
+  BSP_LCD_Clear(LCD_LOG_BACKGROUND_COLOR);  
 }
 
 /**
-* @brief DeInitializes the LCD Log module. 
-* @param  None
-* @retval None
-*/
+  * @brief DeInitializes the LCD Log module. 
+  * @param  None
+  * @retval None
+  */
 void LCD_LOG_DeInit(void)
 {
-  LCD_LineColor = LCD_LOG_DEFAULT_COLOR;
+  LCD_LineColor = LCD_LOG_TEXT_COLOR;
   LCD_CacheBuffer_xptr = 0;
   LCD_CacheBuffer_yptr_top = 0;
   LCD_CacheBuffer_yptr_bottom = 0;
@@ -160,110 +170,85 @@ void LCD_LOG_DeInit(void)
 }
 
 /**
-* @brief  Display the application header (title) on the LCD screen 
-* @param  Title :  pointer to the string to be displayed
-* @retval None
-*/
-void LCD_LOG_SetHeader (uint8_t *Title)
+  * @brief  Display the application header on the LCD screen 
+  * @param  header: pointer to the string to be displayed
+  * @retval None
+  */
+void LCD_LOG_SetHeader (uint8_t *header)
 {
-  sFONT *cFont;
-  uint32_t size = 0 , idx;
-  uint8_t  *ptr = Title;
-  uint8_t  tmp[27];
-
-  /* center the header */
-  while (*ptr++) size ++ ;
-
-  /* truncate extra text */
-  if(size > 26)
-  {
-     size = 26;
-  }
-
-  for (idx = 0 ; idx < 27 ; idx ++)
-  {
-    tmp[idx] = ' ';
-  }
-
-  for (idx = 0 ; idx < size ; idx ++)
-  {
-    tmp[idx] = Title[idx];
-  }
-
-  /* Clear the LCD */
-  LCD_Clear(LCD_COLOR_BLACK);
-    
   /* Set the LCD Font */
-  LCD_SetFont (&Font12x12);
+  BSP_LCD_SetFont (&LCD_LOG_HEADER_FONT);
 
-  cFont = LCD_GetFont();  
+  BSP_LCD_SetTextColor(LCD_LOG_SOLID_BACKGROUND_COLOR);
+  BSP_LCD_FillRect(0, 0, BSP_LCD_GetXSize(), LCD_LOG_HEADER_FONT.Height * 3);
+  
   /* Set the LCD Text Color */
-  LCD_SetTextColor(LCD_COLOR_WHITE);
-  LCD_SetBackColor(LCD_COLOR_BLUE);
-  LCD_ClearLine(0);
-  LCD_DisplayStringLine(cFont->Height, tmp);
-  LCD_ClearLine(2 * cFont->Height);
+  BSP_LCD_SetTextColor(LCD_LOG_SOLID_TEXT_COLOR);
+  BSP_LCD_SetBackColor(LCD_LOG_SOLID_BACKGROUND_COLOR);
 
-  LCD_SetBackColor(LCD_COLOR_BLACK);
-  LCD_SetFont (&DEFAULT_FONT);
+  BSP_LCD_DisplayStringAt(0, LCD_LOG_HEADER_FONT.Height, header, CENTER_MODE);
+
+  BSP_LCD_SetBackColor(LCD_LOG_BACKGROUND_COLOR);
+  BSP_LCD_SetTextColor(LCD_LOG_TEXT_COLOR);
+  BSP_LCD_SetFont (&LCD_LOG_TEXT_FONT);
 }
 
 /**
-* @brief  Display the application footer (status) on the LCD screen 
-* @param  Status :  pointer to the string to be displayed
-* @retval None
-*/
-void LCD_LOG_SetFooter(uint8_t *Status)
+  * @brief  Display the application footer on the LCD screen 
+  * @param  footer: pointer to the string to be displayed
+  * @retval None
+  */
+void LCD_LOG_SetFooter(uint8_t *footer)
 {
-  sFONT *cFont;
-  uint8_t  tmp[40], i;
-  LCD_SetBackColor(LCD_COLOR_BLUE);
-  cFont = LCD_GetFont();
+  /* Set the LCD Font */
+  BSP_LCD_SetFont (&LCD_LOG_FOOTER_FONT);
+
+  BSP_LCD_SetTextColor(LCD_LOG_SOLID_BACKGROUND_COLOR);
+  BSP_LCD_FillRect(0, BSP_LCD_GetYSize() - LCD_LOG_FOOTER_FONT.Height - 4, BSP_LCD_GetXSize(), LCD_LOG_FOOTER_FONT.Height + 4);
   
-  for (i= 0; i< (320/cFont->Width)-1 ; i++)
-  {
-    tmp[i] = ' ';
-  }
-  
-  tmp[(320/cFont->Width)-1] = 0;
-  LCD_DisplayStringLine(LCD_PIXEL_HEIGHT - cFont->Height, tmp);
-  LCD_DisplayStringLine(LCD_PIXEL_HEIGHT - cFont->Height, Status);
-  LCD_SetBackColor(LCD_COLOR_BLACK);
+  /* Set the LCD Text Color */
+  BSP_LCD_SetTextColor(LCD_LOG_SOLID_TEXT_COLOR);
+  BSP_LCD_SetBackColor(LCD_LOG_SOLID_BACKGROUND_COLOR);
+
+  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() - LCD_LOG_FOOTER_FONT.Height, footer, CENTER_MODE);
+
+  BSP_LCD_SetBackColor(LCD_LOG_BACKGROUND_COLOR);
+  BSP_LCD_SetTextColor(LCD_LOG_TEXT_COLOR);
+  BSP_LCD_SetFont (&LCD_LOG_TEXT_FONT);
 }
 
 /**
-* @brief  Clear the Text Zone 
-* @param  None 
-* @retval None
-*/
+  * @brief  Clear the Text Zone 
+  * @param  None 
+  * @retval None
+  */
 void LCD_LOG_ClearTextZone(void)
 {
   uint8_t i=0;
-  sFONT *cFont = LCD_GetFont();
   
   for (i= 0 ; i < YWINDOW_SIZE; i++)
   {
-    LCD_ClearLine((i + YWINDOW_MIN) * cFont->Height);
+    BSP_LCD_ClearStringLine(i + YWINDOW_MIN);
   }
   
   LCD_LOG_DeInit();
 }
 
 /**
-* @brief  Redirect the printf to the lcd 
-* @param  c: character to be displayed
-* @param  f: output file pointer
-* @retval None
-*/
-PUTCHAR_PROTOTYPE
+  * @brief  Redirect the printf to the LCD
+  * @param  c: character to be displayed
+  * @param  f: output file pointer
+  * @retval None
+ */
+LCD_LOG_PUTCHAR
 {
   
-  sFONT *cFont = LCD_GetFont();
+  sFONT *cFont = BSP_LCD_GetFont();
   uint32_t idx;
   
   if(LCD_Lock == DISABLE)
   {
-    if((LCD_ScrollActive == ENABLE)||(LCD_ScrollActive == ENABLE))
+    if(LCD_ScrollActive == ENABLE)
     {
       LCD_CacheBuffer_yptr_bottom = LCD_CacheBuffer_yptr_bottom_bak;
       LCD_CacheBuffer_yptr_top    = LCD_CacheBuffer_yptr_top_bak;
@@ -273,7 +258,7 @@ PUTCHAR_PROTOTYPE
       
     }
     
-    if(( LCD_CacheBuffer_xptr < LCD_PIXEL_WIDTH /cFont->Width ) &&  ( ch != '\n'))
+    if(( LCD_CacheBuffer_xptr < (BSP_LCD_GetXSize()) /cFont->Width ) &&  ( ch != '\n'))
     {
       LCD_CacheBuffer[LCD_CacheBuffer_yptr_bottom].line[LCD_CacheBuffer_xptr++] = (uint16_t)ch;
     }   
@@ -297,7 +282,7 @@ PUTCHAR_PROTOTYPE
         }
       }
       
-      for(idx = LCD_CacheBuffer_xptr ; idx < LCD_PIXEL_WIDTH /cFont->Width; idx++)
+      for(idx = LCD_CacheBuffer_xptr ; idx < (BSP_LCD_GetXSize()) /cFont->Width; idx++)
       {
         LCD_CacheBuffer[LCD_CacheBuffer_yptr_bottom].line[LCD_CacheBuffer_xptr++] = ' ';
       }   
@@ -327,23 +312,21 @@ PUTCHAR_PROTOTYPE
 }
   
 /**
-* @brief  Update the text area display
-* @param  None
-* @retval None
-*/
-static void LCD_LOG_UpdateDisplay (void)
+  * @brief  Update the text area display
+  * @param  None
+  * @retval None
+  */
+void LCD_LOG_UpdateDisplay (void)
 {
   uint8_t cnt = 0 ;
   uint16_t length = 0 ;
   uint16_t ptr = 0, index = 0;
   
-  sFONT *cFont = LCD_GetFont();
-  
   if((LCD_CacheBuffer_yptr_bottom  < (YWINDOW_SIZE -1)) && 
      (LCD_CacheBuffer_yptr_bottom  >= LCD_CacheBuffer_yptr_top))
   {
-    LCD_SetTextColor(LCD_CacheBuffer[cnt + LCD_CacheBuffer_yptr_bottom].color);
-    LCD_DisplayStringLine ((YWINDOW_MIN + LCD_CacheBuffer_yptr_bottom) * cFont->Height,
+    BSP_LCD_SetTextColor(LCD_CacheBuffer[cnt + LCD_CacheBuffer_yptr_bottom].color);
+    BSP_LCD_DisplayStringAtLine ((YWINDOW_MIN + LCD_CacheBuffer_yptr_bottom),
                            (uint8_t *)(LCD_CacheBuffer[cnt + LCD_CacheBuffer_yptr_bottom].line));
   }
   else
@@ -366,8 +349,8 @@ static void LCD_LOG_UpdateDisplay (void)
       
       index = (cnt + ptr )% LCD_CACHE_DEPTH ;
       
-      LCD_SetTextColor(LCD_CacheBuffer[index].color);
-      LCD_DisplayStringLine ((cnt + YWINDOW_MIN) * cFont->Height, 
+      BSP_LCD_SetTextColor(LCD_CacheBuffer[index].color);
+      BSP_LCD_DisplayStringAtLine ((cnt + YWINDOW_MIN), 
                              (uint8_t *)(LCD_CacheBuffer[index].line));
       
     }
@@ -375,13 +358,13 @@ static void LCD_LOG_UpdateDisplay (void)
   
 }
 
-#ifdef LCD_SCROLL_ENABLED
+#if( LCD_SCROLL_ENABLED == 1)
 /**
-* @brief  Display previous text frame
-* @param  None
-* @retval Status
-*/
-ErrorStatus LCD_LOG_ScrollBack (void)
+  * @brief  Display previous text frame
+  * @param  None
+  * @retval Status
+  */
+ErrorStatus LCD_LOG_ScrollBack(void)
 {
     
   if(LCD_ScrollActive == DISABLE)
@@ -449,11 +432,11 @@ ErrorStatus LCD_LOG_ScrollBack (void)
 }
 
 /**
-* @brief  Display next text frame
-* @param  None
-* @retval Status
-*/
-ErrorStatus LCD_LOG_ScrollForward (void)
+  * @brief  Display next text frame
+  * @param  None
+  * @retval Status
+  */
+ErrorStatus LCD_LOG_ScrollForward(void)
 {
   
   if(LCD_ScrollBackStep != 0)
@@ -497,7 +480,7 @@ ErrorStatus LCD_LOG_ScrollForward (void)
       LCD_LOG_UpdateDisplay();
       LCD_Lock = DISABLE;
       
-    }  
+    } 
     return SUCCESS;
   }
   else // LCD_ScrollBackStep == 0 

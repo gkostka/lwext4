@@ -34,9 +34,12 @@
 #include <string.h>
 #include <fcntl.h>
 
+
 #include <hw_init.h>
-#include <usbh_msc_core.h>
-#include <usbh_usr.h>
+#include <usbh_core.h>
+#include <usbh_msc.h>
+
+extern USBH_HandleTypeDef hUSB_Host;
 
 /**@brief   Block size.*/
 #define USB_MSC_BLOCK_SIZE          512
@@ -44,9 +47,6 @@
 /**@brief   MBR_block ID*/
 #define MBR_BLOCK_ID                0
 #define MBR_PART_TABLE_OFF          446
-
-extern USB_OTG_CORE_HANDLE          USB_OTG_Core;
-extern USBH_HOST                    USB_Host;
 
 struct part_tab_entry {
     uint8_t  status;
@@ -95,24 +95,18 @@ static int usb_msc_open(struct ext4_blockdev *bdev)
 
     if(!hw_usb_connected())
         return EIO;
-    do
-    {
-        status = USBH_MSC_Read10(&USB_OTG_Core, mbr, 0, USB_MSC_BLOCK_SIZE);
-        USBH_MSC_HandleBOTXfer(&USB_OTG_Core ,&USB_Host);
 
-        if(!hw_usb_connected())
-            return EIO;
-
-    }
-    while(status == USBH_MSC_BUSY );
-
-    if(status != USBH_MSC_OK)
+    status = USBH_MSC_Read(&hUSB_Host, 0, 0, mbr, 1);
+    if(status != USBH_OK)
         return EIO;
 
     part0 = (struct part_tab_entry *)(mbr + MBR_PART_TABLE_OFF);
 
+    MSC_LUNTypeDef lun;
+    USBH_MSC_GetLUNInfo(&hUSB_Host, 0, &lun);
+
     part_offset = part0->first_lba;
-    _usb_msc.ph_bcnt = USBH_MSC_Param.MSCapacity;
+    _usb_msc.ph_bcnt = lun.capacity.block_nbr;
 
     return hw_usb_connected() ? EOK : EIO;
 }
@@ -125,17 +119,8 @@ static int usb_msc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
     if(!hw_usb_connected())
         return EIO;
 
-    do
-    {
-        status = USBH_MSC_Read10(&USB_OTG_Core, buf, blk_id + part_offset, _usb_msc.ph_bsize * blk_cnt);
-        USBH_MSC_HandleBOTXfer(&USB_OTG_Core ,&USB_Host);
-
-        if(!hw_usb_connected())
-            return EIO;
-    }
-    while(status == USBH_MSC_BUSY );
-
-    if(status != USBH_MSC_OK)
+    status = USBH_MSC_Read(&hUSB_Host, 0, blk_id + part_offset, buf, blk_cnt);
+    if(status != USBH_OK)
         return EIO;
 
     return EOK;
@@ -150,17 +135,8 @@ static int usb_msc_bwrite(struct ext4_blockdev *bdev, const void *buf,
     if(!hw_usb_connected())
         return EIO;
 
-    do
-    {
-        status = USBH_MSC_Write10(&USB_OTG_Core, (void *)buf, blk_id + part_offset, _usb_msc.ph_bsize * blk_cnt);
-        USBH_MSC_HandleBOTXfer(&USB_OTG_Core ,&USB_Host);
-
-        if(!hw_usb_connected())
-            return EIO;
-    }
-    while(status == USBH_MSC_BUSY );
-
-    if(status != USBH_MSC_OK)
+    status = USBH_MSC_Write(&hUSB_Host, 0, blk_id + part_offset, (void *)buf, blk_cnt);
+    if(status != USBH_OK)
         return EIO;
 
     return EOK;

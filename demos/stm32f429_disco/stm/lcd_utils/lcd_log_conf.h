@@ -52,20 +52,32 @@
   * @{
   */ 
 /* Comment the line below to disable the scroll back and forward features */
-#define LCD_SCROLL_ENABLED
+#define     LCD_SCROLL_ENABLED      1
 
-/* Define the LCD default text color */
-#define LCD_LOG_DEFAULT_COLOR    LCD_COLOR_GREEN
+/* Define the Fonts  */
+#define     LCD_LOG_HEADER_FONT                   Font16
+#define     LCD_LOG_FOOTER_FONT                   Font12
+#define     LCD_LOG_TEXT_FONT                     Font12
 
-/* Define the display window settings */
-#define YWINDOW_MIN              3
-#define YWINDOW_SIZE             23
-#define XWINDOW_MAX              50
+/* Define the LCD LOG Color  */
+#define     LCD_LOG_BACKGROUND_COLOR              LCD_COLOR_BLACK
+#define     LCD_LOG_TEXT_COLOR                    LCD_COLOR_GREEN
+
+#define     LCD_LOG_SOLID_BACKGROUND_COLOR        LCD_COLOR_BLUE
+#define     LCD_LOG_SOLID_TEXT_COLOR              LCD_COLOR_WHITE
 
 /* Define the cache depth */
-#define CACHE_SIZE               50
+#define     CACHE_SIZE              100
+#define     YWINDOW_SIZE            17
 
-#define DEFAULT_FONT             Font8x12
+#ifdef __GNUC__
+/* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
+   set to 'Yes') calls __io_putchar() */
+int __io_putchar(int ch);
+#define LCD_LOG_PUTCHAR int __io_putchar(int ch)
+#else
+#define LCD_LOG_PUTCHAR int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
 
 /** @defgroup LCD_LOG_CONF_Exported_TypesDefinitions
   * @{
