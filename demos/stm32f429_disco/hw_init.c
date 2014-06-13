@@ -33,85 +33,118 @@
 #include <pll.h>
 #include <stdint.h>
 
-#include <usb_core.h>
 #include <usbh_core.h>
-#include <usbh_msc_core.h>
-#include <usbh_usr.h>
+#include <usbh_msc.h>
+
+
 
 #include <pll.h>
 #include <hw_init.h>
+#include <stdbool.h>
 
-USB_OTG_CORE_HANDLE     USB_OTG_Core;
-USBH_HOST               USB_Host;
+USBH_HandleTypeDef hUSB_Host;
 
-static volatile uint32_t _systick_;
 
-void SysTick_Handler(void)
+static bool msc_connected = false;
+static bool enum_done = false;
+
+static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id)
 {
-    _systick_++;
+  switch(id)
+  {
+  case HOST_USER_SELECT_CONFIGURATION:
+      break;
+
+  case HOST_USER_DISCONNECTION:
+      msc_connected = false;
+      enum_done = false;
+      break;
+
+  case HOST_USER_CLASS_ACTIVE:
+      msc_connected = true;
+      break;
+
+  case HOST_USER_CONNECTION:
+      enum_done = true;
+      break;
+  default:
+      break;
+  }
 }
+
+#define LCD_FRAME_BUFFER_LAYER0                  (LCD_FRAME_BUFFER+0x130000)
+#define LCD_FRAME_BUFFER_LAYER1                  LCD_FRAME_BUFFER
+#define CONVERTED_FRAME_BUFFER                   (LCD_FRAME_BUFFER+0x260000)
 
 void hw_init(void)
 {
     pll_init();
 
     /* Initialize the LEDs */
-    STM_EVAL_LEDInit(LED3);
-    STM_EVAL_LEDInit(LED4);
+    BSP_LED_Init(LED3);
+    BSP_LED_Init(LED4);
 
     SysTick_Config(CFG_CCLK_FREQ / 1000);
 
-    /*Init USB Host */
-    USBH_Init(&USB_OTG_Core,
-        USB_OTG_HS_CORE_ID,
-        &USB_Host,
-        &USBH_MSC_cb,
-        &USBH_USR_cb);
+    USBH_Init(&hUSB_Host, USBH_UserProcess, 0);
+    USBH_RegisterClass(&hUSB_Host, USBH_MSC_CLASS);
+    USBH_Start(&hUSB_Host);
 
-    LCD_Init();
-    LCD_LayerInit();
-    LCD_DisplayOn();
-    LTDC_Cmd(ENABLE);
-    LCD_SetLayer(LCD_FOREGROUND_LAYER);
+    BSP_LCD_Init();
+
+    /* Layer2 Init */
+    BSP_LCD_LayerDefaultInit(1, LCD_FRAME_BUFFER_LAYER1);
+    BSP_LCD_SelectLayer(1);
+    BSP_LCD_Clear(LCD_COLOR_WHITE);
+    BSP_LCD_SetColorKeying(1, LCD_COLOR_WHITE);
+    BSP_LCD_SetLayerVisible(1, DISABLE);
+
+    /* Layer1 Init */
+    BSP_LCD_LayerDefaultInit(0, LCD_FRAME_BUFFER_LAYER0);
+    BSP_LCD_SelectLayer(0);
+    BSP_LCD_DisplayOn();
+    BSP_LCD_Clear(LCD_COLOR_BLACK);
+
+
     LCD_LOG_Init();
-
-    LCD_LOG_SetHeader((uint8_t *)"STM32 LWEXT4 DEMO");
+    LCD_LOG_SetHeader((uint8_t *)"STM32 LWEXT4 DEMO  ");
 }
 
 void hw_usb_process(void)
 {
-    USBH_Process(&USB_OTG_Core, &USB_Host);
+    USBH_Process(&hUSB_Host);
 }
 
 bool hw_usb_connected(void)
 {
-    return HCD_IsDeviceConnected(&USB_OTG_Core);
+    return msc_connected;
 }
 
 bool hw_usb_enum_done(void)
 {
-    return USB_Host_Application_Ready;
+    return enum_done;
 }
 
 void hw_led_red(bool on)
 {
-    on ? STM_EVAL_LEDOn(LED4) : STM_EVAL_LEDOff(LED4);
+    on ? BSP_LED_On(LED4) : BSP_LED_Off(LED4);
 }
 
 void hw_led_green(bool on)
 {
-    on ? STM_EVAL_LEDOn(LED3) : STM_EVAL_LEDOff(LED3);
+    on ? BSP_LED_On(LED3) : BSP_LED_Off(LED3);
 }
 
 uint32_t hw_get_ms(void)
 {
-    return _systick_;
+    return HAL_GetTick();
 }
 
 void hw_wait_ms(uint32_t ms)
 {
-    volatile uint32_t t = _systick_;
+    volatile uint32_t t = HAL_GetTick();
 
-    while((t + ms) > _systick_)
+    while((t + ms) > HAL_GetTick())
         ;
 }
+

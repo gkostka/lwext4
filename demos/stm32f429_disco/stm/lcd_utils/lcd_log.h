@@ -2,25 +2,35 @@
   ******************************************************************************
   * @file    lcd_log.h
   * @author  MCD Application Team
-  * @version V5.0.2
-  * @date    05-March-2012
+  * @version V1.0.0
+  * @date    18-February-2014
   * @brief   header for the lcd_log.c file
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2014 STMicroelectronics</center></h2>
   *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
   *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
   */ 
@@ -58,19 +68,8 @@
 /** @defgroup LCD_LOG_Exported_Defines
   * @{
   */ 
-#ifdef __GNUC__
-/* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
-   set to 'Yes') calls __io_putchar() */
-#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
-#else
-#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
-#endif /* __GNUC__ */
 
-PUTCHAR_PROTOTYPE;
-
-/** These value can be changed by user */
-
-#ifdef LCD_SCROLL_ENABLED
+#if (LCD_SCROLL_ENABLED == 1)
  #define     LCD_CACHE_DEPTH     (YWINDOW_SIZE + CACHE_SIZE)
 #else
  #define     LCD_CACHE_DEPTH     YWINDOW_SIZE
@@ -84,8 +83,8 @@ PUTCHAR_PROTOTYPE;
   */ 
 typedef struct _LCD_LOG_line
 {
-  uint8_t  line[XWINDOW_MAX];
-  uint16_t color;
+  uint8_t  line[128];
+  uint32_t color;
 
 }LCD_LOG_line;
 
@@ -96,16 +95,16 @@ typedef struct _LCD_LOG_line
 /** @defgroup LCD_LOG_Exported_Macros
   * @{
   */ 
-#define  LCD_ErrLog(...)    LCD_LineColor = Red;\
+#define  LCD_ErrLog(...)    LCD_LineColor = LCD_COLOR_RED;\
                             printf("ERROR: ") ;\
                             printf(__VA_ARGS__);\
                             LCD_LineColor = LCD_LOG_DEFAULT_COLOR
 
-#define  LCD_UsrLog(...)    LCD_LineColor = LCD_LOG_DEFAULT_COLOR;\
+#define  LCD_UsrLog(...)    LCD_LineColor = LCD_LOG_TEXT_COLOR;\
                             printf(__VA_ARGS__);\
 
 
-#define  LCD_DbgLog(...)    LCD_LineColor = Cyan;\
+#define  LCD_DbgLog(...)    LCD_LineColor = LCD_COLOR_CYAN;\
                             printf(__VA_ARGS__);\
                             LCD_LineColor = LCD_LOG_DEFAULT_COLOR
 /**
@@ -115,7 +114,8 @@ typedef struct _LCD_LOG_line
 /** @defgroup LCD_LOG_Exported_Variables
   * @{
   */ 
-extern uint16_t LCD_LineColor;
+extern uint32_t LCD_LineColor;
+
 /**
   * @}
   */ 
@@ -128,7 +128,9 @@ void LCD_LOG_DeInit(void);
 void LCD_LOG_SetHeader(uint8_t *Title);
 void LCD_LOG_SetFooter(uint8_t *Status);
 void LCD_LOG_ClearTextZone(void);
-#ifdef LCD_SCROLL_ENABLED
+void LCD_LOG_UpdateDisplay (void);
+
+#if (LCD_SCROLL_ENABLED == 1)
  ErrorStatus LCD_LOG_ScrollBack(void);
  ErrorStatus LCD_LOG_ScrollForward(void);
 #endif

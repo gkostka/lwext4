@@ -2,13 +2,13 @@
   ******************************************************************************
   * @file    usbh_msc_bot.h
   * @author  MCD Application Team
-  * @version V2.1.0
-  * @date    19-March-2012
+  * @version V3.0.0
+  * @date    18-February-2014
   * @brief   Header file for usbh_msc_bot.c
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT 2014 STMicroelectronics</center></h2>
   *
   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
   * You may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@
 #define __USBH_MSC_BOT_H__
 
 /* Includes ------------------------------------------------------------------*/
-#include "usbh_stdreq.h"
-
+#include "usbh_core.h"
+#include "usbh_msc_bot.h"
 
 /** @addtogroup USBH_LIB
   * @{
@@ -54,65 +54,89 @@
 /** @defgroup USBH_MSC_BOT_Exported_Types
   * @{
   */ 
+    
+typedef enum {
+  BOT_OK          = 0,
+  BOT_FAIL        = 1,
+  BOT_PHASE_ERROR = 2,
+  BOT_BUSY        = 3
+}
+BOT_StatusTypeDef;
 
-typedef union _USBH_CBW_Block
+typedef enum {
+  BOT_CMD_IDLE  = 0,
+  BOT_CMD_SEND,
+  BOT_CMD_WAIT,
+} 
+BOT_CMDStateTypeDef;  
+
+/* CSW Status Definitions */
+typedef enum 
+{
+
+   BOT_CSW_CMD_PASSED   =        0x00,
+   BOT_CSW_CMD_FAILED   =        0x01,
+   BOT_CSW_PHASE_ERROR  =        0x02,
+} 
+BOT_CSWStatusTypeDef;  
+
+typedef enum {
+  BOT_SEND_CBW  = 1,
+  BOT_SEND_CBW_WAIT,         
+  BOT_DATA_IN,    
+  BOT_DATA_IN_WAIT,    
+  BOT_DATA_OUT, 
+  BOT_DATA_OUT_WAIT,     
+  BOT_RECEIVE_CSW,
+  BOT_RECEIVE_CSW_WAIT,       
+  BOT_ERROR_IN,         
+  BOT_ERROR_OUT, 
+  BOT_UNRECOVERED_ERROR
+} 
+BOT_StateTypeDef;  
+  
+typedef union 
 {
   struct __CBW
   {
-    uint32_t CBWSignature;
-    uint32_t CBWTag;
-    uint32_t CBWTransferLength;
-    uint8_t CBWFlags;
-    uint8_t CBWLUN; 
-    uint8_t CBWLength;
-    uint8_t CBWCB[16];
-}field;
-  uint8_t CBWArray[31];
-}HostCBWPkt_TypeDef;
-
-typedef enum
-{
-  USBH_MSC_BOT_INIT_STATE = 0,                
-  USBH_MSC_BOT_RESET,                
-  USBH_MSC_GET_MAX_LUN,              
-  USBH_MSC_TEST_UNIT_READY,          
-  USBH_MSC_READ_CAPACITY10,
-  USBH_MSC_MODE_SENSE6,
-  USBH_MSC_REQUEST_SENSE,            
-  USBH_MSC_BOT_USB_TRANSFERS,        
-  USBH_MSC_DEFAULT_APPLI_STATE,  
-  USBH_MSC_CTRL_ERROR_STATE,
-  USBH_MSC_UNRECOVERED_STATE
+    uint32_t Signature;
+    uint32_t Tag;
+    uint32_t DataTransferLength;
+    uint8_t  Flags;
+    uint8_t  LUN; 
+    uint8_t  CBLength;
+    uint8_t  CB[16];
+  }field;
+  uint8_t data[31];
 }
-MSCState;
+BOT_CBWTypeDef;
 
-
-typedef struct _BOTXfer
-{
-uint8_t MSCState;
-uint8_t MSCStateBkp;
-uint8_t MSCStateCurrent;
-uint8_t CmdStateMachine;
-uint8_t BOTState;
-uint8_t BOTStateBkp;
-uint8_t* pRxTxBuff;
-uint16_t DataLength;
-uint8_t BOTXferErrorCount;
-uint8_t BOTXferStatus;
-} USBH_BOTXfer_TypeDef;
-
-
-typedef union _USBH_CSW_Block
+typedef union 
 {
   struct __CSW
   {
-    uint32_t CSWSignature;
-    uint32_t CSWTag;
-    uint32_t CSWDataResidue;
-    uint8_t  CSWStatus;
+    uint32_t Signature;
+    uint32_t Tag;
+    uint32_t DataResidue;
+    uint8_t  Status;
   }field;
-  uint8_t CSWArray[13];
-}HostCSWPkt_TypeDef;
+  uint8_t data[13];
+}
+BOT_CSWTypeDef;
+
+typedef struct
+{
+  uint32_t                   data[16];    
+  BOT_StateTypeDef           state;
+  BOT_StateTypeDef           prev_state;  
+  BOT_CMDStateTypeDef        cmd_state;
+  BOT_CBWTypeDef             cbw;
+  uint8_t                    Reserved1;
+  BOT_CSWTypeDef             csw; 
+  uint8_t                    Reserved2[3];  
+  uint8_t                    *pbuf;
+} 
+BOT_HandleTypeDef;
 
 /**
   * @}
@@ -123,43 +147,26 @@ typedef union _USBH_CSW_Block
 /** @defgroup USBH_MSC_BOT_Exported_Defines
   * @{
   */ 
-#define USBH_MSC_SEND_CBW                 1
-#define USBH_MSC_SENT_CBW                 2
-#define USBH_MSC_BOT_DATAIN_STATE         3
-#define USBH_MSC_BOT_DATAOUT_STATE        4
-#define USBH_MSC_RECEIVE_CSW_STATE        5
-#define USBH_MSC_DECODE_CSW               6
-#define USBH_MSC_BOT_ERROR_IN             7
-#define USBH_MSC_BOT_ERROR_OUT            8
+#define BOT_CBW_SIGNATURE            0x43425355
+#define BOT_CBW_TAG                  0x20304050             
+#define BOT_CSW_SIGNATURE            0x53425355           
+#define BOT_CBW_LENGTH               31
+#define BOT_CSW_LENGTH               13     
 
 
-#define USBH_MSC_BOT_CBW_SIGNATURE        0x43425355
-#define USBH_MSC_BOT_CBW_TAG              0x20304050             
-#define USBH_MSC_BOT_CSW_SIGNATURE        0x53425355           
-#define USBH_MSC_CSW_DATA_LENGTH          0x000D
-#define USBH_MSC_BOT_CBW_PACKET_LENGTH    31
-#define USBH_MSC_CSW_LENGTH               13  
-#define USBH_MSC_CSW_MAX_LENGTH           63     
 
-/* CSW Status Definitions */
-#define USBH_MSC_CSW_CMD_PASSED           0x00
-#define USBH_MSC_CSW_CMD_FAILED           0x01
-#define USBH_MSC_CSW_PHASE_ERROR          0x02
+#define BOT_SEND_CSW_DISABLE         0
+#define BOT_SEND_CSW_ENABLE          1
 
-#define USBH_MSC_SEND_CSW_DISABLE         0
-#define USBH_MSC_SEND_CSW_ENABLE          1
+#define BOT_DIR_IN                   0
+#define BOT_DIR_OUT                  1
+#define BOT_DIR_BOTH                 2
 
-#define USBH_MSC_DIR_IN                   0
-#define USBH_MSC_DIR_OUT                  1
-#define USBH_MSC_BOTH_DIR                 2
-
-//#define USBH_MSC_PAGE_LENGTH                 0x40
-#define USBH_MSC_PAGE_LENGTH              512
+#define BOT_PAGE_LENGTH              512
 
 
-#define CBW_CB_LENGTH                     16
-#define CBW_LENGTH                        10
-#define CBW_LENGTH_TEST_UNIT_READY         6
+#define BOT_CBW_CB_LENGTH            16
+
 
 #define USB_REQ_BOT_RESET                0xFF
 #define USB_REQ_GET_MAX_LUN              0xFE
@@ -183,9 +190,7 @@ typedef union _USBH_CSW_Block
 /** @defgroup USBH_MSC_BOT_Exported_Variables
   * @{
   */ 
-extern USBH_BOTXfer_TypeDef USBH_MSC_BOTXferParam;
-extern HostCBWPkt_TypeDef USBH_MSC_CBWData;
-extern HostCSWPkt_TypeDef USBH_MSC_CSWData;
+
 /**
   * @}
   */ 
@@ -193,14 +198,15 @@ extern HostCSWPkt_TypeDef USBH_MSC_CSWData;
 /** @defgroup USBH_MSC_BOT_Exported_FunctionsPrototype
   * @{
   */ 
-void USBH_MSC_HandleBOTXfer(USB_OTG_CORE_HANDLE *pdev,
-                            USBH_HOST *phost);
-uint8_t USBH_MSC_DecodeCSW(USB_OTG_CORE_HANDLE *pdev,
-                           USBH_HOST *phost);
-void USBH_MSC_Init(USB_OTG_CORE_HANDLE *pdev);
-USBH_Status USBH_MSC_BOT_Abort(USB_OTG_CORE_HANDLE *pdev, 
-                               USBH_HOST *phost,
-                               uint8_t direction);
+USBH_StatusTypeDef USBH_MSC_BOT_REQ_Reset(USBH_HandleTypeDef *phost);
+USBH_StatusTypeDef USBH_MSC_BOT_REQ_GetMaxLUN(USBH_HandleTypeDef *phost, uint8_t *Maxlun);
+
+USBH_StatusTypeDef USBH_MSC_BOT_Init(USBH_HandleTypeDef *phost);
+USBH_StatusTypeDef USBH_MSC_BOT_Process (USBH_HandleTypeDef *phost, uint8_t lun);
+USBH_StatusTypeDef USBH_MSC_BOT_Error(USBH_HandleTypeDef *phost, uint8_t lun);
+
+
+
 /**
   * @}
   */ 

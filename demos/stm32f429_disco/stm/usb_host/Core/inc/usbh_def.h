@@ -2,13 +2,13 @@
   ******************************************************************************
   * @file    usbh_def.h
   * @author  MCD Application Team
-  * @version V2.1.0
-  * @date    19-March-2012
+  * @version V3.0.0
+  * @date    18-February-2014
   * @brief   Definitions used in the USB host library
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT 2014 STMicroelectronics</center></h2>
   *
   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
   * You may not use this file except in compliance with the License.
@@ -41,8 +41,10 @@
 #ifndef  USBH_DEF_H
 #define  USBH_DEF_H
 
-#ifndef USBH_NULL
-#define USBH_NULL ((void *)0)
+#include "usbh_conf.h"
+
+#ifndef NULL
+#define NULL ((void *)0)
 #endif
 
 #ifndef FALSE
@@ -58,8 +60,34 @@
 #define SetBit(VAR,POS)                               (VAR |= (1 << POS))
 #define ClrBit(VAR,POS)                               (VAR &= ((1 << POS)^255))
 
-#define  LE16(addr)             (((u16)(*((u8 *)(addr))))\
-                                + (((u16)(*(((u8 *)(addr)) + 1))) << 8))
+#define  LE16(addr)             (((uint16_t)(*((uint8_t *)(addr))))\
+                                + (((uint16_t)(*(((uint8_t *)(addr)) + 1))) << 8))
+
+#define  LE16S(addr)              (uint16_t)(LE16((addr)))
+
+#define  LE32(addr)              ((((uint32_t)(*(((uint8_t *)(addr)) + 0))) + \
+                                              (((uint32_t)(*(((uint8_t *)(addr)) + 1))) << 8) + \
+                                              (((uint32_t)(*(((uint8_t *)(addr)) + 2))) << 16) + \
+                                              (((uint32_t)(*(((uint8_t *)(addr)) + 3))) << 24)))
+
+#define  LE64(addr)              ((((uint64_t)(*(((uint8_t *)(addr)) + 0))) + \
+                                              (((uint64_t)(*(((uint8_t *)(addr)) + 1))) <<  8) +\
+                                              (((uint64_t)(*(((uint8_t *)(addr)) + 2))) << 16) +\
+                                              (((uint64_t)(*(((uint8_t *)(addr)) + 3))) << 24) +\
+                                              (((uint64_t)(*(((uint8_t *)(addr)) + 4))) << 32) +\
+                                              (((uint64_t)(*(((uint8_t *)(addr)) + 5))) << 40) +\
+                                              (((uint64_t)(*(((uint8_t *)(addr)) + 6))) << 48) +\
+                                              (((uint64_t)(*(((uint8_t *)(addr)) + 7))) << 56)))
+
+
+#define  LE24(addr)              ((((uint32_t)(*(((uint8_t *)(addr)) + 0))) + \
+                                              (((uint32_t)(*(((uint8_t *)(addr)) + 1))) << 8) + \
+                                              (((uint32_t)(*(((uint8_t *)(addr)) + 2))) << 16)))
+
+
+#define  LE32S(addr)              (int32_t)(LE32((addr)))
+
+
 
 #define  USB_LEN_DESC_HDR                               0x02
 #define  USB_LEN_DEV_DESC                               0x12
@@ -142,19 +170,14 @@
 #define  USB_EP_DIR_IN                                  0x80
 #define  USB_EP_DIR_MSK                                 0x80  
 
-/* supported classes */
-#define USB_MSC_CLASS                                   0x08
-#define USB_HID_CLASS                                   0x03
+#define USBH_MAX_PIPES_NBR                              15                                                
 
-/* Interface Descriptor field values for HID Boot Protocol */
-#define HID_BOOT_CODE                                  0x01    
-#define HID_KEYBRD_BOOT_CODE                           0x01
-#define HID_MOUSE_BOOT_CODE                            0x02
 
-/* As per USB specs 9.2.6.4 :Standard request with data request timeout: 5sec
-   Standard request with no data stage timeout : 50ms */
-#define DATA_STAGE_TIMEOUT                              5000 
-#define NODATA_STAGE_TIMEOUT                            50
+
+#define USBH_DEVICE_ADDRESS_DEFAULT                     0
+#define USBH_MAX_ERROR_COUNT                            2
+#define USBH_DEVICE_ADDRESS                             1
+
 
 /**
   * @}
@@ -170,7 +193,6 @@
                                           ConfigurationDescriptor.wTotalLength)
 
 
-/*  This Union is copied from usb_core.h  */
 typedef union
 {
   uint16_t w;
@@ -186,7 +208,7 @@ uint16_t_uint8_t;
 
 typedef union _USB_Setup
 {
-  uint8_t d8[8];
+  uint32_t d8[2];
   
   struct _SetupPkt_Struc
   {
@@ -226,35 +248,18 @@ typedef struct _DeviceDescriptor
   uint8_t   iSerialNumber;  /* Index of Serial Number String Descriptor */
   uint8_t   bNumConfigurations; /* Number of Possible Configurations */
 }
-USBH_DevDesc_TypeDef;
+USBH_DevDescTypeDef;
 
-
-typedef struct _ConfigurationDescriptor
+typedef struct _EndpointDescriptor
 {
   uint8_t   bLength;
   uint8_t   bDescriptorType;
-  uint16_t  wTotalLength;        /* Total Length of Data Returned */
-  uint8_t   bNumInterfaces;       /* Number of Interfaces */
-  uint8_t   bConfigurationValue;  /* Value to use as an argument to select this configuration*/
-  uint8_t   iConfiguration;       /*Index of String Descriptor Describing this configuration */
-  uint8_t   bmAttributes;         /* D7 Bus Powered , D6 Self Powered, D5 Remote Wakeup , D4..0 Reserved (0)*/
-  uint8_t   bMaxPower;            /*Maximum Power Consumption */
+  uint8_t   bEndpointAddress;   /* indicates what endpoint this descriptor is describing */
+  uint8_t   bmAttributes;       /* specifies the transfer type. */
+  uint16_t  wMaxPacketSize;    /* Maximum Packet Size this endpoint is capable of sending or receiving */  
+  uint8_t   bInterval;          /* is used to specify the polling interval of certain transfers. */
 }
-USBH_CfgDesc_TypeDef;
-
-
-typedef struct _HIDDescriptor
-{
-  uint8_t   bLength;
-  uint8_t   bDescriptorType;
-  uint16_t  bcdHID;               /* indicates what endpoint this descriptor is describing */
-  uint8_t   bCountryCode;        /* specifies the transfer type. */
-  uint8_t   bNumDescriptors;     /* specifies the transfer type. */
-  uint8_t   bReportDescriptorType;    /* Maximum Packet Size this endpoint is capable of sending or receiving */  
-  uint16_t  wItemLength;          /* is used to specify the polling interval of certain transfers. */
-}
-USBH_HIDDesc_TypeDef;
-
+USBH_EpDescTypeDef;
 
 typedef struct _InterfaceDescriptor
 {
@@ -267,21 +272,208 @@ typedef struct _InterfaceDescriptor
   uint8_t bInterfaceSubClass;   /* Subclass Code (Assigned by USB Org) */
   uint8_t bInterfaceProtocol;   /* Protocol Code */
   uint8_t iInterface;           /* Index of String Descriptor Describing this interface */
-  
+  USBH_EpDescTypeDef               Ep_Desc[USBH_MAX_NUM_ENDPOINTS];   
 }
-USBH_InterfaceDesc_TypeDef;
+USBH_InterfaceDescTypeDef;
 
 
-typedef struct _EndpointDescriptor
+typedef struct _ConfigurationDescriptor
 {
   uint8_t   bLength;
   uint8_t   bDescriptorType;
-  uint8_t   bEndpointAddress;   /* indicates what endpoint this descriptor is describing */
-  uint8_t   bmAttributes;       /* specifies the transfer type. */
-  uint16_t  wMaxPacketSize;    /* Maximum Packet Size this endpoint is capable of sending or receiving */  
-  uint8_t   bInterval;          /* is used to specify the polling interval of certain transfers. */
+  uint16_t  wTotalLength;        /* Total Length of Data Returned */
+  uint8_t   bNumInterfaces;       /* Number of Interfaces */
+  uint8_t   bConfigurationValue;  /* Value to use as an argument to select this configuration*/
+  uint8_t   iConfiguration;       /*Index of String Descriptor Describing this configuration */
+  uint8_t   bmAttributes;         /* D7 Bus Powered , D6 Self Powered, D5 Remote Wakeup , D4..0 Reserved (0)*/
+  uint8_t   bMaxPower;            /*Maximum Power Consumption */
+  USBH_InterfaceDescTypeDef        Itf_Desc[USBH_MAX_NUM_INTERFACES];
 }
-USBH_EpDesc_TypeDef;
+USBH_CfgDescTypeDef;
+
+
+/* Following USB Host status */
+typedef enum 
+{
+  USBH_OK   = 0,
+  USBH_BUSY,
+  USBH_FAIL,
+  USBH_NOT_SUPPORTED,
+  USBH_UNRECOVERED_ERROR,
+  USBH_ERROR_SPEED_UNKNOWN,
+}USBH_StatusTypeDef;
+
+
+/** @defgroup USBH_CORE_Exported_Types
+  * @{
+  */
+
+typedef enum 
+{
+  USBH_SPEED_HIGH  = 0,
+  USBH_SPEED_FULL  = 1,
+  USBH_SPEED_LOW   = 2,  
+    
+}USBH_SpeedTypeDef;
+
+/* Following states are used for gState */
+typedef enum 
+{
+  HOST_IDLE =0,
+  HOST_DEV_WAIT_FOR_ATTACHMENT,  
+  HOST_DEV_ATTACHED,
+  HOST_DEV_DISCONNECTED,  
+  HOST_DETECT_DEVICE_SPEED,
+  HOST_ENUMERATION,
+  HOST_CLASS_REQUEST,  
+  HOST_INPUT,
+  HOST_SET_CONFIGURATION,
+  HOST_CHECK_CLASS,
+  HOST_CLASS,
+  HOST_SUSPENDED,
+  HOST_ABORT_STATE,  
+}HOST_StateTypeDef;  
+
+/* Following states are used for EnumerationState */
+typedef enum 
+{
+  ENUM_IDLE = 0,
+  ENUM_GET_FULL_DEV_DESC,
+  ENUM_SET_ADDR,
+  ENUM_GET_CFG_DESC,
+  ENUM_GET_FULL_CFG_DESC,
+  ENUM_GET_MFC_STRING_DESC,
+  ENUM_GET_PRODUCT_STRING_DESC,
+  ENUM_GET_SERIALNUM_STRING_DESC,
+} ENUM_StateTypeDef;  
+
+/* Following states are used for CtrlXferStateMachine */
+typedef enum 
+{
+  CTRL_IDLE =0,
+  CTRL_SETUP,
+  CTRL_SETUP_WAIT,
+  CTRL_DATA_IN,
+  CTRL_DATA_IN_WAIT,
+  CTRL_DATA_OUT,
+  CTRL_DATA_OUT_WAIT,
+  CTRL_STATUS_IN,
+  CTRL_STATUS_IN_WAIT,
+  CTRL_STATUS_OUT,
+  CTRL_STATUS_OUT_WAIT,
+  CTRL_ERROR,
+  CTRL_STALLED,
+  CTRL_COMPLETE    
+}CTRL_StateTypeDef;  
+
+
+/* Following states are used for RequestState */
+typedef enum 
+{
+  CMD_IDLE =0,
+  CMD_SEND,
+  CMD_WAIT
+} CMD_StateTypeDef;  
+
+typedef enum {
+  USBH_URB_IDLE = 0,
+  USBH_URB_DONE,
+  USBH_URB_NOTREADY,
+  USBH_URB_NYET,  
+  USBH_URB_ERROR,
+  USBH_URB_STALL
+}USBH_URBStateTypeDef;
+
+typedef enum
+{
+  USBH_PORT_EVENT = 1,  
+  USBH_URB_EVENT,
+  USBH_CONTROL_EVENT,    
+  USBH_CLASS_EVENT,     
+  USBH_STATE_CHANGED_EVENT,   
+}
+USBH_OSEventTypeDef;
+
+/* Control request structure */
+typedef struct 
+{
+  uint8_t               pipe_in; 
+  uint8_t               pipe_out; 
+  uint8_t               pipe_size;  
+  uint8_t               *buff;
+  uint16_t              length;
+  uint16_t              timer;  
+  USB_Setup_TypeDef     setup;
+  CTRL_StateTypeDef     state;  
+  uint8_t               errorcount;  
+
+} USBH_CtrlTypeDef;
+
+/* Attached device structure */
+typedef struct
+{
+#if (USBH_KEEP_CFG_DESCRIPTOR == 1)  
+  uint8_t                           CfgDesc_Raw[USBH_MAX_SIZE_CONFIGURATION];
+#endif  
+  uint8_t                           Data[USBH_MAX_DATA_BUFFER];
+  uint8_t                           address;
+  uint8_t                           speed;
+  __IO uint8_t                      is_connected;    
+  uint8_t                           current_interface;   
+  USBH_DevDescTypeDef               DevDesc;
+  USBH_CfgDescTypeDef               CfgDesc; 
+  
+}USBH_DeviceTypeDef;
+
+struct _USBH_HandleTypeDef;
+
+/* USB Host Class structure */
+typedef struct 
+{
+  const char          *Name;
+  uint8_t              ClassCode;  
+  USBH_StatusTypeDef  (*Init)        (struct _USBH_HandleTypeDef *phost);
+  USBH_StatusTypeDef  (*DeInit)      (struct _USBH_HandleTypeDef *phost);
+  USBH_StatusTypeDef  (*Requests)    (struct _USBH_HandleTypeDef *phost);  
+  USBH_StatusTypeDef  (*BgndProcess) (struct _USBH_HandleTypeDef *phost);
+  USBH_StatusTypeDef  (*SOFProcess) (struct _USBH_HandleTypeDef *phost);  
+  void*                pData;
+} USBH_ClassTypeDef;
+
+/* USB Host handle structure */
+typedef struct _USBH_HandleTypeDef
+{
+  __IO HOST_StateTypeDef     gState;       /*  Host State Machine Value */
+  ENUM_StateTypeDef     EnumState;    /* Enumeration state Machine */
+  CMD_StateTypeDef      RequestState;       
+  USBH_CtrlTypeDef      Control;
+  USBH_DeviceTypeDef    device;
+  USBH_ClassTypeDef*    pClass[USBH_MAX_NUM_SUPPORTED_CLASS];
+  USBH_ClassTypeDef*    pActiveClass;
+  uint32_t              ClassNumber;
+  uint32_t              Pipes[15];
+  __IO uint32_t         Timer;
+  uint8_t               id;  
+  void*                 pData;                  
+  void                 (* pUser )(struct _USBH_HandleTypeDef *pHandle, uint8_t id);
+  
+#if (USBH_USE_OS == 1)
+  osMessageQId          os_event;   
+  osThreadId            thread; 
+#endif  
+  
+} USBH_HandleTypeDef;
+
+
+#if  defined ( __GNUC__ )
+  #ifndef __weak
+    #define __weak   __attribute__((weak))
+  #endif /* __weak */
+  #ifndef __packed
+    #define __packed __attribute__((__packed__))
+  #endif /* __packed */
+#endif /* __GNUC__ */
+
 #endif
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

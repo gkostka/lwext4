@@ -2,13 +2,13 @@
   ******************************************************************************
   * @file    usbh_msc_scsi.c 
   * @author  MCD Application Team
-  * @version V2.1.0
-  * @date    19-March-2012
+  * @version V3.0.0
+  * @date    18-February-2014
   * @brief   This file implements the SCSI commands
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT 2014 STMicroelectronics</center></h2>
   *
   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
   * You may not use this file except in compliance with the License.
@@ -26,11 +26,9 @@
   */ 
 
 /* Includes ------------------------------------------------------------------*/
-#include "usbh_msc_core.h"
+#include "usbh_msc.h"
 #include "usbh_msc_scsi.h"
 #include "usbh_msc_bot.h"
-#include "usbh_ioreq.h"
-#include "usbh_def.h"
 
 
 /** @addtogroup USBH_LIB
@@ -55,7 +53,6 @@
   * @{
   */ 
 
-MassStorageParameter_TypeDef USBH_MSC_Param; 
 /**
   * @}
   */ 
@@ -70,28 +67,6 @@ MassStorageParameter_TypeDef USBH_MSC_Param;
 /** @defgroup USBH_MSC_SCSI_Private_Macros
   * @{
   */ 
-/**
-  * @}
-  */ 
-
-
-/** @defgroup USBH_MSC_SCSI_Private_Variables
-  * @{
-  */ 
-  
-#ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED
-  #if defined ( __ICCARM__ ) /*!< IAR Compiler */
-    #pragma data_alignment=4   
-  #endif
-#endif /* USB_OTG_HS_INTERNAL_DMA_ENABLED */
-__ALIGN_BEGIN uint8_t USBH_DataInBuffer[512] __ALIGN_END ;
-
-#ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED
-  #if defined ( __ICCARM__ ) /*!< IAR Compiler */
-    #pragma data_alignment=4   
-  #endif
-#endif /* USB_OTG_HS_INTERNAL_DMA_ENABLED */
-__ALIGN_BEGIN uint8_t USBH_DataOutBuffer[512] __ALIGN_END ;
 /**
   * @}
   */ 
@@ -119,538 +94,341 @@ __ALIGN_BEGIN uint8_t USBH_DataOutBuffer[512] __ALIGN_END ;
   */ 
 
 
-
-
 /**
-  * @brief  USBH_MSC_TestUnitReady 
-  *         Issues 'Test unit ready' command to the device. Once the response  
-  *         received, it updates the status to upper layer.
-  * @param  None
-  * @retval Status
+  * @brief  USBH_MSC_SCSI_TestUnitReady 
+  *         Issue TestUnitReady command.
+  * @param  phost: Host handle
+  * @param  lun: Logical Unit Number
+  * @retval USBH Status
   */
-uint8_t USBH_MSC_TestUnitReady (USB_OTG_CORE_HANDLE *pdev)
+USBH_StatusTypeDef USBH_MSC_SCSI_TestUnitReady (USBH_HandleTypeDef *phost, 
+                                                uint8_t lun)
 {
-  uint8_t index;
-  USBH_MSC_Status_TypeDef status = USBH_MSC_BUSY;
+  USBH_StatusTypeDef    error = USBH_FAIL ;
+  MSC_HandleTypeDef *MSC_Handle =  phost->pActiveClass->pData;
   
-  if(HCD_IsDeviceConnected(pdev))
-  {  
-    switch(USBH_MSC_BOTXferParam.CmdStateMachine)
-    {
-    case CMD_SEND_STATE:  
-      /*Prepare the CBW and relevent field*/
-      USBH_MSC_CBWData.field.CBWTransferLength = 0;       /* No Data Transfer */
-      USBH_MSC_CBWData.field.CBWFlags = USB_EP_DIR_OUT;
-      USBH_MSC_CBWData.field.CBWLength = CBW_LENGTH_TEST_UNIT_READY;
-      USBH_MSC_BOTXferParam.pRxTxBuff = USBH_MSC_CSWData.CSWArray;
-      USBH_MSC_BOTXferParam.DataLength = USBH_MSC_CSW_MAX_LENGTH;
-      USBH_MSC_BOTXferParam.MSCStateCurrent = USBH_MSC_TEST_UNIT_READY;
-      
-      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
-      {
-        USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
-      }
-      
-      USBH_MSC_CBWData.field.CBWCB[0]  = OPCODE_TEST_UNIT_READY; 
-      USBH_MSC_BOTXferParam.BOTState = USBH_MSC_SEND_CBW;
-      /* Start the transfer, then let the state 
-      machine magage the other transactions */
-      USBH_MSC_BOTXferParam.MSCState = USBH_MSC_BOT_USB_TRANSFERS;
-      USBH_MSC_BOTXferParam.BOTXferStatus = USBH_MSC_BUSY;
-      USBH_MSC_BOTXferParam.CmdStateMachine = CMD_WAIT_STATUS;
-      
-      status = USBH_MSC_BUSY; 
-      break;
-      
-    case CMD_WAIT_STATUS: 
-      if(USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_OK)
-      { 
-        /* Commands successfully sent and Response Received  */       
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-       
-        status = USBH_MSC_OK;      
-      }
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_FAIL )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_FAIL;
-      }
-      
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_PHASE_ERROR )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_PHASE_ERROR;    
-      }  
-      break;
-      
-    default:
-      break;
-    }
-  }
-  return status;
-}
-
-
-/**
-  * @brief  USBH_MSC_ReadCapacity10  
-  *         Issue the read capacity command to the device. Once the response 
-  *         received, it updates the status to upper layer
-  * @param  None
-  * @retval Status
-  */
-uint8_t USBH_MSC_ReadCapacity10(USB_OTG_CORE_HANDLE *pdev)
-{
-  uint8_t index;
-  USBH_MSC_Status_TypeDef status = USBH_MSC_BUSY;
-  
-  if(HCD_IsDeviceConnected(pdev))
-  {  
-    switch(USBH_MSC_BOTXferParam.CmdStateMachine)
-    {
-    case CMD_SEND_STATE:
-      /*Prepare the CBW and relevent field*/
-      USBH_MSC_CBWData.field.CBWTransferLength = XFER_LEN_READ_CAPACITY10;
-      USBH_MSC_CBWData.field.CBWFlags = USB_EP_DIR_IN;
-      USBH_MSC_CBWData.field.CBWLength = CBW_LENGTH;
-      
-      USBH_MSC_BOTXferParam.pRxTxBuff = USBH_DataInBuffer;
-      USBH_MSC_BOTXferParam.MSCStateCurrent = USBH_MSC_READ_CAPACITY10;
-      
-      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
-      {
-        USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
-      }    
-      
-      USBH_MSC_CBWData.field.CBWCB[0]  = OPCODE_READ_CAPACITY10; 
-      USBH_MSC_BOTXferParam.BOTState = USBH_MSC_SEND_CBW;
-      
-      /* Start the transfer, then let the state machine manage the other 
-                                                                transactions */
-      USBH_MSC_BOTXferParam.MSCState = USBH_MSC_BOT_USB_TRANSFERS;
-      USBH_MSC_BOTXferParam.BOTXferStatus = USBH_MSC_BUSY;
-      USBH_MSC_BOTXferParam.CmdStateMachine = CMD_WAIT_STATUS;
-      
-      status = USBH_MSC_BUSY;
-      break;
-      
-    case CMD_WAIT_STATUS:
-      if(USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_OK)
-      {
-        /*assign the capacity*/
-        (((uint8_t*)&USBH_MSC_Param.MSCapacity )[3]) = USBH_DataInBuffer[0];
-        (((uint8_t*)&USBH_MSC_Param.MSCapacity )[2]) = USBH_DataInBuffer[1];
-        (((uint8_t*)&USBH_MSC_Param.MSCapacity )[1]) = USBH_DataInBuffer[2];
-        (((uint8_t*)&USBH_MSC_Param.MSCapacity )[0]) = USBH_DataInBuffer[3];
-        
-        /*assign the page length*/
-        (((uint8_t*)&USBH_MSC_Param.MSPageLength )[1]) = USBH_DataInBuffer[6];
-        (((uint8_t*)&USBH_MSC_Param.MSPageLength )[0]) = USBH_DataInBuffer[7];
-        
-        /* Commands successfully sent and Response Received  */       
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_OK;      
-      }
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_FAIL )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_FAIL;
-      }  
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_PHASE_ERROR )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_PHASE_ERROR;    
-      } 
-      else
-      {
-        /* Wait for the Commands to get Completed */
-        /* NO Change in state Machine */
-      }
-      break;
-      
-    default:
-      break;
-    }
-  }
-  return status;
-}
-
-
-/**
-  * @brief  USBH_MSC_ModeSense6  
-  *         Issue the Mode Sense6 Command to the device. This function is used 
-  *          for reading the WriteProtect Status of the Mass-Storage device. 
-  * @param  None
-  * @retval Status
-  */
-uint8_t USBH_MSC_ModeSense6(USB_OTG_CORE_HANDLE *pdev)
-{
-  uint8_t index;
-  USBH_MSC_Status_TypeDef status = USBH_MSC_BUSY;
-  
-  if(HCD_IsDeviceConnected(pdev))
-  {  
-    switch(USBH_MSC_BOTXferParam.CmdStateMachine)
-    {
-    case CMD_SEND_STATE:
-      /*Prepare the CBW and relevent field*/
-      USBH_MSC_CBWData.field.CBWTransferLength = XFER_LEN_MODE_SENSE6;
-      USBH_MSC_CBWData.field.CBWFlags = USB_EP_DIR_IN;
-      USBH_MSC_CBWData.field.CBWLength = CBW_LENGTH;
-      
-      USBH_MSC_BOTXferParam.pRxTxBuff = USBH_DataInBuffer;
-      USBH_MSC_BOTXferParam.MSCStateCurrent = USBH_MSC_MODE_SENSE6;
-      
-      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
-      {
-        USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
-      }    
-      
-      USBH_MSC_CBWData.field.CBWCB[0]  = OPCODE_MODE_SENSE6; 
-      USBH_MSC_CBWData.field.CBWCB[2]  = MODE_SENSE_PAGE_CONTROL_FIELD | \
-                                         MODE_SENSE_PAGE_CODE;
-                                           
-      USBH_MSC_CBWData.field.CBWCB[4]  = XFER_LEN_MODE_SENSE6;
-                                                                                      
-      USBH_MSC_BOTXferParam.BOTState = USBH_MSC_SEND_CBW;
-      
-      /* Start the transfer, then let the state machine manage the other 
-                                                                transactions */
-      USBH_MSC_BOTXferParam.MSCState = USBH_MSC_BOT_USB_TRANSFERS;
-      USBH_MSC_BOTXferParam.BOTXferStatus = USBH_MSC_BUSY;
-      USBH_MSC_BOTXferParam.CmdStateMachine = CMD_WAIT_STATUS;
-      
-      status = USBH_MSC_BUSY;
-      break;
-      
-    case CMD_WAIT_STATUS:
-      if(USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_OK)
-      {
-        /* Assign the Write Protect status */
-        /* If WriteProtect = 0, Writing is allowed 
-           If WriteProtect != 0, Disk is Write Protected */
-        if ( USBH_DataInBuffer[2] & MASK_MODE_SENSE_WRITE_PROTECT)
-        {
-          USBH_MSC_Param.MSWriteProtect   = DISK_WRITE_PROTECTED;
-        }
-        else
-        {
-          USBH_MSC_Param.MSWriteProtect   = 0;
-        }
-        
-        /* Commands successfully sent and Response Received  */       
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_OK;      
-      }
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_FAIL )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_FAIL;
-      }
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_PHASE_ERROR )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_PHASE_ERROR;    
-      }
-      else
-      {
-        /* Wait for the Commands to get Completed */
-        /* NO Change in state Machine */
-      }
-      break;
-      
-    default:
-      break;
-    }
-  }
-  return status;
-}
-
-/**
-  * @brief  USBH_MSC_RequestSense  
-  *         Issues the Request Sense command to the device. Once the response 
-  *         received, it updates the status to upper layer
-  * @param  None
-  * @retval Status
-  */
-uint8_t USBH_MSC_RequestSense(USB_OTG_CORE_HANDLE *pdev)
-{
-  USBH_MSC_Status_TypeDef status = USBH_MSC_BUSY;
-  
-  uint8_t index;
-  
-  
-  if(HCD_IsDeviceConnected(pdev))
-  {  
-    switch(USBH_MSC_BOTXferParam.CmdStateMachine)
-    {
-    case CMD_SEND_STATE:
-      
-      /*Prepare the CBW and relevent field*/
-      USBH_MSC_CBWData.field.CBWTransferLength = \
-                                                ALLOCATION_LENGTH_REQUEST_SENSE;
-      USBH_MSC_CBWData.field.CBWFlags = USB_EP_DIR_IN;
-      USBH_MSC_CBWData.field.CBWLength = CBW_LENGTH;
-      
-      USBH_MSC_BOTXferParam.pRxTxBuff = USBH_DataInBuffer;
-      USBH_MSC_BOTXferParam.MSCStateBkp = USBH_MSC_BOTXferParam.MSCStateCurrent;
-      USBH_MSC_BOTXferParam.MSCStateCurrent = USBH_MSC_REQUEST_SENSE;
-      
-
-      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
-      {
-        USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
-      }    
-      
-      USBH_MSC_CBWData.field.CBWCB[0]  = OPCODE_REQUEST_SENSE; 
-      USBH_MSC_CBWData.field.CBWCB[1]  = DESC_REQUEST_SENSE;
-      USBH_MSC_CBWData.field.CBWCB[4]  = ALLOCATION_LENGTH_REQUEST_SENSE;
-      
-      USBH_MSC_BOTXferParam.BOTState = USBH_MSC_SEND_CBW;
-      /* Start the transfer, then let the state machine magage 
-      the other transactions */
-      USBH_MSC_BOTXferParam.MSCState = USBH_MSC_BOT_USB_TRANSFERS;
-      USBH_MSC_BOTXferParam.BOTXferStatus = USBH_MSC_BUSY;
-      USBH_MSC_BOTXferParam.CmdStateMachine = CMD_WAIT_STATUS;
-      
-      status = USBH_MSC_BUSY;
-      
-      break;
-      
-    case CMD_WAIT_STATUS:
-      
-      if(USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_OK)
-      {
-        /* Get Sense data*/
-        (((uint8_t*)&USBH_MSC_Param.MSSenseKey )[3]) = USBH_DataInBuffer[0];
-        (((uint8_t*)&USBH_MSC_Param.MSSenseKey )[2]) = USBH_DataInBuffer[1];
-        (((uint8_t*)&USBH_MSC_Param.MSSenseKey )[1]) = USBH_DataInBuffer[2];
-        (((uint8_t*)&USBH_MSC_Param.MSSenseKey )[0]) = USBH_DataInBuffer[3];
-        
-        /* Commands successfully sent and Response Received  */       
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_OK;      
-      }
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_FAIL )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_FAIL;
-      }
-      
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_PHASE_ERROR )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_PHASE_ERROR;    
-      }
-      
-      else
-      {
-        /* Wait for the Commands to get Completed */
-        /* NO Change in state Machine */
-      }
-      break;
-      
-    default:
-      break;
-    }
-  }
-  return status;
-}
-
-
-/**
-  * @brief  USBH_MSC_Write10 
-  *         Issue the write command to the device. Once the response received, 
-  *         it updates the status to upper layer
-  * @param  dataBuffer : DataBuffer contains the data to write
-  * @param  address : Address to which the data will be written
-  * @param  nbOfbytes : NbOfbytes to be written
-  * @retval Status
-  */
-uint8_t USBH_MSC_Write10(USB_OTG_CORE_HANDLE *pdev, 
-                         uint8_t *dataBuffer,
-                         uint32_t address,
-                         uint32_t nbOfbytes)
-{
-  uint8_t index;
-  USBH_MSC_Status_TypeDef status = USBH_MSC_BUSY;
-  uint16_t nbOfPages;
-  
-  if(HCD_IsDeviceConnected(pdev))
-  {  
-    switch(USBH_MSC_BOTXferParam.CmdStateMachine)
-    {
-    case CMD_SEND_STATE:   
-      USBH_MSC_CBWData.field.CBWTransferLength = nbOfbytes;
-      USBH_MSC_CBWData.field.CBWFlags = USB_EP_DIR_OUT;
-      USBH_MSC_CBWData.field.CBWLength = CBW_LENGTH;
-      USBH_MSC_BOTXferParam.pRxTxBuff = dataBuffer;
-      
-      
-      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
-      {
-        USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
-      }
-      
-      USBH_MSC_CBWData.field.CBWCB[0]  = OPCODE_WRITE10; 
-      
-      /*logical block address*/
-      USBH_MSC_CBWData.field.CBWCB[2]  = (((uint8_t*)&address)[3]) ;
-      USBH_MSC_CBWData.field.CBWCB[3]  = (((uint8_t*)&address)[2]);
-      USBH_MSC_CBWData.field.CBWCB[4]  = (((uint8_t*)&address)[1]);
-      USBH_MSC_CBWData.field.CBWCB[5]  = (((uint8_t*)&address)[0]);
-      
-      /*USBH_MSC_PAGE_LENGTH = 512*/
-      nbOfPages = nbOfbytes/ USBH_MSC_PAGE_LENGTH; 
-      
-      /*Tranfer length */
-      USBH_MSC_CBWData.field.CBWCB[7]  = (((uint8_t *)&nbOfPages)[1]) ; 
-      USBH_MSC_CBWData.field.CBWCB[8]  = (((uint8_t *)&nbOfPages)[0]) ; 
-      
-      USBH_MSC_BOTXferParam.BOTState = USBH_MSC_SEND_CBW;
-      /* Start the transfer, then let the state machine 
-      magage the other transactions */
-      USBH_MSC_BOTXferParam.MSCState = USBH_MSC_BOT_USB_TRANSFERS;
-      USBH_MSC_BOTXferParam.BOTXferStatus = USBH_MSC_BUSY;
-      USBH_MSC_BOTXferParam.CmdStateMachine = CMD_WAIT_STATUS;
-      
-      status = USBH_MSC_BUSY;
-      
-      break;
-      
-    case CMD_WAIT_STATUS:
-      if(USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_OK)
-      { 
-        /* Commands successfully sent and Response Received  */       
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_OK;      
-      }
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_FAIL )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-      }
-      
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_PHASE_ERROR )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_PHASE_ERROR;    
-      }
-      break;
-      
-    default:
-      break;
-    }
-  }
-  return status;
-}
-
-/**
-  * @brief  USBH_MSC_Read10 
-  *         Issue the read command to the device. Once the response received, 
-  *         it updates the status to upper layer
-  * @param  dataBuffer : DataBuffer will contain the data to be read
-  * @param  address : Address from which the data will be read
-  * @param  nbOfbytes : NbOfbytes to be read
-  * @retval Status
-  */
-uint8_t USBH_MSC_Read10(USB_OTG_CORE_HANDLE *pdev,
-                        uint8_t *dataBuffer,
-                        uint32_t address,
-                        uint32_t nbOfbytes)
-{
-  uint8_t index;
-  static USBH_MSC_Status_TypeDef status = USBH_MSC_BUSY;
-  uint16_t nbOfPages;
-  status = USBH_MSC_BUSY;
-  
-  if(HCD_IsDeviceConnected(pdev))
+  switch(MSC_Handle->hbot.cmd_state)
   {
-    switch(USBH_MSC_BOTXferParam.CmdStateMachine)
-    {
-    case CMD_SEND_STATE:
-      /*Prepare the CBW and relevent field*/
-      USBH_MSC_CBWData.field.CBWTransferLength = nbOfbytes;
-      USBH_MSC_CBWData.field.CBWFlags = USB_EP_DIR_IN;
-      USBH_MSC_CBWData.field.CBWLength = CBW_LENGTH;
-      
-      USBH_MSC_BOTXferParam.pRxTxBuff = dataBuffer;
-      
-      for(index = CBW_CB_LENGTH - 1; index != 0; index--)
-      {
-        USBH_MSC_CBWData.field.CBWCB[index] = 0x00;
-      }
-      
-      USBH_MSC_CBWData.field.CBWCB[0]  = OPCODE_READ10; 
-      
-      /*logical block address*/
-      
-      USBH_MSC_CBWData.field.CBWCB[2]  = (((uint8_t*)&address)[3]);
-      USBH_MSC_CBWData.field.CBWCB[3]  = (((uint8_t*)&address)[2]);
-      USBH_MSC_CBWData.field.CBWCB[4]  = (((uint8_t*)&address)[1]);
-      USBH_MSC_CBWData.field.CBWCB[5]  = (((uint8_t*)&address)[0]);
-      
-      /*USBH_MSC_PAGE_LENGTH = 512*/
-      nbOfPages = nbOfbytes/ USBH_MSC_PAGE_LENGTH;  
-      
-      /*Tranfer length */
-      USBH_MSC_CBWData.field.CBWCB[7]  = (((uint8_t *)&nbOfPages)[1]) ; 
-      USBH_MSC_CBWData.field.CBWCB[8]  = (((uint8_t *)&nbOfPages)[0]) ; 
-      
-      
-      USBH_MSC_BOTXferParam.BOTState = USBH_MSC_SEND_CBW;
-      /* Start the transfer, then let the state machine 
-      magage the other transactions */
-      USBH_MSC_BOTXferParam.MSCState = USBH_MSC_BOT_USB_TRANSFERS;
-      USBH_MSC_BOTXferParam.BOTXferStatus = USBH_MSC_BUSY;
-      USBH_MSC_BOTXferParam.CmdStateMachine = CMD_WAIT_STATUS;
-      
-      status = USBH_MSC_BUSY;
-      
-      break;
-      
-    case CMD_WAIT_STATUS:
-      
-      if((USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_OK) && \
-        (HCD_IsDeviceConnected(pdev)))
-      { 
-        /* Commands successfully sent and Response Received  */       
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_OK;      
-      }
-      else if (( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_FAIL ) && \
-        (HCD_IsDeviceConnected(pdev)))
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-      }
-      
-      else if ( USBH_MSC_BOTXferParam.BOTXferStatus == USBH_MSC_PHASE_ERROR )
-      {
-        /* Failure Mode */
-        USBH_MSC_BOTXferParam.CmdStateMachine = CMD_SEND_STATE;
-        status = USBH_MSC_PHASE_ERROR;    
-      }
-      else
-      {
-        /* Wait for the Commands to get Completed */
-        /* NO Change in state Machine */
-      }
-      break;
-      
-    default:
-      break;
-    }
+  case BOT_CMD_SEND:  
+    
+    /*Prepare the CBW and relevent field*/
+    MSC_Handle->hbot.cbw.field.DataTransferLength = DATA_LEN_MODE_TEST_UNIT_READY;     
+    MSC_Handle->hbot.cbw.field.Flags = USB_EP_DIR_OUT;
+    MSC_Handle->hbot.cbw.field.CBLength = CBW_LENGTH;
+    
+    USBH_memset(MSC_Handle->hbot.cbw.field.CB, 0, CBW_CB_LENGTH);
+    MSC_Handle->hbot.cbw.field.CB[0]  = OPCODE_TEST_UNIT_READY; 
+    
+    MSC_Handle->hbot.state = BOT_SEND_CBW;
+    MSC_Handle->hbot.cmd_state = BOT_CMD_WAIT;
+    error = USBH_BUSY; 
+    break;
+    
+  case BOT_CMD_WAIT: 
+    error = USBH_MSC_BOT_Process(phost, lun);
+    break;
+    
+  default:
+    break;
   }
-  return status;
+  
+  return error;
+}
+
+/**
+  * @brief  USBH_MSC_SCSI_ReadCapacity 
+  *         Issue Read Capacity command.
+  * @param  phost: Host handle
+  * @param  lun: Logical Unit Number
+  * @param  capacity: pointer to the capacity structure
+  * @retval USBH Status
+  */
+USBH_StatusTypeDef USBH_MSC_SCSI_ReadCapacity (USBH_HandleTypeDef *phost, 
+                                               uint8_t lun,
+                                               SCSI_CapacityTypeDef *capacity)
+{
+  USBH_StatusTypeDef    error = USBH_BUSY ;
+  MSC_HandleTypeDef *MSC_Handle =  phost->pActiveClass->pData;
+  
+  switch(MSC_Handle->hbot.cmd_state)
+  {
+  case BOT_CMD_SEND:  
+    
+    /*Prepare the CBW and relevent field*/
+    MSC_Handle->hbot.cbw.field.DataTransferLength = DATA_LEN_READ_CAPACITY10;
+    MSC_Handle->hbot.cbw.field.Flags = USB_EP_DIR_IN;
+    MSC_Handle->hbot.cbw.field.CBLength = CBW_LENGTH;
+    
+    USBH_memset(MSC_Handle->hbot.cbw.field.CB, 0, CBW_CB_LENGTH);
+    MSC_Handle->hbot.cbw.field.CB[0]  = OPCODE_READ_CAPACITY10; 
+    
+    MSC_Handle->hbot.state = BOT_SEND_CBW;
+    
+    MSC_Handle->hbot.cmd_state = BOT_CMD_WAIT;
+    MSC_Handle->hbot.pbuf = (uint8_t *)MSC_Handle->hbot.data;
+    error = USBH_BUSY; 
+    break;
+    
+  case BOT_CMD_WAIT: 
+    
+    error = USBH_MSC_BOT_Process(phost, lun);
+    
+    if(error == USBH_OK)
+    {
+      /*assign the capacity*/
+      capacity->block_nbr = MSC_Handle->hbot.pbuf[3] | (MSC_Handle->hbot.pbuf[2] << 8) |\
+                           (MSC_Handle->hbot.pbuf[1] << 16) | (MSC_Handle->hbot.pbuf[0] << 24);
+
+      /*assign the page length*/
+      capacity->block_size = MSC_Handle->hbot.pbuf[7] | (MSC_Handle->hbot.pbuf[6] << 8); 
+    }
+    break;
+    
+  default:
+    break;
+  }
+  
+  return error;
+}
+
+/**
+  * @brief  USBH_MSC_SCSI_Inquiry 
+  *         Issue Inquiry command.
+  * @param  phost: Host handle
+  * @param  lun: Logical Unit Number
+  * @param  capacity: pointer to the inquiry structure
+  * @retval USBH Status
+  */
+USBH_StatusTypeDef USBH_MSC_SCSI_Inquiry (USBH_HandleTypeDef *phost, 
+                                               uint8_t lun, 
+                                               SCSI_StdInquiryDataTypeDef *inquiry)
+{
+  USBH_StatusTypeDef    error = USBH_FAIL ;
+  MSC_HandleTypeDef *MSC_Handle =  phost->pActiveClass->pData;
+  switch(MSC_Handle->hbot.cmd_state)
+  {
+  case BOT_CMD_SEND:  
+    
+    /*Prepare the CBW and relevent field*/
+    MSC_Handle->hbot.cbw.field.DataTransferLength = DATA_LEN_INQUIRY;
+    MSC_Handle->hbot.cbw.field.Flags = USB_EP_DIR_IN;
+    MSC_Handle->hbot.cbw.field.CBLength = CBW_LENGTH;
+    
+    USBH_memset(MSC_Handle->hbot.cbw.field.CB, 0, CBW_LENGTH);
+    MSC_Handle->hbot.cbw.field.CB[0]  = OPCODE_INQUIRY; 
+    MSC_Handle->hbot.cbw.field.CB[1]  = (lun << 5);    
+    MSC_Handle->hbot.cbw.field.CB[2]  = 0;    
+    MSC_Handle->hbot.cbw.field.CB[3]  = 0;    
+    MSC_Handle->hbot.cbw.field.CB[4]  = 0x24;    
+    MSC_Handle->hbot.cbw.field.CB[5]  = 0;    
+        
+    MSC_Handle->hbot.state = BOT_SEND_CBW;
+
+    MSC_Handle->hbot.cmd_state = BOT_CMD_WAIT;
+    MSC_Handle->hbot.pbuf = (uint8_t *)MSC_Handle->hbot.data;
+    error = USBH_BUSY; 
+    break;
+    
+  case BOT_CMD_WAIT: 
+    
+    error = USBH_MSC_BOT_Process(phost, lun);
+    
+    if(error == USBH_OK)
+    {
+      USBH_memset(inquiry, 0, sizeof(SCSI_StdInquiryDataTypeDef));
+      /*assign Inquiry Data */
+      inquiry->DeviceType = MSC_Handle->hbot.pbuf[0] & 0x1F;
+      inquiry->PeripheralQualifier = MSC_Handle->hbot.pbuf[0] >> 5;  
+      inquiry->RemovableMedia = (MSC_Handle->hbot.pbuf[1] & 0x80)== 0x80;
+      USBH_memcpy (inquiry->vendor_id, &MSC_Handle->hbot.pbuf[8], 8);
+      USBH_memcpy (inquiry->product_id, &MSC_Handle->hbot.pbuf[16], 16);
+      USBH_memcpy (inquiry->revision_id, &MSC_Handle->hbot.pbuf[32], 4);    
+    }
+    break;
+    
+  default:
+    break;
+  }
+  
+  return error;
+}
+
+/**
+  * @brief  USBH_MSC_SCSI_RequestSense 
+  *         Issue RequestSense command.
+  * @param  phost: Host handle
+  * @param  lun: Logical Unit Number
+  * @param  capacity: pointer to the sense data structure
+  * @retval USBH Status
+  */
+USBH_StatusTypeDef USBH_MSC_SCSI_RequestSense (USBH_HandleTypeDef *phost, 
+                                               uint8_t lun, 
+                                               SCSI_SenseTypeDef *sense_data)
+{
+  USBH_StatusTypeDef    error = USBH_FAIL ;
+  MSC_HandleTypeDef *MSC_Handle =  phost->pActiveClass->pData;
+  
+  switch(MSC_Handle->hbot.cmd_state)
+  {
+  case BOT_CMD_SEND:  
+    
+    /*Prepare the CBW and relevent field*/
+    MSC_Handle->hbot.cbw.field.DataTransferLength = DATA_LEN_REQUEST_SENSE;
+    MSC_Handle->hbot.cbw.field.Flags = USB_EP_DIR_IN;
+    MSC_Handle->hbot.cbw.field.CBLength = CBW_LENGTH;
+    
+    USBH_memset(MSC_Handle->hbot.cbw.field.CB, 0, CBW_CB_LENGTH);
+    MSC_Handle->hbot.cbw.field.CB[0]  = OPCODE_REQUEST_SENSE; 
+    MSC_Handle->hbot.cbw.field.CB[1]  = (lun << 5); 
+    MSC_Handle->hbot.cbw.field.CB[2]  = 0; 
+    MSC_Handle->hbot.cbw.field.CB[3]  = 0; 
+    MSC_Handle->hbot.cbw.field.CB[4]  = DATA_LEN_REQUEST_SENSE;
+    MSC_Handle->hbot.cbw.field.CB[5]  = 0;       
+    
+    MSC_Handle->hbot.state = BOT_SEND_CBW;
+    MSC_Handle->hbot.cmd_state = BOT_CMD_WAIT;
+    MSC_Handle->hbot.pbuf = (uint8_t *)MSC_Handle->hbot.data;
+    error = USBH_BUSY; 
+    break;
+    
+  case BOT_CMD_WAIT: 
+    
+    error = USBH_MSC_BOT_Process(phost, lun);
+    
+    if(error == USBH_OK)
+    {
+      sense_data->key  = MSC_Handle->hbot.pbuf[2] & 0x0F;  
+      sense_data->asc  = MSC_Handle->hbot.pbuf[12];
+      sense_data->ascq = MSC_Handle->hbot.pbuf[13];
+    }
+    break;
+    
+  default:
+    break;
+  }
+  
+  return error;
+}
+
+/**
+  * @brief  USBH_MSC_SCSI_Write 
+  *         Issue write10 command.
+  * @param  phost: Host handle
+  * @param  lun: Logical Unit Number
+  * @param  address: sector address
+  * @param  pbuf: pointer to data
+  * @param  length: number of sector to write
+  * @retval USBH Status
+  */
+USBH_StatusTypeDef USBH_MSC_SCSI_Write(USBH_HandleTypeDef *phost,
+                                     uint8_t lun,
+                                     uint32_t address,
+                                     uint8_t *pbuf,
+                                     uint32_t length)
+{
+  USBH_StatusTypeDef    error = USBH_FAIL ;
+
+  MSC_HandleTypeDef *MSC_Handle =  phost->pActiveClass->pData;
+  
+  switch(MSC_Handle->hbot.cmd_state)
+  {
+  case BOT_CMD_SEND:  
+    
+    /*Prepare the CBW and relevent field*/
+    MSC_Handle->hbot.cbw.field.DataTransferLength = length * 512;
+    MSC_Handle->hbot.cbw.field.Flags = USB_EP_DIR_OUT;
+    MSC_Handle->hbot.cbw.field.CBLength = CBW_LENGTH;
+    
+    USBH_memset(MSC_Handle->hbot.cbw.field.CB, 0, CBW_CB_LENGTH);
+    MSC_Handle->hbot.cbw.field.CB[0]  = OPCODE_WRITE10; 
+    
+    /*logical block address*/
+    MSC_Handle->hbot.cbw.field.CB[2]  = (((uint8_t*)&address)[3]);
+    MSC_Handle->hbot.cbw.field.CB[3]  = (((uint8_t*)&address)[2]);
+    MSC_Handle->hbot.cbw.field.CB[4]  = (((uint8_t*)&address)[1]);
+    MSC_Handle->hbot.cbw.field.CB[5]  = (((uint8_t*)&address)[0]);
+    
+    
+    /*Tranfer length */
+    MSC_Handle->hbot.cbw.field.CB[7]  = (((uint8_t *)&length)[1]) ; 
+    MSC_Handle->hbot.cbw.field.CB[8]  = (((uint8_t *)&length)[0]) ; 
+
+    
+    MSC_Handle->hbot.state = BOT_SEND_CBW;
+    MSC_Handle->hbot.cmd_state = BOT_CMD_WAIT;
+    MSC_Handle->hbot.pbuf = pbuf;
+    error = USBH_BUSY; 
+    break;
+    
+  case BOT_CMD_WAIT: 
+    error = USBH_MSC_BOT_Process(phost, lun);
+    break;
+    
+  default:
+    break;
+  }
+  
+  return error;
+}
+
+/**
+  * @brief  USBH_MSC_SCSI_Read 
+  *         Issue Read10 command.
+  * @param  phost: Host handle
+  * @param  lun: Logical Unit Number
+  * @param  address: sector address
+  * @param  pbuf: pointer to data
+  * @param  length: number of sector to read
+  * @retval USBH Status
+  */
+USBH_StatusTypeDef USBH_MSC_SCSI_Read(USBH_HandleTypeDef *phost,
+                                     uint8_t lun,
+                                     uint32_t address,
+                                     uint8_t *pbuf,
+                                     uint32_t length)
+{
+  USBH_StatusTypeDef    error = USBH_FAIL ;
+  MSC_HandleTypeDef *MSC_Handle =  phost->pActiveClass->pData;
+  
+  switch(MSC_Handle->hbot.cmd_state)
+  {
+  case BOT_CMD_SEND:  
+    
+    /*Prepare the CBW and relevent field*/
+    MSC_Handle->hbot.cbw.field.DataTransferLength = length * 512;
+    MSC_Handle->hbot.cbw.field.Flags = USB_EP_DIR_IN;
+    MSC_Handle->hbot.cbw.field.CBLength = CBW_LENGTH;
+    
+    USBH_memset(MSC_Handle->hbot.cbw.field.CB, 0, CBW_CB_LENGTH);
+    MSC_Handle->hbot.cbw.field.CB[0]  = OPCODE_READ10; 
+    
+    /*logical block address*/
+    MSC_Handle->hbot.cbw.field.CB[2]  = (((uint8_t*)&address)[3]);
+    MSC_Handle->hbot.cbw.field.CB[3]  = (((uint8_t*)&address)[2]);
+    MSC_Handle->hbot.cbw.field.CB[4]  = (((uint8_t*)&address)[1]);
+    MSC_Handle->hbot.cbw.field.CB[5]  = (((uint8_t*)&address)[0]);
+    
+    
+    /*Tranfer length */
+    MSC_Handle->hbot.cbw.field.CB[7]  = (((uint8_t *)&length)[1]) ; 
+    MSC_Handle->hbot.cbw.field.CB[8]  = (((uint8_t *)&length)[0]) ; 
+
+    
+    MSC_Handle->hbot.state = BOT_SEND_CBW;
+    MSC_Handle->hbot.cmd_state = BOT_CMD_WAIT;
+    MSC_Handle->hbot.pbuf = pbuf;
+    error = USBH_BUSY; 
+    break;
+    
+  case BOT_CMD_WAIT: 
+    error = USBH_MSC_BOT_Process(phost, lun);
+    break;
+    
+  default:
+    break;
+  }
+  
+  return error;
 }
 
 
