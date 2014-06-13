@@ -27,8 +27,7 @@ aux_source_directory(stm/usb_user STM32F429_DEMO)
 add_executable(stm32f429_demo ${STM32F429_DEMO} ${STM32F429_DEMO_ASM})
 
 add_definitions(-DSTM32F429xx)
-add_definitions(-DHAL_DMA2D_MODULE_ENABLED)
-add_definitions(-DHAL_LTDC_MODULE_ENABLED)
+
 set_target_properties(stm32f429_demo PROPERTIES COMPILE_FLAGS "-Wno-unused-parameter")
 set_target_properties(stm32f429_demo PROPERTIES COMPILE_FLAGS "-Wno-format")
 set_target_properties(stm32f429_demo PROPERTIES COMPILE_DEFINITIONS "STM32F429_439xx")
