@@ -42,7 +42,7 @@
 #include <ext4.h>
 
 /**@brief   Read-write size*/
-#define READ_WRITE_SZIZE 1024 * 8
+#define READ_WRITE_SZIZE 1024 * 16
 
 /**@brief   Delay test (slower LCD scroll)*/
 #define TEST_DELAY_MS    2000
@@ -57,7 +57,7 @@ static int rw_szie  = READ_WRITE_SZIZE;
 static int rw_count = 100;
 
 /**@brief   Directory test count*/
-static int dir_cnt  = 50;
+static int dir_cnt  = 500;
 
 /**@brief   Static or dynamic cache mode*/
 static bool cache_mode = false;
