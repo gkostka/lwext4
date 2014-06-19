@@ -42,7 +42,7 @@
 #include <ext4.h>
 
 /**@brief   Read-write size*/
-#define READ_WRITE_SZIZE 1024 * 16
+#define READ_WRITE_SZIZE 1024 * 8
 
 /**@brief   Delay test (slower LCD scroll)*/
 #define TEST_DELAY_MS    2000
