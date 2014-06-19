@@ -30,7 +30,6 @@
 #include <stm32f4xx.h>
 #include <stm32f429i_discovery_lcd.h>
 #include <lcd_log.h>
-#include <pll.h>
 #include <stdint.h>
 
 #include <usbh_core.h>
@@ -38,7 +37,6 @@
 
 
 
-#include <pll.h>
 #include <hw_init.h>
 #include <stdbool.h>
 
