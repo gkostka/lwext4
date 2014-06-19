@@ -298,8 +298,7 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
      * ext4_inode_set_change_inode_time(child_inode_ref->inode,
      *     (uint32_t) now);
      */
-
-    ext4_inode_set_deletion_time(child_inode_ref->inode, 1);
+    ext4_inode_set_deletion_time(child_inode_ref->inode, 0xFFFFFFFF);
     ext4_inode_set_links_count(child_inode_ref->inode, lnk_count);
     child_inode_ref->dirty = true;
 
