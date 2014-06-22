@@ -713,8 +713,10 @@ USBH_StatusTypeDef USBH_MSC_Read(USBH_HandleTypeDef *phost,
                      length);
   
   timeout = phost->Timer + (10000 * length);
-  while (USBH_MSC_RdWrProcess(phost, lun) == USBH_BUSY)
+  USBH_StatusTypeDef stat = USBH_BUSY;
+  while (stat == USBH_BUSY)
   {
+	stat = USBH_MSC_RdWrProcess(phost, lun);
     if((phost->Timer > timeout) || (phost->device.is_connected == 0))
     {
       MSC_Handle->state = MSC_IDLE;
@@ -722,7 +724,7 @@ USBH_StatusTypeDef USBH_MSC_Read(USBH_HandleTypeDef *phost,
     }
   }
   MSC_Handle->state = MSC_IDLE;
-  return USBH_OK;
+  return stat;
 }
 
 /**
@@ -742,8 +744,9 @@ USBH_StatusTypeDef USBH_MSC_Write(USBH_HandleTypeDef *phost,
                                      uint32_t length)
 {
   uint32_t timeout;
-  MSC_HandleTypeDef *MSC_Handle =  phost->pActiveClass->pData;   
+  MSC_HandleTypeDef *MSC_Handle =  phost->pActiveClass->pData;
   
+
   if ((phost->device.is_connected == 0) || 
       (phost->gState != HOST_CLASS) || 
       (MSC_Handle->unit[lun].state != MSC_IDLE))
@@ -760,8 +763,11 @@ USBH_StatusTypeDef USBH_MSC_Write(USBH_HandleTypeDef *phost,
                      length);
   
   timeout = phost->Timer + (10000 * length);
-  while (USBH_MSC_RdWrProcess(phost, lun) == USBH_BUSY)
+  USBH_StatusTypeDef stat = USBH_BUSY;
+  while (stat == USBH_BUSY)
   {
+	stat = USBH_MSC_RdWrProcess(phost, lun);
+
     if((phost->Timer > timeout) || (phost->device.is_connected == 0))
     {
       MSC_Handle->state = MSC_IDLE;
@@ -769,7 +775,7 @@ USBH_StatusTypeDef USBH_MSC_Write(USBH_HandleTypeDef *phost,
     }
   }
   MSC_Handle->state = MSC_IDLE;
-  return USBH_OK;
+  return stat;
 }
 
 /**
