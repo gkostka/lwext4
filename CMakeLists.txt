@@ -7,11 +7,6 @@ include_directories(blockdev/filedev)
 include_directories(blockdev/filedev_win)
 
 
-#Library build
-add_subdirectory(lwext4)
-#Detect all possible warnings for lwext4 target
-set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "-Wall -Wextra -pedantic")
-
 #Examples
 if    (CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m0)
     #cortex-m0 demos
@@ -32,12 +27,22 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  bf518)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  avrxmega7)
     #avrxmega7 demos
     #...
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  msp430g2210)
+    add_definitions(-DCONFIG_DEBUG_PRINTF=0)
+    add_definitions(-DCONFIG_DEBUG_ASSERT=0)
+    #msp430f6459 demos
+    #...
 else()
     #Generic example target
     add_subdirectory(blockdev)
     add_subdirectory(fs_test)
     add_subdirectory(demos/generic)
 endif()
+
+#Library build
+add_subdirectory(lwext4)
+#Detect all possible warnings for lwext4 target
+set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "-Wall -Wextra -pedantic")
 
 
 #DISTRIBUTION

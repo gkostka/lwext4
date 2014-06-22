@@ -23,6 +23,12 @@ avrxmega7:
 	mkdir build_avrxmega7
 	cd build_avrxmega7 && cmake -G$(PROJECT_SETUP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_TOOLCHAIN_FILE=../toolchain/avrxmega7.cmake ..
 
+msp430:
+	rm -R -f build_msp430
+	mkdir build_msp430
+	cd build_msp430 && cmake -G$(PROJECT_SETUP) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_TOOLCHAIN_FILE=../toolchain/msp430.cmake ..
+
+
 cortex-m0:
 	rm -R -f build_cortex-m0
 	mkdir build_cortex-m0

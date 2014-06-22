@@ -171,10 +171,9 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, uint32_t first,
     /* Compute indexes */
     uint32_t block_group_first =
             ext4_balloc_get_bgid_of_block(sb, first);
-    uint32_t block_group_last =
-            ext4_balloc_get_bgid_of_block(sb, first + count - 1);
 
-    ext4_assert(block_group_first == block_group_last);
+    ext4_assert(block_group_first ==
+    		ext4_balloc_get_bgid_of_block(sb, first + count - 1));
 
     /* Load block group reference */
     struct ext4_block_group_ref bg_ref;

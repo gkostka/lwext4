@@ -53,6 +53,12 @@
 #endif
 
 
+/**@brief   Enable directory indexing comb sort*/
+#ifndef CONFIG_DIR_INDEX_COMB_SORT
+#define CONFIG_DIR_INDEX_COMB_SORT     1
+#endif
+
+
 
 /**@brief   Include error codes from ext4_errno or sandard library.*/
 #ifndef CONFIG_HAVE_OWN_ERRNO
