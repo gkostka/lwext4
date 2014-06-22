@@ -270,8 +270,7 @@ void ext4_dir_write_entry(struct ext4_sblock *sb,
     struct ext4_inode_ref *child,  const char *name, size_t name_len)
 {
     /* Check maximum entry length */
-    uint32_t block_size = ext4_sb_get_block_size(sb);
-    ext4_assert(entry_len <= block_size);
+    ext4_assert(entry_len <= ext4_sb_get_block_size(sb));
 
     /* Set basic attributes */
     ext4_dir_entry_ll_set_inode(entry, child->index);
