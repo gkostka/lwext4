@@ -221,7 +221,7 @@ static bool dir_test(int len)
         sprintf(path, "/mp/dir1/f%d", i);
         r = ext4_fopen(&f, path, "wb");
         if(r != EOK){
-            printf("Unable to create file in directory: /mp/dir1\n");
+            printf("Unable to create file in directory: /mp/dir1 r = %d\n", r);
             return false;
         }
     }
