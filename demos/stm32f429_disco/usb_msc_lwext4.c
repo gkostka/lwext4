@@ -119,6 +119,9 @@ static int usb_msc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
     if(!hw_usb_connected())
         return EIO;
 
+    while(!USBH_MSC_UnitIsReady(&hUSB_Host, 0))
+    	;
+
     status = USBH_MSC_Read(&hUSB_Host, 0, blk_id + part_offset, buf, blk_cnt);
     if(status != USBH_OK)
         return EIO;
@@ -134,6 +137,9 @@ static int usb_msc_bwrite(struct ext4_blockdev *bdev, const void *buf,
 
     if(!hw_usb_connected())
         return EIO;
+
+    while(!USBH_MSC_UnitIsReady(&hUSB_Host, 0))
+    	;
 
     status = USBH_MSC_Write(&hUSB_Host, 0, blk_id + part_offset, (void *)buf, blk_cnt);
     if(status != USBH_OK)
