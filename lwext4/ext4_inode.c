@@ -174,7 +174,7 @@ uint64_t ext4_inode_get_blocks_count(struct ext4_sblock *sb,
 {
     uint64_t count = to_le32(inode->blocks_count_lo);
 
-    if (ext4_sb_check_read_only(sb,
+    if (ext4_sb_has_feature_read_only(sb,
             EXT4_FEATURE_RO_COMPAT_HUGE_FILE)) {
 
         /* 48-bit field */
@@ -207,7 +207,7 @@ int ext4_inode_set_blocks_count(struct ext4_sblock *sb,
     }
 
     /* Check if there can be used huge files (many blocks) */
-    if (!ext4_sb_check_read_only(sb,
+    if (!ext4_sb_has_feature_read_only(sb,
             EXT4_FEATURE_RO_COMPAT_HUGE_FILE))
         return EINVAL;
 
