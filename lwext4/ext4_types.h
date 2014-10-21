@@ -188,6 +188,7 @@ struct ext4_sblock {
 #define EXT4_FEATURE_COMPAT_RESIZE_INODE   0x0010
 #define EXT4_FEATURE_COMPAT_DIR_INDEX      0x0020
 
+
 /*
  * Read-only compatible features
  */
@@ -198,6 +199,9 @@ struct ext4_sblock {
 #define EXT4_FEATURE_RO_COMPAT_GDT_CSUM      0x0010
 #define EXT4_FEATURE_RO_COMPAT_DIR_NLINK     0x0020
 #define EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE   0x0040
+#define EXT4_FEATURE_RO_COMPAT_QUOTA         0x0100
+#define EXT4_FEATURE_RO_COMPAT_BIGALLOC      0x0200
+#define EXT4_FEATURE_RO_COMPAT_METADATA_CSUM	0x0400
 
 /*
  * Incompatible features
@@ -213,6 +217,10 @@ struct ext4_sblock {
 #define EXT4_FEATURE_INCOMPAT_FLEX_BG      0x0200
 #define EXT4_FEATURE_INCOMPAT_EA_INODE     0x0400  /* EA in inode */
 #define EXT4_FEATURE_INCOMPAT_DIRDATA      0x1000  /* data in dirent */
+#define EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM	0x2000 /* use crc32c for bg */
+#define EXT4_FEATURE_INCOMPAT_LARGEDIR		0x4000 /* >2GB or 3-lvl htree */
+#define EXT4_FEATURE_INCOMPAT_INLINE_DATA	0x8000 /* data in inode */
+
 
 #define EXT4_FEATURE_COMPAT_SUPP  (EXT4_FEATURE_COMPAT_DIR_INDEX)
 
@@ -255,7 +263,9 @@ struct ext4_bgroup {
     uint16_t free_inodes_count_lo;        /* Free inodes count */
     uint16_t used_dirs_count_lo;          /* Directories count */
     uint16_t flags;                       /* EXT4_BG_flags (INODE_UNINIT, etc) */
-    uint32_t reserved[2];                 /* Likely block/inode bitmap checksum */
+    uint32_t exclude_bitmap_lo;           /* Exclude bitmap for snapshots */
+	uint16_t block_bitmap_csum_lo;        /* crc32c(s_uuid+grp_num+bbitmap) LE */
+	uint16_t inode_bitmap_csum_lo;        /* crc32c(s_uuid+grp_num+ibitmap) LE */
     uint16_t itable_unused_lo;            /* Unused inodes count */
     uint16_t checksum;                    /* crc16(sb_uuid+group+desc) */
 
@@ -266,7 +276,10 @@ struct ext4_bgroup {
     uint16_t free_inodes_count_hi;        /* Free i-nodes count MSB */
     uint16_t used_dirs_count_hi;          /* Directories count MSB */
     uint16_t itable_unused_hi;            /* Unused inodes count MSB */
-    uint32_t reserved2[3];                /* Padding */
+    uint32_t exclude_bitmap_hi;           /* Exclude bitmap block MSB */
+	uint16_t block_bitmap_csum_hi;        /* crc32c(s_uuid+grp_num+bbitmap) BE */
+	uint16_t inode_bitmap_csum_hi;        /* crc32c(s_uuid+grp_num+ibitmap) BE */
+	uint32_t reserved;                    /* Padding */
 } ;
 
 struct ext4_block_group_ref {
