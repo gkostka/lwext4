@@ -156,6 +156,13 @@ static inline uint32_t ext4_sb_flex_bg_size(struct ext4_sblock *s)
     return 1 << to_le32(s->log_groups_per_flex);
 }
 
+/**@brief   Return first meta block group id.
+ * @param   s superblock descriptor
+ * @return  first meta_bg id */
+static inline uint32_t ext4_sb_first_meta_bg(struct ext4_sblock *s)
+{
+    return to_le32(s->first_meta_bg);
+}
 
 /**************************More complex functions****************************/
 
