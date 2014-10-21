@@ -33,7 +33,7 @@
  */
 /**
  * @file  ext4_crc32c.c
- * @brief Crc32c routine. tahen from FreeBSD kernel.
+ * @brief Crc32c routine. Taken from FreeBSD kernel.
  */
 
 #include <ext4_config.h>
