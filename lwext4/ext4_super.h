@@ -138,6 +138,25 @@ static inline bool ext4_sb_has_feature_read_only(struct ext4_sblock *s,
     return to_le32(s->features_read_only) & v;
 }
 
+/**@brief   Block group to flex group.
+ * @param   s superblock descriptor
+ * @param   block_group block group
+ * @return  flex group id*/
+static inline uint32_t ext4_sb_bg_to_flex(struct ext4_sblock *s,
+                         uint32_t block_group)
+{
+    return block_group >> to_le32(s->log_groups_per_flex);
+}
+
+/**@brief   Flex block group size.
+ * @param   s superblock descriptor
+ * @return  flex bg size*/
+static inline uint32_t ext4_sb_flex_bg_size(struct ext4_sblock *s)
+{
+    return 1 << to_le32(s->log_groups_per_flex);
+}
+
+
 /**************************More complex functions****************************/
 
 /**@brief   Returns a block group count.
