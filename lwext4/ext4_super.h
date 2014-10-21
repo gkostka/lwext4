@@ -110,7 +110,7 @@ static inline bool ext4_sb_check_flag(struct ext4_sblock *s, uint32_t v)
  * @param   s superblock descriptor
  * @param   v feature to check
  * @return  true if feature is supported*/
-static inline bool ext4_sb_check_feature_compatible(struct ext4_sblock *s,
+static inline bool ext4_sb_has_feature_compatible(struct ext4_sblock *s,
     uint32_t v)
 {
     return to_le32(s->features_compatible) & v;
@@ -121,7 +121,7 @@ static inline bool ext4_sb_check_feature_compatible(struct ext4_sblock *s,
  * @param   s superblock descriptor
  * @param   v feature to check
  * @return  true if feature is supported*/
-static inline bool ext4_sb_check_feature_incompatible(struct ext4_sblock *s,
+static inline bool ext4_sb_has_feature_incompatible(struct ext4_sblock *s,
     uint32_t v)
 {
     return to_le32(s->features_incompatible) & v;
@@ -132,7 +132,8 @@ static inline bool ext4_sb_check_feature_incompatible(struct ext4_sblock *s,
  * @param   s superblock descriptor
  * @param   v flag to check
  * @return  true if flag is supported*/
-static inline bool ext4_sb_check_read_only(struct ext4_sblock *s, uint32_t v)
+static inline bool ext4_sb_has_feature_read_only(struct ext4_sblock *s,
+        uint32_t v)
 {
     return to_le32(s->features_read_only) & v;
 }

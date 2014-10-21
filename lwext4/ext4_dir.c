@@ -296,7 +296,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 
 #if CONFIG_DIR_INDEX_ENABLE
     /* Index adding (if allowed) */
-    if ((ext4_sb_check_feature_compatible(&fs->sb,
+    if ((ext4_sb_has_feature_compatible(&fs->sb,
             EXT4_FEATURE_COMPAT_DIR_INDEX)) &&
             (ext4_inode_has_flag(parent->inode, EXT4_INODE_FLAG_INDEX))) {
         int rc = ext4_dir_dx_add_entry(parent, child, name);
@@ -387,7 +387,7 @@ int ext4_dir_find_entry(struct ext4_directory_search_result *result,
 
 #if CONFIG_DIR_INDEX_ENABLE
     /* Index search */
-    if ((ext4_sb_check_feature_compatible(sb,
+    if ((ext4_sb_has_feature_compatible(sb,
             EXT4_FEATURE_COMPAT_DIR_INDEX)) &&
             (ext4_inode_has_flag(parent->inode, EXT4_INODE_FLAG_INDEX))) {
         int rc = ext4_dir_dx_find_entry(result, parent, name_len,

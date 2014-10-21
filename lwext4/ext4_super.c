@@ -154,7 +154,7 @@ static int ext4_sb_sparse(uint32_t group)
 
 bool ext4_sb_is_super_in_bg(struct ext4_sblock *s, uint32_t group)
 {
-    if (ext4_sb_check_read_only(s,
+    if (ext4_sb_has_feature_read_only(s,
             EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER) &&
             !ext4_sb_sparse(group))
         return false;

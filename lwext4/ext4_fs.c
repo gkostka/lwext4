@@ -511,7 +511,7 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
     uint16_t crc = 0;
 
     /* Compute the checksum only if the filesystem supports it */
-    if (ext4_sb_check_read_only(sb,
+    if (ext4_sb_has_feature_read_only(sb,
             EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) {
         uint8_t  *base = (uint8_t  *)bg;
         uint8_t  *checksum = (uint8_t  *)&bg->checksum;
@@ -534,7 +534,7 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
         offset += sizeof(bg->checksum);
 
         /* Checksum of the rest of block group descriptor */
-        if ((ext4_sb_check_feature_incompatible(sb,
+        if ((ext4_sb_has_feature_incompatible(sb,
                 EXT4_FEATURE_INCOMPAT_64BIT)) &&
                 (offset < ext4_sb_get_desc_size(sb)))
 
@@ -701,7 +701,7 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 
 #if CONFIG_EXTENT_ENABLE
     /* Initialize extents if needed */
-    if (ext4_sb_check_feature_incompatible(
+    if (ext4_sb_has_feature_incompatible(
             &fs->sb, EXT4_FEATURE_INCOMPAT_EXTENTS)) {
         ext4_inode_set_flag(inode, EXT4_INODE_FLAG_EXTENTS);
 
@@ -732,7 +732,7 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
     uint32_t suboffset;
 #if CONFIG_EXTENT_ENABLE
     /* For extents must be data block destroyed by other way */
-    if ((ext4_sb_check_feature_incompatible(&fs->sb,
+    if ((ext4_sb_has_feature_incompatible(&fs->sb,
             EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
             (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))){
         /* Data structures are released during truncate operation... */
@@ -894,7 +894,7 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref,
     if (old_size % block_size != 0)
         old_blocks_count++;
 #if CONFIG_EXTENT_ENABLE
-    if ((ext4_sb_check_feature_incompatible(sb,
+    if ((ext4_sb_has_feature_incompatible(sb,
             EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
             (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 
@@ -939,7 +939,7 @@ int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
     uint32_t current_block;
 #if CONFIG_EXTENT_ENABLE
     /* Handle i-node using extents */
-    if ((ext4_sb_check_feature_incompatible(&fs->sb,
+    if ((ext4_sb_has_feature_incompatible(&fs->sb,
             EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
             (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 
@@ -1040,7 +1040,7 @@ int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 
 #if CONFIG_EXTENT_ENABLE
     /* Handle inode using extents */
-    if ((ext4_sb_check_feature_incompatible(&fs->sb,
+    if ((ext4_sb_has_feature_incompatible(&fs->sb,
             EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
             (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
         /* Not reachable */
@@ -1198,7 +1198,7 @@ int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
     struct ext4_fs *fs = inode_ref->fs;
 
     /* Extents are handled otherwise = there is not support in this function */
-    ext4_assert(!(ext4_sb_check_feature_incompatible(&fs->sb,
+    ext4_assert(!(ext4_sb_has_feature_incompatible(&fs->sb,
             EXT4_FEATURE_INCOMPAT_EXTENTS) &&
             (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))));
 
@@ -1296,7 +1296,7 @@ int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
 {
 #if CONFIG_EXTENT_ENABLE
     /* Handle extents separately */
-    if ((ext4_sb_check_feature_incompatible(&inode_ref->fs->sb,
+    if ((ext4_sb_has_feature_incompatible(&inode_ref->fs->sb,
             EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
             (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))){
         return ext4_extent_append_block(inode_ref, iblock, fblock, true);
