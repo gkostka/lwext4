@@ -48,6 +48,45 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/**@brief Convert block address to relative index in block group.
+ * @param sb Superblock pointer
+ * @param baddr Block number to convert
+ * @return Relative number of block
+ */
+static inline uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s,
+        uint32_t baddr)
+{
+    ext4_assert(baddr);
+    if(ext4_get32(s, first_data_block))
+        baddr--;
+
+    return  baddr % ext4_get32(s, blocks_per_group);
+}
+
+
+/**@brief Convert relative block address in group to absolute address.
+ * @param s Superblock pointer
+ * @param index Relative block address
+ * @param bgid Block group
+ * @return Absolute block address
+ */
+static inline uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s,
+        uint32_t index, uint32_t bgid)
+{
+    if(ext4_get32(s, first_data_block))
+        index++;
+
+    return ext4_get32(s, blocks_per_group) * bgid + index;
+}
+
+/**@brief TODO: */
+static inline uint64_t ext4_fs_first_bg_block_no(struct ext4_sblock *s,
+        uint32_t bgid)
+{
+    return (uint64_t)bgid * ext4_get32(s, blocks_per_group) +
+            ext4_get32(s, first_data_block);
+}
+
 /**@brief Initialize filesystem and read all needed data.
  * @param fs Filesystem instance to be initialized
  * @param bdev Identifier if device with the filesystem
@@ -70,22 +109,6 @@ int ext4_fs_fini(struct ext4_fs *fs);
  * @return Error code
  */
 int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only);
-
-/**@brief Convert block address to relative index in block group.
- * @param sb Superblock pointer
- * @param baddr Block number to convert
- * @return Relative number of block
- */
-uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s, uint32_t baddr);
-
-/**@brief Convert relative block address in group to absolute address.
- * @param s Superblock pointer
- * @param index Relative block address
- * @param bgid Block group
- * @return Absolute block address
- */
-uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s, uint32_t index,
-    uint32_t bgid);
 
 /**@brief Get reference to block group specified by index.
  * @param fs   Filesystem to find block group on

@@ -312,27 +312,6 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
     return EOK;
 }
 
-uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s, uint32_t baddr)
-{
-    ext4_assert(baddr);
-    if(ext4_get32(s, first_data_block))
-        baddr--;
-
-    return  baddr % ext4_get32(s, blocks_per_group);
-}
-
-
-
-uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s, uint32_t index,
-    uint32_t bgid)
-{
-    if(ext4_get32(s, first_data_block))
-        index++;
-
-    return ext4_get32(s, blocks_per_group) * bgid + index;
-}
-
-
 
 /**@brief Initialize block bitmap in block group.
  * @param bg_ref Reference to block group
@@ -454,6 +433,26 @@ static int ext4_fs_init_inode_table(struct ext4_block_group_ref *bg_ref)
     return EOK;
 }
 
+static uint64_t ext4_fs_get_descriptor_block(struct ext4_sblock *s,
+        uint32_t bgid, uint32_t dsc_per_block)
+{
+    uint32_t first_meta_bg, dsc_id;
+
+    int has_super = 0;
+
+    dsc_id = bgid / dsc_per_block;
+    first_meta_bg = ext4_sb_first_meta_bg(s);
+
+    if (!ext4_sb_has_feature_incompatible(s, EXT4_FEATURE_INCOMPAT_META_BG) ||
+            dsc_id < first_meta_bg)
+        return ext4_get32(s, first_data_block) + dsc_id + 1;
+
+    if (ext4_sb_is_super_in_bg(s, bgid))
+        has_super = 1;
+
+    return (has_super + ext4_fs_first_bg_block_no(s, bgid));
+}
+
 
 int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid,
     struct ext4_block_group_ref *ref)
@@ -463,13 +462,11 @@ int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid,
             ext4_sb_get_desc_size(&fs->sb);
 
     /* Block group descriptor table starts at the next block after superblock */
-    uint64_t block_id = ext4_get32(&fs->sb, first_data_block) + 1;
+    uint64_t block_id = ext4_fs_get_descriptor_block(&fs->sb, bgid,
+            dsc_per_block);
 
-    /* Find the block containing the descriptor we are looking for */
-    block_id += bgid / dsc_per_block;
     uint32_t offset = (bgid % dsc_per_block) *
             ext4_sb_get_desc_size(&fs->sb);
-
 
     int rc = ext4_block_get(fs->bdev, &ref->block, block_id);
     if (rc != EOK)
