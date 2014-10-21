@@ -33,7 +33,7 @@
  */
 /**
  * @file  ext4_crc32c.h
- * @brief Crc32c routine. tahen from FreeBSD kernel.
+ * @brief Crc32c routine. Taken from FreeBSD kernel.
  */
 
 #ifndef LWEXT4_EXT4_CRC32C_H_
@@ -42,6 +42,11 @@
 #include <ext4_config.h>
 #include <stdint.h>
 
+/**@brief	CRC32C algorithm.
+ * @param	crc input feed
+ * @param 	buffer input buffer
+ * @param	length input buffer length (bytes)
+ * @return	updated crc32c value*/
 uint32_t ext4_crc32c(uint32_t crc, const void *buffer, uint32_t length);
 
 
