@@ -177,6 +177,11 @@ int ext4_sb_read(struct ext4_blockdev *bdev, struct ext4_sblock *s);
  * @return  true if OK*/
 bool ext4_sb_check(struct ext4_sblock *s);
 
+/**@brief   Superblock presence in block group.
+ * @param   s superblock dsecriptor
+ * @param   block_group block group id
+ * @return  true if block group has superblock*/
+bool ext4_sb_is_super_in_bg(struct ext4_sblock *s, uint32_t block_group);
 
 #endif /* EXT4_SUPER_H_ */
 

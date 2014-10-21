@@ -126,6 +126,42 @@ bool ext4_sb_check(struct ext4_sblock *s)
     return true;
 }
 
+static inline int is_multiple(uint32_t a, uint32_t b)
+{
+    while (1) {
+        if (a < b)
+            return 0;
+        if (a == b)
+            return 1;
+        if ((a % b) != 0)
+            return 0;
+        a = a / b;
+    }
+}
+
+static int ext4_sb_sparse(uint32_t group)
+{
+    if (group <= 1)
+        return 1;
+
+    if (!(group & 1))
+        return 0;
+
+    return (is_multiple(group, 7) || is_multiple(group, 5) ||
+            is_multiple(group, 3));
+}
+
+
+bool ext4_sb_is_super_in_bg(struct ext4_sblock *s, uint32_t group)
+{
+    if (ext4_sb_check_read_only(s,
+            EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER) &&
+            !ext4_sb_sparse(group))
+        return false;
+    return true;
+}
+
+
 /**
  * @}
  */
