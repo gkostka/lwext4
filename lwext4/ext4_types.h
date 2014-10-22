@@ -201,7 +201,7 @@ struct ext4_sblock {
 #define EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE   0x0040
 #define EXT4_FEATURE_RO_COMPAT_QUOTA         0x0100
 #define EXT4_FEATURE_RO_COMPAT_BIGALLOC      0x0200
-#define EXT4_FEATURE_RO_COMPAT_METADATA_CSUM	0x0400
+#define EXT4_FEATURE_RO_COMPAT_METADATA_CSUM 0x0400
 
 /*
  * Incompatible features
@@ -222,20 +222,78 @@ struct ext4_sblock {
 #define EXT4_FEATURE_INCOMPAT_INLINE_DATA	0x8000 /* data in inode */
 
 
-#define EXT4_FEATURE_COMPAT_SUPP  (EXT4_FEATURE_COMPAT_DIR_INDEX)
+/*
+ * EXT2 supported feature set
+ */
+#define EXT2_FEATURE_COMPAT_SUPP    0x0000
 
-#define EXT4_FEATURE_INCOMPAT_SUPP \
-        (EXT4_FEATURE_INCOMPAT_FILETYPE | \
-                EXT4_FEATURE_INCOMPAT_EXTENTS | \
-                EXT4_FEATURE_INCOMPAT_64BIT)
+#define EXT2_FEATURE_INCOMPAT_SUPP                    \
+            (EXT4_FEATURE_INCOMPAT_FILETYPE         | \
+             EXT4_FEATURE_INCOMPAT_META_BG)
 
-#define EXT4_FEATURE_RO_COMPAT_SUPP \
-        (EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER | \
-                EXT4_FEATURE_RO_COMPAT_DIR_NLINK | \
-                EXT4_FEATURE_RO_COMPAT_HUGE_FILE | \
-                EXT4_FEATURE_RO_COMPAT_LARGE_FILE | \
-                EXT4_FEATURE_RO_COMPAT_GDT_CSUM | \
-                EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE)
+#define EXT2_FEATURE_RO_COMPAT_SUPP                   \
+            (EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER    | \
+             EXT4_FEATURE_RO_COMPAT_LARGE_FILE      | \
+             EXT4_FEATURE_RO_COMPAT_BTREE_DIR)
+
+/*
+ * EXT3 supported feature set
+ */
+#define EXT3_FEATURE_COMPAT_SUPP                      \
+            (EXT4_FEATURE_COMPAT_DIR_INDEX)
+
+#define EXT3_FEATURE_INCOMPAT_SUPP                    \
+            (EXT4_FEATURE_INCOMPAT_FILETYPE         | \
+             EXT4_FEATURE_INCOMPAT_META_BG)
+
+#define EXT3_FEATURE_RO_COMPAT_SUPP                   \
+            (EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER    | \
+             EXT4_FEATURE_RO_COMPAT_LARGE_FILE      | \
+             EXT4_FEATURE_RO_COMPAT_BTREE_DIR)
+
+/*
+ * EXT4 supported feature set
+ */
+#define EXT4_FEATURE_COMPAT_SUPP                      \
+            (EXT4_FEATURE_COMPAT_DIR_INDEX)
+
+#define EXT4_FEATURE_INCOMPAT_SUPP                    \
+            (EXT4_FEATURE_INCOMPAT_FILETYPE         | \
+            EXT4_FEATURE_INCOMPAT_META_BG           | \
+            EXT4_FEATURE_INCOMPAT_EXTENTS           | \
+            EXT4_FEATURE_INCOMPAT_64BIT)
+
+#define EXT4_FEATURE_RO_COMPAT_SUPP                   \
+            (EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER    | \
+            EXT4_FEATURE_RO_COMPAT_LARGE_FILE       | \
+            EXT4_FEATURE_RO_COMPAT_GDT_CSUM         | \
+            EXT4_FEATURE_RO_COMPAT_DIR_NLINK        | \
+            EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE      | \
+            EXT4_FEATURE_RO_COMPAT_BTREE_DIR        | \
+            EXT4_FEATURE_RO_COMPAT_HUGE_FILE)
+
+
+/*Ignored features:
+ * RECOVER - journaling in lwext4 is not supported
+ *           (probably won,t be ever...)
+ * MMP - multi mout protection (impossible scenario)
+ * */
+#define FEATURE_INCOMPAT_IGNORED                      \
+        EXT4_FEATURE_INCOMPAT_RECOVER               | \
+        EXT4_FEATURE_INCOMPAT_MMP)
+
+#if 0
+/*TODO: Features incompatible to implement*/
+#define EXT4_FEATURE_INCOMPAT_SUPP
+                     EXT4_FEATURE_INCOMPAT_FLEX_BG| \
+                     EXT4_FEATURE_INCOMPAT_INLINE_DATA)
+
+/*TODO: Features read only to implement*/
+#define EXT4_FEATURE_RO_COMPAT_SUPP
+                     EXT4_FEATURE_RO_COMPAT_BIGALLOC |\
+                     EXT4_FEATURE_RO_COMPAT_METADATA_CSUM|\
+                     EXT4_FEATURE_RO_COMPAT_QUOTA)
+#endif
 
 struct ext4_fs {
     struct ext4_blockdev*bdev;
