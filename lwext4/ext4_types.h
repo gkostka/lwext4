@@ -59,7 +59,7 @@ struct ext4_sblock {
     uint32_t free_inodes_count;         /* Free inodes count */
     uint32_t first_data_block;          /* First Data Block */
     uint32_t log_block_size;            /* Block size */
-    uint32_t log_frag_size;             /* Obsoleted fragment size */
+    uint32_t log_cluster_size;          /* Obsoleted fragment size */
     uint32_t blocks_per_group;          /* Number of blocks per group */
     uint32_t frags_per_group;           /* Obsoleted fragments per group */
     uint32_t inodes_per_group;          /* Number of inodes per group */
@@ -261,6 +261,7 @@ struct ext4_sblock {
             (EXT4_FEATURE_INCOMPAT_FILETYPE         | \
             EXT4_FEATURE_INCOMPAT_META_BG           | \
             EXT4_FEATURE_INCOMPAT_EXTENTS           | \
+            EXT4_FEATURE_INCOMPAT_FLEX_BG           | \
             EXT4_FEATURE_INCOMPAT_64BIT)
 
 #define EXT4_FEATURE_RO_COMPAT_SUPP                   \
@@ -285,8 +286,7 @@ struct ext4_sblock {
 #if 0
 /*TODO: Features incompatible to implement*/
 #define EXT4_FEATURE_INCOMPAT_SUPP
-                     EXT4_FEATURE_INCOMPAT_FLEX_BG| \
-                     EXT4_FEATURE_INCOMPAT_INLINE_DATA)
+                     (EXT4_FEATURE_INCOMPAT_INLINE_DATA)
 
 /*TODO: Features read only to implement*/
 #define EXT4_FEATURE_RO_COMPAT_SUPP
