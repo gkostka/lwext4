@@ -198,6 +198,17 @@ int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
 int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
     uint32_t *fblock, uint32_t *iblock);
 
+
+/**@brief   Increment inode link count.
+ * @param   inode none handle
+ */
+void ext4_fs_inode_links_count_inc(struct ext4_inode_ref *inode_ref);
+
+/**@brief   Decrement inode link count.
+ * @param   inode none handle
+ */
+void ext4_fs_inode_links_count_dec(struct ext4_inode_ref *inode_ref);
+
 #endif /* EXT4_FS_H_ */
 
 /**

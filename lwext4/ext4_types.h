@@ -558,6 +558,7 @@ struct ext4_directory_dx_block {
 
 #define EXT4_ERR_BAD_DX_DIR       (-25000)
 
+#define EXT4_LINK_MAX       65000
 
 /*
  * This is the extent on-disk structure.
