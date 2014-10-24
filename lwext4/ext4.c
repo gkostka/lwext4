@@ -209,6 +209,8 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
             return rc;
         }
 
+        /*New empty directory. Two links (. and ..) */
+        ext4_inode_set_links_count(child->inode, 2);
 #if CONFIG_DIR_INDEX_ENABLE
         /* Initialize directory index if supported */
         if (ext4_sb_has_feature_compatible(&mp->fs.sb,
@@ -223,20 +225,12 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
         }
 #endif
 
-        uint16_t parent_links =
-                ext4_inode_get_links_count(parent->inode);
-        parent_links++;
-        ext4_inode_set_links_count(parent->inode, parent_links);
+        ext4_fs_inode_links_count_inc(parent);
 
         parent->dirty = true;
+        child->dirty = true;
+        return EOK;
     }
-
-    uint16_t child_links =
-            ext4_inode_get_links_count(child->inode);
-    child_links++;
-    ext4_inode_set_links_count(child->inode, child_links);
-
-    child->dirty = true;
 
     return EOK;
 }
@@ -255,31 +249,17 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
         return ENOTSUP;
 
     /* Remove entry from parent directory */
-
     rc = ext4_dir_remove_entry(parent, name, name_len);
     if (rc != EOK)
         return rc;
-
-
-    uint32_t lnk_count =
-            ext4_inode_get_links_count(child_inode_ref->inode);
-    lnk_count--;
 
     bool is_dir = ext4_inode_is_type(&mp->fs.sb, child_inode_ref->inode,
             EXT4_INODE_MODE_DIRECTORY);
 
     /* If directory - handle links from parent */
-    if ((lnk_count <= 1) && (is_dir)) {
-        ext4_assert(lnk_count == 1);
-
-        lnk_count--;
-
-        uint32_t parent_lnk_count = ext4_inode_get_links_count(
-                parent->inode);
-
-        parent_lnk_count--;
-        ext4_inode_set_links_count(parent->inode, parent_lnk_count);
-
+    if (is_dir) {
+        ext4_assert(ext4_inode_get_links_count(child_inode_ref->inode) == 1);
+        ext4_fs_inode_links_count_dec(parent);
         parent->dirty = true;
     }
 
@@ -299,7 +279,7 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
      *     (uint32_t) now);
      */
     ext4_inode_set_deletion_time(child_inode_ref->inode, 0xFFFFFFFF);
-    ext4_inode_set_links_count(child_inode_ref->inode, lnk_count);
+    ext4_inode_set_links_count(child_inode_ref->inode, 0);
     child_inode_ref->dirty = true;
 
     return EOK;
