@@ -211,6 +211,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 
         /*New empty directory. Two links (. and ..) */
         ext4_inode_set_links_count(child->inode, 2);
+
 #if CONFIG_DIR_INDEX_ENABLE
         /* Initialize directory index if supported */
         if (ext4_sb_has_feature_compatible(&mp->fs.sb,
@@ -226,10 +227,9 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 #endif
 
         ext4_fs_inode_links_count_inc(parent);
-
-        parent->dirty = true;
         child->dirty = true;
-        return EOK;
+        parent->dirty = true;
+
     }
 
     return EOK;
@@ -284,6 +284,7 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
 
     return EOK;
 }
+
 
 /****************************************************************************/
 
