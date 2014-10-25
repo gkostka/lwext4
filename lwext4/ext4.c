@@ -258,7 +258,7 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
 
     /* If directory - handle links from parent */
     if (is_dir) {
-        ext4_assert(ext4_inode_get_links_count(child_inode_ref->inode) == 1);
+        //ext4_assert(ext4_inode_get_links_count(child_inode_ref->inode) == 1);
         ext4_fs_inode_links_count_dec(parent);
         parent->dirty = true;
     }
