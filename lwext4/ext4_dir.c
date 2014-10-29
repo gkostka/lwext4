@@ -47,71 +47,7 @@
 
 #include <string.h>
 
-uint32_t ext4_dir_entry_ll_get_inode(struct ext4_directory_entry_ll *de)
-{
-    return to_le32(de->inode);
-}
 
-void ext4_dir_entry_ll_set_inode(struct ext4_directory_entry_ll *de,
-    uint32_t inode)
-{
-    de->inode = to_le32(inode);
-}
-
-
-uint16_t ext4_dir_entry_ll_get_entry_length(struct ext4_directory_entry_ll *de)
-{
-    return to_le16(de->entry_length);
-}
-
-void ext4_dir_entry_ll_set_entry_length(struct ext4_directory_entry_ll *de,
-    uint16_t len)
-{
-    de->entry_length = to_le16(len);
-}
-
-
-uint16_t ext4_dir_entry_ll_get_name_length(struct ext4_sblock *sb,
-    struct ext4_directory_entry_ll *de)
-{
-    uint16_t v = de->name_length;
-
-    if ((ext4_get32(sb, rev_level) == 0) &&
-            (ext4_get32(sb, minor_rev_level) < 5))
-        v |= ((uint16_t)de->in.name_length_high) << 8;
-
-    return v;
-}
-void ext4_dir_entry_ll_set_name_length(struct ext4_sblock *sb,
-    struct ext4_directory_entry_ll *de, uint16_t len)
-{
-    de->name_length = (len << 8) >> 8;
-
-    if ((ext4_get32(sb, rev_level) == 0) &&
-            (ext4_get32(sb, minor_rev_level) < 5))
-        de->in.name_length_high = len >> 8;
-}
-
-
-
-uint8_t ext4_dir_entry_ll_get_inode_type(struct ext4_sblock *sb,
-    struct ext4_directory_entry_ll *de)
-{
-    if ((ext4_get32(sb, rev_level) > 0) ||
-            (ext4_get32(sb, minor_rev_level) >= 5))
-        return de->in.inode_type;
-
-    return EXT4_DIRECTORY_FILETYPE_UNKNOWN;
-}
-
-
-void ext4_dir_entry_ll_set_inode_type(struct ext4_sblock *sb,
-    struct ext4_directory_entry_ll *de, uint8_t type)
-{
-    if ((ext4_get32(sb, rev_level) > 0) ||
-            (ext4_get32(sb, minor_rev_level) >= 5))
-        de->in.inode_type = type;
-}
 
 /****************************************************************************/
 
