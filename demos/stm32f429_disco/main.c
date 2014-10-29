@@ -42,7 +42,7 @@
 #include <ext4.h>
 
 /**@brief   Read-write size*/
-#define READ_WRITE_SZIZE 1024 * 8
+#define READ_WRITE_SZIZE 1024 * 16
 
 /**@brief   Delay test (slower LCD scroll)*/
 #define TEST_DELAY_MS    2000
@@ -54,7 +54,7 @@ char input_name[128] = "ext2";
 static int rw_szie  = READ_WRITE_SZIZE;
 
 /**@brief   Read-write size*/
-static int rw_count = 100;
+static int rw_count = 1000;
 
 /**@brief   Directory test count*/
 static int dir_cnt  = 500;
