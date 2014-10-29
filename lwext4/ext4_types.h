@@ -281,7 +281,7 @@ struct ext4_sblock {
  * */
 #define FEATURE_INCOMPAT_IGNORED                      \
         EXT4_FEATURE_INCOMPAT_RECOVER               | \
-        EXT4_FEATURE_INCOMPAT_MMP)
+        EXT4_FEATURE_INCOMPAT_MMP
 
 #if 0
 /*TODO: Features incompatible to implement*/
