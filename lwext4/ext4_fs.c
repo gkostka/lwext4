@@ -287,7 +287,7 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
 
     /*Check features_incompatible*/
     v = (ext4_get32(&fs->sb, features_incompatible) &
-            (~EXT4_FEATURE_INCOMPAT_SUPP));
+            (~CONFIG_FEATURE_INCOMPAT_SUPP));
     if (v){
         ext4_dprintf(EXT4_DEBUG_FS,
                 "\nERROR sblock features_incompatible. Unsupported:\n");
@@ -298,7 +298,7 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
 
     /*Check features_read_only*/
     v = (ext4_get32(&fs->sb, features_read_only) &
-            (~EXT4_FEATURE_RO_COMPAT_SUPP));
+            (~CONFIG_FEATURE_RO_COMPAT_SUPP));
     if (v){
         ext4_dprintf(EXT4_DEBUG_FS,
                 "\nERROR sblock features_read_only . Unsupported:\n");
@@ -859,8 +859,9 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
 
         ext4_inode_set_indirect_block(inode_ref->inode, 2, 0);
     }
-
+#if CONFIG_EXTENT_ENABLE
     finish:
+#endif
     /* Mark inode dirty for writing to the physical device */
     inode_ref->dirty = true;
 
