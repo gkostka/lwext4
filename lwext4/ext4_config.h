@@ -41,21 +41,52 @@
 #include <config.h>
 #endif
 
+/*****************************************************************************/
 
-/**@brief   Enable directory indexing feature (EXT3 feature)*/
-#ifndef CONFIG_DIR_INDEX_ENABLE
-#define CONFIG_DIR_INDEX_ENABLE     1
+#define F_SET_EXT2    2
+#define F_SET_EXT3    3
+#define F_SET_EXT4    4
+
+#ifndef CONFIG_EXT_FEATURE_SET_LVL
+#define CONFIG_EXT_FEATURE_SET_LVL  F_SET_EXT4
 #endif
 
-/**@brief   Enable extents feature (EXT4 feature)*/
-#ifndef CONFIG_EXTENT_ENABLE
-#define CONFIG_EXTENT_ENABLE        1
+/*****************************************************************************/
+
+#if CONFIG_EXT_FEATURE_SET_LVL == F_SET_EXT2
+    #define CONFIG_DIR_INDEX_ENABLE     0
+    #define CONFIG_EXTENT_ENABLE        0
+
+    /*Superblock feature flag*/
+    #define CONFIG_FEATURE_COMPAT_SUPP    EXT2_FEATURE_COMPAT_SUPP
+    #define CONFIG_FEATURE_INCOMPAT_SUPP  EXT2_FEATURE_INCOMPAT_SUPP
+    #define CONFIG_FEATURE_RO_COMPAT_SUPP EXT2_FEATURE_RO_COMPAT_SUPP
+#elif CONFIG_EXT_FEATURE_SET_LVL == F_SET_EXT3
+    #define CONFIG_DIR_INDEX_ENABLE     1
+    #define CONFIG_EXTENT_ENABLE        0
+
+    /*Superblock feature flag*/
+    #define CONFIG_FEATURE_COMPAT_SUPP    EXT3_FEATURE_COMPAT_SUPP
+    #define CONFIG_FEATURE_INCOMPAT_SUPP  EXT3_FEATURE_INCOMPAT_SUPP
+    #define CONFIG_FEATURE_RO_COMPAT_SUPP EXT3_FEATURE_RO_COMPAT_SUPP
+#elif CONFIG_EXT_FEATURE_SET_LVL == F_SET_EXT4
+    #define CONFIG_DIR_INDEX_ENABLE     1
+    #define CONFIG_EXTENT_ENABLE        1
+
+    /*Superblock feature flag*/
+    #define CONFIG_FEATURE_COMPAT_SUPP    EXT4_FEATURE_COMPAT_SUPP
+    #define CONFIG_FEATURE_INCOMPAT_SUPP  EXT4_FEATURE_INCOMPAT_SUPP
+    #define CONFIG_FEATURE_RO_COMPAT_SUPP EXT4_FEATURE_RO_COMPAT_SUPP
+#else
+#define "Unsupported CONFIG_EXT_FEATURE_SET_LVL"
 #endif
 
+
+/*****************************************************************************/
 
 /**@brief   Enable directory indexing comb sort*/
 #ifndef CONFIG_DIR_INDEX_COMB_SORT
-#define CONFIG_DIR_INDEX_COMB_SORT     1
+#define CONFIG_DIR_INDEX_COMB_SORT  1
 #endif
 
 
