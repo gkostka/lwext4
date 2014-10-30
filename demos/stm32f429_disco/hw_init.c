@@ -175,6 +175,12 @@ uint32_t hw_get_ms(void)
     return HAL_GetTick();
 }
 
+uint64_t hw_get_us(void)
+{
+    return (uint64_t)HAL_GetTick() * 1000 +
+            ((SysTick->LOAD - SysTick->VAL) * 1000) / SysTick->LOAD;
+}
+
 void hw_wait_ms(uint32_t ms)
 {
     volatile uint32_t t = HAL_GetTick();
