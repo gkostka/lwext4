@@ -35,35 +35,43 @@ Some of ideas and features are based on FreeBSD and Linux implementations.
 
 ==Supported ext2/3/4 fs features==
 
+
 ;FEATURE_INCOMPAT (unable to mount with unsupported feature):
- COMPRESSION: no
- FILETYPE:    yes
- RECOVER:     no
- JOURNAL_DEV: no
- META_BG:     no
- EXTENTS:     yes
- 64BIT:       yes
- MMP:         no
- FLEX_BG:     no
- EA_INODE:    no
- DIRDATA:     no
- 
+    compression: no
+    filetype: yes
+    recover: no (could be ignored)
+    journal_dev: no
+    meta_bg: yes
+    extents: yes
+    64bit: yes
+    mmp: no (could be ignored)
+    flex_bg: yes
+    ea_inode: no
+    dirdata: no
+    bg_meta_csum: no
+    largedir: no
+    inline_data: no
+
 ;FEATURE_COMPAT (able to mount with unsupported feature):
- DIR_PREALLOC:   no
- IMAGIC_INODES:  no
- HAS_JOURNAL:    no
- EXT_ATTR:       no
- RESIZE_INODE:   no
- DIR_INDEX:      yes
+    dir_prealloc: no
+    imagic_inodes: no
+    has_journal: no
+    ext_attr: no
+    resize_inode: no
+    dir_index: yes
 
 ;FEATURE_RO (able to mount in read only mode):
- SPARSE_SUPER:  yes
- LARGE_FILE:    yes
- BTREE_DIR:     no
- HUGE_FILE:     yes
- GDT_CSUM:      yes
- DIR_NLINK:     yes
- EXTRA_ISIZE:   yes
+    sparse_super: yes
+    large_file: yes
+    btree_dir: yes (obsolete)
+    huge_file: yes
+    gdt_csum: yes
+    dir_nlink: yes
+    extra_isize: yes
+    quota: no
+    bigalloc: no
+    metadata_csum: no
+
 
 ==Supported filetypes:==
  FIFO:      no
