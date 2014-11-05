@@ -1,8 +1,7 @@
 ==About==
 
 The main goal of the lwext4 project is to provide ext2/3/4 filesystem
-library for microcontrolers with SD/MMC card support. Ext2/3/4, in my
-opinion is one of the best filesystem for SD/MMC.
+library for microcontrolers with SD/MMC card support. 
 
 kostka.grzegorz@gmail.com
 
@@ -229,22 +228,24 @@ Build STM32F429 Demo:
 ==Footprint==
 
  TOOLCHAIN: arm-none-eabi-gcc
- OPT: Os  
+ OPT: O2  
  OUTPUT:
-   text    data     bss     dec     hex filename
-   5728       0       0    5728    1660 ext4.c.obj (ex liblwext4.a)
-   2264       0       0    2264     8d8 ext4_balloc.c.obj (ex liblwext4.a)
-   1324       0       0    1324     52c ext4_bcache.c.obj (ex liblwext4.a)
-    936       0       0     936     3a8 ext4_bitmap.c.obj (ex liblwext4.a)
-   2016       0       0    2016     7e0 ext4_blockdev.c.obj (ex liblwext4.a)
-    624       0       0     624     270 ext4_block_group.c.obj (ex liblwext4.a)
-     24       0       4      28      1c ext4_debug.c.obj (ex liblwext4.a)
-   2264       0       0    2264     8d8 ext4_dir.c.obj (ex liblwext4.a)
-   3204       0       0    3204     c84 ext4_dir_idx.c.obj (ex liblwext4.a)
-   3104       0       0    3104     c20 ext4_extent.c.obj (ex liblwext4.a)
-   7360       0       0    7360    1cc0 ext4_fs.c.obj (ex liblwext4.a)
-   2496       0       0    2496     9c0 ext4_hash.c.obj (ex liblwext4.a)
-    684       0       0     684     2ac ext4_ialloc.c.obj (ex liblwext4.a)
-    652       0       0     652     28c ext4_inode.c.obj (ex liblwext4.a)
-    352       0       0     352     160 ext4_super.c.obj (ex liblwext4.a)                      
+   text	   data	    bss	   filename
+    648	      0	      0	   ext4_inode.c
+   1064	      0	      0	   ext4_crc32c.c
+   2124	      0	      0	   ext4_blockdev.c
+    372	      0	      0	   ext4_bitmap.c
+   1184	      0	      0	   ext4_hash.c
+   2852	      0	      0	   ext4_balloc.c
+   1844	      0	      0	   ext4_dir.c
+   2904	      0	      0	   ext4_dir_idx.c
+    972	      0	      0	   ext4_bcache.c
+    552	      0	      0	   ext4_block_group.c
+    744	      0	      0	   ext4_ialloc.c
+   5408	      0	      0	   ext4.c
+    600	      0	      0	   ext4_super.c
+     24	      0	      4	   ext4_debug.c
+   3092	      0	      0	   ext4_extent.c
+   6424	      0	      0	   ext4_fs.c
+                           
                            
