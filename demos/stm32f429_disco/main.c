@@ -45,7 +45,7 @@
 #define READ_WRITE_SZIZE 1024 * 16
 
 /**@brief   Delay test (slower LCD scroll)*/
-#define TEST_DELAY_MS    2000
+#define TEST_DELAY_MS    1000
 
 /**@brief   Input stream name.*/
 char input_name[128] = "ext2";
@@ -54,10 +54,10 @@ char input_name[128] = "ext2";
 static int rw_szie  = READ_WRITE_SZIZE;
 
 /**@brief   Read-write size*/
-static int rw_count = 1000;
+static int rw_count = 100;
 
 /**@brief   Directory test count*/
-static int dir_cnt  = 500;
+static int dir_cnt  = 100;
 
 /**@brief   Static or dynamic cache mode*/
 static bool cache_mode = false;
@@ -115,21 +115,19 @@ static void dir_ls(const char *path)
     ext4_dir d;
     ext4_direntry *de;
 
-    printf("********************\n");
+    printf("ls %s\n", path);
 
     ext4_dir_open(&d, path);
     de = ext4_dir_entry_get(&d, j++);
-    printf("ls %s\n", path);
 
     while(de){
         memcpy(sss, de->name, de->name_length);
         sss[de->name_length] = 0;
-        printf("%s", entry_to_str(de->inode_type));
+        printf("  %s", entry_to_str(de->inode_type));
         printf("%s", sss);
         printf("\n");
         de = ext4_dir_entry_get(&d, j++);
     }
-    printf("********************\n");
     ext4_dir_close(&d);
 }
 
@@ -196,6 +194,15 @@ static clock_t get_ms(void)
     return hw_get_ms();
 }
 
+static void printf_io_timings(clock_t diff)
+{
+    const struct ext4_io_stats *stats = ext4_io_timings_get(diff);
+    printf("io_timings:\n");
+    printf("  io_read: %.3f%%\n", stats->io_read);
+    printf("  io_write: %.3f%%\n", stats->io_write);
+    printf("  io_cpu: %.3f%%\n", stats->cpu);
+}
+
 static bool dir_test(int len)
 {
     ext4_file f;
@@ -205,23 +212,23 @@ static bool dir_test(int len)
     clock_t diff;
     clock_t stop;
     clock_t start;
+
+    ext4_io_timings_clear();
     start = get_ms();
 
-    printf("Directory create: /mp/dir1\n");
+    printf("directory create: /mp/dir1\n");
     r = ext4_dir_mk("/mp/dir1");
     if(r != EOK){
-        printf("Unable to create directory: /mp/dir1\n");
+        printf("ext4_dir_mk: rc = %d\n", r);
         return false;
     }
 
-
-
-    printf("Add files to: /mp/dir1\n");
+    printf("add files to: /mp/dir1\n");
     for (i = 0; i < len; ++i) {
         sprintf(path, "/mp/dir1/f%d", i);
         r = ext4_fopen(&f, path, "wb");
         if(r != EOK){
-            printf("Unable to create file in directory: /mp/dir1 r = %d\n", r);
+            printf("ext4_fopen: rc = %d\n", r);
             return false;
         }
     }
@@ -229,7 +236,8 @@ static bool dir_test(int len)
     stop =  get_ms();
     diff = stop - start;
     dir_ls("/mp/dir1");
-    printf("dir_test time: %d ms\n", (int)diff);
+    printf("  time: %d ms\n", (int)diff);
+    printf_io_timings(diff);
     return true;
 }
 
@@ -245,6 +253,7 @@ static bool file_test(void)
     clock_t diff;
     uint32_t kbps;
     uint64_t size_bytes;
+
     /*Add hello world file.*/
     r = ext4_fopen(&f, "/mp/hello.txt", "wb");
     r = ext4_fwrite(&f, "Hello World !\n", strlen("Hello World !\n"), 0);
@@ -252,7 +261,7 @@ static bool file_test(void)
 
 
     printf("ext4_fopen: test1\n");
-
+    ext4_io_timings_clear();
     start = get_ms();
     r = ext4_fopen(&f, "/mp/test1", "wb");
     if(r != EOK){
@@ -269,30 +278,26 @@ static bool file_test(void)
 
         if((r != EOK) || (size != rw_szie))
             break;
-
-        if(!(i % (rw_count >> 3))){
-            printf("*");
-            fflush(stdout);
-        }
     }
 
     if(i != rw_count){
-        printf("ERROR: rw_count = %d\n", i);
+        printf("  file_test: rw_count = %d\n", i);
         return false;
     }
 
-    printf(" OK\n");
     stop = get_ms();
     diff = stop - start;
     size_bytes = rw_szie * rw_count;
     size_bytes = (size_bytes * 1000) / 1024;
     kbps = (size_bytes) / (diff + 1);
-    printf("file_test write time: %d ms\n", (int)diff);
-    printf("file_test write speed: %d KB/s\n", (int)kbps);
+    printf("  write time: %d ms\n", (int)diff);
+    printf("  write speed: %d KB/s\n", kbps);
+    printf_io_timings(diff);
     r = ext4_fclose(&f);
+
+
     printf("ext4_fopen: test1\n");
-
-
+    ext4_io_timings_clear();
     start = get_ms();
     r = ext4_fopen(&f, "/mp/test1", "r+");
     if(r != EOK){
@@ -311,25 +316,23 @@ static bool file_test(void)
 
         if(memcmp(rd_buff, wr_buff, rw_szie))
             break;
-
-
-        if(!(i % (rw_count >> 3)))
-            printf("*");
     }
+
     if(i != rw_count){
-        printf("ERROR: rw_count = %d\n", i);
+        printf("  file_test: rw_count = %d\n", i);
         return false;
     }
-    printf(" OK\n");
+
     stop = get_ms();
     diff = stop - start;
     size_bytes = rw_szie * rw_count;
     size_bytes = (size_bytes * 1000) / 1024;
     kbps = (size_bytes) / (diff + 1);
-    printf("file_test read time: %d ms\n", (int)diff);
-    printf("file_test read speed: %d KB/s\n", kbps);
-    r = ext4_fclose(&f);
+    printf("  read time: %d ms\n", (int)diff);
+    printf("  read speed: %d KB/s\n", kbps);
+    printf_io_timings(diff);
 
+    r = ext4_fclose(&f);
     return true;
 
 }
@@ -339,22 +342,21 @@ static void cleanup(void)
     clock_t stop;
     clock_t diff;
 
+    printf("\ncleanup:\n");
     ext4_fremove("/mp/hello.txt");
 
-    printf("cleanup: remove /mp/test1\n");
-    start = get_ms();
+    printf("remove /mp/test1\n");
     ext4_fremove("/mp/test1");
-    stop = get_ms();
-    diff = stop - start;
-    printf("cleanup: time: %d ms\n", (int)diff);
 
 
-    printf("cleanup: remove /mp/dir1\n");
+    printf("remove /mp/dir1\n");
+    ext4_io_timings_clear();
     start = get_ms();
     ext4_dir_rm("/mp/dir1");
     stop = get_ms();
     diff = stop - start;
-    printf("cleanup: time: %d ms\n", (int)diff);
+    printf("  time: %d ms\n", (int)diff);
+    printf_io_timings(diff);
 }
 
 static bool open_filedev(void)
@@ -363,7 +365,7 @@ static bool open_filedev(void)
     bd = ext4_usb_msc_get();
     bc = ext4_usb_msc_cache_get();
     if(!bd || !bc){
-        printf("Block device ERROR\n");
+        printf("open_filedev: fail\n");
         return false;
     }
     return true;
@@ -378,15 +380,15 @@ static bool mount(void)
 
     ext4_dmask_set(EXT4_DEBUG_ALL);
 
-    r = ext4_device_register(bd, cache_mode ? 0 : bc, "ext4_filesim");
+    r = ext4_device_register(bd, cache_mode ? 0 : bc, "ext4_fs");
     if(r != EOK){
-        printf("ext4_device_register ERROR = %d\n", r);
+        printf("ext4_device_register: rc = %d\n", r);
         return false;
     }
 
-    r = ext4_mount("ext4_filesim", "/mp/");
+    r = ext4_mount("ext4_fs", "/mp/");
     if(r != EOK){
-        printf("ext4_mount ERROR = %d\n", r);
+        printf("ext4_mount: rc = %d\n", r);
         return false;
     }
 
@@ -397,7 +399,7 @@ static bool umount(void)
 {
     int r = ext4_umount("/mp/");
     if(r != EOK){
-        printf("ext4_umount: FAIL %d", r);
+        printf("ext4_umount: fail %d", r);
         return false;
     }
     return true;
@@ -409,28 +411,29 @@ int main(void)
     hw_init();
 
     setbuf(stdout, 0);
-    printf("Connect USB drive...\n");
+    printf("connect usb drive...\n");
 
     while(!hw_usb_connected())
         hw_usb_process();
-    printf("USB drive connected\n");
+    printf("usb drive connected\n");
 
     while(!hw_usb_enum_done())
         hw_usb_process();
-    printf("USB drive enum done\n");
+    printf("usb drive enum done\n");
 
     hw_led_red(1);
 
-    printf("Test conditions:\n");
-    printf("Imput name: %s\n", input_name);
-    printf("RW size: %d\n",  rw_szie);
-    printf("RW count: %d\n", rw_count);
-    printf("Cache mode: %s\n", cache_mode ? "dynamic" : "static");
+    printf("test conditions:\n");
+    printf("  rw size: %d\n",  rw_szie);
+    printf("  rw count: %d\n", rw_count);
+    printf("  cache mode: %s\n", cache_mode ? "dynamic" : "static");
 
 
     hw_wait_ms(TEST_DELAY_MS);
     if(!mount())
         return EXIT_FAILURE;
+
+    hw_wait_ms(TEST_DELAY_MS);
 
     ext4_cache_write_back("/mp/", 1);
     cleanup();
@@ -470,8 +473,7 @@ int main(void)
     if(!umount())
         return EXIT_FAILURE;
 
-    printf("\nTest finished: OK\n");
-    printf("Press RESET to restart\n");
+    printf("press RESET button to restart\n");
 
     while (1) {
         hw_wait_ms(500);
