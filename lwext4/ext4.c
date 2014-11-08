@@ -934,20 +934,22 @@ int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
     return r;
 }
 
-int ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt)
+int ext4_fwrite(ext4_file *f, const void *buf, uint32_t size, uint32_t *wcnt)
 {
-    int r = EOK;
     uint32_t u;
     uint32_t fblock;
-    struct ext4_block b;
-    uint8_t *u8_buf = buf;
-    struct ext4_inode_ref ref;
+
     uint32_t sblock;
     uint32_t sblock_end;
     uint32_t file_blocks;
     uint32_t block_size;
     uint32_t fblock_start;
     uint32_t fblock_cnt;
+
+    struct ext4_block b;
+    struct ext4_inode_ref ref;
+    const uint8_t *u8_buf = buf;
+    int r;;
 
     ext4_assert(f && f->mp);
 

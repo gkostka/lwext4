@@ -292,7 +292,7 @@ int ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
  * @param   size write length
  * @param   wcnt bytes written (may be NULL)
  * @return  standard error code*/
-int ext4_fwrite(ext4_file *f, void *buf, uint32_t size, uint32_t *wcnt);
+int ext4_fwrite(ext4_file *f, const void *buf, uint32_t size, uint32_t *wcnt);
 
 /**@brief   File seek operation.
  * @param   f file handle
