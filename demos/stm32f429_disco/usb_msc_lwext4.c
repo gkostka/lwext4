@@ -39,6 +39,8 @@
 #include <usbh_core.h>
 #include <usbh_msc.h>
 
+#include <usb_msc_lwext4.h>
+
 extern USBH_HandleTypeDef hUSB_Host;
 
 /**@brief   Block size.*/
@@ -59,6 +61,43 @@ struct part_tab_entry {
 
 /**@brief   Partition block offset*/
 static uint32_t part_offset;
+
+/**@brief IO timings*/
+struct usb_msc_io_timings {
+    uint64_t acc_bread;
+    uint64_t acc_bwrite;
+
+    uint32_t cnt_bread;
+    uint32_t cnt_bwrite;
+
+    uint32_t av_bread;
+    uint32_t av_bwrite;
+};
+
+
+static struct usb_msc_io_timings io_timings;
+
+
+void ext4_io_timings_clear(void)
+{
+    memset(&io_timings, 0, sizeof(struct usb_msc_io_timings));
+}
+
+const struct ext4_io_stats * ext4_io_timings_get(uint32_t time_sum_ms)
+{
+    static struct ext4_io_stats s;
+
+    s.io_read = (((float)io_timings.acc_bread * 100.0) / time_sum_ms);
+    s.io_read /= 1000.0;
+
+    s.io_write= (((float)io_timings.acc_bwrite * 100.0) / time_sum_ms);
+    s.io_write /= 1000.0;
+
+    s.cpu = 100.0 - s.io_read - s.io_write;
+
+    return &s;
+}
+
 
 /**********************BLOCKDEV INTERFACE**************************************/
 static int usb_msc_open(struct ext4_blockdev *bdev);
@@ -116,6 +155,8 @@ static int usb_msc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 {
     uint8_t status;
 
+    uint64_t v = hw_get_us();
+
     if(!hw_usb_connected())
         return EIO;
 
@@ -126,6 +167,10 @@ static int usb_msc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
     if(status != USBH_OK)
         return EIO;
 
+    io_timings.acc_bread += hw_get_us() - v;
+    io_timings.cnt_bread++;
+    io_timings.av_bread = io_timings.acc_bread / io_timings.cnt_bread;
+
     return EOK;
 
 }
@@ -134,6 +179,8 @@ static int usb_msc_bwrite(struct ext4_blockdev *bdev, const void *buf,
     uint64_t blk_id, uint32_t blk_cnt)
 {
     uint8_t status;
+
+    uint64_t v = hw_get_us();
 
     if(!hw_usb_connected())
         return EIO;
@@ -144,6 +191,10 @@ static int usb_msc_bwrite(struct ext4_blockdev *bdev, const void *buf,
     status = USBH_MSC_Write(&hUSB_Host, 0, blk_id + part_offset, (void *)buf, blk_cnt);
     if(status != USBH_OK)
         return EIO;
+
+    io_timings.acc_bwrite += hw_get_us() - v;
+    io_timings.cnt_bwrite++;
+    io_timings.av_bwrite = io_timings.acc_bwrite / io_timings.cnt_bwrite;
 
     return EOK;
 }

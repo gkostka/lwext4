@@ -42,4 +42,16 @@ struct ext4_blockdev* ext4_usb_msc_get(void);
 
 
 
+struct ext4_io_stats {
+    float io_read;
+    float io_write;
+    float cpu;
+};
+
+void ext4_io_timings_clear(void);
+const struct ext4_io_stats * ext4_io_timings_get(uint32_t time_sum_ms);
+
+
+
+
 #endif /* USB_MSC_LWEXT4_H_ */
