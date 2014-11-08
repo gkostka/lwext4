@@ -161,6 +161,81 @@ bool ext4_sb_is_super_in_bg(struct ext4_sblock *s, uint32_t group)
     return true;
 }
 
+static uint32_t ext4_bg_num_gdb_meta(struct ext4_sblock *s,
+                    uint32_t group)
+{
+    uint32_t dsc_per_block = ext4_sb_get_block_size(s) /
+            ext4_sb_get_desc_size(s);
+
+    uint32_t metagroup = group / dsc_per_block;
+    uint32_t first = metagroup * dsc_per_block;
+    uint32_t last = first + dsc_per_block - 1;
+
+    if (group == first || group == first + 1 || group == last)
+        return 1;
+    return 0;
+}
+
+static uint32_t ext4_bg_num_gdb_nometa(struct ext4_sblock *s,
+        uint32_t group)
+{
+    if (!ext4_sb_is_super_in_bg(s, group))
+        return 0;
+    uint32_t dsc_per_block = ext4_sb_get_block_size(s) /
+            ext4_sb_get_desc_size(s);
+
+    uint32_t db_count = (ext4_block_group_cnt(s) + dsc_per_block - 1) /
+            dsc_per_block;
+
+
+    if (ext4_sb_has_feature_incompatible(s, EXT4_FEATURE_INCOMPAT_META_BG))
+        return ext4_sb_first_meta_bg(s);
+
+    return db_count;
+}
+
+uint32_t ext4_bg_num_gdb(struct ext4_sblock *s, uint32_t group)
+{
+    uint32_t dsc_per_block = ext4_sb_get_block_size(s) /
+            ext4_sb_get_desc_size(s);
+    uint32_t first_meta_bg = ext4_sb_first_meta_bg(s);
+    uint32_t metagroup = group / dsc_per_block;
+
+    if (!ext4_sb_has_feature_incompatible(s, EXT4_FEATURE_INCOMPAT_META_BG) ||
+            metagroup < first_meta_bg)
+        return ext4_bg_num_gdb_nometa(s, group);
+
+    return ext4_bg_num_gdb_meta(s, group);
+
+}
+
+uint32_t ext4_num_base_meta_clusters(struct ext4_sblock *s,
+        uint32_t block_group)
+{
+    uint32_t num;
+    uint32_t dsc_per_block = ext4_sb_get_block_size(s) /
+            ext4_sb_get_desc_size(s);
+
+
+    num = ext4_sb_is_super_in_bg(s, block_group);
+
+    if (!ext4_sb_has_feature_incompatible(s, EXT4_FEATURE_INCOMPAT_META_BG) ||
+        block_group < ext4_sb_first_meta_bg(s) *
+        dsc_per_block) {
+        if (num) {
+            num += ext4_bg_num_gdb(s, block_group);
+            num += ext4_get16(s, s_reserved_gdt_blocks);
+        }
+    } else {
+        num += ext4_bg_num_gdb(s, block_group);
+    }
+
+    uint32_t clustersize = 1024 << ext4_get32(s, log_cluster_size);
+    uint32_t cluster_ratio = clustersize / ext4_sb_get_block_size(s);
+    uint32_t v = (num + cluster_ratio - 1) >> ext4_get32(s, log_cluster_size);
+
+    return v;
+}
 
 /**
  * @}

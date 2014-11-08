@@ -210,6 +210,14 @@ bool ext4_sb_check(struct ext4_sblock *s);
  * @return  true if block group has superblock*/
 bool ext4_sb_is_super_in_bg(struct ext4_sblock *s, uint32_t block_group);
 
+
+/**@brief   TODO:*/
+uint32_t ext4_bg_num_gdb(struct ext4_sblock *s, uint32_t group);
+
+/**@brief   TODO:*/
+uint32_t ext4_num_base_meta_clusters(struct ext4_sblock *s,
+        uint32_t block_group);
+
 #endif /* EXT4_SUPER_H_ */
 
 /**
