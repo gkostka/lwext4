@@ -99,7 +99,7 @@ int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev)
     tmp = ext4_get16(&fs->sb, state);
     if (tmp & EXT4_SUPERBLOCK_STATE_ERROR_FS) {
         ext4_dprintf(EXT4_DEBUG_FS,
-                "Filesystem was not cleanly unmounted before \n");
+                "last umount error\n");
     }
 
     /* Mark system as mounted */
@@ -266,23 +266,17 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
         *read_only = false;
         return EOK;
     }
-    ext4_dprintf(EXT4_DEBUG_FS,
-        "\nSblock rev_level: \n%d\n", (int)ext4_get32(&fs->sb, rev_level));
 
     ext4_dprintf(EXT4_DEBUG_FS,
-        "\nSblock minor_rev_level: \n%d\n",
-        ext4_get32(&fs->sb, minor_rev_level));
-
-    ext4_dprintf(EXT4_DEBUG_FS,
-        "\nSblock features_incompatible:\n");
+        "\nSB features_incompatible:\n");
     ext4_fs_debug_features_incomp(ext4_get32(&fs->sb, features_incompatible));
 
     ext4_dprintf(EXT4_DEBUG_FS,
-        "\nSblock features_compatible:\n");
+        "\nSB features_compatible:\n");
     ext4_fs_debug_features_comp(ext4_get32(&fs->sb, features_compatible));
 
     ext4_dprintf(EXT4_DEBUG_FS,
-        "\nSblock features_read_only:\n");
+        "\nSB features_read_only:\n");
     ext4_fs_debug_features_ro(ext4_get32(&fs->sb, features_read_only));
 
     /*Check features_incompatible*/
@@ -290,7 +284,7 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
             (~CONFIG_FEATURE_INCOMPAT_SUPP));
     if (v){
         ext4_dprintf(EXT4_DEBUG_FS,
-                "\nERROR sblock features_incompatible. Unsupported:\n");
+                "SB features_incompatible: fail\n");
         ext4_fs_debug_features_incomp(v);
         return ENOTSUP;
     }
