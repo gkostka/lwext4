@@ -37,6 +37,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <unistd.h>
+#include <time.h>
 
 #include <usb_msc_lwext4.h>
 #include <ext4.h>
@@ -263,7 +264,6 @@ static bool file_test(void)
     r = ext4_fclose(&f);
 
 
-    printf("ext4_fopen: test1\n");
     ext4_io_timings_clear();
     start = get_ms();
     r = ext4_fopen(&f, "/mp/test1", "wb");
@@ -299,7 +299,6 @@ static bool file_test(void)
     r = ext4_fclose(&f);
 
 
-    printf("ext4_fopen: test1\n");
     ext4_io_timings_clear();
     start = get_ms();
     r = ext4_fopen(&f, "/mp/test1", "r+");
@@ -454,8 +453,6 @@ int main(void)
     hw_wait_ms(TEST_DELAY_MS);
     if(!file_test())
         return EXIT_FAILURE;
-
-    dir_ls("/mp/");
 
     if(sbstat){
         hw_wait_ms(TEST_DELAY_MS);
