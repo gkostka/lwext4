@@ -138,21 +138,20 @@ static void dir_ls(const char *path)
     ext4_dir d;
     ext4_direntry *de;
 
-    printf("**********************************************\n");
+    printf("ls %s:\n", path);
 
     ext4_dir_open(&d, path);
     de = ext4_dir_entry_get(&d, j++);
-    printf("ls %s\n", path);
+
 
     while(de){
         memcpy(sss, de->name, de->name_length);
         sss[de->name_length] = 0;
-        printf("%s", entry_to_str(de->inode_type));
+        printf("\t%s", entry_to_str(de->inode_type));
         printf("%s", sss);
         printf("\n");
         de = ext4_dir_entry_get(&d, j++);
     }
-    printf("**********************************************\n");
     ext4_dir_close(&d);
 }
 
@@ -161,19 +160,17 @@ static void mp_stats(void)
     struct ext4_mount_stats stats;
     ext4_mount_point_stats("/mp/", &stats);
 
-    printf("**********************************************\n");
-    printf("ext4_mount_point_stats\n");
-    printf("inodes_count        = %"PRIu32"\n", stats.inodes_count);
-    printf("free_inodes_count   = %"PRIu32"\n", stats.free_inodes_count);
-    printf("blocks_count        = %"PRIu32"\n", (uint32_t)stats.blocks_count);
-    printf("free_blocks_count   = %"PRIu32"\n", (uint32_t)stats.free_blocks_count);
-    printf("block_size          = %"PRIu32"\n", stats.block_size);
-    printf("block_group_count   = %"PRIu32"\n", stats.block_group_count);
-    printf("blocks_per_group    = %"PRIu32"\n", stats.blocks_per_group);
-    printf("inodes_per_group    = %"PRIu32"\n", stats.inodes_per_group);
-    printf("volume_name         = %s\n", stats.volume_name);
+    printf("ext4_mount_point_stats:\n");
+    printf("\tinodes_count        = %"PRIu32"\n", stats.inodes_count);
+    printf("\tfree_inodes_count   = %"PRIu32"\n", stats.free_inodes_count);
+    printf("\tblocks_count        = %"PRIu32"\n", (uint32_t)stats.blocks_count);
+    printf("\tfree_blocks_count   = %"PRIu32"\n", (uint32_t)stats.free_blocks_count);
+    printf("\tblock_size          = %"PRIu32"\n", stats.block_size);
+    printf("\tblock_group_count   = %"PRIu32"\n", stats.block_group_count);
+    printf("\tblocks_per_group    = %"PRIu32"\n", stats.blocks_per_group);
+    printf("\tinodes_per_group    = %"PRIu32"\n", stats.inodes_per_group);
+    printf("\tvolume_name         = %s\n", stats.volume_name);
 
-    printf("**********************************************\n");
 
 }
 
@@ -181,37 +178,35 @@ static void block_stats(void)
 {
     uint32_t i;
 
-    printf("**********************************************\n");
     printf("ext4 blockdev stats\n");
-    printf("bdev->bread_ctr          = %"PRIu32"\n", bd->bread_ctr);
-    printf("bdev->bwrite_ctr         = %"PRIu32"\n", bd->bwrite_ctr);
+    printf("\tbdev->bread_ctr          = %"PRIu32"\n", bd->bread_ctr);
+    printf("\tbdev->bwrite_ctr         = %"PRIu32"\n", bd->bwrite_ctr);
 
 
-    printf("bcache->ref_blocks       = %"PRIu32"\n", bc->ref_blocks);
-    printf("bcache->max_ref_blocks   = %"PRIu32"\n", bc->max_ref_blocks);
-    printf("bcache->lru_ctr          = %"PRIu32"\n", bc->lru_ctr);
+    printf("\tbcache->ref_blocks       = %"PRIu32"\n", bc->ref_blocks);
+    printf("\tbcache->max_ref_blocks   = %"PRIu32"\n", bc->max_ref_blocks);
+    printf("\tbcache->lru_ctr          = %"PRIu32"\n", bc->lru_ctr);
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->refctr[%"PRIu32"]     = %"PRIu32"\n", i, bc->refctr[i]);
+        printf("\tbcache->refctr[%"PRIu32"]     = %"PRIu32"\n", i, bc->refctr[i]);
     }
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->lru_id[%"PRIu32"]     = %"PRIu32"\n", i, bc->lru_id[i]);
+        printf("\tbcache->lru_id[%"PRIu32"]     = %"PRIu32"\n", i, bc->lru_id[i]);
     }
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->free_delay[%"PRIu32"] = %d\n", i, bc->free_delay[i]);
+        printf("\tbcache->free_delay[%"PRIu32"] = %d\n", i, bc->free_delay[i]);
     }
 
     printf("\n");
     for (i = 0; i < bc->cnt; ++i) {
-        printf("bcache->lba[%"PRIu32"]        = %"PRIu32"\n", i, (uint32_t)bc->lba[i]);
+        printf("\tbcache->lba[%"PRIu32"]        = %"PRIu32"\n", i, (uint32_t)bc->lba[i]);
     }
 
-    printf("**********************************************\n");
 }
 
 static clock_t get_ms(void)
@@ -230,23 +225,24 @@ static bool dir_test(int len)
     clock_t diff;
     clock_t stop;
     clock_t start;
-    start = get_ms();
 
-    printf("Directory create: /mp/dir1\n");
+    printf("\ndir_test: %d\n", len);
+    printf("directory create: /mp/dir1\n");
+    start = get_ms();
     r = ext4_dir_mk("/mp/dir1");
     if(r != EOK){
-        printf("Unable to create directory: /mp/dir1\n");
+        printf("\text4_dir_mk: rc = %d\n", r);
         return false;
     }
 
 
     ext4_cache_write_back("/mp/", 1);
-    printf("Add files to: /mp/dir1\n");
+    printf("add files to: /mp/dir1\n");
     for (i = 0; i < len; ++i) {
         sprintf(path, "/mp/dir1/f%d", i);
         r = ext4_fopen(&f, path, "wb");
         if(r != EOK){
-            printf("Unable to create file in directory: /mp/dir1\n");
+            printf("\text4_fopen: rc = %d\n", r);
             return false;
         }
     }
@@ -255,7 +251,7 @@ static bool dir_test(int len)
     stop =  get_ms();
     diff = stop - start;
     dir_ls("/mp/dir1");
-    printf("dir_test time: %d ms\n", (int)diff);
+    printf("dir_test: time: %d ms\n", (int)diff);
     return true;
 }
 
@@ -271,22 +267,23 @@ static bool file_test(void)
     clock_t diff;
     uint32_t kbps;
     uint64_t size_bytes;
+
+    printf("\nfile_test:\n");
     /*Add hello world file.*/
     r = ext4_fopen(&f, "/mp/hello.txt", "wb");
     r = ext4_fwrite(&f, "Hello World !\n", strlen("Hello World !\n"), 0);
     r = ext4_fclose(&f);
 
 
-    printf("ext4_fopen: test1\n");
-
+    printf("ext4_fopen: write test\n");
     start = get_ms();
     r = ext4_fopen(&f, "/mp/test1", "wb");
     if(r != EOK){
-        printf("ext4_fopen ERROR = %d\n", r);
+        printf("\text4_fopen rc = %d\n", r);
         return false;
     }
 
-    printf("ext4_write: %d * %d ..." , rw_szie, rw_count);
+    printf("ext4_write: %d * %d ...\n" , rw_szie, rw_count);
     for (i = 0; i < rw_count; ++i) {
 
         memset(wr_buff, i % 10 + '0', rw_szie);
@@ -298,31 +295,28 @@ static bool file_test(void)
     }
 
     if(i != rw_count){
-        printf("ERROR: rw_count = %d\n", i);
+        printf("\tfile_test: rw_count = %d\n", i);
         return false;
     }
 
-    printf("OK\n");
     stop = get_ms();
     diff = stop - start;
     size_bytes = rw_szie * rw_count;
     size_bytes = (size_bytes * 1000) / 1024;
     kbps = (size_bytes) / (diff + 1);
-    printf("file_test write time: %d ms\n", (int)diff);
-    printf("file_test write speed: %"PRIu32" KB/s\n", kbps);
+    printf("\twrite time: %d ms\n", (int)diff);
+    printf("\twrite speed: %"PRIu32" KB/s\n", kbps);
     r = ext4_fclose(&f);
-    printf("ext4_fopen: test1\n");
 
-
+    printf("ext4_fopen: read test\n");
     start = get_ms();
     r = ext4_fopen(&f, "/mp/test1", "r+");
     if(r != EOK){
-        printf("ext4_fopen ERROR = %d\n", r);
+        printf("\text4_fopen rc = %d\n", r);
         return false;
     }
 
-    printf("ext4_read: %d * %d ..." , rw_szie, rw_count);
-
+    printf("ext4_read: %d * %d ...\n" , rw_szie, rw_count);
     for (i = 0; i < rw_count; ++i) {
         memset(wr_buff, i % 10 + '0', rw_szie);
         r = ext4_fread(&f, rd_buff, rw_szie, &size);
@@ -335,17 +329,16 @@ static bool file_test(void)
         }
     }
     if(i != rw_count){
-        printf("ERROR: rw_count = %d\n", i);
+        printf("\tfile_test: rw_count = %d\n", i);
         return false;
     }
-    printf("OK\n");
     stop = get_ms();
     diff = stop - start;
     size_bytes = rw_szie * rw_count;
     size_bytes = (size_bytes * 1000) / 1024;
     kbps = (size_bytes) / (diff + 1);
-    printf("file_test read time: %d ms\n", (int)diff);
-    printf("file_test read speed: %"PRIu32" KB/s\n", kbps);
+    printf("\tread time: %d ms\n", (int)diff);
+    printf("\tread speed: %"PRIu32" KB/s\n", kbps);
     r = ext4_fclose(&f);
 
     return true;
@@ -357,18 +350,13 @@ static void cleanup(void)
     clock_t stop;
     clock_t diff;
 
+    printf("\ncleanup:\n");
     ext4_fremove("/mp/hello.txt");
-
     printf("cleanup: remove /mp/test1\n");
-    start = get_ms();
     ext4_fremove("/mp/test1");
-    stop = get_ms();
-    diff = stop - start;
-    printf("cleanup: time: %d ms\n", (int)diff);
-
 
     printf("cleanup: remove /mp/dir1\n");
-    start =get_ms();
+    start = get_ms();
     ext4_dir_rm("/mp/dir1");
     stop = get_ms();
     diff = stop - start;
@@ -380,7 +368,7 @@ static bool open_filedev(void)
     ext4_filedev_filename(input_name);
     bd = ext4_filedev_get();
     if(!bd){
-        printf("Block device ERROR\n");
+        printf("open_filedev: fail\n");
         return false;
     }
     return true;
@@ -392,7 +380,7 @@ static bool open_winpartition(void)
     ext4_io_raw_filename(input_name);
     bd = ext4_io_raw_dev_get();
     if(!bd){
-        printf("Block device ERROR\n");
+        printf("open_winpartition: fail\n");
         return false;
     }
     return true;
@@ -417,21 +405,21 @@ static bool mount(void)
     rd_buff = malloc(rw_szie);
 
     if(!wr_buff || !rd_buff){
-        printf("Read-Write allocation ERROR\n");
+        printf("mount: allocation failed\n");
         return false;
     }
 
     ext4_dmask_set(EXT4_DEBUG_ALL);
 
-    r = ext4_device_register(bd, cache_mode ? 0 : bc, "ext4_filesim");
+    r = ext4_device_register(bd, cache_mode ? 0 : bc, "ext4_fs");
     if(r != EOK){
-        printf("ext4_device_register ERROR = %d\n", r);
+        printf("ext4_device_register: rc = %d\n", r);
         return false;
     }
 
-    r = ext4_mount("ext4_filesim", "/mp/");
+    r = ext4_mount("ext4_fs", "/mp/");
     if(r != EOK){
-        printf("ext4_mount ERROR = %d\n", r);
+        printf("ext4_mount: rc = %d\n", r);
         return false;
     }
 
@@ -442,7 +430,7 @@ static bool umount(void)
 {
     int r = ext4_umount("/mp/");
     if(r != EOK){
-        printf("ext4_umount: FAIL %d", r);
+        printf("ext4_umount: rc = %d", r);
         return false;
     }
     return true;
@@ -511,11 +499,11 @@ int main(int argc, char **argv)
     if(!parse_opt(argc, argv))
         return EXIT_FAILURE;
 
-    printf("Test conditions:\n");
-    printf("Imput name: %s\n", input_name);
-    printf("RW size: %d\n",  rw_szie);
-    printf("RW count: %d\n", rw_count);
-    printf("Cache mode: %s\n", cache_mode ? "dynamic" : "static");
+    printf("test conditions:\n");
+    printf("\timput name: %s\n", input_name);
+    printf("\trw size: %d\n",  rw_szie);
+    printf("\trw count: %d\n", rw_count);
+    printf("\tcache mode: %s\n", cache_mode ? "dynamic" : "static");
 
     if(!mount())
         return EXIT_FAILURE;
@@ -549,7 +537,7 @@ int main(int argc, char **argv)
     if(!umount())
         return EXIT_FAILURE;
 
-    printf("Test finish: OK\n");
+    printf("\ntest finished\n");
     return EXIT_SUCCESS;
 
 }

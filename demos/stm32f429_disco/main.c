@@ -213,6 +213,7 @@ static bool dir_test(int len)
     clock_t stop;
     clock_t start;
 
+    printf("\ndir_test: %d\n", len);
     ext4_io_timings_clear();
     start = get_ms();
 
@@ -236,7 +237,7 @@ static bool dir_test(int len)
     stop =  get_ms();
     diff = stop - start;
     dir_ls("/mp/dir1");
-    printf("  time: %d ms\n", (int)diff);
+    printf("dir_test: time: %d ms\n", (int)diff);
     printf_io_timings(diff);
     return true;
 }
@@ -253,6 +254,8 @@ static bool file_test(void)
     clock_t diff;
     uint32_t kbps;
     uint64_t size_bytes;
+
+    printf("\nfile_test:\n");
 
     /*Add hello world file.*/
     r = ext4_fopen(&f, "/mp/hello.txt", "wb");
@@ -355,7 +358,7 @@ static void cleanup(void)
     ext4_dir_rm("/mp/dir1");
     stop = get_ms();
     diff = stop - start;
-    printf("  time: %d ms\n", (int)diff);
+    printf("cleanup: time: %d ms\n", (int)diff);
     printf_io_timings(diff);
 }
 
@@ -473,7 +476,7 @@ int main(void)
     if(!umount())
         return EXIT_FAILURE;
 
-    printf("press RESET button to restart\n");
+    printf("\npress RESET button to restart\n");
 
     while (1) {
         hw_wait_ms(500);
