@@ -237,6 +237,7 @@ static bool dir_test(int len)
     diff = stop - start;
     dir_ls("/mp/dir1");
     printf("dir_test: time: %d ms\n", (int)diff);
+    printf("dir_test: av: %d ms/entry\n", (int)diff / len);
     printf_io_timings(diff);
     return true;
 }
