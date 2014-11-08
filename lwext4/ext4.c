@@ -1369,6 +1369,7 @@ int ext4_dir_open (ext4_dir *d, const char *path)
 
     EXT4_MP_LOCK(mp);
     r = ext4_generic_open(&d->f, path, "r", false, 0, 0);
+    d->next_off = 0;
     EXT4_MP_UNLOCK(mp);
     return r;
 }
@@ -1378,42 +1379,37 @@ int ext4_dir_close(ext4_dir *d)
     return ext4_fclose(&d->f);
 }
 
-ext4_direntry* ext4_dir_entry_get(ext4_dir *d, uint32_t id)
+ext4_direntry* ext4_dir_entry_next(ext4_dir *d)
 {
+#define EXT4_DIR_ENTRY_OFFSET_TERM (uint64_t)(-1)
+
     int r;
-    uint32_t i;
     ext4_direntry *de = 0;
     struct ext4_inode_ref dir;
     struct ext4_directory_iterator it;
 
     EXT4_MP_LOCK(d->f.mp);
 
+    if(d->next_off == EXT4_DIR_ENTRY_OFFSET_TERM)
+        return 0;
+
     r = ext4_fs_get_inode_ref(&d->f.mp->fs, d->f.inode, &dir);
     if(r != EOK){
         goto Finish;
     }
 
-    r = ext4_dir_iterator_init(&it, &dir, 0);
+    r = ext4_dir_iterator_init(&it, &dir, d->next_off);
     if(r != EOK){
         ext4_fs_put_inode_ref(&dir);
         goto Finish;
     }
 
-    i = 0;
-    while(r == EOK){
+    memcpy(&d->de, it.current, sizeof(ext4_direntry));
+    de = &d->de;
 
-        if(!it.current)
-            break;
+    ext4_dir_iterator_next(&it);
 
-        if(i == id){
-            memcpy(&d->de, it.current, sizeof(ext4_direntry));
-            de = &d->de;
-            break;
-        }
-
-        i++;
-        r = ext4_dir_iterator_next(&it);
-    }
+    d->next_off = it.current ? it.current_offset : EXT4_DIR_ENTRY_OFFSET_TERM;
 
     ext4_dir_iterator_fini(&it);
     ext4_fs_put_inode_ref(&dir);

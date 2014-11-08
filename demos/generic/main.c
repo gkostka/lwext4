@@ -133,7 +133,6 @@ static char* entry_to_str(uint8_t type)
 
 static void dir_ls(const char *path)
 {
-    int j = 0;
     char sss[255];
     ext4_dir d;
     ext4_direntry *de;
@@ -141,7 +140,7 @@ static void dir_ls(const char *path)
     printf("ls %s:\n", path);
 
     ext4_dir_open(&d, path);
-    de = ext4_dir_entry_get(&d, j++);
+    de = ext4_dir_entry_next(&d);
 
 
     while(de){
@@ -150,7 +149,7 @@ static void dir_ls(const char *path)
         printf("\t%s", entry_to_str(de->inode_type));
         printf("%s", sss);
         printf("\n");
-        de = ext4_dir_entry_get(&d, j++);
+        de = ext4_dir_entry_next(&d);
     }
     ext4_dir_close(&d);
 }

@@ -147,6 +147,8 @@ typedef struct  {
     ext4_file f;
     /**@brief   Current directory entry.*/
     ext4_direntry de;
+    /**@brief   Next entry offset*/
+    uint64_t next_off;
 }ext4_dir;
 
 /********************************MOUNT OPERATIONS****************************/
@@ -337,12 +339,11 @@ int ext4_dir_open (ext4_dir *d, const char *path);
  * @return  standard error code*/
 int ext4_dir_close(ext4_dir *d);
 
-
-/**@brief   Return directory entry by id.
+/**@brief   Return next directory entry.
  * @param   d directory handle
  * @param   id entry id
- * @return  directory entry id (NULL id no entry)*/
-ext4_direntry* ext4_dir_entry_get(ext4_dir *d, uint32_t id);
+ * @return  directory entry id (NULL if no entry)*/
+ext4_direntry* ext4_dir_entry_next(ext4_dir *d);
 
 #endif /* EXT4_H_ */
 

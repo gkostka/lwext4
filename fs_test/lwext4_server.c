@@ -824,8 +824,9 @@ int _dir_entry_get(char *p)
     int idx = 0;
     ext4_direntry *d;
 
-    while(d = ext4_dir_entry_get(&dir_tab[did].fd, idx++)){
+    while(d = ext4_dir_entry_next(&dir_tab[did].fd)){
 
+        idx++;
         memcpy(name, d->name, d->name_length);
         name[d->name_length] = 0;
         if(verbose){
@@ -833,7 +834,6 @@ int _dir_entry_get(char *p)
         }
     }
 
-    idx--;
 
     if(idx < 2){
         printf("Minumum dir entry error\n");
