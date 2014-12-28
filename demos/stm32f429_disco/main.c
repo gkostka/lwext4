@@ -191,12 +191,12 @@ static void block_stats(void)
 
 static clock_t get_ms(void)
 {
-    return hw_get_ms();
+    return tim_get_ms();
 }
 
 static void printf_io_timings(clock_t diff)
 {
-    const struct ext4_io_stats *stats = ext4_io_timings_get(diff);
+    const struct ext4_io_stats *stats = io_timings_get(diff);
     printf("io_timings:\n");
     printf("  io_read: %.3f%%\n", stats->io_read);
     printf("  io_write: %.3f%%\n", stats->io_write);
@@ -214,7 +214,7 @@ static bool dir_test(int len)
     clock_t start;
 
     printf("dir_test: %d\n", len);
-    ext4_io_timings_clear();
+    io_timings_clear();
     start = get_ms();
 
     printf("directory create: /mp/dir1\n");
@@ -264,7 +264,7 @@ static bool file_test(void)
     r = ext4_fclose(&f);
 
 
-    ext4_io_timings_clear();
+    io_timings_clear();
     start = get_ms();
     r = ext4_fopen(&f, "/mp/test1", "wb");
     if(r != EOK){
@@ -299,7 +299,7 @@ static bool file_test(void)
     r = ext4_fclose(&f);
 
 
-    ext4_io_timings_clear();
+    io_timings_clear();
     start = get_ms();
     r = ext4_fopen(&f, "/mp/test1", "r+");
     if(r != EOK){
@@ -352,7 +352,7 @@ static void cleanup(void)
 
 
     printf("remove /mp/dir1\n");
-    ext4_io_timings_clear();
+    io_timings_clear();
     start = get_ms();
     ext4_dir_rm("/mp/dir1");
     stop = get_ms();
@@ -431,41 +431,41 @@ int main(void)
     printf("  cache mode: %s\n", cache_mode ? "dynamic" : "static");
 
 
-    hw_wait_ms(TEST_DELAY_MS);
+    tim_wait_ms(TEST_DELAY_MS);
     if(!mount())
         return EXIT_FAILURE;
 
-    hw_wait_ms(TEST_DELAY_MS);
+    tim_wait_ms(TEST_DELAY_MS);
 
     ext4_cache_write_back("/mp/", 1);
     cleanup();
 
     if(sbstat){
-        hw_wait_ms(TEST_DELAY_MS);
+        tim_wait_ms(TEST_DELAY_MS);
         mp_stats();
     }
 
-    hw_wait_ms(TEST_DELAY_MS);
+    tim_wait_ms(TEST_DELAY_MS);
     dir_ls("/mp/");
     if(!dir_test(dir_cnt))
         return EXIT_FAILURE;
 
-    hw_wait_ms(TEST_DELAY_MS);
+    tim_wait_ms(TEST_DELAY_MS);
     if(!file_test())
         return EXIT_FAILURE;
 
     if(sbstat){
-        hw_wait_ms(TEST_DELAY_MS);
+        tim_wait_ms(TEST_DELAY_MS);
         mp_stats();
     }
 
     if(cleanup_flag){
-        hw_wait_ms(TEST_DELAY_MS);
+        tim_wait_ms(TEST_DELAY_MS);
         cleanup();
     }
 
     if(bstat){
-        hw_wait_ms(TEST_DELAY_MS);
+        tim_wait_ms(TEST_DELAY_MS);
         block_stats();
     }
 
@@ -476,9 +476,9 @@ int main(void)
     printf("press RESET button to restart\n");
 
     while (1) {
-        hw_wait_ms(500);
+        tim_wait_ms(500);
         hw_led_green(1);
-        hw_wait_ms(500);
+        tim_wait_ms(500);
         hw_led_green(0);
 
     }

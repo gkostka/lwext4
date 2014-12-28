@@ -78,12 +78,12 @@ struct usb_msc_io_timings {
 static struct usb_msc_io_timings io_timings;
 
 
-void ext4_io_timings_clear(void)
+void io_timings_clear(void)
 {
     memset(&io_timings, 0, sizeof(struct usb_msc_io_timings));
 }
 
-const struct ext4_io_stats * ext4_io_timings_get(uint32_t time_sum_ms)
+const struct ext4_io_stats * io_timings_get(uint32_t time_sum_ms)
 {
     static struct ext4_io_stats s;
 
@@ -155,7 +155,7 @@ static int usb_msc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 {
     uint8_t status;
 
-    uint64_t v = hw_get_us();
+    uint64_t v = tim_get_us();
 
     if(!hw_usb_connected())
         return EIO;
@@ -167,7 +167,7 @@ static int usb_msc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
     if(status != USBH_OK)
         return EIO;
 
-    io_timings.acc_bread += hw_get_us() - v;
+    io_timings.acc_bread += tim_get_us() - v;
     io_timings.cnt_bread++;
     io_timings.av_bread = io_timings.acc_bread / io_timings.cnt_bread;
 
@@ -180,7 +180,7 @@ static int usb_msc_bwrite(struct ext4_blockdev *bdev, const void *buf,
 {
     uint8_t status;
 
-    uint64_t v = hw_get_us();
+    uint64_t v = tim_get_us();
 
     if(!hw_usb_connected())
         return EIO;
@@ -192,7 +192,7 @@ static int usb_msc_bwrite(struct ext4_blockdev *bdev, const void *buf,
     if(status != USBH_OK)
         return EIO;
 
-    io_timings.acc_bwrite += hw_get_us() - v;
+    io_timings.acc_bwrite += tim_get_us() - v;
     io_timings.cnt_bwrite++;
     io_timings.av_bwrite = io_timings.acc_bwrite / io_timings.cnt_bwrite;
 

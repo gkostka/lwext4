@@ -170,18 +170,18 @@ void hw_led_green(bool on)
     on ? BSP_LED_On(LED3) : BSP_LED_Off(LED3);
 }
 
-uint32_t hw_get_ms(void)
+uint32_t tim_get_ms(void)
 {
     return HAL_GetTick();
 }
 
-uint64_t hw_get_us(void)
+uint64_t tim_get_us(void)
 {
     return (uint64_t)HAL_GetTick() * 1000 +
             ((SysTick->LOAD - SysTick->VAL) * 1000) / SysTick->LOAD;
 }
 
-void hw_wait_ms(uint32_t ms)
+void tim_wait_ms(uint32_t ms)
 {
     volatile uint32_t t = HAL_GetTick();
 

@@ -48,8 +48,8 @@ struct ext4_io_stats {
     float cpu;
 };
 
-void ext4_io_timings_clear(void);
-const struct ext4_io_stats * ext4_io_timings_get(uint32_t time_sum_ms);
+void io_timings_clear(void);
+const struct ext4_io_stats * io_timings_get(uint32_t time_sum_ms);
 
 
 

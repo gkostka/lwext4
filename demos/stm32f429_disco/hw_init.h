@@ -42,8 +42,8 @@ bool hw_usb_enum_done(void);
 void hw_led_red(bool on);
 void hw_led_green(bool on);
 
-uint32_t hw_get_ms(void);
-uint64_t hw_get_us(void);
-void hw_wait_ms(uint32_t ms);
+uint32_t tim_get_ms(void);
+uint64_t tim_get_us(void);
+void tim_wait_ms(uint32_t ms);
 
 #endif /* HW_INIT_H_ */
