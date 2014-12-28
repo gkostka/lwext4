@@ -102,10 +102,6 @@ Usage:                                                          \n\
     --wpart  - windows partition mode                           \n\
 \n";
 
-
-
-
-
 static char* entry_to_str(uint8_t type)
 {
     switch(type){
