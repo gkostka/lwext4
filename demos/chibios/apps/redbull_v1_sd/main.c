@@ -25,7 +25,6 @@ static THD_FUNCTION(led_task, arg)
         palClearPad(GPIOF, 6);
         chThdSleepMilliseconds(500);
     }
-    return 0;
 }
 
 #define TEST_DELAY_MS    1000
