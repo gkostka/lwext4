@@ -33,11 +33,7 @@
 
 #include "timings.h"
 
-
-void tim_wait_ms(uint32_t v)
-{
-    chThdSleepMilliseconds(v);
-}
+void tim_wait_ms(uint32_t v) { chThdSleepMilliseconds(v); }
 
 uint64_t tim_get_us(void)
 {
@@ -50,5 +46,3 @@ uint32_t tim_get_ms(void)
     uint32_t v = chVTGetSystemTimeX();
     return ST2MS(v);
 }
-
-

@@ -42,26 +42,28 @@
 #include "timings.h"
 
 /**@brief   Block size.*/
-#define SDC_BLOCK_SIZE              512
+#define SDC_BLOCK_SIZE 512
 
 /**@brief   MBR_block ID*/
-#define MBR_BLOCK_ID                0
-#define MBR_PART_TABLE_OFF          446
+#define MBR_BLOCK_ID 0
+#define MBR_PART_TABLE_OFF 446
 
-struct part_tab_entry {
-    uint8_t  status;
-    uint8_t  chs1[3];
-    uint8_t  type;
-    uint8_t  chs2[3];
+struct part_tab_entry
+{
+    uint8_t status;
+    uint8_t chs1[3];
+    uint8_t type;
+    uint8_t chs2[3];
     uint32_t first_lba;
     uint32_t sectors;
-}__attribute__((packed));
+} __attribute__((packed));
 
 /**@brief   Partition block offset*/
 static uint32_t part_offset;
 
 /**@brief IO timings*/
-struct sdc_io_timings {
+struct sdc_io_timings
+{
     uint64_t acc_bread;
     uint64_t acc_bwrite;
 
@@ -79,14 +81,14 @@ void io_timings_clear(void)
     memset(&io_timings, 0, sizeof(struct sdc_io_timings));
 }
 
-const struct ext4_io_stats * io_timings_get(uint32_t time_sum_ms)
+const struct ext4_io_stats *io_timings_get(uint32_t time_sum_ms)
 {
     static struct ext4_io_stats s;
 
     s.io_read = (((float)io_timings.acc_bread * 100.0) / time_sum_ms);
     s.io_read /= 1000.0;
 
-    s.io_write= (((float)io_timings.acc_bwrite * 100.0) / time_sum_ms);
+    s.io_write = (((float)io_timings.acc_bwrite * 100.0) / time_sum_ms);
     s.io_write /= 1000.0;
 
     s.cpu = 100.0 - s.io_read - s.io_write;
@@ -94,29 +96,21 @@ const struct ext4_io_stats * io_timings_get(uint32_t time_sum_ms)
     return &s;
 }
 
-
 /**********************BLOCKDEV INTERFACE**************************************/
 static int sdc_open(struct ext4_blockdev *bdev);
 static int sdc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
-    uint32_t blk_cnt);
+                     uint32_t blk_cnt);
 static int sdc_bwrite(struct ext4_blockdev *bdev, const void *buf,
-    uint64_t blk_id, uint32_t blk_cnt);
-static int sdc_close(struct  ext4_blockdev *bdev);
-
-
-/******************************************************************************/
-EXT4_BLOCKDEV_STATIC_INSTANCE(
-    _sdc,
-    SDC_BLOCK_SIZE,
-    0,
-    sdc_open,
-    sdc_bread,
-    sdc_bwrite,
-    sdc_close
-);
+                      uint64_t blk_id, uint32_t blk_cnt);
+static int sdc_close(struct ext4_blockdev *bdev);
 
 /******************************************************************************/
-EXT4_BCACHE_STATIC_INSTANCE(_sdc_cache, CONFIG_BLOCK_DEV_CACHE_SIZE, EXT_LOGICAL_BLOCK_SIZE);
+EXT4_BLOCKDEV_STATIC_INSTANCE(_sdc, SDC_BLOCK_SIZE, 0, sdc_open, sdc_bread,
+                              sdc_bwrite, sdc_close);
+
+/******************************************************************************/
+EXT4_BCACHE_STATIC_INSTANCE(_sdc_cache, CONFIG_BLOCK_DEV_CACHE_SIZE,
+                            EXT_LOGICAL_BLOCK_SIZE);
 
 /******************************************************************************/
 
@@ -132,12 +126,10 @@ static int sdc_open(struct ext4_blockdev *bdev)
     if (sdcConnect(&SDCD1) != HAL_SUCCESS)
         return EIO;
 
-
     if (sdcRead(&SDCD1, 0, mbr, 1) != HAL_SUCCESS)
         return EIO;
 
     part0 = (struct part_tab_entry *)(mbr + MBR_PART_TABLE_OFF);
-
 
     part_offset = part0->first_lba;
     _sdc.ph_bcnt = SDCD1.capacity * SDC_BLOCK_SIZE;
@@ -146,14 +138,14 @@ static int sdc_open(struct ext4_blockdev *bdev)
 }
 
 static int sdc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
-    uint32_t blk_cnt)
+                     uint32_t blk_cnt)
 {
     (void)bdev;
     bool status;
     uint64_t v = tim_get_us();
 
     status = sdcRead(&SDCD1, blk_id, buf, blk_cnt);
-    if(status != HAL_SUCCESS)
+    if (status != HAL_SUCCESS)
         return EIO;
 
     io_timings.acc_bread += tim_get_us() - v;
@@ -161,18 +153,17 @@ static int sdc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
     io_timings.av_bread = io_timings.acc_bread / io_timings.cnt_bread;
 
     return EOK;
-
 }
 
 static int sdc_bwrite(struct ext4_blockdev *bdev, const void *buf,
-    uint64_t blk_id, uint32_t blk_cnt)
+                      uint64_t blk_id, uint32_t blk_cnt)
 {
     (void)bdev;
     bool status;
     uint64_t v = tim_get_us();
 
     status = sdcWrite(&SDCD1, blk_id, buf, blk_cnt);
-    if(status != HAL_SUCCESS)
+    if (status != HAL_SUCCESS)
         return EIO;
 
     io_timings.acc_bwrite += tim_get_us() - v;
@@ -182,7 +173,7 @@ static int sdc_bwrite(struct ext4_blockdev *bdev, const void *buf,
     return EOK;
 }
 
-static int sdc_close(struct  ext4_blockdev *bdev)
+static int sdc_close(struct ext4_blockdev *bdev)
 {
     (void)bdev;
     return EOK;
@@ -190,14 +181,6 @@ static int sdc_close(struct  ext4_blockdev *bdev)
 
 /******************************************************************************/
 
-struct ext4_bcache*   sdc_cache_get(void)
-{
-    return &_sdc_cache;
-}
+struct ext4_bcache *sdc_cache_get(void) { return &_sdc_cache; }
 
-
-struct ext4_blockdev* sdc_bdev_get(void)
-{
-    return &_sdc;
-}
-
+struct ext4_blockdev *sdc_bdev_get(void) { return &_sdc; }
