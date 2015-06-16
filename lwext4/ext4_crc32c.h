@@ -49,10 +49,8 @@
  * @return	updated crc32c value*/
 uint32_t ext4_crc32c(uint32_t crc, const void *buffer, uint32_t length);
 
-
 #endif /* LWEXT4_EXT4_CRC32C_H_ */
 
 /**
  * @}
  */
-
