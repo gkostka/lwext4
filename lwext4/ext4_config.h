@@ -43,98 +43,93 @@
 
 /*****************************************************************************/
 
-#define F_SET_EXT2    2
-#define F_SET_EXT3    3
-#define F_SET_EXT4    4
+#define F_SET_EXT2 2
+#define F_SET_EXT3 3
+#define F_SET_EXT4 4
 
 #ifndef CONFIG_EXT_FEATURE_SET_LVL
-#define CONFIG_EXT_FEATURE_SET_LVL  F_SET_EXT4
+#define CONFIG_EXT_FEATURE_SET_LVL F_SET_EXT4
 #endif
 
 /*****************************************************************************/
 
 #if CONFIG_EXT_FEATURE_SET_LVL == F_SET_EXT2
-    #define CONFIG_DIR_INDEX_ENABLE     0
-    #define CONFIG_EXTENT_ENABLE        0
+#define CONFIG_DIR_INDEX_ENABLE 0
+#define CONFIG_EXTENT_ENABLE 0
 
-    /*Superblock features flag*/
-    #define CONFIG_FEATURE_COMPAT_SUPP    EXT2_FEATURE_COMPAT_SUPP
+/*Superblock features flag*/
+#define CONFIG_FEATURE_COMPAT_SUPP EXT2_FEATURE_COMPAT_SUPP
 
-    #define CONFIG_FEATURE_INCOMPAT_SUPP  (EXT2_FEATURE_INCOMPAT_SUPP | \
-                                          FEATURE_INCOMPAT_IGNORED)
+#define CONFIG_FEATURE_INCOMPAT_SUPP                                           \
+    (EXT2_FEATURE_INCOMPAT_SUPP | FEATURE_INCOMPAT_IGNORED)
 
-    #define CONFIG_FEATURE_RO_COMPAT_SUPP EXT2_FEATURE_RO_COMPAT_SUPP
+#define CONFIG_FEATURE_RO_COMPAT_SUPP EXT2_FEATURE_RO_COMPAT_SUPP
 #elif CONFIG_EXT_FEATURE_SET_LVL == F_SET_EXT3
-    #define CONFIG_DIR_INDEX_ENABLE     1
-    #define CONFIG_EXTENT_ENABLE        0
+#define CONFIG_DIR_INDEX_ENABLE 1
+#define CONFIG_EXTENT_ENABLE 0
 
-    /*Superblock features flag*/
-    #define CONFIG_FEATURE_COMPAT_SUPP    EXT3_FEATURE_COMPAT_SUPP
+/*Superblock features flag*/
+#define CONFIG_FEATURE_COMPAT_SUPP EXT3_FEATURE_COMPAT_SUPP
 
-    #define CONFIG_FEATURE_INCOMPAT_SUPP  (EXT3_FEATURE_INCOMPAT_SUPP | \
-                                          FEATURE_INCOMPAT_IGNORED)
+#define CONFIG_FEATURE_INCOMPAT_SUPP                                           \
+    (EXT3_FEATURE_INCOMPAT_SUPP | FEATURE_INCOMPAT_IGNORED)
 
-    #define CONFIG_FEATURE_RO_COMPAT_SUPP EXT3_FEATURE_RO_COMPAT_SUPP
+#define CONFIG_FEATURE_RO_COMPAT_SUPP EXT3_FEATURE_RO_COMPAT_SUPP
 #elif CONFIG_EXT_FEATURE_SET_LVL == F_SET_EXT4
-    #define CONFIG_DIR_INDEX_ENABLE     1
-    #define CONFIG_EXTENT_ENABLE        1
+#define CONFIG_DIR_INDEX_ENABLE 1
+#define CONFIG_EXTENT_ENABLE 1
 
-    /*Superblock features flag*/
-    #define CONFIG_FEATURE_COMPAT_SUPP    EXT4_FEATURE_COMPAT_SUPP
+/*Superblock features flag*/
+#define CONFIG_FEATURE_COMPAT_SUPP EXT4_FEATURE_COMPAT_SUPP
 
-    #define CONFIG_FEATURE_INCOMPAT_SUPP  (EXT4_FEATURE_INCOMPAT_SUPP | \
-                                          FEATURE_INCOMPAT_IGNORED)
+#define CONFIG_FEATURE_INCOMPAT_SUPP                                           \
+    (EXT4_FEATURE_INCOMPAT_SUPP | FEATURE_INCOMPAT_IGNORED)
 
-    #define CONFIG_FEATURE_RO_COMPAT_SUPP EXT4_FEATURE_RO_COMPAT_SUPP
+#define CONFIG_FEATURE_RO_COMPAT_SUPP EXT4_FEATURE_RO_COMPAT_SUPP
 #else
 #define "Unsupported CONFIG_EXT_FEATURE_SET_LVL"
 #endif
-
 
 /*****************************************************************************/
 
 /**@brief   Enable directory indexing comb sort*/
 #ifndef CONFIG_DIR_INDEX_COMB_SORT
-#define CONFIG_DIR_INDEX_COMB_SORT  1
+#define CONFIG_DIR_INDEX_COMB_SORT 1
 #endif
-
-
 
 /**@brief   Include error codes from ext4_errno or sandard library.*/
 #ifndef CONFIG_HAVE_OWN_ERRNO
-#define CONFIG_HAVE_OWN_ERRNO       1
+#define CONFIG_HAVE_OWN_ERRNO 1
 #endif
-
 
 /**@brief   Debug printf enable (stdout)*/
 #ifndef CONFIG_DEBUG_PRINTF
-#define CONFIG_DEBUG_PRINTF         1
+#define CONFIG_DEBUG_PRINTF 1
 #endif
 
 /**@brief   Assert printf enable (stdout)*/
 #ifndef CONFIG_DEBUG_ASSERT
-#define CONFIG_DEBUG_ASSERT         1
+#define CONFIG_DEBUG_ASSERT 1
 #endif
 
 /**@brief   Statistics of block device*/
 #ifndef CONFIG_BLOCK_DEV_ENABLE_STATS
-#define CONFIG_BLOCK_DEV_ENABLE_STATS   1
+#define CONFIG_BLOCK_DEV_ENABLE_STATS 1
 #endif
 
 /**@brief   Cache size of block device.*/
 #ifndef CONFIG_BLOCK_DEV_CACHE_SIZE
-#define CONFIG_BLOCK_DEV_CACHE_SIZE     8
+#define CONFIG_BLOCK_DEV_CACHE_SIZE 8
 #endif
-
 
 /**@brief   Ilosc urzadzen blokowych.*/
 #ifndef CONFIG_EXT4_BLOCKDEVS_COUNT
-#define CONFIG_EXT4_BLOCKDEVS_COUNT     2
+#define CONFIG_EXT4_BLOCKDEVS_COUNT 2
 #endif
 
 /**@brief   Ilosc punktow montowania systemu plikow*/
 #ifndef CONFIG_EXT4_MOUNTPOINTS_COUNT
-#define CONFIG_EXT4_MOUNTPOINTS_COUNT   2
+#define CONFIG_EXT4_MOUNTPOINTS_COUNT 2
 #endif
 
 #endif /* EXT4_CONFIG_H_ */
