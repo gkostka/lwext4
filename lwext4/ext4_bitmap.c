@@ -39,14 +39,13 @@
 
 #include <ext4_errno.h>
 
-
 void ext4_bmap_bits_free(uint8_t *bmap, uint32_t sbit, uint32_t bcnt)
 {
     uint32_t i = sbit;
 
-    while(i & 7){
+    while (i & 7) {
 
-        if(!bcnt)
+        if (!bcnt)
             return;
 
         ext4_bmap_bit_clr(bmap, i);
@@ -54,24 +53,24 @@ void ext4_bmap_bits_free(uint8_t *bmap, uint32_t sbit, uint32_t bcnt)
         bcnt--;
         i++;
     }
-    sbit  = i;
+    sbit = i;
     bmap += (sbit >> 3);
 
-    while(bcnt >= 32){
+    while (bcnt >= 32) {
         *(uint32_t *)bmap = 0;
         bmap += 4;
         bcnt -= 32;
         sbit += 32;
     }
 
-    while(bcnt >= 16){
+    while (bcnt >= 16) {
         *(uint16_t *)bmap = 0;
         bmap += 2;
         bcnt -= 16;
         sbit += 16;
     }
 
-    while(bcnt >= 8){
+    while (bcnt >= 8) {
         *bmap = 0;
         bmap += 1;
         bcnt -= 8;
@@ -83,22 +82,20 @@ void ext4_bmap_bits_free(uint8_t *bmap, uint32_t sbit, uint32_t bcnt)
     }
 }
 
-
-
 int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
-    uint32_t *bit_id)
+                           uint32_t *bit_id)
 {
     uint32_t i;
     uint32_t bcnt = ebit - sbit;
 
     i = sbit;
 
-    while(i & 7){
+    while (i & 7) {
 
-        if(!bcnt)
+        if (!bcnt)
             return ENOSPC;
 
-        if(ext4_bmap_is_bit_clr(bmap, i)){
+        if (ext4_bmap_is_bit_clr(bmap, i)) {
             *bit_id = sbit;
             return EOK;
         }
@@ -107,12 +104,11 @@ int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
         bcnt--;
     }
 
-    sbit  = i;
+    sbit = i;
     bmap += (sbit >> 3);
 
-
-    while(bcnt >= 32){
-        if(*(uint32_t *)bmap != 0xFFFFFFFF)
+    while (bcnt >= 32) {
+        if (*(uint32_t *)bmap != 0xFFFFFFFF)
             goto finish_it;
 
         bmap += 4;
@@ -120,8 +116,8 @@ int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
         sbit += 32;
     }
 
-    while(bcnt >= 16){
-        if(*(uint16_t *)bmap != 0xFFFF)
+    while (bcnt >= 16) {
+        if (*(uint16_t *)bmap != 0xFFFF)
             goto finish_it;
 
         bmap += 2;
@@ -129,11 +125,11 @@ int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
         sbit += 16;
     }
 
-    finish_it:
-    while(bcnt >= 8){
-        if(*bmap != 0xFF){
+finish_it:
+    while (bcnt >= 8) {
+        if (*bmap != 0xFF) {
             for (i = 0; i < 8; ++i) {
-                if(ext4_bmap_is_bit_clr(bmap, i)){
+                if (ext4_bmap_is_bit_clr(bmap, i)) {
                     *bit_id = sbit + i;
                     return EOK;
                 }
@@ -146,7 +142,7 @@ int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
     }
 
     for (i = 0; i < bcnt; ++i) {
-        if(ext4_bmap_is_bit_clr(bmap, i)){
+        if (ext4_bmap_is_bit_clr(bmap, i)) {
             *bit_id = sbit + i;
             return EOK;
         }
@@ -158,5 +154,3 @@ int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
 /**
  * @}
  */
-
-

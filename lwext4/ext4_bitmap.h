@@ -34,7 +34,6 @@
  * @brief Block/inode bitmap allocator.
  */
 
-
 #ifndef EXT4_BITMAP_H_
 #define EXT4_BITMAP_H_
 
@@ -57,7 +56,6 @@ static inline void ext4_bmap_bit_clr(uint8_t *bmap, uint32_t bit)
 {
     *(bmap + (bit >> 3)) &= ~(1 << (bit & 7));
 }
-
 
 /**@brief   Check if the bitmap bit is set.
  * @param   bmap bitmap buffer
@@ -87,12 +85,10 @@ void ext4_bmap_bits_free(uint8_t *bmap, uint32_t sbit, uint32_t bcnt);
  * @param   bit_id output parameter (first free bit)
  * @return  standard error code*/
 int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
-    uint32_t *bit_id);
-
+                           uint32_t *bit_id);
 
 #endif /* EXT4_BITMAP_H_ */
 
 /**
  * @}
  */
-
