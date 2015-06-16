@@ -43,7 +43,8 @@
 #include <stdbool.h>
 
 /**@brief   Single block descriptor.*/
-struct ext4_block {
+struct ext4_block
+{
     /**@brief   Dirty flag.*/
     bool dirty;
 
@@ -57,9 +58,9 @@ struct ext4_block {
     uint8_t *data;
 };
 
-
 /**@brief   Block cache descriptor.*/
-struct ext4_bcache {
+struct ext4_bcache
+{
 
     /**@brief   Item count in block cache*/
     uint32_t cnt;
@@ -93,19 +94,17 @@ struct ext4_bcache {
 
     /**@brief   Maximum referenced datablocks*/
     uint32_t max_ref_blocks;
-
 };
 
 /**@brief   Static initializer of block cache structure.*/
-#define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)      \
-        static uint8_t  __name##_data[(__cnt) * (__itemsize)];      \
-        static struct ext4_bcache __name = {                        \
-                .cnt     = __cnt,                                   \
-                .itemsize  = __itemsize,                            \
-                .lru_ctr   = 0,                                     \
-                .data    = __name##_data,                           \
-        }
-
+#define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)                 \
+    static uint8_t __name##_data[(__cnt) * (__itemsize)];                      \
+    static struct ext4_bcache __name = {                                       \
+        .cnt = __cnt,                                                          \
+        .itemsize = __itemsize,                                                \
+        .lru_ctr = 0,                                                          \
+        .data = __name##_data,                                                 \
+    }
 
 /**@brief   Dynamic initialization of block cache.
  * @param   bc block cache descriptor
@@ -113,7 +112,7 @@ struct ext4_bcache {
  * @param   itemsize single item size (in bytes)
  * @return  standard error code*/
 int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
-    uint32_t itemsize);
+                             uint32_t itemsize);
 
 /**@brief   Dynamic de-initialization of block cache.
  * @param   bc block cache descriptor
@@ -128,16 +127,15 @@ int ext4_bcache_fini_dynamic(struct ext4_bcache *bc);
  * @param   is_new block is new (needs to be read)
  * @return  standard error code*/
 int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
-    bool *is_new);
+                      bool *is_new);
 
 /**@brief   Free block from cache memory (decrement reference counter).
  * @param   bc block cache descriptor
  * @param   b block to free
  * @param   cache writeback mode
  * @return  standard error code*/
-int ext4_bcache_free (struct ext4_bcache *bc, struct ext4_block *b,
-    uint8_t free_delay);
-
+int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b,
+                     uint8_t free_delay);
 
 /**@brief   Return a full status of block cache.
  * @param   bc block cache descriptor
