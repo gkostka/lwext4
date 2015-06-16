@@ -37,107 +37,84 @@
 #include <windows.h>
 #include <winioctl.h>
 
-
 /**@brief   Default filename.*/
 static const char *fname = "ext2";
 
 /**@brief   IO block size.*/
-#define EXT4_IORAW_BSIZE      512
+#define EXT4_IORAW_BSIZE 512
 
 /**@brief   Image file descriptor.*/
 static HANDLE dev_file;
 
-
 /**********************BLOCKDEV INTERFACE**************************************/
 static int io_raw_open(struct ext4_blockdev *bdev);
 static int io_raw_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
-    uint32_t blk_cnt);
+                        uint32_t blk_cnt);
 static int io_raw_bwrite(struct ext4_blockdev *bdev, const void *buf,
-    uint64_t blk_id, uint32_t blk_cnt);
-static int io_raw_close(struct  ext4_blockdev *bdev);
-
-
-
+                         uint64_t blk_id, uint32_t blk_cnt);
+static int io_raw_close(struct ext4_blockdev *bdev);
 
 /******************************************************************************/
-EXT4_BLOCKDEV_STATIC_INSTANCE(
-    _filedev,
-    EXT4_IORAW_BSIZE,
-    0,
-    io_raw_open,
-    io_raw_bread,
-    io_raw_bwrite,
-    io_raw_close
-);
+EXT4_BLOCKDEV_STATIC_INSTANCE(_filedev, EXT4_IORAW_BSIZE, 0, io_raw_open,
+                              io_raw_bread, io_raw_bwrite, io_raw_close);
 
 /******************************************************************************/
 static int io_raw_open(struct ext4_blockdev *bdev)
 {
     char path[64];
-    DISK_GEOMETRY   pdg;
+    DISK_GEOMETRY pdg;
     uint64_t disk_size;
-    BOOL bResult   = FALSE;
+    BOOL bResult = FALSE;
     DWORD junk;
 
     sprintf(path, "\\\\.\\%s", fname);
 
-    dev_file = CreateFile (path,
-            GENERIC_READ | GENERIC_WRITE,
-            FILE_SHARE_WRITE | FILE_SHARE_READ,
-            NULL,
-            OPEN_EXISTING,
-            FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH,
-            NULL);
+    dev_file =
+        CreateFile(path, GENERIC_READ | GENERIC_WRITE,
+                   FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                   FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH, NULL);
 
-    if (dev_file == INVALID_HANDLE_VALUE){
+    if (dev_file == INVALID_HANDLE_VALUE) {
         return EIO;
     }
 
-    bResult = DeviceIoControl(dev_file,
-            IOCTL_DISK_GET_DRIVE_GEOMETRY,
-            NULL, 0,
-            &pdg, sizeof(pdg),
-            &junk,
-            (LPOVERLAPPED) NULL);
+    bResult = DeviceIoControl(dev_file, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0,
+                              &pdg, sizeof(pdg), &junk, (LPOVERLAPPED)NULL);
 
-    if(bResult == FALSE){
+    if (bResult == FALSE) {
         CloseHandle(dev_file);
         return EIO;
     }
 
-
     disk_size = pdg.Cylinders.QuadPart * (ULONG)pdg.TracksPerCylinder *
-            (ULONG)pdg.SectorsPerTrack * (ULONG)pdg.BytesPerSector;
+                (ULONG)pdg.SectorsPerTrack * (ULONG)pdg.BytesPerSector;
 
     _filedev.ph_bsize = pdg.BytesPerSector;
-    _filedev.ph_bcnt  = disk_size / pdg.BytesPerSector;
-
+    _filedev.ph_bcnt = disk_size / pdg.BytesPerSector;
 
     return EOK;
 }
 
 /******************************************************************************/
 
-static int io_raw_bread(struct  ext4_blockdev *bdev, void *buf, uint64_t blk_id,
-    uint32_t blk_cnt)
+static int io_raw_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
+                        uint32_t blk_cnt)
 {
-    long hipart = blk_id >> (32-9);
+    long hipart = blk_id >> (32 - 9);
     long lopart = blk_id << 9;
     long err;
 
-    SetLastError (0);
-    lopart = SetFilePointer (dev_file, lopart, &hipart, FILE_BEGIN);
+    SetLastError(0);
+    lopart = SetFilePointer(dev_file, lopart, &hipart, FILE_BEGIN);
 
-    if (lopart == -1  &&  NO_ERROR != (err = GetLastError ()))
-    {
+    if (lopart == -1 && NO_ERROR != (err = GetLastError())) {
         return EIO;
     }
 
-    DWORD   n;
+    DWORD n;
 
-    if (!ReadFile (dev_file, buf, blk_cnt * 512, &n, NULL))
-    {
-        err = GetLastError ();
+    if (!ReadFile(dev_file, buf, blk_cnt * 512, &n, NULL)) {
+        err = GetLastError();
         return EIO;
     }
     return EOK;
@@ -145,48 +122,39 @@ static int io_raw_bread(struct  ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 
 /******************************************************************************/
 static int io_raw_bwrite(struct ext4_blockdev *bdev, const void *buf,
-    uint64_t blk_id, uint32_t blk_cnt)
+                         uint64_t blk_id, uint32_t blk_cnt)
 {
-    long hipart = blk_id >> (32-9);
+    long hipart = blk_id >> (32 - 9);
     long lopart = blk_id << 9;
     long err;
 
-    SetLastError (0);
-    lopart = SetFilePointer (dev_file, lopart, &hipart, FILE_BEGIN);
+    SetLastError(0);
+    lopart = SetFilePointer(dev_file, lopart, &hipart, FILE_BEGIN);
 
-    if (lopart == -1  &&  NO_ERROR != (err = GetLastError ()))
-    {
+    if (lopart == -1 && NO_ERROR != (err = GetLastError())) {
         return EIO;
     }
 
-    DWORD   n;
+    DWORD n;
 
-    if (!WriteFile (dev_file, buf, blk_cnt * 512, &n, NULL))
-    {
-        err = GetLastError ();
+    if (!WriteFile(dev_file, buf, blk_cnt * 512, &n, NULL)) {
+        err = GetLastError();
         return EIO;
     }
     return EOK;
 }
 
 /******************************************************************************/
-static int io_raw_close(struct  ext4_blockdev *bdev)
+static int io_raw_close(struct ext4_blockdev *bdev)
 {
     CloseHandle(dev_file);
     return EOK;
 }
 
 /******************************************************************************/
-struct  ext4_blockdev* ext4_io_raw_dev_get(void)
-{
-    return &_filedev;
-}
+struct ext4_blockdev *ext4_io_raw_dev_get(void) { return &_filedev; }
 /******************************************************************************/
-void ext4_io_raw_filename(const char *n)
-{
-    fname = n;
-}
+void ext4_io_raw_filename(const char *n) { fname = n; }
 
 /******************************************************************************/
 #endif
-
