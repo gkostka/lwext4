@@ -62,8 +62,9 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir);
  * @param name      Name to be found
  * @return Error code
  */
-int ext4_dir_dx_find_entry(struct ext4_directory_search_result * result,
-    struct ext4_inode_ref *inode_ref, size_t name_len, const char *name);
+int ext4_dir_dx_find_entry(struct ext4_directory_search_result *result,
+                           struct ext4_inode_ref *inode_ref, size_t name_len,
+                           const char *name);
 
 /**@brief Add new entry to indexed directory
  * @param parent Directory i-node
@@ -72,11 +73,10 @@ int ext4_dir_dx_find_entry(struct ext4_directory_search_result * result,
  * @return Error code
  */
 int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
-    struct ext4_inode_ref *child, const char *name);
+                          struct ext4_inode_ref *child, const char *name);
 
 #endif /* EXT4_DIR_IDX_H_ */
 
 /**
  * @}
  */
-

@@ -54,15 +54,14 @@
  * @return Relative number of block
  */
 static inline uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s,
-        uint32_t baddr)
+                                                     uint32_t baddr)
 {
     ext4_assert(baddr);
-    if(ext4_get32(s, first_data_block))
+    if (ext4_get32(s, first_data_block))
         baddr--;
 
-    return  baddr % ext4_get32(s, blocks_per_group);
+    return baddr % ext4_get32(s, blocks_per_group);
 }
-
 
 /**@brief Convert relative block address in group to absolute address.
  * @param s Superblock pointer
@@ -71,9 +70,10 @@ static inline uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s,
  * @return Absolute block address
  */
 static inline uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s,
-        uint32_t index, uint32_t bgid)
+                                                     uint32_t index,
+                                                     uint32_t bgid)
 {
-    if(ext4_get32(s, first_data_block))
+    if (ext4_get32(s, first_data_block))
         index++;
 
     return ext4_get32(s, blocks_per_group) * bgid + index;
@@ -81,10 +81,10 @@ static inline uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s,
 
 /**@brief TODO: */
 static inline uint64_t ext4_fs_first_bg_block_no(struct ext4_sblock *s,
-        uint32_t bgid)
+                                                 uint32_t bgid)
 {
     return (uint64_t)bgid * ext4_get32(s, blocks_per_group) +
-            ext4_get32(s, first_data_block);
+           ext4_get32(s, first_data_block);
 }
 
 /**@brief Initialize filesystem and read all needed data.
@@ -117,7 +117,7 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only);
  * @return Error code
  */
 int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid,
-    struct ext4_block_group_ref *ref);
+                                struct ext4_block_group_ref *ref);
 
 /**@brief Put reference to block group.
  * @param ref Pointer for reference to be put back
@@ -132,7 +132,7 @@ int ext4_fs_put_block_group_ref(struct ext4_block_group_ref *ref);
  * @return Error code
  */
 int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
-    struct ext4_inode_ref *ref);
+                          struct ext4_inode_ref *ref);
 
 /**@brief Put reference to i-node.
  * @param ref Pointer for reference to be put back
@@ -147,7 +147,7 @@ int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref);
  * @return Error code
  */
 int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
-    bool is_directory);
+                        bool is_directory);
 
 /**@brief Release i-node and mark it as free.
  * @param inode_ref I-node to be released
@@ -160,8 +160,7 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref);
  * @param new_size  New size of inode (must be < current size)
  * @return Error code
  */
-int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref,
-    uint64_t new_size);
+int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size);
 
 /**@brief Get physical block address by logical index of the block.
  * @param inode_ref I-node to read block address from
@@ -170,16 +169,17 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref,
  * @return Error code
  */
 int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-    uint64_t iblock, uint32_t *fblock);
+                                       uint64_t iblock, uint32_t *fblock);
 
-/**@brief Set physical block address for the block logical address into the i-node.
+/**@brief Set physical block address for the block logical address into the
+ * i-node.
  * @param inode_ref I-node to set block address to
  * @param iblock    Logical index of block
  * @param fblock    Physical block address
  * @return Error code
  */
 int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-    uint64_t iblock, uint32_t fblock);
+                                       uint64_t iblock, uint32_t fblock);
 
 /**@brief Release data block from i-node
  * @param inode_ref I-node to release block from
@@ -187,7 +187,7 @@ int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
  * @return Error code
  */
 int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
-    uint32_t iblock);
+                                uint32_t iblock);
 
 /**@brief Append following logical block to the i-node.
  * @param inode_ref I-node to append block to
@@ -196,8 +196,7 @@ int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
  * @return Error code
  */
 int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
-    uint32_t *fblock, uint32_t *iblock);
-
+                               uint32_t *fblock, uint32_t *iblock);
 
 /**@brief   Increment inode link count.
  * @param   inode none handle
