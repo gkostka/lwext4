@@ -42,19 +42,16 @@
 #ifndef EXT4_SUPER_H_
 #define EXT4_SUPER_H_
 
-
 #include <ext4_config.h>
 #include <ext4_types.h>
-
-
 
 /**@brief   Blocks count get stored in superblock.
  * @param   s superblock descriptor
  * @return  count of blocks*/
 static inline uint64_t ext4_sb_get_blocks_cnt(struct ext4_sblock *s)
 {
-    return ((uint64_t) to_le32(s->blocks_count_hi) << 32) |
-            to_le32(s->blocks_count_lo);
+    return ((uint64_t)to_le32(s->blocks_count_hi) << 32) |
+           to_le32(s->blocks_count_lo);
 }
 
 /**@brief   Free blocks count get stored in superblock.
@@ -62,15 +59,15 @@ static inline uint64_t ext4_sb_get_blocks_cnt(struct ext4_sblock *s)
  * @return  free blocks*/
 static inline uint64_t ext4_sb_get_free_blocks_cnt(struct ext4_sblock *s)
 {
-    return ((uint64_t) to_le32(s->free_blocks_count_hi) << 32) |
-            to_le32(s->free_blocks_count_lo);
+    return ((uint64_t)to_le32(s->free_blocks_count_hi) << 32) |
+           to_le32(s->free_blocks_count_lo);
 }
 
 /**@brief   Free blocks count set.
  * @param   s superblock descriptor
  * @param   cnt new value of free blocks*/
 static inline void ext4_sb_set_free_blocks_cnt(struct ext4_sblock *s,
-    uint64_t cnt)
+                                               uint64_t cnt)
 {
     s->free_blocks_count_lo = to_le32((cnt << 32) >> 32);
     s->free_blocks_count_hi = to_le32(cnt >> 32);
@@ -91,8 +88,9 @@ static inline uint16_t ext4_sb_get_desc_size(struct ext4_sblock *s)
 {
     uint16_t size = to_le16(s->desc_size);
 
-    return size < EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE ?
-            EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE : size;
+    return size < EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE
+               ? EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE
+               : size;
 }
 
 /*************************Flags and features*********************************/
@@ -111,29 +109,27 @@ static inline bool ext4_sb_check_flag(struct ext4_sblock *s, uint32_t v)
  * @param   v feature to check
  * @return  true if feature is supported*/
 static inline bool ext4_sb_has_feature_compatible(struct ext4_sblock *s,
-    uint32_t v)
+                                                  uint32_t v)
 {
     return to_le32(s->features_compatible) & v;
 }
-
 
 /**@brief   Support check of feature incompatible.
  * @param   s superblock descriptor
  * @param   v feature to check
  * @return  true if feature is supported*/
 static inline bool ext4_sb_has_feature_incompatible(struct ext4_sblock *s,
-    uint32_t v)
+                                                    uint32_t v)
 {
     return to_le32(s->features_incompatible) & v;
 }
-
 
 /**@brief   Support check of read only flag.
  * @param   s superblock descriptor
  * @param   v flag to check
  * @return  true if flag is supported*/
 static inline bool ext4_sb_has_feature_read_only(struct ext4_sblock *s,
-        uint32_t v)
+                                                 uint32_t v)
 {
     return to_le32(s->features_read_only) & v;
 }
@@ -143,7 +139,7 @@ static inline bool ext4_sb_has_feature_read_only(struct ext4_sblock *s,
  * @param   block_group block group
  * @return  flex group id*/
 static inline uint32_t ext4_sb_bg_to_flex(struct ext4_sblock *s,
-                         uint32_t block_group)
+                                          uint32_t block_group)
 {
     return block_group >> to_le32(s->log_groups_per_flex);
 }
@@ -210,17 +206,15 @@ bool ext4_sb_check(struct ext4_sblock *s);
  * @return  true if block group has superblock*/
 bool ext4_sb_is_super_in_bg(struct ext4_sblock *s, uint32_t block_group);
 
-
 /**@brief   TODO:*/
 uint32_t ext4_bg_num_gdb(struct ext4_sblock *s, uint32_t group);
 
 /**@brief   TODO:*/
 uint32_t ext4_num_base_meta_clusters(struct ext4_sblock *s,
-        uint32_t block_group);
+                                     uint32_t block_group);
 
 #endif /* EXT4_SUPER_H_ */
 
 /**
  * @}
  */
-

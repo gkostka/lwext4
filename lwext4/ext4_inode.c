@@ -65,19 +65,19 @@ uint32_t ext4_inode_get_mode(struct ext4_sblock *sb, struct ext4_inode *inode)
 {
     uint32_t v = to_le16(inode->mode);
 
-    if(ext4_get32(sb, creator_os) == EXT4_SUPERBLOCK_OS_HURD){
-        v |= ((uint32_t) to_le16(inode->osd2.hurd2.mode_high)) << 16;
+    if (ext4_get32(sb, creator_os) == EXT4_SUPERBLOCK_OS_HURD) {
+        v |= ((uint32_t)to_le16(inode->osd2.hurd2.mode_high)) << 16;
     }
 
     return v;
 }
 
 void ext4_inode_set_mode(struct ext4_sblock *sb, struct ext4_inode *inode,
-    uint32_t mode)
+                         uint32_t mode)
 {
     inode->mode = to_le16((mode << 16) >> 16);
 
-    if(ext4_get32(sb, creator_os) == EXT4_SUPERBLOCK_OS_HURD)
+    if (ext4_get32(sb, creator_os) == EXT4_SUPERBLOCK_OS_HURD)
         inode->osd2.hurd2.mode_high = to_le16(mode >> 16);
 }
 
@@ -95,8 +95,8 @@ uint64_t ext4_inode_get_size(struct ext4_sblock *sb, struct ext4_inode *inode)
 {
     uint64_t v = to_le32(inode->size_lo);
 
-    if ((ext4_get32(sb, rev_level) > 0) && (ext4_inode_is_type(sb, inode,
-            EXT4_INODE_MODE_FILE)))
+    if ((ext4_get32(sb, rev_level) > 0) &&
+        (ext4_inode_is_type(sb, inode, EXT4_INODE_MODE_FILE)))
         v |= ((uint64_t)to_le32(inode->size_hi)) << 32;
 
     return v;
@@ -117,29 +117,24 @@ void ext4_inode_set_access_time(struct ext4_inode *inode, uint32_t time)
     inode->access_time = to_le32(time);
 }
 
-
 uint32_t ext4_inode_get_change_inode_time(struct ext4_inode *inode)
 {
     return to_le32(inode->change_inode_time);
 }
-void ext4_inode_set_change_inode_time(struct ext4_inode *inode,
-    uint32_t time)
+void ext4_inode_set_change_inode_time(struct ext4_inode *inode, uint32_t time)
 {
     inode->change_inode_time = to_le32(time);
 }
-
 
 uint32_t ext4_inode_get_modification_time(struct ext4_inode *inode)
 {
     return to_le32(inode->modification_time);
 }
 
-void ext4_inode_set_modification_time(struct ext4_inode *inode,
-    uint32_t time)
+void ext4_inode_set_modification_time(struct ext4_inode *inode, uint32_t time)
 {
     inode->modification_time = to_le32(time);
 }
-
 
 uint32_t ext4_inode_get_deletion_time(struct ext4_inode *inode)
 {
@@ -170,20 +165,19 @@ void ext4_inode_set_links_count(struct ext4_inode *inode, uint16_t cnt)
 }
 
 uint64_t ext4_inode_get_blocks_count(struct ext4_sblock *sb,
-    struct ext4_inode *inode)
+                                     struct ext4_inode *inode)
 {
     uint64_t count = to_le32(inode->blocks_count_lo);
 
-    if (ext4_sb_has_feature_read_only(sb,
-            EXT4_FEATURE_RO_COMPAT_HUGE_FILE)) {
+    if (ext4_sb_has_feature_read_only(sb, EXT4_FEATURE_RO_COMPAT_HUGE_FILE)) {
 
         /* 48-bit field */
-        count |= ((uint64_t) to_le16(inode->osd2.linux2.blocks_high)) << 32;
+        count |= ((uint64_t)to_le16(inode->osd2.linux2.blocks_high)) << 32;
 
         if (ext4_inode_has_flag(inode, EXT4_INODE_FLAG_HUGE_FILE)) {
 
             uint32_t block_bits =
-                    ext4_inode_block_bits_count(ext4_sb_get_block_size(sb));
+                ext4_inode_block_bits_count(ext4_sb_get_block_size(sb));
             return count << (block_bits - 9);
         }
     }
@@ -192,7 +186,7 @@ uint64_t ext4_inode_get_blocks_count(struct ext4_sblock *sb,
 }
 
 int ext4_inode_set_blocks_count(struct ext4_sblock *sb,
-    struct ext4_inode *inode, uint64_t count)
+                                struct ext4_inode *inode, uint64_t count)
 {
     /* 32-bit maximum */
     uint64_t max = 0;
@@ -207,8 +201,7 @@ int ext4_inode_set_blocks_count(struct ext4_sblock *sb,
     }
 
     /* Check if there can be used huge files (many blocks) */
-    if (!ext4_sb_has_feature_read_only(sb,
-            EXT4_FEATURE_RO_COMPAT_HUGE_FILE))
+    if (!ext4_sb_has_feature_read_only(sb, EXT4_FEATURE_RO_COMPAT_HUGE_FILE))
         return EINVAL;
 
     /* 48-bit maximum */
@@ -220,7 +213,8 @@ int ext4_inode_set_blocks_count(struct ext4_sblock *sb,
         inode->osd2.linux2.blocks_high = to_le16(count >> 32);
         ext4_inode_clear_flag(inode, EXT4_INODE_FLAG_HUGE_FILE);
     } else {
-        uint32_t block_bits = ext4_inode_block_bits_count(ext4_sb_get_block_size(sb));
+        uint32_t block_bits =
+            ext4_inode_block_bits_count(ext4_sb_get_block_size(sb));
 
         ext4_inode_set_flag(inode, EXT4_INODE_FLAG_HUGE_FILE);
         count = count >> (block_bits - 9);
@@ -250,20 +244,19 @@ void ext4_inode_set_generation(struct ext4_inode *inode, uint32_t gen)
 }
 
 uint64_t ext4_inode_get_file_acl(struct ext4_inode *inode,
-    struct ext4_sblock *sb)
+                                 struct ext4_sblock *sb)
 {
     /*TODO: Verify it*/
     uint64_t v = to_le32(inode->file_acl_lo);
 
     if (ext4_get32(sb, creator_os) == EXT4_SUPERBLOCK_OS_LINUX)
-        v |= ((uint32_t) to_le16(inode->osd2.linux2.file_acl_high)) << 16;
-
+        v |= ((uint32_t)to_le16(inode->osd2.linux2.file_acl_high)) << 16;
 
     return v;
 }
 
 void ext4_inode_set_file_acl(struct ext4_inode *inode, struct ext4_sblock *sb,
-    uint64_t acl)
+                             uint64_t acl)
 {
     /*TODO: Verify it*/
     inode->file_acl_lo = to_le32((acl << 32) >> 32);
@@ -277,7 +270,7 @@ uint32_t ext4_inode_get_direct_block(struct ext4_inode *inode, uint32_t idx)
     return to_le32(inode->blocks[idx]);
 }
 void ext4_inode_set_direct_block(struct ext4_inode *inode, uint32_t idx,
-    uint32_t block)
+                                 uint32_t block)
 {
     inode->blocks[idx] = to_le32(block);
 }
@@ -288,16 +281,15 @@ uint32_t ext4_inode_get_indirect_block(struct ext4_inode *inode, uint32_t idx)
 }
 
 void ext4_inode_set_indirect_block(struct ext4_inode *inode, uint32_t idx,
-    uint32_t block)
+                                   uint32_t block)
 {
     inode->blocks[idx + EXT4_INODE_INDIRECT_BLOCK] = to_le32(block);
 }
 
 bool ext4_inode_is_type(struct ext4_sblock *sb, struct ext4_inode *inode,
-    uint32_t type)
+                        uint32_t type)
 {
-    return (ext4_inode_get_mode(sb, inode) &
-            EXT4_INODE_MODE_TYPE_MASK) == type;
+    return (ext4_inode_get_mode(sb, inode) & EXT4_INODE_MODE_TYPE_MASK) == type;
 }
 
 bool ext4_inode_has_flag(struct ext4_inode *inode, uint32_t f)
@@ -319,24 +311,23 @@ void ext4_inode_set_flag(struct ext4_inode *inode, uint32_t f)
     ext4_inode_set_flags(inode, flags);
 }
 
-bool ext4_inode_can_truncate(struct ext4_sblock *sb,
-    struct ext4_inode *inode)
+bool ext4_inode_can_truncate(struct ext4_sblock *sb, struct ext4_inode *inode)
 {
     if ((ext4_inode_has_flag(inode, EXT4_INODE_FLAG_APPEND)) ||
-            (ext4_inode_has_flag(inode, EXT4_INODE_FLAG_IMMUTABLE)))
+        (ext4_inode_has_flag(inode, EXT4_INODE_FLAG_IMMUTABLE)))
         return false;
 
     if ((ext4_inode_is_type(sb, inode, EXT4_INODE_MODE_FILE)) ||
-            (ext4_inode_is_type(sb, inode, EXT4_INODE_MODE_DIRECTORY)))
+        (ext4_inode_is_type(sb, inode, EXT4_INODE_MODE_DIRECTORY)))
         return true;
 
     return false;
 }
 
-struct ext4_extent_header * ext4_inode_get_extent_header(
-    struct ext4_inode *inode)
+struct ext4_extent_header *
+ext4_inode_get_extent_header(struct ext4_inode *inode)
 {
-    return (struct ext4_extent_header *) inode->blocks;
+    return (struct ext4_extent_header *)inode->blocks;
 }
 
 /**

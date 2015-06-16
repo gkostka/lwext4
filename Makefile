@@ -6,7 +6,7 @@ BUILD_TYPE = Release
 #Check: http://www.cmake.org/Wiki/CMake_Generator_Specific_Information
 #"Unix Makefiles"
 #"Eclipse CDT4 - Unix Makefiles"
-PROJECT_SETUP = "Eclipse CDT4 - Unix Makefiles"
+PROJECT_SETUP = "Unix Makefiles"
 
 generic:
 	rm -R -f build_generic
