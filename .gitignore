@@ -1,2 +1,6 @@
 build_*/
 ext_images/
+
+.cproject
+.project
+.settings/  
