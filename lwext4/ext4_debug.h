@@ -43,42 +43,40 @@
 #include <stdio.h>
 
 /**@brief   Debug mask: ext4_blockdev.c*/
-#define EXT4_DEBUG_BLOCKDEV         (1 << 0)
+#define EXT4_DEBUG_BLOCKDEV (1 << 0)
 
 /**@brief   Debug mask: ext4_fs.c*/
-#define EXT4_DEBUG_FS               (1 << 1)
+#define EXT4_DEBUG_FS (1 << 1)
 
 /**@brief   Debug mask: ext4_balloc.c*/
-#define EXT4_DEBUG_BALLOC           (1 << 2)
+#define EXT4_DEBUG_BALLOC (1 << 2)
 
 /**@brief   Debug mask: ext4_bitmap.c*/
-#define EXT4_DEBUG_BITMAP           (1 << 3)
+#define EXT4_DEBUG_BITMAP (1 << 3)
 
 /**@brief   Debug mask: ext4_dir_idx.c*/
-#define EXT4_DEBUG_DIR_IDX          (1 << 4)
+#define EXT4_DEBUG_DIR_IDX (1 << 4)
 
 /**@brief   Debug mask: ext4_dir.c*/
-#define EXT4_DEBUG_DIR              (1 << 5)
+#define EXT4_DEBUG_DIR (1 << 5)
 
 /**@brief   Debug mask: ext4_ialloc.c*/
-#define EXT4_DEBUG_IALLOC           (1 << 6)
+#define EXT4_DEBUG_IALLOC (1 << 6)
 
 /**@brief   Debug mask: ext4_inode.c*/
-#define EXT4_DEBUG_INODE            (1 << 7)
+#define EXT4_DEBUG_INODE (1 << 7)
 
 /**@brief   Debug mask: ext4_super.c*/
-#define EXT4_DEBUG_SUPER            (1 << 8)
+#define EXT4_DEBUG_SUPER (1 << 8)
 
 /**@brief   Debug mask: ext4_bcache.c*/
-#define EXT4_DEBUG_BCACHE           (1 << 9)
+#define EXT4_DEBUG_BCACHE (1 << 9)
 
 /**@brief   Debug mask: ext4_extents.c*/
-#define EXT4_DEBUG_EXTENTS          (1 << 10)
-
-
+#define EXT4_DEBUG_EXTENTS (1 << 10)
 
 /**@brief   All debug printf enabled.*/
-#define EXT4_DEBUG_ALL              (0xFFFFFFFF)
+#define EXT4_DEBUG_ALL (0xFFFFFFFF)
 
 /**@brief   Global mask debug settings.
  * @brief   m new debug mask.*/
@@ -88,27 +86,27 @@ void ext4_dmask_set(uint32_t m);
  * @return  debug mask*/
 uint32_t ext4_dmask_get(void);
 
-
 #if CONFIG_DEBUG_PRINTF
 /**@brief   Debug printf.*/
-#define ext4_dprintf(m, ...)    do {                            \
-        if(m & ext4_dmask_get())  printf(__VA_ARGS__); 			\
-        fflush(stdout);                                         \
-}while(0)
+#define ext4_dprintf(m, ...)                                                   \
+    do {                                                                       \
+        if (m & ext4_dmask_get())                                              \
+            printf(__VA_ARGS__);                                               \
+        fflush(stdout);                                                        \
+    } while (0)
 #else
 #define ext4_dprintf(m, ...)
 #endif
 
-
-
 #if CONFIG_DEBUG_ASSERT
 /**@brief   Debug asseration.*/
-#define ext4_assert(_v) do {                                                \
-        if(!(_v)){                                                          \
-            printf("Assertion failed:\nmodule: %s\nfunc: %s\nline: %d\n",   \
-                    __FILE__, __FUNCTION__, __LINE__);                      \
-        }                                                                   \
-}while(0)
+#define ext4_assert(_v)                                                        \
+    do {                                                                       \
+        if (!(_v)) {                                                           \
+            printf("Assertion failed:\nmodule: %s\nfunc: %s\nline: %d\n",      \
+                   __FILE__, __FUNCTION__, __LINE__);                          \
+        }                                                                      \
+    } while (0)
 #else
 #define ext4_assert(_v)
 #endif
