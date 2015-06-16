@@ -45,51 +45,52 @@
 /********************************FILE OPEN FLAGS*****************************/
 
 #ifndef O_RDONLY
-#define O_RDONLY    00
+#define O_RDONLY 00
 #endif
 
 #ifndef O_WRONLY
-#define O_WRONLY    01
+#define O_WRONLY 01
 #endif
 
 #ifndef O_RDWR
-#define O_RDWR      02
+#define O_RDWR 02
 #endif
 
 #ifndef O_CREAT
-#define O_CREAT     0100
+#define O_CREAT 0100
 #endif
 
 #ifndef O_EXCL
-#define O_EXCL      0200
+#define O_EXCL 0200
 #endif
 
 #ifndef O_TRUNC
-#define O_TRUNC     01000
+#define O_TRUNC 01000
 #endif
 
 #ifndef O_APPEND
-#define O_APPEND    02000
+#define O_APPEND 02000
 #endif
 
 /********************************FILE SEEK FLAGS*****************************/
 
 #ifndef SEEK_SET
-#define SEEK_SET    0
+#define SEEK_SET 0
 #endif
 
 #ifndef SEEK_CUR
-#define SEEK_CUR    1
+#define SEEK_CUR 1
 #endif
 
 #ifndef SEEK_END
-#define SEEK_END    2
+#define SEEK_END 2
 #endif
 
 /********************************OS LOCK INFERFACE***************************/
 
 /**@brief   OS dependent lock interface.*/
-struct ext4_lock {
+struct ext4_lock
+{
 
     /**@brief   Lock access to mount point*/
     void (*lock)(void);
@@ -98,11 +99,11 @@ struct ext4_lock {
     void (*unlock)(void);
 };
 
-
 /********************************FILE DESCRIPTOR*****************************/
 
 /**@brief   File descriptor*/
-typedef struct ext4_file {
+typedef struct ext4_file
+{
 
     /**@brief   Mount point handle.*/
     struct ext4_mountpoint *mp;
@@ -118,11 +119,11 @@ typedef struct ext4_file {
 
     /**@brief   File position*/
     uint64_t fpos;
-}ext4_file;
+} ext4_file;
 
 /*****************************DIRECTORY DESCRIPTOR***************************/
 /**@brief   Directory entry types. Copy from ext4_types.h*/
-enum  {
+enum {
     EXT4_DIRENTRY_UNKNOWN = 0,
     EXT4_DIRENTRY_REG_FILE,
     EXT4_DIRENTRY_DIR,
@@ -134,22 +135,24 @@ enum  {
 };
 
 /**@brief   Directory entry descriptor. Copy from ext4_types.h*/
-typedef struct {
+typedef struct
+{
     uint32_t inode;
     uint16_t entry_length;
     uint8_t name_length;
     uint8_t inode_type;
     uint8_t name[255];
-}ext4_direntry;
+} ext4_direntry;
 
-typedef struct  {
+typedef struct
+{
     /**@brief   File descriptor*/
     ext4_file f;
     /**@brief   Current directory entry.*/
     ext4_direntry de;
     /**@brief   Next entry offset*/
     uint64_t next_off;
-}ext4_dir;
+} ext4_dir;
 
 /********************************MOUNT OPERATIONS****************************/
 
@@ -163,7 +166,7 @@ typedef struct  {
  * @param   dev_name register name
  * @param   standard error code*/
 int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
-        const char *dev_name);
+                         const char *dev_name);
 
 /**@brief   Mount a block device with EXT4 partition to the mount point.
  * @param   dev_name block device name (@ref ext4_device_register)
@@ -173,16 +176,16 @@ int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
  *          -   /my_second_partition/
  *
  * @return standard error code */
-int ext4_mount(const char * dev_name,  char *mount_point);
+int ext4_mount(const char *dev_name, char *mount_point);
 
 /**@brief   Umount operation.
  * @param   mount_point mount name
  * @return  standard error code */
 int ext4_umount(char *mount_point);
 
-
 /**@brief   Some of the filesystem stats.*/
-struct ext4_mount_stats {
+struct ext4_mount_stats
+{
     uint32_t inodes_count;
     uint32_t free_inodes_count;
     uint64_t blocks_count;
@@ -201,14 +204,14 @@ struct ext4_mount_stats {
  * @param   stats ext fs stats
  * @return  standard error code */
 int ext4_mount_point_stats(const char *mount_point,
-    struct ext4_mount_stats *stats);
+                           struct ext4_mount_stats *stats);
 
 /**@brief   Setup OS lock routines.
  * @param   mount_point mount path
  * @param   locks - lock and unlock functions
  * @return  standard error code */
-int ext4_mount_setup_locks(const char * mount_point,
-    const struct ext4_lock *locks);
+int ext4_mount_setup_locks(const char *mount_point,
+                           const struct ext4_lock *locks);
 
 /**@brief   Enable/disable write back cache mode.
  * @warning Default model of cache is write trough. It means that when You do:
@@ -273,7 +276,7 @@ int ext4_fremove(const char *path);
  *  |---------------------------------------------------------------|
  *
  * @return  standard error code*/
-int ext4_fopen (ext4_file *f, const char *path, const char *flags);
+int ext4_fopen(ext4_file *f, const char *path, const char *flags);
 
 /**@brief   File close function.
  * @param   f file handle
@@ -286,7 +289,7 @@ int ext4_fclose(ext4_file *f);
  * @param   size bytes to read
  * @param   rcnt bytes read (may be NULL)
  * @return  standard error code*/
-int ext4_fread (ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
+int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
 
 /**@brief   Write data to file.
  * @param   f file handle
@@ -304,17 +307,17 @@ int ext4_fwrite(ext4_file *f, const void *buf, uint32_t size, uint32_t *wcnt);
  *              @ref SEEK_CUR
  *              @ref SEEK_END
  * @return  standard error code*/
-int ext4_fseek (ext4_file *f, uint64_t offset, uint32_t origin);
+int ext4_fseek(ext4_file *f, uint64_t offset, uint32_t origin);
 
 /**@brief   Get file position.
  * @param   f file handle
  * @return  actual file position */
-uint64_t ext4_ftell (ext4_file *f);
+uint64_t ext4_ftell(ext4_file *f);
 
 /**@brief   Get file size.
  * @param   f file handle
  * @return  file size */
-uint64_t ext4_fsize (ext4_file *f);
+uint64_t ext4_fsize(ext4_file *f);
 
 /*********************************DIRECTORY OPERATION***********************/
 
@@ -332,7 +335,7 @@ int ext4_dir_mk(const char *path);
  * @param   d directory handle
  * @param   path directory path
  * @return  standard error code*/
-int ext4_dir_open (ext4_dir *d, const char *path);
+int ext4_dir_open(ext4_dir *d, const char *path);
 
 /**@brief   Directory close.
  * @param   d directory handle
@@ -343,7 +346,7 @@ int ext4_dir_close(ext4_dir *d);
  * @param   d directory handle
  * @param   id entry id
  * @return  directory entry id (NULL if no entry)*/
-ext4_direntry* ext4_dir_entry_next(ext4_dir *d);
+ext4_direntry *ext4_dir_entry_next(ext4_dir *d);
 
 #endif /* EXT4_H_ */
 
