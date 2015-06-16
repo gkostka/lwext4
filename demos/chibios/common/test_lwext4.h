@@ -40,9 +40,7 @@ bool test_lwext4_dir_test(int len);
 bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count);
 void test_lwext4_cleanup(void);
 
-bool test_lwext4_mount(struct ext4_blockdev *bdev,
-        struct ext4_bcache *bcache);
+bool test_lwext4_mount(struct ext4_blockdev *bdev, struct ext4_bcache *bcache);
 bool test_lwext4_umount(void);
-
 
 #endif /* TEST_LWEXT4_H_ */

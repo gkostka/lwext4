@@ -36,5 +36,4 @@ void tim_wait_ms(uint32_t v);
 uint32_t tim_get_ms(void);
 uint64_t tim_get_us(void);
 
-
 #endif /* TIMINGS_H_ */
