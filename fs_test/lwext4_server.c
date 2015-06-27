@@ -810,7 +810,7 @@ int _dir_entry_get(char *p)
     int idx = 0;
     ext4_direntry *d;
 
-    while (d = ext4_dir_entry_next(&dir_tab[did].fd)) {
+    while ((d = ext4_dir_entry_next(&dir_tab[did].fd)) != NULL) {
 
         idx++;
         memcpy(name, d->name, d->name_length);
