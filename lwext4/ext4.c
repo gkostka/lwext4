@@ -283,7 +283,7 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
 
 /****************************************************************************/
 
-int ext4_mount(const char *dev_name, char *mount_point)
+int ext4_mount(const char *dev_name, const char *mount_point)
 {
     ext4_assert(mount_point && dev_name);
     int r = EOK;
@@ -371,7 +371,7 @@ int ext4_mount(const char *dev_name, char *mount_point)
     return r;
 }
 
-int ext4_umount(char *mount_point)
+int ext4_umount(const char *mount_point)
 {
     int i;
     int r = EOK;

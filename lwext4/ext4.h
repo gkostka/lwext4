@@ -173,12 +173,12 @@ int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
  *          -   /my_second_partition/
  *
  * @return standard error code */
-int ext4_mount(const char *dev_name, char *mount_point);
+int ext4_mount(const char *dev_name, const char *mount_point);
 
 /**@brief   Umount operation.
  * @param   mount_point mount name
  * @return  standard error code */
-int ext4_umount(char *mount_point);
+int ext4_umount(const char *mount_point);
 
 /**@brief   Some of the filesystem stats.*/
 struct ext4_mount_stats {
