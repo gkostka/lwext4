@@ -1,5 +1,5 @@
 # Name of the target
-set(CMAKE_SYSTEM_NAME arm-none-eabi)
+set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR cortex-m3)
 
 set(MCPU_FLAGS "-mthumb -mcpu=cortex-m3")
