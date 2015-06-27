@@ -61,10 +61,12 @@
  * @brief Directory indexing hash functions.
  */
 
-#include <ext4_config.h>
-#include <ext4_types.h>
+#include "ext4_config.h"
+#include "ext4_types.h"
+#include "ext4_errno.h"
+
 #include <string.h>
-#include <ext4_errno.h>
+
 
 /* F, G, and H are MD4 functions */
 #define F(x, y, z) (((x) & (y)) | ((~x) & (z)))

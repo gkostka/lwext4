@@ -34,8 +34,8 @@
  * @brief Debug printf and assert macros.
  */
 
-#include <ext4_config.h>
-#include <ext4_debug.h>
+#include "ext4_config.h"
+#include "ext4_debug.h"
 
 #include <stdarg.h>
 #include <stdio.h>

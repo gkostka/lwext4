@@ -39,7 +39,8 @@
 #ifndef LWEXT4_EXT4_CRC32C_H_
 #define LWEXT4_EXT4_CRC32C_H_
 
-#include <ext4_config.h>
+#include "ext4_config.h"
+
 #include <stdint.h>
 
 /**@brief	CRC32C algorithm.

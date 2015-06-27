@@ -34,21 +34,22 @@
  * @brief Ext4 high level operations (file, directory, mountpoints...)
  */
 
-#include <ext4_config.h>
-#include <ext4_blockdev.h>
-#include <ext4_types.h>
-#include <ext4_debug.h>
-#include <ext4_errno.h>
-#include <ext4_fs.h>
-#include <ext4_dir.h>
-#include <ext4_inode.h>
-#include <ext4_super.h>
-#include <ext4_dir_idx.h>
+#include "ext4_config.h"
+#include "ext4_blockdev.h"
+#include "ext4_types.h"
+#include "ext4_debug.h"
+#include "ext4_errno.h"
+#include "ext4_fs.h"
+#include "ext4_dir.h"
+#include "ext4_inode.h"
+#include "ext4_super.h"
+#include "ext4_dir_idx.h"
+#include "ext4.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include <ext4.h>
+
 
 /**@brief   Mount point OS dependent lock*/
 #define EXT4_MP_LOCK(_m)                                                       \

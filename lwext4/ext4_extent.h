@@ -41,8 +41,8 @@
 #ifndef EXT4_EXTENT_H_
 #define EXT4_EXTENT_H_
 
-#include <ext4_config.h>
-#include <ext4_types.h>
+#include "ext4_config.h"
+#include "ext4_types.h"
 
 /**@brief Get logical number of the block covered by extent.
  * @param extent Extent to load number from

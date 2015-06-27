@@ -38,8 +38,9 @@
 #ifndef EXT4_H_
 #define EXT4_H_
 
-#include <ext4_config.h>
-#include <ext4_blockdev.h>
+#include "ext4_config.h"
+#include "ext4_blockdev.h"
+
 #include <stdint.h>
 
 /********************************FILE OPEN FLAGS*****************************/

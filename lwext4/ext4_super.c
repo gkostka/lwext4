@@ -39,8 +39,8 @@
  * @brief Superblock operations.
  */
 
-#include <ext4_config.h>
-#include <ext4_super.h>
+#include "ext4_config.h"
+#include "ext4_super.h"
 
 uint32_t ext4_block_group_cnt(struct ext4_sblock *s)
 {

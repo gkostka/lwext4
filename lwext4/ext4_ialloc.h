@@ -46,8 +46,8 @@
 extern "C" {
 #endif
 
-#include <ext4_config.h>
-#include <ext4_types.h>
+#include "ext4_config.h"
+#include "ext4_types.h"
 
 /**@brief Free i-node number and modify filesystem data structers.
  * @param fs     Filesystem, where the i-node is located

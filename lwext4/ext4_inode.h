@@ -42,7 +42,8 @@
 #ifndef EXT4_INODE_H_
 #define EXT4_INODE_H_
 
-#include <ext4_config.h>
+#include "ext4_config.h"
+
 #include <stdint.h>
 
 /**@brief Get mode of the i-node.

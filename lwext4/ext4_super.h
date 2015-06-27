@@ -42,8 +42,8 @@
 #ifndef EXT4_SUPER_H_
 #define EXT4_SUPER_H_
 
-#include <ext4_config.h>
-#include <ext4_types.h>
+#include "ext4_config.h"
+#include "ext4_types.h"
 
 /**@brief   Blocks count get stored in superblock.
  * @param   s superblock descriptor

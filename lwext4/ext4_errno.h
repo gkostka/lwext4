@@ -36,7 +36,7 @@
 #ifndef EXT4_ERRNO_H_
 #define EXT4_ERRNO_H_
 
-#include <ext4_config.h>
+#include "ext4_config.h"
 
 #if !CONFIG_HAVE_OWN_ERRNO
 #include <errno.h>

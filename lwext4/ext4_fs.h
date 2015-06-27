@@ -42,8 +42,8 @@
 #ifndef EXT4_FS_H_
 #define EXT4_FS_H_
 
-#include <ext4_config.h>
-#include <ext4_types.h>
+#include "ext4_config.h"
+#include "ext4_types.h"
 
 #include <stdint.h>
 #include <stdbool.h>

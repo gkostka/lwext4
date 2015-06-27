@@ -39,11 +39,11 @@
  * @brief Directory handle procedures.
  */
 
-#include <ext4_config.h>
-#include <ext4_dir.h>
-#include <ext4_dir_idx.h>
-#include <ext4_inode.h>
-#include <ext4_fs.h>
+#include "ext4_config.h"
+#include "ext4_dir.h"
+#include "ext4_dir_idx.h"
+#include "ext4_inode.h"
+#include "ext4_fs.h"
 
 #include <string.h>
 

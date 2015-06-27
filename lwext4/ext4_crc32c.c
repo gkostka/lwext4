@@ -36,8 +36,8 @@
  * @brief Crc32c routine. Taken from FreeBSD kernel.
  */
 
-#include <ext4_config.h>
-#include <ext4_crc32c.h>
+#include "ext4_config.h"
+#include "ext4_crc32c.h"
 
 /* */
 /* CRC LOOKUP TABLE */
