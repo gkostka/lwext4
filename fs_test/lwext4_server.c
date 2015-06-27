@@ -95,28 +95,24 @@ Usage:                                                          \n\
 \n";
 
 /**@brief   Open file instance descriptor.*/
-struct lwext4_files
-{
+struct lwext4_files {
     char name[255];
     ext4_file fd;
 };
 
 /**@brief   Open directory instance descriptor.*/
-struct lwext4_dirs
-{
+struct lwext4_dirs {
     char name[255];
     ext4_dir fd;
 };
 
 /**@brief   Library call opcode.*/
-struct lwext4_op_codes
-{
+struct lwext4_op_codes {
     char *func;
 };
 
 /**@brief   Library call wraper.*/
-struct lwext4_call
-{
+struct lwext4_call {
     int (*lwext4_call)(char *p);
 };
 
@@ -128,14 +124,33 @@ static struct lwext4_dirs dir_tab[MAX_DIRS];
 
 /**@brief  */
 static struct lwext4_op_codes op_codes[] = {
-    "device_register",  "mount",         "umount",      "mount_point_stats",
-    "cache_write_back", "fremove",       "fopen",       "fclose",
-    "fread",            "fwrite",        "fseek",       "ftell",
-    "fsize",            "dir_rm",        "dir_mk",      "dir_open",
-    "dir_close",        "dir_entry_get",
+    "device_register",
+    "mount",
+    "umount",
+    "mount_point_stats",
+    "cache_write_back",
+    "fremove",
+    "fopen",
+    "fclose",
+    "fread",
+    "fwrite",
+    "fseek",
+    "ftell",
+    "fsize",
+    "dir_rm",
+    "dir_mk",
+    "dir_open",
+    "dir_close",
+    "dir_entry_get",
 
-    "multi_fcreate",    "multi_fwrite",  "multi_fread", "multi_fremove",
-    "multi_dcreate",    "multi_dremove", "stats_save",  "stats_check",
+    "multi_fcreate",
+    "multi_fwrite",
+    "multi_fread",
+    "multi_fremove",
+    "multi_dcreate",
+    "multi_dremove",
+    "stats_save",
+    "stats_check",
 };
 
 int _device_register(char *p);
