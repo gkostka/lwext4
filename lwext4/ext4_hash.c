@@ -67,7 +67,6 @@
 
 #include <string.h>
 
-
 /* F, G, and H are MD4 functions */
 #define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
 #define G(x, y, z) (((x) & (y)) | ((x) & (z)) | ((y) & (z)))

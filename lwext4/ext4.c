@@ -49,8 +49,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-
 /**@brief   Mount point OS dependent lock*/
 #define EXT4_MP_LOCK(_m)                                                       \
     do {                                                                       \

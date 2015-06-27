@@ -633,7 +633,6 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
         mode |= EXT4_INODE_MODE_DIRECTORY;
         ext4_inode_set_mode(&fs->sb, inode, mode);
         ext4_inode_set_links_count(inode, 0);
-
     } else {
         /*
          * Default file permissions to be compatible with other systems
@@ -861,7 +860,6 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
             inode_ref, old_blocks_count - diff_blocks_count);
         if (rc != EOK)
             return rc;
-
     } else
 #endif
     {
