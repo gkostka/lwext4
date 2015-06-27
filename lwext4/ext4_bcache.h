@@ -43,8 +43,7 @@
 #include <stdbool.h>
 
 /**@brief   Single block descriptor.*/
-struct ext4_block
-{
+struct ext4_block {
     /**@brief   Dirty flag.*/
     bool dirty;
 
@@ -59,8 +58,7 @@ struct ext4_block
 };
 
 /**@brief   Block cache descriptor.*/
-struct ext4_bcache
-{
+struct ext4_bcache {
 
     /**@brief   Item count in block cache*/
     uint32_t cnt;

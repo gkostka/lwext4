@@ -47,8 +47,7 @@
 #define EXT4_BDEV_INITIALIZED (1 << 0)
 
 /**@brief   Definiton of the simple block device.*/
-struct ext4_blockdev
-{
+struct ext4_blockdev {
 
     /**@brief   Open device function
      * @param   bdev block device.*/

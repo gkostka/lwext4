@@ -189,8 +189,7 @@ ext4_dir_dx_entry_set_block(struct ext4_directory_dx_entry *entry,
 }
 
 /**@brief Sort entry item.*/
-struct ext4_dx_sort_entry
-{
+struct ext4_dx_sort_entry {
     uint32_t hash;
     uint32_t rec_len;
     void *dentry;

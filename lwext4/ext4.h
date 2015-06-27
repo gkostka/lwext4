@@ -89,8 +89,7 @@
 /********************************OS LOCK INFERFACE***************************/
 
 /**@brief   OS dependent lock interface.*/
-struct ext4_lock
-{
+struct ext4_lock {
 
     /**@brief   Lock access to mount point*/
     void (*lock)(void);
@@ -102,8 +101,7 @@ struct ext4_lock
 /********************************FILE DESCRIPTOR*****************************/
 
 /**@brief   File descriptor*/
-typedef struct ext4_file
-{
+typedef struct ext4_file {
 
     /**@brief   Mount point handle.*/
     struct ext4_mountpoint *mp;
@@ -135,8 +133,7 @@ enum {
 };
 
 /**@brief   Directory entry descriptor. Copy from ext4_types.h*/
-typedef struct
-{
+typedef struct {
     uint32_t inode;
     uint16_t entry_length;
     uint8_t name_length;
@@ -144,8 +141,7 @@ typedef struct
     uint8_t name[255];
 } ext4_direntry;
 
-typedef struct
-{
+typedef struct {
     /**@brief   File descriptor*/
     ext4_file f;
     /**@brief   Current directory entry.*/
@@ -184,8 +180,7 @@ int ext4_mount(const char *dev_name, char *mount_point);
 int ext4_umount(char *mount_point);
 
 /**@brief   Some of the filesystem stats.*/
-struct ext4_mount_stats
-{
+struct ext4_mount_stats {
     uint32_t inodes_count;
     uint32_t free_inodes_count;
     uint64_t blocks_count;

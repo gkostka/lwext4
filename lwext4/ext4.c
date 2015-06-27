@@ -65,8 +65,7 @@
     } while (0)
 
 /**@brief   Mount point descrpitor.*/
-struct ext4_mountpoint
-{
+struct ext4_mountpoint {
 
     /**@brief   Mount done flag.*/
     bool mounted;
@@ -85,8 +84,7 @@ struct ext4_mountpoint
 };
 
 /**@brief   Block devices descriptor.*/
-struct _ext4_devices
-{
+struct _ext4_devices {
 
     /**@brief   Block device name (@ref ext4_device_register)*/
     char name[32];

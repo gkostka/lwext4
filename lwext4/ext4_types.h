@@ -50,8 +50,7 @@
 /*
  * Structure of the super block
  */
-struct ext4_sblock
-{
+struct ext4_sblock {
     uint32_t inodes_count;             /* I-nodes count */
     uint32_t blocks_count_lo;          /* Blocks count */
     uint32_t reserved_blocks_count_lo; /* Reserved blocks count */
@@ -160,12 +159,9 @@ struct ext4_sblock
 /*
  * Misc. filesystem flags
  */
-#define EXT4_SUPERBLOCK_FLAGS_SIGNED_HASH 0x0001   /* Signed dirhash in use */
-#define EXT4_SUPERBLOCK_FLAGS_UNSIGNED_HASH 0x0002 /* Unsigned dirhash in use  \
-                                                      */
-#define EXT4_SUPERBLOCK_FLAGS_TEST_FILESYS 0x0004  /* to test development code \
-                                                      */
-
+#define EXT4_SUPERBLOCK_FLAGS_SIGNED_HASH 0x0001
+#define EXT4_SUPERBLOCK_FLAGS_UNSIGNED_HASH 0x0002
+#define EXT4_SUPERBLOCK_FLAGS_TEST_FILESYS 0x0004
 /*
  * Filesystem states
  */
@@ -283,8 +279,7 @@ struct ext4_sblock
                      EXT4_FEATURE_RO_COMPAT_QUOTA)
 #endif
 
-struct ext4_fs
-{
+struct ext4_fs {
     struct ext4_blockdev *bdev;
     struct ext4_sblock sb;
 
@@ -294,17 +289,17 @@ struct ext4_fs
     uint32_t last_inode_bg_id;
 };
 
-#define EXT4_BLOCK_GROUP_INODE_UNINIT 0x0001 /* Inode table/bitmap not in use  \
-                                                */
-#define EXT4_BLOCK_GROUP_BLOCK_UNINIT 0x0002 /* Block bitmap not in use */
-#define EXT4_BLOCK_GROUP_ITABLE_ZEROED                                         \
-    0x0004 /* On-disk itable initialized to zero */
+/* Inode table/bitmap not in use */
+#define EXT4_BLOCK_GROUP_INODE_UNINIT 0x0001
+/* Block bitmap not in use */
+#define EXT4_BLOCK_GROUP_BLOCK_UNINIT 0x0002
+/* On-disk itable initialized to zero */
+#define EXT4_BLOCK_GROUP_ITABLE_ZEROED 0x0004
 
 /*
  * Structure of a blocks group descriptor
  */
-struct ext4_bgroup
-{
+struct ext4_bgroup {
     uint32_t block_bitmap_lo;            /* Blocks bitmap block */
     uint32_t inode_bitmap_lo;            /* Inodes bitmap block */
     uint32_t inode_table_first_block_lo; /* Inodes table block */
@@ -331,8 +326,7 @@ struct ext4_bgroup
     uint32_t reserved;                   /* Padding */
 };
 
-struct ext4_block_group_ref
-{
+struct ext4_block_group_ref {
     struct ext4_block block;
     struct ext4_bgroup *block_group;
     struct ext4_fs *fs;
@@ -360,8 +354,7 @@ struct ext4_block_group_ref
 /*
  * Structure of an inode on the disk
  */
-struct ext4_inode
-{
+struct ext4_inode {
     uint16_t mode;                      /* File mode */
     uint16_t uid;                       /* Low 16 bits of owner uid */
     uint32_t size_lo;                   /* Size in bytes */
@@ -380,18 +373,15 @@ struct ext4_inode
     uint32_t size_hi;
     uint32_t obso_faddr; /* Obsoleted fragment address */
 
-    union
-    {
-        struct
-        {
+    union {
+        struct {
             uint16_t blocks_high;
             uint16_t file_acl_high;
             uint16_t uid_high;
             uint16_t gid_high;
             uint32_t reserved2;
         } linux2;
-        struct
-        {
+        struct {
             uint16_t reserved1;
             uint16_t mode_high;
             uint16_t uid_high;
@@ -454,8 +444,7 @@ struct ext4_inode
 
 #define EXT4_INODE_ROOT_INDEX 2
 
-struct ext4_inode_ref
-{
+struct ext4_inode_ref {
     struct ext4_block block;
     struct ext4_inode *inode;
     struct ext4_fs *fs;
@@ -474,8 +463,7 @@ struct ext4_inode_ref
 #define EXT4_DIRECTORY_FILETYPE_SOCK 6
 #define EXT4_DIRECTORY_FILETYPE_SYMLINK 7
 
-union ext4_directory_entry_ll_internal
-{
+union ext4_directory_entry_ll_internal {
     uint8_t name_length_high; /* Higher 8 bits of name length */
     uint8_t inode_type;       /* Type of referenced inode (in rev >= 0.5) */
 } __attribute__((packed));
@@ -483,8 +471,7 @@ union ext4_directory_entry_ll_internal
 /**
  * Linked list directory entry structure
  */
-struct ext4_directory_entry_ll
-{
+struct ext4_directory_entry_ll {
     uint32_t inode;        /* I-node for the entry */
     uint16_t entry_length; /* Distance to the next directory entry */
     uint8_t name_length;   /* Lower 8 bits of name length */
@@ -494,30 +481,26 @@ struct ext4_directory_entry_ll
     uint8_t name[EXT4_DIRECTORY_FILENAME_LEN]; /* Entry name */
 } __attribute__((packed));
 
-struct ext4_directory_iterator
-{
+struct ext4_directory_iterator {
     struct ext4_inode_ref *inode_ref;
     struct ext4_block current_block;
     uint64_t current_offset;
     struct ext4_directory_entry_ll *current;
 };
 
-struct ext4_directory_search_result
-{
+struct ext4_directory_search_result {
     struct ext4_block block;
     struct ext4_directory_entry_ll *dentry;
 };
 
 /* Structures for indexed directory */
 
-struct ext4_directory_dx_countlimit
-{
+struct ext4_directory_dx_countlimit {
     uint16_t limit;
     uint16_t count;
 };
 
-struct ext4_directory_dx_dot_entry
-{
+struct ext4_directory_dx_dot_entry {
     uint32_t inode;
     uint16_t entry_length;
     uint8_t name_length;
@@ -525,8 +508,7 @@ struct ext4_directory_dx_dot_entry
     uint8_t name[4];
 };
 
-struct ext4_directory_dx_root_info
-{
+struct ext4_directory_dx_root_info {
     uint32_t reserved_zero;
     uint8_t hash_version;
     uint8_t info_length;
@@ -534,35 +516,30 @@ struct ext4_directory_dx_root_info
     uint8_t unused_flags;
 };
 
-struct ext4_directory_dx_entry
-{
+struct ext4_directory_dx_entry {
     uint32_t hash;
     uint32_t block;
 };
 
-struct ext4_directory_dx_root
-{
+struct ext4_directory_dx_root {
     struct ext4_directory_dx_dot_entry dots[2];
     struct ext4_directory_dx_root_info info;
     struct ext4_directory_dx_entry entries[];
 };
 
-struct ext4_fake_directory_entry
-{
+struct ext4_fake_directory_entry {
     uint32_t inode;
     uint16_t entry_length;
     uint8_t name_length;
     uint8_t inode_type;
 };
 
-struct ext4_directory_dx_node
-{
+struct ext4_directory_dx_node {
     struct ext4_fake_directory_entry fake;
     struct ext4_directory_dx_entry entries[];
 };
 
-struct ext4_directory_dx_block
-{
+struct ext4_directory_dx_block {
     struct ext4_block block;
     struct ext4_directory_dx_entry *entries;
     struct ext4_directory_dx_entry *position;
@@ -576,8 +553,7 @@ struct ext4_directory_dx_block
  * This is the extent on-disk structure.
  * It's used at the bottom of the tree.
  */
-struct ext4_extent
-{
+struct ext4_extent {
     uint32_t first_block; /* First logical block extent covers */
     uint16_t block_count; /* Number of blocks covered by extent */
     uint16_t start_hi;    /* High 16 bits of physical block */
@@ -588,8 +564,7 @@ struct ext4_extent
  * This is index on-disk structure.
  * It's used at all the levels except the bottom.
  */
-struct ext4_extent_index
-{
+struct ext4_extent_index {
     uint32_t first_block; /* Index covers logical blocks from 'block' */
 
     /**
@@ -605,8 +580,7 @@ struct ext4_extent_index
 /*
  * Each block (leaves and indexes), even inode-stored has header.
  */
-struct ext4_extent_header
-{
+struct ext4_extent_header {
     uint16_t magic;
     uint16_t entries_count;     /* Number of valid entries */
     uint16_t max_entries_count; /* Capacity of store in entries */
@@ -614,8 +588,7 @@ struct ext4_extent_header
     uint32_t generation;        /* generation of the tree */
 };
 
-struct ext4_extent_path
-{
+struct ext4_extent_path {
     struct ext4_block block;
     uint16_t depth;
     struct ext4_extent_header *header;
@@ -643,8 +616,7 @@ struct ext4_extent_path
 
 #define EXT2_HTREE_EOF 0x7FFFFFFFUL
 
-struct ext4_hash_info
-{
+struct ext4_hash_info {
     uint32_t hash;
     uint32_t minor_hash;
     uint32_t hash_version;
