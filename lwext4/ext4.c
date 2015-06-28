@@ -286,7 +286,7 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
 int ext4_mount(const char *dev_name, const char *mount_point)
 {
     ext4_assert(mount_point && dev_name);
-    int r = EOK;
+    int r;
     int i;
 
     uint32_t bsize;
@@ -318,9 +318,8 @@ int ext4_mount(const char *dev_name, const char *mount_point)
             break;
         }
 
-        if (!strcmp(_mp[i].name, mount_point)) {
+        if (!strcmp(_mp[i].name, mount_point))
             return EOK;
-        }
     }
 
     if (!mp)
@@ -374,7 +373,7 @@ int ext4_mount(const char *dev_name, const char *mount_point)
 int ext4_umount(const char *mount_point)
 {
     int i;
-    int r = EOK;
+    int r;
     struct ext4_mountpoint *mp = 0;
 
     for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
@@ -535,13 +534,14 @@ static int ext4_generic_open(ext4_file *f, const char *path, const char *flags,
                              bool file_expect, uint32_t *parent_inode,
                              uint32_t *name_off)
 {
+    bool is_goal = false;
+    uint8_t inode_type = EXT4_DIRECTORY_FILETYPE_DIR;
+    uint32_t next_inode;
+
+    int r;
     struct ext4_mountpoint *mp = ext4_get_mount(path);
     struct ext4_directory_search_result result;
     struct ext4_inode_ref ref;
-    bool is_goal = false;
-    uint8_t inode_type = EXT4_DIRECTORY_FILETYPE_DIR;
-    int r = ENOENT;
-    uint32_t next_inode;
 
     f->mp = 0;
 
@@ -709,13 +709,12 @@ int ext4_fremove(const char *path)
     ext4_file f;
     uint32_t parent_inode;
     uint32_t name_off;
+    bool is_goal;
     int r;
     int len;
-    bool is_goal;
-    struct ext4_mountpoint *mp = ext4_get_mount(path);
-
     struct ext4_inode_ref child;
     struct ext4_inode_ref parent;
+    struct ext4_mountpoint *mp = ext4_get_mount(path);
 
     if (!mp)
         return ENOENT;
@@ -801,17 +800,17 @@ int ext4_fclose(ext4_file *f)
 }
 int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
 {
-    int r = EOK;
     uint32_t u;
     uint32_t fblock;
     uint32_t fblock_start;
     uint32_t fblock_cnt;
-    struct ext4_block b;
-    uint8_t *u8_buf = buf;
-    struct ext4_inode_ref ref;
     uint32_t sblock;
     uint32_t sblock_end;
     uint32_t block_size;
+    uint8_t *u8_buf = buf;
+    int r;
+    struct ext4_block b;
+    struct ext4_inode_ref ref;
 
     ext4_assert(f && f->mp);
 
