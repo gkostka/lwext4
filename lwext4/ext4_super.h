@@ -185,23 +185,23 @@ uint32_t ext4_inodes_in_group_cnt(struct ext4_sblock *s, uint32_t bgid);
 
 /**@brief   Superblock write.
  * @param   bdev block device descriptor.
- * @param   s superblock descruptor
+ * @param   s superblock descriptor
  * @return  Standard error code */
 int ext4_sb_write(struct ext4_blockdev *bdev, struct ext4_sblock *s);
 
 /**@brief   Superblock read.
  * @param   bdev block device descriptor.
- * @param   s superblock descruptor
+ * @param   s superblock descriptor
  * @return  Standard error code */
 int ext4_sb_read(struct ext4_blockdev *bdev, struct ext4_sblock *s);
 
 /**@brief   Superblock simple validation.
- * @param   s superblock dsecriptor
+ * @param   s superblock descriptor
  * @return  true if OK*/
 bool ext4_sb_check(struct ext4_sblock *s);
 
 /**@brief   Superblock presence in block group.
- * @param   s superblock dsecriptor
+ * @param   s superblock descriptor
  * @param   block_group block group id
  * @return  true if block group has superblock*/
 bool ext4_sb_is_super_in_bg(struct ext4_sblock *s, uint32_t block_group);

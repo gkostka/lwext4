@@ -48,7 +48,7 @@
 #include "ext4_inode.h"
 
 /**@brief Compute number of block group from block address.
- * @param sb         Superblock pointer.
+ * @param sb superblock pointer.
  * @param baddr Absolute address of block.
  * @return Block group index
  */
@@ -171,7 +171,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, uint32_t first,
         ext4_balloc_get_bgid_of_block(sb, first + count - 1);
 
     if (!ext4_sb_has_feature_incompatible(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG)) {
-        /*It is not possible withot flex_bg that blocks are continuous
+        /*It is not possible without flex_bg that blocks are continuous
          * and and last block belongs to other bg.*/
         ext4_assert(block_group_first ==
                     ext4_balloc_get_bgid_of_block(sb, first + count - 1));

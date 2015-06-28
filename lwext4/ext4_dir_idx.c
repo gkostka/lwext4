@@ -444,7 +444,7 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
  * @param hash      Hash value to check
  * @param dx_block  Current block
  * @param dx_blocks Array with path from root to leaf node
- * @return Standard Error codee
+ * @return Standard Error code
  */
 static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
                                   uint32_t hash,
@@ -470,7 +470,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
         p--;
     }
 
-    /* Check hash collision (if not occured - no next block cannot be used)*/
+    /* Check hash collision (if not occurred - no next block cannot be used)*/
     uint32_t current_hash = ext4_dir_dx_entry_get_hash(p->position);
     if ((hash & 1) == 0) {
         if ((current_hash & ~1) != hash)

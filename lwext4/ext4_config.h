@@ -97,7 +97,7 @@
 #define CONFIG_DIR_INDEX_COMB_SORT 1
 #endif
 
-/**@brief   Include error codes from ext4_errno or sandard library.*/
+/**@brief   Include error codes from ext4_errno or standard library.*/
 #ifndef CONFIG_HAVE_OWN_ERRNO
 #define CONFIG_HAVE_OWN_ERRNO 1
 #endif
@@ -122,12 +122,12 @@
 #define CONFIG_BLOCK_DEV_CACHE_SIZE 8
 #endif
 
-/**@brief   Ilosc urzadzen blokowych.*/
+/**@brief   Maximum block device count*/
 #ifndef CONFIG_EXT4_BLOCKDEVS_COUNT
 #define CONFIG_EXT4_BLOCKDEVS_COUNT 2
 #endif
 
-/**@brief   Ilosc punktow montowania systemu plikow*/
+/**@brief   Maximum mountpoint count*/
 #ifndef CONFIG_EXT4_MOUNTPOINTS_COUNT
 #define CONFIG_EXT4_MOUNTPOINTS_COUNT 2
 #endif

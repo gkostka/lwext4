@@ -100,7 +100,7 @@ uint32_t ext4_dmask_get(void);
 #endif
 
 #if CONFIG_DEBUG_ASSERT
-/**@brief   Debug asseration.*/
+/**@brief   Debug assertion.*/
 #define ext4_assert(_v)                                                        \
     do {                                                                       \
         if (!(_v)) {                                                           \

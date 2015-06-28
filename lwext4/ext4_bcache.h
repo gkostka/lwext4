@@ -42,9 +42,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/**@brief   Single block descriptor.*/
+/**@brief   Single block descriptor*/
 struct ext4_block {
-    /**@brief   Dirty flag.*/
+    /**@brief   Dirty flag*/
     bool dirty;
 
     /**@brief   Logical block ID*/
@@ -57,7 +57,7 @@ struct ext4_block {
     uint8_t *data;
 };
 
-/**@brief   Block cache descriptor.*/
+/**@brief   Block cache descriptor*/
 struct ext4_bcache {
 
     /**@brief   Item count in block cache*/
@@ -66,25 +66,25 @@ struct ext4_bcache {
     /**@brief   Item size in block cache*/
     uint32_t itemsize;
 
-    /**@brief   Last recently used counter.*/
+    /**@brief   Last recently used counter*/
     uint32_t lru_ctr;
 
-    /**@brief   Reference count table (cnt).*/
+    /**@brief   Reference count table*/
     uint32_t refctr[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-    /**@brief   Last recently used ID table (cnt)*/
+    /**@brief   Last recently used ID table*/
     uint32_t lru_id[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-    /**@brief   Writeback free delay mode table (cnt)*/
+    /**@brief   Writeback free delay mode table*/
     uint8_t free_delay[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-    /**@brief   Logical block table (cnt).*/
+    /**@brief   Logical block table*/
     uint64_t lba[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-    /**@brief   Dirty mark (cnt).*/
+    /**@brief   Dirty mark*/
     bool dirty[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-    /**@brief   Cache data buffers (cnt * itemsize)*/
+    /**@brief   Cache data buffers*/
     uint8_t *data;
 
     /**@brief   Currently referenced datablocks*/

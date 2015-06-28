@@ -664,7 +664,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 
             path_ptr->block.dirty = true;
 
-            /* Jump to the preceeding item */
+            /* Jump to the preceding item */
             path_ptr--;
         } else {
             /* Node with free space */

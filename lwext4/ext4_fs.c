@@ -837,7 +837,7 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
     if (old_size == new_size)
         return EOK;
 
-    /* It's not suppported to make the larger file by truncate operation */
+    /* It's not supported to make the larger file by truncate operation */
     if (old_size < new_size)
         return EINVAL;
 

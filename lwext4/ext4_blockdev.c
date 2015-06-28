@@ -138,7 +138,7 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
             /*No delayed anymore*/
             bdev->bc->free_delay[free_candidate] = 0;
 
-            /*Reduce refered block count*/
+            /*Reduce reference counter*/
             bdev->bc->ref_blocks--;
         }
     }
@@ -181,7 +181,7 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
     if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
         return EIO;
 
-    /*Doesn,t need to write.*/
+    /*No need to write.*/
     if (!b->dirty && !bdev->bc->dirty[b->cache_id]) {
         ext4_bcache_free(bdev->bc, b, 0);
         return EOK;
@@ -190,7 +190,7 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
     /*Free cache delay mode*/
     if (bdev->cache_write_back) {
 
-        /*Free cahe block and mark as free delayed*/
+        /*Free cache block and mark as free delayed*/
         return ext4_bcache_free(bdev->bc, b, bdev->cache_write_back);
     }
 
@@ -419,7 +419,7 @@ int ext4_block_cache_write_back(struct ext4_blockdev *bdev, uint8_t on_off)
             /*No delayed anymore*/
             bdev->bc->free_delay[i] = 0;
 
-            /*Reduce refered block count*/
+            /*Reduce reference counter*/
             bdev->bc->ref_blocks--;
         }
     }

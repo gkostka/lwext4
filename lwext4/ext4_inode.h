@@ -140,7 +140,7 @@ void ext4_inode_set_deletion_time(struct ext4_inode *inode, uint32_t time);
  */
 uint32_t ext4_inode_get_gid(struct ext4_inode *inode);
 
-/**@brief Set ID ot the i-node owner's group.
+/**@brief Set ID to the i-node owner's group.
  * @param inode I-node to set gid to
  * @param gid   Group ID of the i-node owner
  */

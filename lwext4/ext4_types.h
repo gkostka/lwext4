@@ -68,7 +68,7 @@ struct ext4_sblock {
     uint16_t max_mount_count;          /* Maximal mount count */
     uint16_t magic;                    /* Magic signature */
     uint16_t state;                    /* File system state */
-    uint16_t errors;                   /* Behaviour when detecting errors */
+    uint16_t errors;                   /* Behavior when detecting errors */
     uint16_t minor_rev_level;          /* Minor revision level */
     uint32_t last_check_time;          /* Time of last check */
     uint32_t check_interval;           /* Maximum time between checks */
@@ -261,8 +261,8 @@ struct ext4_sblock {
 
 /*Ignored features:
  * RECOVER - journaling in lwext4 is not supported
- *           (probably won,t be ever...)
- * MMP - multi mout protection (impossible scenario)
+ *           (probably won't be ever...)
+ * MMP - multi-mout protection (impossible scenario)
  * */
 #define FEATURE_INCOMPAT_IGNORED                                               \
     EXT4_FEATURE_INCOMPAT_RECOVER | EXT4_FEATURE_INCOMPAT_MMP

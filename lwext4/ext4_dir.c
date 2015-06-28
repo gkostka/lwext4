@@ -124,7 +124,7 @@ static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
     uint64_t next_block_idx = pos / block_size;
 
     /*
-     * If we don't have a block or are moving accross block boundary,
+     * If we don't have a block or are moving across block boundary,
      * we need to get another block
      */
     if ((it->current_block.lb_id == 0) ||
@@ -519,7 +519,7 @@ int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
 
         /* Valid entry - check it */
         if (dentry->inode != 0) {
-            /* For more effectivity compare firstly only lengths */
+            /* For more efficient compare only lengths firstly*/
             if (ext4_dir_entry_ll_get_name_length(sb, dentry) == name_len) {
                 /* Compare names */
                 if (memcmp((uint8_t *)name, dentry->name, name_len) == 0) {
