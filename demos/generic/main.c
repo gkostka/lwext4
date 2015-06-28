@@ -131,7 +131,7 @@ static void dir_ls(const char *path)
 {
     char sss[255];
     ext4_dir d;
-    ext4_direntry *de;
+    const ext4_direntry *de;
 
     printf("ls %s:\n", path);
 

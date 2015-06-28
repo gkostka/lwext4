@@ -808,7 +808,7 @@ int _dir_entry_get(char *p)
     }
 
     int idx = 0;
-    ext4_direntry *d;
+    const ext4_direntry *d;
 
     while ((d = ext4_dir_entry_next(&dir_tab[did].fd)) != NULL) {
 

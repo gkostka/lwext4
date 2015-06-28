@@ -948,7 +948,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, uint32_t size, uint32_t *wcnt)
     struct ext4_inode_ref ref;
     const uint8_t *u8_buf = buf;
     int r;
-    ;
+
 
     ext4_assert(f && f->mp);
 
@@ -1365,7 +1365,7 @@ int ext4_dir_open(ext4_dir *d, const char *path)
 
 int ext4_dir_close(ext4_dir *d) { return ext4_fclose(&d->f); }
 
-ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
+const ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
 {
 #define EXT4_DIR_ENTRY_OFFSET_TERM (uint64_t)(-1)
 

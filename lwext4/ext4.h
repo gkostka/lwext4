@@ -342,7 +342,7 @@ int ext4_dir_close(ext4_dir *d);
  * @param   d directory handle
  * @param   id entry id
  * @return  directory entry id (NULL if no entry)*/
-ext4_direntry *ext4_dir_entry_next(ext4_dir *d);
+const ext4_direntry *ext4_dir_entry_next(ext4_dir *d);
 
 #endif /* EXT4_H_ */
 
