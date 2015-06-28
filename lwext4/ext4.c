@@ -63,7 +63,7 @@
             (_m)->os_locks->unlock();                                          \
     } while (0)
 
-/**@brief   Mount point descrpitor.*/
+/**@brief   Mount point descriptor.*/
 struct ext4_mountpoint {
 
     /**@brief   Mount done flag.*/
@@ -72,13 +72,13 @@ struct ext4_mountpoint {
     /**@brief   Mount point name (@ref ext4_mount)*/
     char name[32];
 
-    /**@brief   Os dependent lock/unlock functions.*/
+    /**@brief   OS dependent lock/unlock functions.*/
     const struct ext4_lock *os_locks;
 
     /**@brief   Ext4 filesystem internals.*/
     struct ext4_fs fs;
 
-    /**@brief   Dynamic alocation cache flag.*/
+    /**@brief   Dynamic allocation cache flag.*/
     bool cache_dynamic;
 };
 
@@ -603,7 +603,7 @@ static int ext4_generic_open(ext4_file *f, const char *path, const char *flags,
             /*Link with root dir.*/
             r = ext4_link(mp, &ref, &child_ref, path, len);
             if (r != EOK) {
-                /*Fali. Free new inode.*/
+                /*Fail. Free new inode.*/
                 ext4_fs_free_inode(&child_ref);
                 /*We do not want to write new inode.
                   But block has to be released.*/
@@ -741,7 +741,7 @@ int ext4_fremove(const char *path)
         return r;
     }
 
-    /*Turncate.*/
+    /*Turncate*/
     ext4_block_cache_write_back(mp->fs.bdev, 1);
     /*Truncate may be IO heavy. Do it writeback cache mode.*/
     r = ext4_fs_truncate_inode(&child, 0);
@@ -755,7 +755,7 @@ int ext4_fremove(const char *path)
 
     len = ext4_path_check(path, &is_goal);
 
-    /*Unlink from parent.*/
+    /*Unlink from parent*/
     r = ext4_unlink(mp, &parent, &child, path, len);
     if (r != EOK)
         goto Finish;
@@ -1220,7 +1220,7 @@ int ext4_dir_rm(const char *path)
                 }
 
                 if (has_children) {
-                    /*Has directory children. Go into this tirectory.*/
+                    /*Has directory children. Go into this directory.*/
                     inode_up = inode_current;
                     inode_current = it.current->inode;
                     depth++;
