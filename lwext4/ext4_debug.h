@@ -104,8 +104,8 @@ uint32_t ext4_dmask_get(void);
 #define ext4_assert(_v)                                                        \
     do {                                                                       \
         if (!(_v)) {                                                           \
-            printf("Assertion failed:\nmodule: %s\nfunc: %s\nline: %d\n",      \
-                   __FILE__, __FUNCTION__, __LINE__);                          \
+            printf("Assertion failed:\nmodule: %s\nline: %d\n",                \
+                   __FILE__,  __LINE__);                                       \
         }                                                                      \
     } while (0)
 #else
