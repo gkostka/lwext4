@@ -1,0 +1,56 @@
+lwext4-0.8.0
+============
+* improve ext4_dir_entry_next
+* clang code format based on config file
+* ChibiOS demo for some stm32 boards
+* Improve includes in lwext4 dir
+* Add some const keyword where should be used
+
+
+lwext4-0.7.0
+============
+* features supported: flex_bg, uninit_bg, dir_nlink
+* config file improvements, 3 basic build modes:
+	* feature set ext2 - small footprint (~20KB .text)
+	* feature set ext3 - htree directory indexing (~25KB .text)
+	* feature set ext4 - all supported features enabled (~30KB .text)
+* IO timing stats in stm32f429_demo 
+* more advanced cases in test suite
+* support for meta_bg feature (unstable)
+* crc32c module for meta_csum feature (not supported yet)
+* small demo application improvments (readability)
+
+
+lwext4-0.6.0
+============
+* Fixed stm32429demo enumerating issues
+* Comb sort for directory indexing
+* Cmake toolchain files for msp430
+
+lwext4-0.5.0
+============
+* Build system refactoring
+* Pedantic warning check for lwext4 files
+* New toolchain files for cortex-m0, avexmega7, arm-sim
+* Merge bugfixes from HelenOS mainline
+* OS locks setup function
+
+lwext4-0.4.0
+============
+* Client-server based automatic test suite
+
+lwext4-0.3.0
+============
+* STM32F429 demo
+
+lwext4-0.2.0
+============
+* Full extents support
+* Doxygen comments
+* Bug fixing
+* Demo app improvments
+
+
+lwext4-0.1.1
+============
+* First version of the lwext4 filesystem library.
