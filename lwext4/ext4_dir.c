@@ -180,7 +180,7 @@ int ext4_dir_iterator_next(struct ext4_directory_iterator *it)
 		if (!it->current)
 			break;
 		/*Skip NULL referenced entry*/
-		if (it->current->inode != 0)
+		if (ext4_dir_entry_ll_get_inode(it->current) != 0)
 			break;
 	}
 
@@ -531,7 +531,7 @@ int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
 			break;
 
 		/* Valid entry - check it */
-		if (dentry->inode != 0) {
+		if (ext4_dir_entry_ll_get_inode(dentry) != 0) {
 			/* For more efficient compare only lengths firstly*/
 			if (ext4_dir_entry_ll_get_name_length(sb, dentry) ==
 			    name_len) {

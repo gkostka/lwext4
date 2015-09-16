@@ -153,7 +153,7 @@ static int ext4_has_children(bool *has_children, struct ext4_inode_ref *enode)
 	/* Find a non-empty directory entry */
 	bool found = false;
 	while (it.current != NULL) {
-		if (it.current->inode != 0) {
+		if (ext4_dir_entry_ll_get_inode(it.current) != 0) {
 			uint16_t name_size = ext4_dir_entry_ll_get_name_length(
 			    &fs->sb, it.current);
 			if (!ext4_is_dots(it.current->name, name_size)) {
@@ -666,7 +666,7 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 		if (parent_inode)
 			*parent_inode = ref.index;
 
-		next_inode = result.dentry->inode;
+		next_inode = ext4_dir_entry_ll_get_inode(result.dentry);
 		inode_type =
 		    ext4_dir_entry_ll_get_inode_type(&mp->fs.sb, result.dentry);
 
@@ -806,7 +806,7 @@ static int __ext4_create_hardlink(const char *path,
 			break;
 		}
 
-		next_inode = result.dentry->inode;
+		next_inode = ext4_dir_entry_ll_get_inode(result.dentry);
 		inode_type =
 		    ext4_dir_entry_ll_get_inode_type(&mp->fs.sb, result.dentry);
 
@@ -1696,7 +1696,7 @@ int ext4_dir_rm(const char *path)
 			if ((it.current->name_length == 2) &&
 			    ext4_is_dots(it.current->name,
 					 it.current->name_length)) {
-				inode_up = it.current->inode;
+				inode_up = ext4_dir_entry_ll_get_inode(it.current);
 			}
 
 			/*If directory or file entry,  but not "." ".." entry*/
@@ -1705,8 +1705,9 @@ int ext4_dir_rm(const char *path)
 
 				/*Get child inode reference do unlink
 				 * directory/file.*/
-				r = ext4_fs_get_inode_ref(
-				    &f.mp->fs, it.current->inode, &child);
+				r = ext4_fs_get_inode_ref(&f.mp->fs,
+				        ext4_dir_entry_ll_get_inode(it.current),
+				        &child);
 				if (r != EOK)
 					break;
 
@@ -1721,7 +1722,7 @@ int ext4_dir_rm(const char *path)
 					/*Has directory children. Go into this
 					 * directory.*/
 					inode_up = inode_current;
-					inode_current = it.current->inode;
+					inode_current = ext4_dir_entry_ll_get_inode(it.current);
 					depth++;
 					ext4_fs_put_inode_ref(&child);
 					break;
