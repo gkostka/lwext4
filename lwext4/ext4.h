@@ -39,6 +39,7 @@
 #define EXT4_H_
 
 #include "ext4_config.h"
+#include "ext4_types.h"
 #include "ext4_blockdev.h"
 
 #include <stdint.h>
@@ -209,6 +210,12 @@ int ext4_mount_point_stats(const char *mount_point,
 int ext4_mount_setup_locks(const char *mount_point,
                            const struct ext4_lock *locks);
 
+/**@brief   Acquire the filesystem superblock pointer of a mp.
+ * @param   mount_point mount path
+ * @param   superblock pointer
+ * @return  standard error code */
+int ext4_get_sblock(const char *mount_point, struct ext4_sblock **sb);
+
 /**@brief   Enable/disable write back cache mode.
  * @warning Default model of cache is write trough. It means that when You do:
  *
@@ -253,6 +260,12 @@ int ext4_cache_write_back(const char *path, bool on);
  * @return  standard error code */
 int ext4_fremove(const char *path);
 
+/**@brief Rename file
+ * @param path source
+ * @param new_path destination
+ * @return  standard error code */
+int ext4_frename(const char *path, const char *new_path);
+
 /**@brief   File open function.
  * @param   filename, (has to start from mount point)
  *          /my_partition/my_file
@@ -274,10 +287,30 @@ int ext4_fremove(const char *path);
  * @return  standard error code*/
 int ext4_fopen(ext4_file *f, const char *path, const char *flags);
 
+/**@brief   Alternate file open function.
+ * @param   filename, (has to start from mount point)
+ *          /my_partition/my_file
+ * @param   flags open file flags
+ * @return  standard error code*/
+int ext4_fopen2(ext4_file *f, const char *path, int flags, bool file_expect);
+
 /**@brief   File close function.
  * @param   f file handle
  * @return  standard error code*/
 int ext4_fclose(ext4_file *f);
+
+/**@brief   Fill in the ext4_inode buffer.
+ * @param   mount_point
+ * @param   inode no.
+ * @param   ext4_inode buffer
+ * @return  standard error code*/
+int ext4_fill_raw_inode(const char *mount_point, uint32_t ino, struct ext4_inode *inode);
+
+/**@brief   File truncate function.
+ * @param   f file handle
+ * @param   new file size
+ * @return  standard error code*/
+int ext4_ftruncate(ext4_file *f, uint64_t size);
 
 /**@brief   Read data from file.
  * @param   f file handle
@@ -314,6 +347,12 @@ uint64_t ext4_ftell(ext4_file *f);
  * @param   f file handle
  * @return  file size */
 uint64_t ext4_fsize(ext4_file *f);
+
+int ext4_fchmod(ext4_file *f, uint32_t mode);
+int ext4_fchown(ext4_file *f, uint32_t uid, uint32_t gid);
+int ext4_file_set_atime(ext4_file *f, uint32_t atime);
+int ext4_file_set_mtime(ext4_file *f, uint32_t mtime);
+int ext4_file_set_ctime(ext4_file *f, uint32_t ctime);
 
 /*********************************DIRECTORY OPERATION***********************/
 
