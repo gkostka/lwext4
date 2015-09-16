@@ -21,11 +21,10 @@ struct ext4_bcache *spi_cache_get(void);
 /**@brief   SPI blockdev get.*/
 struct ext4_blockdev *spi_bdev_get(void);
 
-struct ext4_io_stats
-{
-    float io_read;
-    float io_write;
-    float cpu;
+struct ext4_io_stats {
+	float io_read;
+	float io_write;
+	float cpu;
 };
 
 void io_timings_clear(void);

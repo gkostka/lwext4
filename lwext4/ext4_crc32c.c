@@ -112,12 +112,12 @@ static const uint32_t crc32Table[256] = {
 
 uint32_t ext4_crc32c(uint32_t crc, const void *buffer, uint32_t length)
 {
-    const uint8_t *p = buffer;
+	const uint8_t *p = buffer;
 
-    while (length--)
-        crc = crc32Table[(crc ^ *p++) & 0xff] ^ (crc >> 8);
+	while (length--)
+		crc = crc32Table[(crc ^ *p++) & 0xff] ^ (crc >> 8);
 
-    return crc;
+	return crc;
 }
 
 /**

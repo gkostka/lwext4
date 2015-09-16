@@ -83,7 +83,7 @@ uint32_t ext4_extent_index_get_first_block(struct ext4_extent_index *index);
  * @param index  Extent index to set number to
  * @param iblock Logical number of the first block covered by extent index */
 void ext4_extent_index_set_first_block(struct ext4_extent_index *index,
-                                       uint32_t iblock);
+				       uint32_t iblock);
 
 /**@brief Get physical number of block where the child node is located.
  * @param index Extent index to load number from
@@ -94,7 +94,7 @@ uint64_t ext4_extent_index_get_leaf(struct ext4_extent_index *index);
  * @param index  Extent index to set number to
  * @param fblock Ohysical number of the block with child node */
 void ext4_extent_index_set_leaf(struct ext4_extent_index *index,
-                                uint64_t fblock);
+				uint64_t fblock);
 
 /**@brief Get magic value from extent header.
  * @param header Extent header to load value from
@@ -105,7 +105,7 @@ uint16_t ext4_extent_header_get_magic(struct ext4_extent_header *header);
  * @param header Extent header to set value to
  * @param magic  Magic value of extent header */
 void ext4_extent_header_set_magic(struct ext4_extent_header *header,
-                                  uint16_t magic);
+				  uint16_t magic);
 
 /**@brief Get number of entries from extent header
  * @param header Extent header to get value from
@@ -117,7 +117,7 @@ ext4_extent_header_get_entries_count(struct ext4_extent_header *header);
  * @param header Extent header to set value to
  * @param count  Number of entries covered by extent header */
 void ext4_extent_header_set_entries_count(struct ext4_extent_header *header,
-                                          uint16_t count);
+					  uint16_t count);
 
 /**@brief Get maximum number of entries from extent header
  * @param header Extent header to get value from
@@ -129,7 +129,7 @@ ext4_extent_header_get_max_entries_count(struct ext4_extent_header *header);
  * @param header    Extent header to set value to
  * @param max_count Maximum number of entries covered by extent header */
 void ext4_extent_header_set_max_entries_count(struct ext4_extent_header *header,
-                                              uint16_t max_count);
+					      uint16_t max_count);
 
 /**@brief Get depth of extent subtree.
  * @param header Extent header to get value from
@@ -140,7 +140,7 @@ uint16_t ext4_extent_header_get_depth(struct ext4_extent_header *header);
  * @param header Extent header to set value to
  * @param depth  Depth of extent subtree */
 void ext4_extent_header_set_depth(struct ext4_extent_header *header,
-                                  uint16_t depth);
+				  uint16_t depth);
 
 /**@brief Get generation from extent header
  * @param header Extent header to get value from
@@ -151,7 +151,7 @@ uint32_t ext4_extent_header_get_generation(struct ext4_extent_header *header);
  * @param header     Extent header to set value to
  * @param generation Generation */
 void ext4_extent_header_set_generation(struct ext4_extent_header *header,
-                                       uint32_t generation);
+				       uint32_t generation);
 
 /**@brief Find physical block in the extent tree by logical block number.
  * There is no need to save path in the tree during this algorithm.
@@ -160,14 +160,14 @@ void ext4_extent_header_set_generation(struct ext4_extent_header *header,
  * @param fblock    Output value for physical block number
  * @return Error code*/
 int ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
-                           uint32_t *fblock);
+			   uint32_t *fblock);
 
 /**@brief Release all data blocks starting from specified logical block.
  * @param inode_ref   I-node to release blocks from
  * @param iblock_from First logical block to release
  * @return Error code */
 int ext4_extent_release_blocks_from(struct ext4_inode_ref *inode_ref,
-                                    uint32_t iblock_from);
+				    uint32_t iblock_from);
 
 /**@brief Append data block to the i-node.
  * This function allocates data block, tries to append it
@@ -179,9 +179,9 @@ int ext4_extent_release_blocks_from(struct ext4_inode_ref *inode_ref,
  *
  * @return Error code*/
 int ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
-                             uint32_t *fblock, bool update_size);
+			     uint32_t *fblock, bool update_size);
 
 #endif /* EXT4_EXTENT_H_ */
        /**
-        * @}
-        */
+	* @}
+	*/

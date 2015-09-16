@@ -48,135 +48,133 @@
 #define MBR_BLOCK_ID 0
 #define MBR_PART_TABLE_OFF 446
 
-struct part_tab_entry
-{
-    uint8_t status;
-    uint8_t chs1[3];
-    uint8_t type;
-    uint8_t chs2[3];
-    uint32_t first_lba;
-    uint32_t sectors;
+struct part_tab_entry {
+	uint8_t status;
+	uint8_t chs1[3];
+	uint8_t type;
+	uint8_t chs2[3];
+	uint32_t first_lba;
+	uint32_t sectors;
 } __attribute__((packed));
 
 /**@brief   Partition block offset*/
 static uint32_t part_offset;
 
 /**@brief IO timings*/
-struct sdc_io_timings
-{
-    uint64_t acc_bread;
-    uint64_t acc_bwrite;
+struct sdc_io_timings {
+	uint64_t acc_bread;
+	uint64_t acc_bwrite;
 
-    uint32_t cnt_bread;
-    uint32_t cnt_bwrite;
+	uint32_t cnt_bread;
+	uint32_t cnt_bwrite;
 
-    uint32_t av_bread;
-    uint32_t av_bwrite;
+	uint32_t av_bread;
+	uint32_t av_bwrite;
 };
 
 static struct sdc_io_timings io_timings;
 
 void io_timings_clear(void)
 {
-    memset(&io_timings, 0, sizeof(struct sdc_io_timings));
+	memset(&io_timings, 0, sizeof(struct sdc_io_timings));
 }
 
 const struct ext4_io_stats *io_timings_get(uint32_t time_sum_ms)
 {
-    static struct ext4_io_stats s;
+	static struct ext4_io_stats s;
 
-    s.io_read = (((float)io_timings.acc_bread * 100.0) / time_sum_ms);
-    s.io_read /= 1000.0;
+	s.io_read = (((float)io_timings.acc_bread * 100.0) / time_sum_ms);
+	s.io_read /= 1000.0;
 
-    s.io_write = (((float)io_timings.acc_bwrite * 100.0) / time_sum_ms);
-    s.io_write /= 1000.0;
+	s.io_write = (((float)io_timings.acc_bwrite * 100.0) / time_sum_ms);
+	s.io_write /= 1000.0;
 
-    s.cpu = 100.0 - s.io_read - s.io_write;
+	s.cpu = 100.0 - s.io_read - s.io_write;
 
-    return &s;
+	return &s;
 }
 
 /**********************BLOCKDEV INTERFACE**************************************/
 static int sdc_open(struct ext4_blockdev *bdev);
 static int sdc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
-                     uint32_t blk_cnt);
+		     uint32_t blk_cnt);
 static int sdc_bwrite(struct ext4_blockdev *bdev, const void *buf,
-                      uint64_t blk_id, uint32_t blk_cnt);
+		      uint64_t blk_id, uint32_t blk_cnt);
 static int sdc_close(struct ext4_blockdev *bdev);
 
 /******************************************************************************/
 EXT4_BLOCKDEV_STATIC_INSTANCE(_sdc, SDC_BLOCK_SIZE, 0, sdc_open, sdc_bread,
-                              sdc_bwrite, sdc_close);
+			      sdc_bwrite, sdc_close);
 
 /******************************************************************************/
 EXT4_BCACHE_STATIC_INSTANCE(_sdc_cache, CONFIG_BLOCK_DEV_CACHE_SIZE,
-                            EXT_LOGICAL_BLOCK_SIZE);
+			    EXT_LOGICAL_BLOCK_SIZE);
 
 /******************************************************************************/
 
 static int sdc_open(struct ext4_blockdev *bdev)
 {
-    (void)bdev;
+	(void)bdev;
 
-    static uint8_t mbr[512];
-    struct part_tab_entry *part0;
+	static uint8_t mbr[512];
+	struct part_tab_entry *part0;
 
-    sdcStart(&SDCD1, NULL);
+	sdcStart(&SDCD1, NULL);
 
-    if (sdcConnect(&SDCD1) != HAL_SUCCESS)
-        return EIO;
+	if (sdcConnect(&SDCD1) != HAL_SUCCESS)
+		return EIO;
 
-    if (sdcRead(&SDCD1, 0, mbr, 1) != HAL_SUCCESS)
-        return EIO;
+	if (sdcRead(&SDCD1, 0, mbr, 1) != HAL_SUCCESS)
+		return EIO;
 
-    part0 = (struct part_tab_entry *)(mbr + MBR_PART_TABLE_OFF);
+	part0 = (struct part_tab_entry *)(mbr + MBR_PART_TABLE_OFF);
 
-    part_offset = part0->first_lba;
-    _sdc.ph_bcnt = SDCD1.capacity * SDC_BLOCK_SIZE;
+	part_offset = part0->first_lba;
+	_sdc.ph_bcnt = SDCD1.capacity * SDC_BLOCK_SIZE;
 
-    return EOK;
+	return EOK;
 }
 
 static int sdc_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
-                     uint32_t blk_cnt)
+		     uint32_t blk_cnt)
 {
-    (void)bdev;
-    bool status;
-    uint64_t v = tim_get_us();
+	(void)bdev;
+	bool status;
+	uint64_t v = tim_get_us();
 
-    status = sdcRead(&SDCD1, blk_id, buf, blk_cnt);
-    if (status != HAL_SUCCESS)
-        return EIO;
+	status = sdcRead(&SDCD1, blk_id, buf, blk_cnt);
+	if (status != HAL_SUCCESS)
+		return EIO;
 
-    io_timings.acc_bread += tim_get_us() - v;
-    io_timings.cnt_bread++;
-    io_timings.av_bread = io_timings.acc_bread / io_timings.cnt_bread;
+	io_timings.acc_bread += tim_get_us() - v;
+	io_timings.cnt_bread++;
+	io_timings.av_bread = io_timings.acc_bread / io_timings.cnt_bread;
 
-    return EOK;
+	return EOK;
 }
 
 static int sdc_bwrite(struct ext4_blockdev *bdev, const void *buf,
-                      uint64_t blk_id, uint32_t blk_cnt)
+		      uint64_t blk_id, uint32_t blk_cnt)
 {
-    (void)bdev;
-    bool status;
-    uint64_t v = tim_get_us();
+	(void)bdev;
+	bool status;
+	uint64_t v = tim_get_us();
 
-    status = sdcWrite(&SDCD1, blk_id, buf, blk_cnt);
-    if (status != HAL_SUCCESS)
-        return EIO;
+	status = sdcWrite(&SDCD1, blk_id, buf, blk_cnt);
+	if (status != HAL_SUCCESS)
+		return EIO;
 
-    io_timings.acc_bwrite += tim_get_us() - v;
-    io_timings.cnt_bwrite++;
-    io_timings.av_bwrite = io_timings.acc_bwrite / io_timings.cnt_bwrite;
+	io_timings.acc_bwrite += tim_get_us() - v;
+	io_timings.cnt_bwrite++;
+	io_timings.av_bwrite = io_timings.acc_bwrite / io_timings.cnt_bwrite;
 
-    return EOK;
+	return EOK;
 }
 
 static int sdc_close(struct ext4_blockdev *bdev)
 {
-    (void)bdev;
-    return EOK;
+	(void)bdev;
+	return EOK;
 }
 
 /******************************************************************************/

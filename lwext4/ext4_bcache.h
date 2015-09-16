@@ -44,65 +44,65 @@
 
 /**@brief   Single block descriptor*/
 struct ext4_block {
-    /**@brief   Dirty flag*/
-    bool dirty;
+	/**@brief   Dirty flag*/
+	bool dirty;
 
-    /**@brief   Logical block ID*/
-    uint64_t lb_id;
+	/**@brief   Logical block ID*/
+	uint64_t lb_id;
 
-    /**@brief   Cache id*/
-    uint32_t cache_id;
+	/**@brief   Cache id*/
+	uint32_t cache_id;
 
-    /**@brief   Data buffer.*/
-    uint8_t *data;
+	/**@brief   Data buffer.*/
+	uint8_t *data;
 };
 
 /**@brief   Block cache descriptor*/
 struct ext4_bcache {
 
-    /**@brief   Item count in block cache*/
-    uint32_t cnt;
+	/**@brief   Item count in block cache*/
+	uint32_t cnt;
 
-    /**@brief   Item size in block cache*/
-    uint32_t itemsize;
+	/**@brief   Item size in block cache*/
+	uint32_t itemsize;
 
-    /**@brief   Last recently used counter*/
-    uint32_t lru_ctr;
+	/**@brief   Last recently used counter*/
+	uint32_t lru_ctr;
 
-    /**@brief   Reference count table*/
-    uint32_t refctr[CONFIG_BLOCK_DEV_CACHE_SIZE];
+	/**@brief   Reference count table*/
+	uint32_t refctr[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-    /**@brief   Last recently used ID table*/
-    uint32_t lru_id[CONFIG_BLOCK_DEV_CACHE_SIZE];
+	/**@brief   Last recently used ID table*/
+	uint32_t lru_id[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-    /**@brief   Writeback free delay mode table*/
-    uint8_t free_delay[CONFIG_BLOCK_DEV_CACHE_SIZE];
+	/**@brief   Writeback free delay mode table*/
+	uint8_t free_delay[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-    /**@brief   Logical block table*/
-    uint64_t lba[CONFIG_BLOCK_DEV_CACHE_SIZE];
+	/**@brief   Logical block table*/
+	uint64_t lba[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-    /**@brief   Dirty mark*/
-    bool dirty[CONFIG_BLOCK_DEV_CACHE_SIZE];
+	/**@brief   Dirty mark*/
+	bool dirty[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-    /**@brief   Cache data buffers*/
-    uint8_t *data;
+	/**@brief   Cache data buffers*/
+	uint8_t *data;
 
-    /**@brief   Currently referenced datablocks*/
-    uint32_t ref_blocks;
+	/**@brief   Currently referenced datablocks*/
+	uint32_t ref_blocks;
 
-    /**@brief   Maximum referenced datablocks*/
-    uint32_t max_ref_blocks;
+	/**@brief   Maximum referenced datablocks*/
+	uint32_t max_ref_blocks;
 };
 
 /**@brief   Static initializer of block cache structure.*/
 #define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)                 \
-    static uint8_t __name##_data[(__cnt) * (__itemsize)];                      \
-    static struct ext4_bcache __name = {                                       \
-        .cnt = __cnt,                                                          \
-        .itemsize = __itemsize,                                                \
-        .lru_ctr = 0,                                                          \
-        .data = __name##_data,                                                 \
-    }
+	static uint8_t __name##_data[(__cnt) * (__itemsize)];                  \
+	static struct ext4_bcache __name = {                                   \
+	    .cnt = __cnt,                                                      \
+	    .itemsize = __itemsize,                                            \
+	    .lru_ctr = 0,                                                      \
+	    .data = __name##_data,                                             \
+	}
 
 /**@brief   Dynamic initialization of block cache.
  * @param   bc block cache descriptor
@@ -110,7 +110,7 @@ struct ext4_bcache {
  * @param   itemsize single item size (in bytes)
  * @return  standard error code*/
 int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
-                             uint32_t itemsize);
+			     uint32_t itemsize);
 
 /**@brief   Dynamic de-initialization of block cache.
  * @param   bc block cache descriptor
@@ -125,7 +125,7 @@ int ext4_bcache_fini_dynamic(struct ext4_bcache *bc);
  * @param   is_new block is new (needs to be read)
  * @return  standard error code*/
 int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
-                      bool *is_new);
+		      bool *is_new);
 
 /**@brief   Free block from cache memory (decrement reference counter).
  * @param   bc block cache descriptor
@@ -133,7 +133,7 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
  * @param   cache writeback mode
  * @return  standard error code*/
 int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b,
-                     uint8_t free_delay);
+		     uint8_t free_delay);
 
 /**@brief   Return a full status of block cache.
  * @param   bc block cache descriptor

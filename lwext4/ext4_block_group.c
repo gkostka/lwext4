@@ -76,11 +76,12 @@ static uint16_t const crc16_tab[256] = {
 
 uint16_t ext4_bg_crc16(uint16_t crc, const uint8_t *buffer, size_t len)
 {
-    while (len--)
+	while (len--)
 
-        crc = (((crc >> 8) & 0xffU) ^ crc16_tab[(crc ^ *buffer++) & 0xffU]) &
-              0x0000ffffU;
-    return crc;
+		crc = (((crc >> 8) & 0xffU) ^
+		       crc16_tab[(crc ^ *buffer++) & 0xffU]) &
+		      0x0000ffffU;
+	return crc;
 }
 
 /**

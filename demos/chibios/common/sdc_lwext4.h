@@ -41,11 +41,10 @@ struct ext4_bcache *sdc_cache_get(void);
 /**@brief   SDC blockdev get.*/
 struct ext4_blockdev *sdc_bdev_get(void);
 
-struct ext4_io_stats
-{
-    float io_read;
-    float io_write;
-    float cpu;
+struct ext4_io_stats {
+	float io_read;
+	float io_write;
+	float cpu;
 };
 
 void io_timings_clear(void);

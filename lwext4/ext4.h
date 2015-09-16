@@ -93,11 +93,11 @@
 /**@brief   OS dependent lock interface.*/
 struct ext4_lock {
 
-    /**@brief   Lock access to mount point*/
-    void (*lock)(void);
+	/**@brief   Lock access to mount point*/
+	void (*lock)(void);
 
-    /**@brief   Unlock access to mount point*/
-    void (*unlock)(void);
+	/**@brief   Unlock access to mount point*/
+	void (*unlock)(void);
 };
 
 /********************************FILE DESCRIPTOR*****************************/
@@ -105,51 +105,49 @@ struct ext4_lock {
 /**@brief   File descriptor*/
 typedef struct ext4_file {
 
-    /**@brief   Mount point handle.*/
-    struct ext4_mountpoint *mp;
+	/**@brief   Mount point handle.*/
+	struct ext4_mountpoint *mp;
 
-    /**@brief   File inode id*/
-    uint32_t inode;
+	/**@brief   File inode id*/
+	uint32_t inode;
 
-    /**@brief   Open flags.*/
-    uint32_t flags;
+	/**@brief   Open flags.*/
+	uint32_t flags;
 
-    /**@brief   File size.*/
-    uint64_t fsize;
+	/**@brief   File size.*/
+	uint64_t fsize;
 
-    /**@brief   File position*/
-    uint64_t fpos;
+	/**@brief   File position*/
+	uint64_t fpos;
 } ext4_file;
 
 /*****************************DIRECTORY DESCRIPTOR***************************/
 /**@brief   Directory entry types. Copy from ext4_types.h*/
-enum {
-    EXT4_DIRENTRY_UNKNOWN = 0,
-    EXT4_DIRENTRY_REG_FILE,
-    EXT4_DIRENTRY_DIR,
-    EXT4_DIRENTRY_CHRDEV,
-    EXT4_DIRENTRY_BLKDEV,
-    EXT4_DIRENTRY_FIFO,
-    EXT4_DIRENTRY_SOCK,
-    EXT4_DIRENTRY_SYMLINK
-};
+enum { EXT4_DIRENTRY_UNKNOWN = 0,
+       EXT4_DIRENTRY_REG_FILE,
+       EXT4_DIRENTRY_DIR,
+       EXT4_DIRENTRY_CHRDEV,
+       EXT4_DIRENTRY_BLKDEV,
+       EXT4_DIRENTRY_FIFO,
+       EXT4_DIRENTRY_SOCK,
+       EXT4_DIRENTRY_SYMLINK };
 
 /**@brief   Directory entry descriptor. Copy from ext4_types.h*/
 typedef struct {
-    uint32_t inode;
-    uint16_t entry_length;
-    uint8_t name_length;
-    uint8_t inode_type;
-    uint8_t name[255];
+	uint32_t inode;
+	uint16_t entry_length;
+	uint8_t name_length;
+	uint8_t inode_type;
+	uint8_t name[255];
 } ext4_direntry;
 
 typedef struct {
-    /**@brief   File descriptor*/
-    ext4_file f;
-    /**@brief   Current directory entry.*/
-    ext4_direntry de;
-    /**@brief   Next entry offset*/
-    uint64_t next_off;
+	/**@brief   File descriptor*/
+	ext4_file f;
+	/**@brief   Current directory entry.*/
+	ext4_direntry de;
+	/**@brief   Next entry offset*/
+	uint64_t next_off;
 } ext4_dir;
 
 /********************************MOUNT OPERATIONS****************************/
@@ -164,7 +162,7 @@ typedef struct {
  * @param   dev_name register name
  * @param   standard error code*/
 int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
-                         const char *dev_name);
+			 const char *dev_name);
 
 /**@brief   Mount a block device with EXT4 partition to the mount point.
  * @param   dev_name block device name (@ref ext4_device_register)
@@ -183,17 +181,17 @@ int ext4_umount(const char *mount_point);
 
 /**@brief   Some of the filesystem stats.*/
 struct ext4_mount_stats {
-    uint32_t inodes_count;
-    uint32_t free_inodes_count;
-    uint64_t blocks_count;
-    uint64_t free_blocks_count;
+	uint32_t inodes_count;
+	uint32_t free_inodes_count;
+	uint64_t blocks_count;
+	uint64_t free_blocks_count;
 
-    uint32_t block_size;
-    uint32_t block_group_count;
-    uint32_t blocks_per_group;
-    uint32_t inodes_per_group;
+	uint32_t block_size;
+	uint32_t block_group_count;
+	uint32_t blocks_per_group;
+	uint32_t inodes_per_group;
 
-    char volume_name[16];
+	char volume_name[16];
 };
 
 /**@brief   Get file system params.
@@ -201,14 +199,14 @@ struct ext4_mount_stats {
  * @param   stats ext fs stats
  * @return  standard error code */
 int ext4_mount_point_stats(const char *mount_point,
-                           struct ext4_mount_stats *stats);
+			   struct ext4_mount_stats *stats);
 
 /**@brief   Setup OS lock routines.
  * @param   mount_point mount path
  * @param   locks - lock and unlock functions
  * @return  standard error code */
 int ext4_mount_setup_locks(const char *mount_point,
-                           const struct ext4_lock *locks);
+			   const struct ext4_lock *locks);
 
 /**@brief   Acquire the filesystem superblock pointer of a mp.
  * @param   mount_point mount path
@@ -304,7 +302,8 @@ int ext4_fclose(ext4_file *f);
  * @param   inode no.
  * @param   ext4_inode buffer
  * @return  standard error code*/
-int ext4_fill_raw_inode(const char *mount_point, uint32_t ino, struct ext4_inode *inode);
+int ext4_fill_raw_inode(const char *mount_point, uint32_t ino,
+			struct ext4_inode *inode);
 
 /**@brief   File truncate function.
  * @param   f file handle

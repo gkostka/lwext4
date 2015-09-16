@@ -1,8 +1,8 @@
 #clang-format-3.7 -style=file -i lwext4/*
 
 BasedOnStyle: LLVM
-IndentWidth: 4
-UseTab: Never
+IndentWidth: 8
+UseTab: Always
 BreakBeforeBraces: Linux
 AllowShortIfStatementsOnASingleLine: false
 IndentCaseLabels: false

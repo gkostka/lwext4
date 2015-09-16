@@ -44,386 +44,391 @@
 
 int ext4_block_init(struct ext4_blockdev *bdev)
 {
-    int rc;
-    ext4_assert(bdev);
+	int rc;
+	ext4_assert(bdev);
 
-    ext4_assert(bdev->open && bdev->close && bdev->bread && bdev->bwrite);
+	ext4_assert(bdev->open && bdev->close && bdev->bread && bdev->bwrite);
 
-    /*Low level block init*/
-    rc = bdev->open(bdev);
-    if (rc != EOK)
-        return rc;
+	/*Low level block init*/
+	rc = bdev->open(bdev);
+	if (rc != EOK)
+		return rc;
 
-    bdev->flags |= EXT4_BDEV_INITIALIZED;
+	bdev->flags |= EXT4_BDEV_INITIALIZED;
 
-    return EOK;
+	return EOK;
 }
 
 int ext4_block_bind_bcache(struct ext4_blockdev *bdev, struct ext4_bcache *bc)
 {
-    ext4_assert(bdev && bc);
-    bdev->bc = bc;
-    return EOK;
+	ext4_assert(bdev && bc);
+	bdev->bc = bc;
+	return EOK;
 }
 
 void ext4_block_set_lb_size(struct ext4_blockdev *bdev, uint64_t lb_bsize)
 {
-    /*Logical block size has to be multiply of physical */
-    ext4_assert(!(lb_bsize % bdev->ph_bsize));
+	/*Logical block size has to be multiply of physical */
+	ext4_assert(!(lb_bsize % bdev->ph_bsize));
 
-    bdev->lg_bsize = lb_bsize;
-    bdev->lg_bcnt = (bdev->ph_bcnt * bdev->ph_bsize) / lb_bsize;
+	bdev->lg_bsize = lb_bsize;
+	bdev->lg_bcnt = (bdev->ph_bcnt * bdev->ph_bsize) / lb_bsize;
 }
 
 int ext4_block_fini(struct ext4_blockdev *bdev)
 {
-    ext4_assert(bdev);
+	ext4_assert(bdev);
 
-    bdev->flags &= ~(EXT4_BDEV_INITIALIZED);
+	bdev->flags &= ~(EXT4_BDEV_INITIALIZED);
 
-    /*Low level block fini*/
-    return bdev->close(bdev);
+	/*Low level block fini*/
+	return bdev->close(bdev);
 }
 
 int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
-                   uint64_t lba)
+		   uint64_t lba)
 {
-    uint64_t pba;
-    uint32_t pb_cnt;
-    uint32_t i;
-    bool is_new;
-    int r;
+	uint64_t pba;
+	uint32_t pb_cnt;
+	uint32_t i;
+	bool is_new;
+	int r;
 
-    ext4_assert(bdev && b);
+	ext4_assert(bdev && b);
 
-    if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
-        return EIO;
+	if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
+		return EIO;
 
-    if (!(lba < bdev->lg_bcnt))
-        return ERANGE;
+	if (!(lba < bdev->lg_bcnt))
+		return ERANGE;
 
-    b->dirty = 0;
-    b->lb_id = lba;
+	b->dirty = 0;
+	b->lb_id = lba;
 
-    /*If cache is full we have to flush it anyway :(*/
-    if (ext4_bcache_is_full(bdev->bc) && bdev->cache_write_back) {
+	/*If cache is full we have to flush it anyway :(*/
+	if (ext4_bcache_is_full(bdev->bc) && bdev->cache_write_back) {
 
-        uint32_t free_candidate = bdev->bc->cnt;
-        uint32_t min_lru = 0xFFFFFFFF;
+		uint32_t free_candidate = bdev->bc->cnt;
+		uint32_t min_lru = 0xFFFFFFFF;
 
-        for (i = 0; i < bdev->bc->cnt; ++i) {
-            /*Check if buffer free was delayed.*/
-            if (!bdev->bc->free_delay[i])
-                continue;
+		for (i = 0; i < bdev->bc->cnt; ++i) {
+			/*Check if buffer free was delayed.*/
+			if (!bdev->bc->free_delay[i])
+				continue;
 
-            /*Check reference counter.*/
-            if (bdev->bc->refctr[i])
-                continue;
+			/*Check reference counter.*/
+			if (bdev->bc->refctr[i])
+				continue;
 
-            if (bdev->bc->lru_id[i] < min_lru) {
-                min_lru = bdev->bc->lru_id[i];
-                free_candidate = i;
-                continue;
-            }
-        }
+			if (bdev->bc->lru_id[i] < min_lru) {
+				min_lru = bdev->bc->lru_id[i];
+				free_candidate = i;
+				continue;
+			}
+		}
 
-        if (free_candidate < bdev->bc->cnt) {
-            /*Buffer free was delayed and have no reference. Flush it.*/
-            r = ext4_blocks_set_direct(
-                bdev, bdev->bc->data + bdev->bc->itemsize * free_candidate,
-                bdev->bc->lba[free_candidate], 1);
-            if (r != EOK)
-                return r;
+		if (free_candidate < bdev->bc->cnt) {
+			/*Buffer free was delayed and have no reference. Flush
+			 * it.*/
+			r = ext4_blocks_set_direct(
+			    bdev, bdev->bc->data +
+				      bdev->bc->itemsize * free_candidate,
+			    bdev->bc->lba[free_candidate], 1);
+			if (r != EOK)
+				return r;
 
-            /*No delayed anymore*/
-            bdev->bc->free_delay[free_candidate] = 0;
+			/*No delayed anymore*/
+			bdev->bc->free_delay[free_candidate] = 0;
 
-            /*Reduce reference counter*/
-            bdev->bc->ref_blocks--;
-        }
-    }
+			/*Reduce reference counter*/
+			bdev->bc->ref_blocks--;
+		}
+	}
 
-    r = ext4_bcache_alloc(bdev->bc, b, &is_new);
-    if (r != EOK)
-        return r;
+	r = ext4_bcache_alloc(bdev->bc, b, &is_new);
+	if (r != EOK)
+		return r;
 
-    if (!is_new) {
-        /*Block is in cache. Read from physical device is not required*/
-        return EOK;
-    }
+	if (!is_new) {
+		/*Block is in cache. Read from physical device is not required*/
+		return EOK;
+	}
 
-    if (!b->data)
-        return ENOMEM;
+	if (!b->data)
+		return ENOMEM;
 
-    pba = (lba * bdev->lg_bsize) / bdev->ph_bsize;
-    pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
+	pba = (lba * bdev->lg_bsize) / bdev->ph_bsize;
+	pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
-    r = bdev->bread(bdev, b->data, pba, pb_cnt);
+	r = bdev->bread(bdev, b->data, pba, pb_cnt);
 
-    if (r != EOK) {
-        ext4_bcache_free(bdev->bc, b, 0);
-        b->lb_id = 0;
-        return r;
-    }
+	if (r != EOK) {
+		ext4_bcache_free(bdev->bc, b, 0);
+		b->lb_id = 0;
+		return r;
+	}
 
-    bdev->bread_ctr++;
-    return EOK;
+	bdev->bread_ctr++;
+	return EOK;
 }
 
 int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 {
-    uint64_t pba;
-    uint32_t pb_cnt;
-    int r;
+	uint64_t pba;
+	uint32_t pb_cnt;
+	int r;
 
-    ext4_assert(bdev && b);
+	ext4_assert(bdev && b);
 
-    if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
-        return EIO;
+	if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
+		return EIO;
 
-    /*No need to write.*/
-    if (!b->dirty && !bdev->bc->dirty[b->cache_id]) {
-        ext4_bcache_free(bdev->bc, b, 0);
-        return EOK;
-    }
+	/*No need to write.*/
+	if (!b->dirty && !bdev->bc->dirty[b->cache_id]) {
+		ext4_bcache_free(bdev->bc, b, 0);
+		return EOK;
+	}
 
-    /*Free cache delay mode*/
-    if (bdev->cache_write_back) {
+	/*Free cache delay mode*/
+	if (bdev->cache_write_back) {
 
-        /*Free cache block and mark as free delayed*/
-        return ext4_bcache_free(bdev->bc, b, bdev->cache_write_back);
-    }
+		/*Free cache block and mark as free delayed*/
+		return ext4_bcache_free(bdev->bc, b, bdev->cache_write_back);
+	}
 
-    if (bdev->bc->refctr[b->cache_id] > 1) {
-        bdev->bc->dirty[b->cache_id] = true;
-        return ext4_bcache_free(bdev->bc, b, 0);
-    }
+	if (bdev->bc->refctr[b->cache_id] > 1) {
+		bdev->bc->dirty[b->cache_id] = true;
+		return ext4_bcache_free(bdev->bc, b, 0);
+	}
 
-    pba = (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
-    pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
+	pba = (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
+	pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
-    r = bdev->bwrite(bdev, b->data, pba, pb_cnt);
-    bdev->bc->dirty[b->cache_id] = false;
-    if (r != EOK) {
-        b->dirty = false;
-        ext4_bcache_free(bdev->bc, b, 0);
-        return r;
-    }
+	r = bdev->bwrite(bdev, b->data, pba, pb_cnt);
+	bdev->bc->dirty[b->cache_id] = false;
+	if (r != EOK) {
+		b->dirty = false;
+		ext4_bcache_free(bdev->bc, b, 0);
+		return r;
+	}
 
-    bdev->bwrite_ctr++;
-    b->dirty = false;
-    ext4_bcache_free(bdev->bc, b, 0);
-    return EOK;
+	bdev->bwrite_ctr++;
+	b->dirty = false;
+	ext4_bcache_free(bdev->bc, b, 0);
+	return EOK;
 }
 
 int ext4_blocks_get_direct(struct ext4_blockdev *bdev, void *buf, uint64_t lba,
-                           uint32_t cnt)
+			   uint32_t cnt)
 {
-    uint64_t pba;
-    uint32_t pb_cnt;
+	uint64_t pba;
+	uint32_t pb_cnt;
 
-    ext4_assert(bdev && buf);
+	ext4_assert(bdev && buf);
 
-    pba = (lba * bdev->lg_bsize) / bdev->ph_bsize;
-    pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
+	pba = (lba * bdev->lg_bsize) / bdev->ph_bsize;
+	pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
-    bdev->bread_ctr++;
-    return bdev->bread(bdev, buf, pba, pb_cnt * cnt);
+	bdev->bread_ctr++;
+	return bdev->bread(bdev, buf, pba, pb_cnt * cnt);
 }
 
 int ext4_blocks_set_direct(struct ext4_blockdev *bdev, const void *buf,
-                           uint64_t lba, uint32_t cnt)
+			   uint64_t lba, uint32_t cnt)
 {
-    uint64_t pba;
-    uint32_t pb_cnt;
+	uint64_t pba;
+	uint32_t pb_cnt;
 
-    ext4_assert(bdev && buf);
+	ext4_assert(bdev && buf);
 
-    pba = (lba * bdev->lg_bsize) / bdev->ph_bsize;
-    pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
+	pba = (lba * bdev->lg_bsize) / bdev->ph_bsize;
+	pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
-    bdev->bwrite_ctr++;
+	bdev->bwrite_ctr++;
 
-    return bdev->bwrite(bdev, buf, pba, pb_cnt * cnt);
+	return bdev->bwrite(bdev, buf, pba, pb_cnt * cnt);
 }
 
 int ext4_block_writebytes(struct ext4_blockdev *bdev, uint64_t off,
-                          const void *buf, uint32_t len)
+			  const void *buf, uint32_t len)
 {
-    uint64_t block_idx;
-    uint64_t block_end;
-    uint32_t blen;
-    uint32_t unalg;
-    int r = EOK;
+	uint64_t block_idx;
+	uint64_t block_end;
+	uint32_t blen;
+	uint32_t unalg;
+	int r = EOK;
 
-    const uint8_t *p = (void *)buf;
+	const uint8_t *p = (void *)buf;
 
-    ext4_assert(bdev && buf);
+	ext4_assert(bdev && buf);
 
-    if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
-        return EIO;
+	if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
+		return EIO;
 
-    block_idx = off / bdev->ph_bsize;
-    block_end = block_idx + len / bdev->ph_bsize;
+	block_idx = off / bdev->ph_bsize;
+	block_end = block_idx + len / bdev->ph_bsize;
 
-    if (!(block_end < bdev->ph_bcnt))
-        return EINVAL; /*Ups. Out of range operation*/
+	if (!(block_end < bdev->ph_bcnt))
+		return EINVAL; /*Ups. Out of range operation*/
 
-    /*OK lets deal with the first possible unaligned block*/
-    unalg = (off & (bdev->ph_bsize - 1));
-    if (unalg) {
+	/*OK lets deal with the first possible unaligned block*/
+	unalg = (off & (bdev->ph_bsize - 1));
+	if (unalg) {
 
-        uint32_t wlen =
-            (bdev->ph_bsize - unalg) > len ? len : (bdev->ph_bsize - unalg);
+		uint32_t wlen = (bdev->ph_bsize - unalg) > len
+				    ? len
+				    : (bdev->ph_bsize - unalg);
 
-        r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
+		r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
 
-        if (r != EOK)
-            return r;
+		if (r != EOK)
+			return r;
 
-        memcpy(bdev->ph_bbuf + unalg, p, wlen);
+		memcpy(bdev->ph_bbuf + unalg, p, wlen);
 
-        r = bdev->bwrite(bdev, bdev->ph_bbuf, block_idx, 1);
-        if (r != EOK)
-            return r;
+		r = bdev->bwrite(bdev, bdev->ph_bbuf, block_idx, 1);
+		if (r != EOK)
+			return r;
 
-        p += wlen;
-        len -= wlen;
-        block_idx++;
-    }
+		p += wlen;
+		len -= wlen;
+		block_idx++;
+	}
 
-    /*Aligned data*/
-    blen = len / bdev->ph_bsize;
-    r = bdev->bwrite(bdev, p, block_idx, blen);
+	/*Aligned data*/
+	blen = len / bdev->ph_bsize;
+	r = bdev->bwrite(bdev, p, block_idx, blen);
 
-    if (r != EOK)
-        return r;
+	if (r != EOK)
+		return r;
 
-    p += bdev->ph_bsize * blen;
-    len -= bdev->ph_bsize * blen;
+	p += bdev->ph_bsize * blen;
+	len -= bdev->ph_bsize * blen;
 
-    block_idx += blen;
+	block_idx += blen;
 
-    /*Rest of the data*/
-    if (len) {
-        r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
-        if (r != EOK)
-            return r;
+	/*Rest of the data*/
+	if (len) {
+		r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
+		if (r != EOK)
+			return r;
 
-        memcpy(bdev->ph_bbuf, p, len);
+		memcpy(bdev->ph_bbuf, p, len);
 
-        r = bdev->bwrite(bdev, bdev->ph_bbuf, block_idx, 1);
+		r = bdev->bwrite(bdev, bdev->ph_bbuf, block_idx, 1);
 
-        if (r != EOK)
-            return r;
-    }
+		if (r != EOK)
+			return r;
+	}
 
-    return r;
+	return r;
 }
 
 int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off, void *buf,
-                         uint32_t len)
+			 uint32_t len)
 {
-    uint64_t block_idx;
-    uint64_t block_end;
-    uint32_t blen;
-    uint32_t unalg;
-    int r = EOK;
+	uint64_t block_idx;
+	uint64_t block_end;
+	uint32_t blen;
+	uint32_t unalg;
+	int r = EOK;
 
-    uint8_t *p = (void *)buf;
+	uint8_t *p = (void *)buf;
 
-    ext4_assert(bdev && buf);
+	ext4_assert(bdev && buf);
 
-    if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
-        return EIO;
+	if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
+		return EIO;
 
-    block_idx = off / bdev->ph_bsize;
-    block_end = block_idx + len / bdev->ph_bsize;
+	block_idx = off / bdev->ph_bsize;
+	block_end = block_idx + len / bdev->ph_bsize;
 
-    if (!(block_end < bdev->ph_bcnt))
-        return EINVAL; /*Ups. Out of range operation*/
+	if (!(block_end < bdev->ph_bcnt))
+		return EINVAL; /*Ups. Out of range operation*/
 
-    /*OK lets deal with the first possible unaligned block*/
-    unalg = (off & (bdev->ph_bsize - 1));
-    if (unalg) {
+	/*OK lets deal with the first possible unaligned block*/
+	unalg = (off & (bdev->ph_bsize - 1));
+	if (unalg) {
 
-        uint32_t rlen =
-            (bdev->ph_bsize - unalg) > len ? len : (bdev->ph_bsize - unalg);
+		uint32_t rlen = (bdev->ph_bsize - unalg) > len
+				    ? len
+				    : (bdev->ph_bsize - unalg);
 
-        r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
-        if (r != EOK)
-            return r;
+		r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
+		if (r != EOK)
+			return r;
 
-        memcpy(p, bdev->ph_bbuf + unalg, rlen);
+		memcpy(p, bdev->ph_bbuf + unalg, rlen);
 
-        p += rlen;
-        len -= rlen;
-        block_idx++;
-    }
+		p += rlen;
+		len -= rlen;
+		block_idx++;
+	}
 
-    /*Aligned data*/
-    blen = len / bdev->ph_bsize;
+	/*Aligned data*/
+	blen = len / bdev->ph_bsize;
 
-    r = bdev->bread(bdev, p, block_idx, blen);
+	r = bdev->bread(bdev, p, block_idx, blen);
 
-    if (r != EOK)
-        return r;
+	if (r != EOK)
+		return r;
 
-    p += bdev->ph_bsize * blen;
-    len -= bdev->ph_bsize * blen;
+	p += bdev->ph_bsize * blen;
+	len -= bdev->ph_bsize * blen;
 
-    block_idx += blen;
+	block_idx += blen;
 
-    /*Rest of the data*/
-    if (len) {
-        r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
-        if (r != EOK)
-            return r;
+	/*Rest of the data*/
+	if (len) {
+		r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
+		if (r != EOK)
+			return r;
 
-        memcpy(p, bdev->ph_bbuf, len);
-    }
+		memcpy(p, bdev->ph_bbuf, len);
+	}
 
-    return r;
+	return r;
 }
 
 int ext4_block_cache_write_back(struct ext4_blockdev *bdev, uint8_t on_off)
 {
-    int r;
-    uint32_t i;
+	int r;
+	uint32_t i;
 
-    if (on_off)
-        bdev->cache_write_back++;
+	if (on_off)
+		bdev->cache_write_back++;
 
-    if (!on_off && bdev->cache_write_back)
-        bdev->cache_write_back--;
+	if (!on_off && bdev->cache_write_back)
+		bdev->cache_write_back--;
 
-    /*Flush all delayed cache blocks*/
-    if (!bdev->cache_write_back) {
-        for (i = 0; i < bdev->bc->cnt; ++i) {
+	/*Flush all delayed cache blocks*/
+	if (!bdev->cache_write_back) {
+		for (i = 0; i < bdev->bc->cnt; ++i) {
 
-            /*Check if buffer free was delayed.*/
-            if (!bdev->bc->free_delay[i])
-                continue;
+			/*Check if buffer free was delayed.*/
+			if (!bdev->bc->free_delay[i])
+				continue;
 
-            /*Check reference counter.*/
-            if (bdev->bc->refctr[i])
-                continue;
+			/*Check reference counter.*/
+			if (bdev->bc->refctr[i])
+				continue;
 
-            /*Buffer free was delayed and have no reference. Flush it.*/
-            r = ext4_blocks_set_direct(bdev,
-                                       bdev->bc->data + bdev->bc->itemsize * i,
-                                       bdev->bc->lba[i], 1);
-            if (r != EOK)
-                return r;
+			/*Buffer free was delayed and have no reference. Flush
+			 * it.*/
+			r = ext4_blocks_set_direct(
+			    bdev, bdev->bc->data + bdev->bc->itemsize * i,
+			    bdev->bc->lba[i], 1);
+			if (r != EOK)
+				return r;
 
-            /*No delayed anymore*/
-            bdev->bc->free_delay[i] = 0;
+			/*No delayed anymore*/
+			bdev->bc->free_delay[i] = 0;
 
-            /*Reduce reference counter*/
-            bdev->bc->ref_blocks--;
-        }
-    }
-    return EOK;
+			/*Reduce reference counter*/
+			bdev->bc->ref_blocks--;
+		}
+	}
+	return EOK;
 }
 
 /**

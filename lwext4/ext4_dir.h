@@ -56,7 +56,7 @@
 static inline uint32_t
 ext4_dir_entry_ll_get_inode(struct ext4_directory_entry_ll *de)
 {
-    return to_le32(de->inode);
+	return to_le32(de->inode);
 }
 
 /**@brief Set i-node number to directory entry.
@@ -66,7 +66,7 @@ ext4_dir_entry_ll_get_inode(struct ext4_directory_entry_ll *de)
 static inline void
 ext4_dir_entry_ll_set_inode(struct ext4_directory_entry_ll *de, uint32_t inode)
 {
-    de->inode = to_le32(inode);
+	de->inode = to_le32(inode);
 }
 
 /**@brief Get directory entry length.
@@ -76,7 +76,7 @@ ext4_dir_entry_ll_set_inode(struct ext4_directory_entry_ll *de, uint32_t inode)
 static inline uint16_t
 ext4_dir_entry_ll_get_entry_length(struct ext4_directory_entry_ll *de)
 {
-    return to_le16(de->entry_length);
+	return to_le16(de->entry_length);
 }
 
 /**@brief Set directory entry length.
@@ -85,9 +85,9 @@ ext4_dir_entry_ll_get_entry_length(struct ext4_directory_entry_ll *de)
  */
 static inline void
 ext4_dir_entry_ll_set_entry_length(struct ext4_directory_entry_ll *de,
-                                   uint16_t len)
+				   uint16_t len)
 {
-    de->entry_length = to_le16(len);
+	de->entry_length = to_le16(len);
 }
 
 /**@brief Get directory entry name length.
@@ -97,15 +97,15 @@ ext4_dir_entry_ll_set_entry_length(struct ext4_directory_entry_ll *de,
  */
 static inline uint16_t
 ext4_dir_entry_ll_get_name_length(struct ext4_sblock *sb,
-                                  struct ext4_directory_entry_ll *de)
+				  struct ext4_directory_entry_ll *de)
 {
-    uint16_t v = de->name_length;
+	uint16_t v = de->name_length;
 
-    if ((ext4_get32(sb, rev_level) == 0) &&
-        (ext4_get32(sb, minor_rev_level) < 5))
-        v |= ((uint16_t)de->in.name_length_high) << 8;
+	if ((ext4_get32(sb, rev_level) == 0) &&
+	    (ext4_get32(sb, minor_rev_level) < 5))
+		v |= ((uint16_t)de->in.name_length_high) << 8;
 
-    return v;
+	return v;
 }
 
 /**@brief Set directory entry name length.
@@ -116,11 +116,11 @@ ext4_dir_entry_ll_get_name_length(struct ext4_sblock *sb,
 static inline void ext4_dir_entry_ll_set_name_length(
     struct ext4_sblock *sb, struct ext4_directory_entry_ll *de, uint16_t len)
 {
-    de->name_length = (len << 8) >> 8;
+	de->name_length = (len << 8) >> 8;
 
-    if ((ext4_get32(sb, rev_level) == 0) &&
-        (ext4_get32(sb, minor_rev_level) < 5))
-        de->in.name_length_high = len >> 8;
+	if ((ext4_get32(sb, rev_level) == 0) &&
+	    (ext4_get32(sb, minor_rev_level) < 5))
+		de->in.name_length_high = len >> 8;
 }
 
 /**@brief Get i-node type of directory entry.
@@ -130,13 +130,13 @@ static inline void ext4_dir_entry_ll_set_name_length(
  */
 static inline uint8_t
 ext4_dir_entry_ll_get_inode_type(struct ext4_sblock *sb,
-                                 struct ext4_directory_entry_ll *de)
+				 struct ext4_directory_entry_ll *de)
 {
-    if ((ext4_get32(sb, rev_level) > 0) ||
-        (ext4_get32(sb, minor_rev_level) >= 5))
-        return de->in.inode_type;
+	if ((ext4_get32(sb, rev_level) > 0) ||
+	    (ext4_get32(sb, minor_rev_level) >= 5))
+		return de->in.inode_type;
 
-    return EXT4_DIRECTORY_FILETYPE_UNKNOWN;
+	return EXT4_DIRECTORY_FILETYPE_UNKNOWN;
 }
 /**@brief Set i-node type of directory entry.
  * @param sb   Superblock
@@ -147,9 +147,9 @@ ext4_dir_entry_ll_get_inode_type(struct ext4_sblock *sb,
 static inline void ext4_dir_entry_ll_set_inode_type(
     struct ext4_sblock *sb, struct ext4_directory_entry_ll *de, uint8_t type)
 {
-    if ((ext4_get32(sb, rev_level) > 0) ||
-        (ext4_get32(sb, minor_rev_level) >= 5))
-        de->in.inode_type = type;
+	if ((ext4_get32(sb, rev_level) > 0) ||
+	    (ext4_get32(sb, minor_rev_level) >= 5))
+		de->in.inode_type = type;
 }
 
 /**@brief Initialize directory iterator.
@@ -160,7 +160,7 @@ static inline void ext4_dir_entry_ll_set_inode_type(
  * @return Error code
  */
 int ext4_dir_iterator_init(struct ext4_directory_iterator *it,
-                           struct ext4_inode_ref *inode_ref, uint64_t pos);
+			   struct ext4_inode_ref *inode_ref, uint64_t pos);
 
 /**@brief Jump to the next valid entry
  * @param it Initialized iterator
@@ -184,9 +184,9 @@ int ext4_dir_iterator_fini(struct ext4_directory_iterator *it);
  * @param name_len  Length of entry name
  */
 void ext4_dir_write_entry(struct ext4_sblock *sb,
-                          struct ext4_directory_entry_ll *entry,
-                          uint16_t entry_len, struct ext4_inode_ref *child,
-                          const char *name, size_t name_len);
+			  struct ext4_directory_entry_ll *entry,
+			  uint16_t entry_len, struct ext4_inode_ref *child,
+			  const char *name, size_t name_len);
 
 /**@brief Add new entry to the directory.
  * @param parent Directory i-node
@@ -195,7 +195,7 @@ void ext4_dir_write_entry(struct ext4_sblock *sb,
  * @return Error code
  */
 int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
-                       uint32_t name_len, struct ext4_inode_ref *child);
+		       uint32_t name_len, struct ext4_inode_ref *child);
 
 /**@brief Find directory entry with passed name.
  * @param result Result structure to be returned if entry found
@@ -205,8 +205,8 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
  * @return Error code
  */
 int ext4_dir_find_entry(struct ext4_directory_search_result *result,
-                        struct ext4_inode_ref *parent, const char *name,
-                        uint32_t name_len);
+			struct ext4_inode_ref *parent, const char *name,
+			uint32_t name_len);
 
 /**@brief Remove directory entry.
  * @param parent Directory i-node
@@ -215,7 +215,7 @@ int ext4_dir_find_entry(struct ext4_directory_search_result *result,
  * @return Error code
  */
 int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
-                          uint32_t name_len);
+			  uint32_t name_len);
 
 /**@brief Try to insert entry to concrete data block.
  * @param sb           Superblock
@@ -226,9 +226,9 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
  * @return Error code
  */
 int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
-                              struct ext4_block *target_block,
-                              struct ext4_inode_ref *child, const char *name,
-                              uint32_t name_len);
+			      struct ext4_block *target_block,
+			      struct ext4_inode_ref *child, const char *name,
+			      uint32_t name_len);
 
 /**@brief Try to find entry in block by name.
  * @param block     Block containing entries
@@ -239,8 +239,8 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
  * @return Error code
  */
 int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
-                           size_t name_len, const char *name,
-                           struct ext4_directory_entry_ll **res_entry);
+			   size_t name_len, const char *name,
+			   struct ext4_directory_entry_ll **res_entry);
 
 /**@brief Simple function to release allocated data from result.
  * @param parent Parent inode
@@ -249,7 +249,7 @@ int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
  *
  */
 int ext4_dir_destroy_result(struct ext4_inode_ref *parent,
-                            struct ext4_directory_search_result *result);
+			    struct ext4_directory_search_result *result);
 
 #endif /* EXT4_DIR_H_ */
 

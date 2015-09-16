@@ -50,8 +50,8 @@
  * @param   hash_major output value
  * @return  standard error code*/
 int ext2_htree_hash(const char *name, int len, const uint32_t *hash_seed,
-                    int hash_version, uint32_t *hash_major,
-                    uint32_t *hash_minor);
+		    int hash_version, uint32_t *hash_major,
+		    uint32_t *hash_minor);
 
 #endif /* EXT4_HASH_H_ */
 
