@@ -75,6 +75,14 @@ int ext4_dir_dx_find_entry(struct ext4_directory_search_result *result,
 int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 			  struct ext4_inode_ref *child, const char *name);
 
+/**@brief Add new entry to indexed directory
+ * @param dir           Directory i-node
+ * @param parent_inode  parent inode index
+ * @return Error code
+ */
+int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
+                                   uint32_t parent_inode);
+
 #endif /* EXT4_DIR_IDX_H_ */
 
 /**
