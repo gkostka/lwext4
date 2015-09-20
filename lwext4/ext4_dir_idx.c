@@ -1193,28 +1193,29 @@ release_index:
 	return rc2;
 }
 
-int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir, uint32_t parent_inode)
+int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
+                                   uint32_t parent_inode)
 {
-    /* Load block 0, where will be index root located */
-    uint32_t fblock;
-    int rc = ext4_fs_get_inode_data_block_index(dir, 0, &fblock);
-    if (rc != EOK)
-        return rc;
+	/* Load block 0, where will be index root located */
+	uint32_t fblock;
+	int rc = ext4_fs_get_inode_data_block_index(dir, 0, &fblock);
+	if (rc != EOK)
+		return rc;
 
-    struct ext4_block block;
-    rc = ext4_block_get(dir->fs->bdev, &block, fblock);
-    if (rc != EOK)
-        return rc;
+	struct ext4_block block;
+	rc = ext4_block_get(dir->fs->bdev, &block, fblock);
+	if (rc != EOK)
+		return rc;
 
-    /* Initialize pointers to data structures */
-    struct ext4_directory_dx_root *root = (void *)block.data;
+	/* Initialize pointers to data structures */
+	struct ext4_directory_dx_root *root = (void *)block.data;
 
-    /* Fill the inode field with a new parent ino. */
-    ext4_dx_dot_entry_set_inode(&root->dots[1], parent_inode);
+	/* Fill the inode field with a new parent ino. */
+	ext4_dx_dot_entry_set_inode(&root->dots[1], parent_inode);
 
-    block.dirty = true;
+	block.dirty = true;
 
-    return ext4_block_set(dir->fs->bdev, &block);
+	return ext4_block_set(dir->fs->bdev, &block);
 }
 
 /**
