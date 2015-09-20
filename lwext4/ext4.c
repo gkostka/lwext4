@@ -1061,7 +1061,6 @@ int ext4_fremove(const char *path)
 
 	/*Link count is zero, the inode should be freed. */
 	if (!ext4_inode_get_links_count(child.inode)) {
-		printf("ttttt\n");
 		ext4_inode_set_deletion_time(child.inode, 0xFFFFFFFF);
 		/*Turncate*/
 		ext4_block_cache_write_back(mp->fs.bdev, 1);
