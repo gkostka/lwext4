@@ -758,7 +758,7 @@ static int ext4_generic_open(ext4_file *f, const char *path, const char *flags,
 }
 
 static int __ext4_create_hardlink(const char *path,
-				  struct ext4_inode_ref *child_ref)
+		struct ext4_inode_ref *child_ref)
 {
 	bool is_goal = false;
 	uint8_t inode_type = EXT4_DIRECTORY_FILETYPE_DIR;
@@ -810,9 +810,9 @@ static int __ext4_create_hardlink(const char *path,
 			break;
 		}
 
-		next_inode = ext4_dir_entry_ll_get_inode(result.dentry);
+		next_inode = result.dentry->inode;
 		inode_type =
-		    ext4_dir_entry_ll_get_inode_type(&mp->fs.sb, result.dentry);
+			ext4_dir_entry_ll_get_inode_type(&mp->fs.sb, result.dentry);
 
 		r = ext4_dir_destroy_result(&ref, &result);
 		if (r != EOK)
@@ -850,42 +850,18 @@ static int __ext4_create_hardlink(const char *path,
 	return r;
 }
 
-static int __ext4_get_inode_ref_remove_hardlink(const char *path,
-						struct ext4_inode_ref *child)
+static int __ext4_remove_hardlink(const char *path,
+				  uint32_t name_off,
+				  struct ext4_inode_ref *parent_ref,
+				  struct ext4_inode_ref *child_ref)
 {
-	ext4_file f;
-	uint32_t parent_inode;
-	uint32_t name_off;
 	bool is_goal;
 	int r;
 	int len;
-	struct ext4_inode_ref parent;
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
 
 	if (!mp)
 		return ENOENT;
-
-	r = ext4_generic_open2(&f, path, O_RDONLY,
-			       EXT4_DIRECTORY_FILETYPE_UNKNOWN, &parent_inode,
-			       &name_off);
-	if (r != EOK)
-		return r;
-
-	/*Load parent*/
-	r = ext4_fs_get_inode_ref(&mp->fs, parent_inode, &parent);
-	if (r != EOK) {
-		return r;
-	}
-
-	/*We have file to unlink. Load it.*/
-	r = ext4_fs_get_inode_ref(&mp->fs, f.inode, child);
-	if (r != EOK) {
-		ext4_fs_put_inode_ref(&parent);
-		return r;
-	}
-
-	if (r != EOK)
-		goto Finish;
 
 	/*Set path*/
 	path += name_off;
@@ -893,42 +869,74 @@ static int __ext4_get_inode_ref_remove_hardlink(const char *path,
 	len = ext4_path_check(path, &is_goal);
 
 	/*Unlink from parent*/
-	r = ext4_unlink(mp, &parent, child, path, len);
+	r = ext4_unlink(mp, parent_ref, child_ref, path, len);
 	if (r != EOK)
 		goto Finish;
 
 Finish:
 	if (r != EOK)
-		ext4_fs_put_inode_ref(child);
+		ext4_fs_put_inode_ref(child_ref);
 
-	ext4_fs_put_inode_ref(&parent);
+	ext4_fs_put_inode_ref(parent_ref);
 	return r;
 }
 
 int ext4_frename(const char *path, const char *new_path)
 {
 	int r;
+	ext4_file f;
+	uint32_t name_off;
+	bool parent_loaded = false, child_loaded = false;
+	uint32_t parent_inode, child_inode;
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
-	struct ext4_inode_ref inode_ref;
+	struct ext4_inode_ref child_ref, parent_ref;
 
 	if (!mp)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
 
-	r = __ext4_get_inode_ref_remove_hardlink(path, &inode_ref);
+	r = ext4_generic_open2(&f, path, O_RDONLY,
+			EXT4_DIRECTORY_FILETYPE_UNKNOWN,
+			&parent_inode, &name_off);
 	if (r != EOK)
 		goto Finish;
 
-	r = __ext4_create_hardlink(new_path, &inode_ref);
-	if (r != EOK)
-		r = __ext4_create_hardlink(path, &inode_ref);
+	child_inode = f.inode;
+	ext4_fclose(&f);
 
-	ext4_fs_put_inode_ref(&inode_ref);
+	/*Load parent*/
+	r = ext4_fs_get_inode_ref(&mp->fs, parent_inode, &parent_ref);
+	if (r != EOK)
+		goto Finish;
+
+	parent_loaded = true;
+
+	/*We have file to unlink. Load it.*/
+	r = ext4_fs_get_inode_ref(&mp->fs, child_inode, &child_ref);
+	if (r != EOK)
+		goto Finish;
+
+	child_loaded = true;
+
+	r = __ext4_create_hardlink(new_path, &child_ref);
+	if (r != EOK)
+		goto Finish;
+
+	r = __ext4_remove_hardlink(path, name_off, &parent_ref, &child_ref);
+	if (r != EOK)
+		goto Finish;
 
 Finish:
+	if (parent_loaded)
+		ext4_fs_put_inode_ref(&parent_ref);
+
+	if (child_loaded)
+		ext4_fs_put_inode_ref(&child_ref);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
+
 }
 
 /****************************************************************************/
