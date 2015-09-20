@@ -1892,8 +1892,10 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
 
 	EXT4_MP_LOCK(d->f.mp);
 
-	if (d->next_off == EXT4_DIR_ENTRY_OFFSET_TERM)
+	if (d->next_off == EXT4_DIR_ENTRY_OFFSET_TERM) {
+		EXT4_MP_UNLOCK(d->f.mp);
 		return 0;
+	}
 
 	r = ext4_fs_get_inode_ref(&d->f.mp->fs, d->f.inode, &dir);
 	if (r != EOK) {
