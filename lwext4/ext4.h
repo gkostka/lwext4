@@ -43,6 +43,7 @@
 #include "ext4_blockdev.h"
 
 #include <stdint.h>
+#include <stddef.h>
 
 /********************************FILE OPEN FLAGS*****************************/
 
@@ -323,7 +324,7 @@ int ext4_ftruncate(ext4_file *f, uint64_t size);
  * @param   size bytes to read
  * @param   rcnt bytes read (may be NULL)
  * @return  standard error code*/
-int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
+int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt);
 
 /**@brief   Write data to file.
  * @param   f file handle
@@ -331,7 +332,7 @@ int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt);
  * @param   size write length
  * @param   wcnt bytes written (may be NULL)
  * @return  standard error code*/
-int ext4_fwrite(ext4_file *f, const void *buf, uint32_t size, uint32_t *wcnt);
+int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt);
 
 /**@brief   File seek operation.
  * @param   f file handle

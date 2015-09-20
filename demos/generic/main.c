@@ -256,7 +256,7 @@ static bool dir_test(int len)
 static bool file_test(void)
 {
 	int r;
-	uint32_t size;
+	size_t size;
 	ext4_file f;
 	int i;
 	clock_t start;
