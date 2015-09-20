@@ -1236,7 +1236,7 @@ int ext4_ftruncate(ext4_file *f, uint64_t size)
 	return r;
 }
 
-int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
+int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 {
 	uint32_t u;
 	uint32_t fblock;
@@ -1370,7 +1370,7 @@ Finish:
 	return r;
 }
 
-int ext4_fwrite(ext4_file *f, const void *buf, uint32_t size, uint32_t *wcnt)
+int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 {
 	uint32_t u;
 	uint32_t fblock;

@@ -550,7 +550,7 @@ int _fread(char *p)
 	int len;
 	int d;
 	int rc;
-	int rb;
+	size_t rb;
 
 	if (sscanf(p, "%d %d %d %d", &fid, &d, &len, &d) != 4) {
 		printf("Param list error\n");
@@ -595,10 +595,11 @@ int _fread(char *p)
 int _fwrite(char *p)
 {
 	int fid = MAX_FILES;
-	int len;
 	int d;
 	int rc;
-	int wb;
+
+	size_t len;
+	size_t wb;
 
 	if (sscanf(p, "%d %d %d %d", &fid, &d, &len, &d) != 4) {
 		printf("Param list error\n");
@@ -867,10 +868,10 @@ int _multi_fwrite(char *p)
 	char path[256];
 	char path1[256];
 	char prefix[32];
-	int cnt;
+	int cnt, i;
 	int len, ll;
 	int rc;
-	int i, d, wb;
+	size_t d, wb;
 	ext4_file fd;
 
 	if (sscanf(p, "%s %s %d %d", path, prefix, &cnt, &ll) != 4) {
@@ -912,8 +913,8 @@ int _multi_fread(char *p)
 	char prefix[32];
 	int cnt;
 	int len, ll;
-	int rc;
-	int i, d, rb;
+	int rc ,i, d;
+	size_t rb;
 	ext4_file fd;
 
 	if (sscanf(p, "%s %s %d %d", path, prefix, &cnt, &ll) != 4) {

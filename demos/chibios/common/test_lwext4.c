@@ -222,7 +222,7 @@ static int verify_buf(const unsigned char *b, size_t len, unsigned char c)
 bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count)
 {
 	int r;
-	uint32_t size;
+	size_t size;
 	uint32_t i;
 	clock_t start;
 	clock_t stop;
