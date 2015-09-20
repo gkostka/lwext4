@@ -69,6 +69,16 @@ ext4_dir_entry_ll_set_inode(struct ext4_directory_entry_ll *de, uint32_t inode)
 	de->inode = to_le32(inode);
 }
 
+/**@brief Set i-node number to directory entry. (For HTree root)
+ * @param de Directory entry
+ * @param inode I-node number
+ */
+static inline void
+ext4_dx_dot_entry_set_inode(struct ext4_directory_dx_dot_entry *de, uint32_t inode)
+{
+	de->inode = to_le32(inode);
+}
+
 /**@brief Get directory entry length.
  * @param de Directory entry
  * @return Entry length

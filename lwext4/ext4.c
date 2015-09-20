@@ -232,30 +232,34 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 		parent->dirty = true;
 	} else {
 		if (ext4_inode_is_type(&mp->fs.sb, child->inode,
-				       EXT4_INODE_MODE_DIRECTORY)) {
-			/* FIXME: SO TRICKY. */
-			int has_flag_index = ext4_inode_has_flag(
-			    child->inode, EXT4_INODE_FLAG_INDEX);
-			struct ext4_directory_search_result result;
-			if (has_flag_index)
-				ext4_inode_clear_flag(child->inode,
-						      EXT4_INODE_FLAG_INDEX);
-
-			rc = ext4_dir_find_entry(&result, child, "..",
-						 strlen(".."));
-			if (has_flag_index)
-				ext4_inode_set_flag(child->inode,
+					EXT4_INODE_MODE_DIRECTORY)) {
+			int has_flag_index =
+				ext4_inode_has_flag(child->inode,
 						    EXT4_INODE_FLAG_INDEX);
+			struct ext4_directory_search_result result;
+			if (!has_flag_index) {
+				rc = ext4_dir_find_entry(&result,
+							 child, "..",
+							 strlen(".."));
+				if (rc != EOK)
+					return EIO;
 
-			if (rc != EOK)
-				return EIO;
+				ext4_dir_entry_ll_set_inode(result.dentry,
+							    parent->index);
+				result.block.dirty = true;
+				rc = ext4_dir_destroy_result(child, &result);
+				if (rc != EOK)
+					return rc;
 
-			ext4_dir_entry_ll_set_inode(result.dentry,
-						    parent->index);
-			result.block.dirty = true;
-			rc = ext4_dir_destroy_result(child, &result);
-			if (rc != EOK)
-				return rc;
+			} else {
+#if CONFIG_DIR_INDEX_ENABLE
+				rc = ext4_dir_dx_reset_parent_inode(parent,
+						parent->index);
+				if (rc != EOK)
+					return rc;
+
+#endif
+			}
 
 			ext4_fs_inode_links_count_inc(parent);
 			parent->dirty = true;
