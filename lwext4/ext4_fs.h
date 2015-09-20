@@ -155,6 +155,13 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
  */
 int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref);
 
+/**@brief Reset blocks field of i-node.
+ * @param fs        Filesystem to reset blocks field of i-inode on
+ * @param inode_ref ref Pointer for inode to be operated on
+ */
+void ext4_fs_inode_blocks_init(struct ext4_fs *fs,
+			       struct ext4_inode_ref *inode_ref);
+
 /**@brief Truncate i-node data blocks.
  * @param inode_ref I-node to be truncated
  * @param new_size  New size of inode (must be < current size)

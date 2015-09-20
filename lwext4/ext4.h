@@ -258,6 +258,12 @@ int ext4_cache_write_back(const char *path, bool on);
  * @return  standard error code */
 int ext4_fremove(const char *path);
 
+/**@brief   Create symlink against target
+ * @param   path path to file
+ * @param   target path to target
+ * @return  standard error code */
+int ext4_fsymlink(const char *path, const char *target);
+
 /**@brief   create a hardlink for a file.
  * @param   path path to file
  * @param   hardlink_path path of hardlink

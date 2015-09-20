@@ -613,11 +613,40 @@ int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref)
 	return ext4_block_set(ref->fs->bdev, &ref->block);
 }
 
+void ext4_fs_inode_blocks_init(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref)
+{
+	int i;
+	struct ext4_inode *inode = inode_ref->inode;
+
+	for (i = 0; i < EXT4_INODE_BLOCKS; i++)
+		inode->blocks[i] = 0;
+
+#if CONFIG_EXTENT_ENABLE
+	/* Initialize extents if needed */
+	if (ext4_sb_has_feature_incompatible(&fs->sb,
+				EXT4_FEATURE_INCOMPAT_EXTENTS)) {
+		ext4_inode_set_flag(inode, EXT4_INODE_FLAG_EXTENTS);
+
+		/* Initialize extent root header */
+		struct ext4_extent_header *header = ext4_inode_get_extent_header(inode);
+		ext4_extent_header_set_depth(header, 0);
+		ext4_extent_header_set_entries_count(header, 0);
+		ext4_extent_header_set_generation(header, 0);
+		ext4_extent_header_set_magic(header, EXT4_EXTENT_MAGIC);
+
+		uint16_t max_entries = (EXT4_INODE_BLOCKS * sizeof(uint32_t) -
+				sizeof(struct ext4_extent_header)) /
+			sizeof(struct ext4_extent);
+
+		ext4_extent_header_set_max_entries_count(header, max_entries);
+	}
+#endif
+}
+
 int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 			bool is_directory)
 {
 	/* Check if newly allocated i-node will be a directory */
-	uint32_t i;
 	bool is_dir;
 
 	is_dir = is_directory;
@@ -673,30 +702,7 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	ext4_inode_set_generation(inode, 0);
 
 	/* Reset blocks array */
-	for (i = 0; i < EXT4_INODE_BLOCKS; i++)
-		inode->blocks[i] = 0;
-
-#if CONFIG_EXTENT_ENABLE
-	/* Initialize extents if needed */
-	if (ext4_sb_has_feature_incompatible(&fs->sb,
-					     EXT4_FEATURE_INCOMPAT_EXTENTS)) {
-		ext4_inode_set_flag(inode, EXT4_INODE_FLAG_EXTENTS);
-
-		/* Initialize extent root header */
-		struct ext4_extent_header *header =
-		    ext4_inode_get_extent_header(inode);
-		ext4_extent_header_set_depth(header, 0);
-		ext4_extent_header_set_entries_count(header, 0);
-		ext4_extent_header_set_generation(header, 0);
-		ext4_extent_header_set_magic(header, EXT4_EXTENT_MAGIC);
-
-		uint16_t max_entries = (EXT4_INODE_BLOCKS * sizeof(uint32_t) -
-					sizeof(struct ext4_extent_header)) /
-				       sizeof(struct ext4_extent);
-
-		ext4_extent_header_set_max_entries_count(header, max_entries);
-	}
-#endif
+	ext4_fs_inode_blocks_init(fs, inode_ref);
 
 	inode_ref->dirty = true;
 

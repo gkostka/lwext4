@@ -1279,6 +1279,30 @@ int ext4_fread(ext4_file *f, void *buf, uint32_t size, uint32_t *rcnt)
 	sblock_end = (f->fpos + size) / block_size;
 	u = (f->fpos) % block_size;
 
+	/*If the size of symlink is smaller than 60 bytes*/
+	if ((ext4_inode_get_mode(&f->mp->fs.sb, ref.inode) & EXT4_INODE_MODE_SOFTLINK)
+		== EXT4_INODE_MODE_SOFTLINK
+	    && f->fsize < sizeof(ref.inode->blocks)
+	    && !ext4_inode_get_blocks_count(&f->mp->fs.sb, ref.inode)) {
+		char *content = (char *)ref.inode->blocks;
+		if (f->fpos < f->fsize) {
+			r = (u + size > f->fsize)
+				?(f->fsize - u)
+				:(size);
+			memcpy(buf, content + u, r);
+			if (rcnt)
+				*rcnt = r;
+
+		} else {
+			r = 0;
+			if (rcnt)
+				*rcnt = 0;
+
+		}
+
+		goto Finish;
+	}
+
 	if (u) {
 
 		uint32_t ll = size > (block_size - u) ? (block_size - u) : size;
@@ -1711,6 +1735,109 @@ int ext4_file_set_ctime(ext4_file *f, uint32_t ctime)
 	inode_ref.dirty = true;
 
 	ext4_fs_put_inode_ref(&inode_ref);
+	EXT4_MP_UNLOCK(mp);
+	return r;
+}
+
+static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
+{
+	struct ext4_block b;
+	struct ext4_inode_ref ref;
+	uint32_t sblock, fblock;
+	uint32_t block_size;
+	int r;
+
+	ext4_assert(f && f->mp);
+
+	if (!size)
+		return EOK;
+
+	r = ext4_fs_get_inode_ref(&f->mp->fs, f->inode, &ref);
+	if (r != EOK) {
+		EXT4_MP_UNLOCK(f->mp);
+		return r;
+	}
+
+	/*Sync file size*/
+	block_size = ext4_sb_get_block_size(&f->mp->fs.sb);
+	if (size > block_size) {
+		r = EINVAL;
+		goto Finish;
+	}
+	r = ext4_ftruncate_no_lock(f, 0);
+	if (r != EOK)
+		goto Finish;
+
+	/*Start write back cache mode.*/
+	r = ext4_block_cache_write_back(f->mp->fs.bdev, 1);
+	if (r != EOK)
+		goto Finish;
+
+	/*If the size of symlink is smaller than 60 bytes*/
+	if (size < sizeof(ref.inode->blocks)) {
+		char *content = (char *)ref.inode->blocks;
+		memset(content, 0, sizeof(ref.inode->blocks));
+		memcpy(content, buf, size);
+		ext4_inode_clear_flag(ref.inode, EXT4_INODE_FLAG_EXTENTS);
+	} else {
+		ext4_fs_inode_blocks_init(&f->mp->fs, &ref);
+		r = ext4_fs_append_inode_block(&ref, &fblock, &sblock);
+		if (r != EOK)
+			goto Finish;
+
+		r = ext4_block_get(f->mp->fs.bdev, &b, fblock);
+		if (r != EOK)
+			goto Finish;
+
+		memcpy(b.data, buf, size);
+		b.dirty = true;
+		r = ext4_block_set(f->mp->fs.bdev, &b);
+		if (r != EOK)
+			goto Finish;
+
+	}
+
+	/*Stop write back cache mode*/
+	ext4_block_cache_write_back(f->mp->fs.bdev, 0);
+
+	if (r != EOK)
+		goto Finish;
+
+	ext4_inode_set_size(ref.inode, size);
+	ext4_inode_set_mode(&f->mp->fs.sb, ref.inode,
+			ext4_inode_get_mode(&f->mp->fs.sb, ref.inode) | EXT4_INODE_MODE_SOFTLINK);
+	ref.dirty = true;
+
+	f->fsize = size;
+	if (f->fpos > size)
+		f->fpos = size;
+
+Finish:
+	ext4_fs_put_inode_ref(&ref);
+	return r;
+}
+
+int ext4_fsymlink(const char *path, const char *target)
+{
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	int r;
+	ext4_file f;
+	int filetype;
+
+	if (!mp)
+		return ENOENT;
+
+	filetype = EXT4_DIRECTORY_FILETYPE_SYMLINK;
+
+	EXT4_MP_LOCK(mp);
+	ext4_block_cache_write_back(mp->fs.bdev, 1);
+	r = ext4_generic_open2(&f, path, O_RDWR, filetype, 0, 0);
+	if (r == EOK)
+		r = ext4_fsymlink_set(&f, target, strlen(target));
+
+	ext4_fclose(&f);
+
+	ext4_block_cache_write_back(mp->fs.bdev, 0);
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
