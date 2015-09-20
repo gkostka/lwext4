@@ -253,7 +253,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 
 			} else {
 #if CONFIG_DIR_INDEX_ENABLE
-				rc = ext4_dir_dx_reset_parent_inode(child,
+				rc = ext4_dir_dx_reset_parent_inode(parent,
 						parent->index);
 				if (rc != EOK)
 					return rc;
@@ -1218,25 +1218,6 @@ Finish:
 	ext4_fs_put_inode_ref(&ref);
 	return r;
 
-}
-
-int ext4_fopen_all(ext4_file *f, const char *path, int flags)
-{
-	struct ext4_mountpoint *mp = ext4_get_mount(path);
-	int r;
-	int filetype;
-
-	if (!mp)
-		return ENOENT;
-
-	filetype = EXT4_DIRECTORY_FILETYPE_UNKNOWN;
-
-	EXT4_MP_LOCK(mp);
-	ext4_block_cache_write_back(mp->fs.bdev, 1);
-	r = ext4_generic_open2(f, path, flags, filetype, 0, 0);
-	ext4_block_cache_write_back(mp->fs.bdev, 0);
-	EXT4_MP_UNLOCK(mp);
-	return r;
 }
 
 int ext4_ftruncate(ext4_file *f, uint64_t size)
