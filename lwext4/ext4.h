@@ -258,6 +258,12 @@ int ext4_cache_write_back(const char *path, bool on);
  * @return  standard error code */
 int ext4_fremove(const char *path);
 
+/**@brief   create a hardlink for a file.
+ * @param   path path to file
+ * @param   hardlink_path path of hardlink
+ * @return  standard error code */
+int ext4_flink(const char *path, const char *hardlink_path);
+
 /**@brief Rename file
  * @param path source
  * @param new_path destination

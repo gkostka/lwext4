@@ -881,6 +881,53 @@ Finish:
 	return r;
 }
 
+int ext4_flink(const char *path, const char *hardlink_path)
+{
+	int r;
+	ext4_file f;
+	uint32_t name_off;
+	bool child_loaded = false;
+	uint32_t parent_inode, child_inode;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	struct ext4_mountpoint *target_mp = ext4_get_mount(hardlink_path);
+	struct ext4_inode_ref child_ref;
+
+	if (!mp)
+		return ENOENT;
+
+	/* Will that happen? Anyway return EINVAL for such case. */
+	if (mp != target_mp)
+		return EINVAL;
+
+	EXT4_MP_LOCK(mp);
+
+	r = ext4_generic_open2(&f, path, O_RDONLY,
+			       EXT4_DIRECTORY_FILETYPE_UNKNOWN,
+			       &parent_inode, &name_off);
+	if (r != EOK)
+		goto Finish;
+
+	child_inode = f.inode;
+	ext4_fclose(&f);
+
+	/*We have file to unlink. Load it.*/
+	r = ext4_fs_get_inode_ref(&mp->fs, child_inode, &child_ref);
+	if (r != EOK)
+		goto Finish;
+
+	child_loaded = true;
+
+	r = __ext4_create_hardlink(hardlink_path, &child_ref);
+
+Finish:
+	if (child_loaded)
+		ext4_fs_put_inode_ref(&child_ref);
+
+	EXT4_MP_UNLOCK(mp);
+	return r;
+
+}
+
 int ext4_frename(const char *path, const char *new_path)
 {
 	int r;
