@@ -1113,17 +1113,11 @@ int ext4_fclose(ext4_file *f)
 	return EOK;
 }
 
-int ext4_ftruncate(ext4_file *f, uint64_t size)
+static int ext4_ftruncate_no_lock(ext4_file *f, uint64_t size)
 {
 	struct ext4_inode_ref ref;
 	int r;
 
-	ext4_assert(f && f->mp);
-
-	if (f->flags & O_RDONLY)
-		return EPERM;
-
-	EXT4_MP_LOCK(f->mp);
 
 	r = ext4_fs_get_inode_ref(&f->mp->fs, f->inode, &ref);
 	if (r != EOK) {
@@ -1134,6 +1128,23 @@ int ext4_ftruncate(ext4_file *f, uint64_t size)
 	/*Sync file size*/
 	f->fsize = ext4_inode_get_size(&f->mp->fs.sb, ref.inode);
 	if (f->fsize <= size) {
+		r = EOK;
+		goto Finish;
+	}
+
+	if ((ext4_inode_get_mode(&f->mp->fs.sb, ref.inode) & EXT4_INODE_MODE_SOFTLINK)
+			== EXT4_INODE_MODE_SOFTLINK
+			&& f->fsize < sizeof(ref.inode->blocks)
+			&& !ext4_inode_get_blocks_count(&f->mp->fs.sb, ref.inode)) {
+		char *content = (char *)ref.inode->blocks;
+		memset(content + size, 0, sizeof(ref.inode->blocks) - size);
+		ext4_inode_set_size(ref.inode, size);
+		ref.dirty = true;
+
+		f->fsize = size;
+		if (f->fpos > size)
+			f->fpos = size;
+
 		r = EOK;
 		goto Finish;
 	}
@@ -1159,6 +1170,22 @@ int ext4_ftruncate(ext4_file *f, uint64_t size)
 
 Finish:
 	ext4_fs_put_inode_ref(&ref);
+	return r;
+
+}
+
+int ext4_ftruncate(ext4_file *f, uint64_t size)
+{
+	int r;
+	ext4_assert(f && f->mp);
+
+	if (f->flags & O_RDONLY)
+		return EPERM;
+
+	EXT4_MP_LOCK(f->mp);
+
+	r = ext4_ftruncate_no_lock(f, size);
+
 	EXT4_MP_UNLOCK(f->mp);
 	return r;
 }
