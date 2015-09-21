@@ -220,7 +220,7 @@ static int verify_buf(const unsigned char *b, size_t len, unsigned char c)
 	return 0;
 }
 
-bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count)
+bool test_lwext4_file_test(uint32_t rw_size, uint32_t rw_count)
 {
 	int r;
 	size_t size;
@@ -237,7 +237,7 @@ bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count)
 		return false;
 
 	printf("file_test:\n");
-	printf("  rw size: %" PRIu32 "\n", rw_szie);
+	printf("  rw size: %" PRIu32 "\n", rw_size);
 	printf("  rw count: %" PRIu32 "\n", rw_count);
 
 	/*Add hello world file.*/
@@ -253,15 +253,15 @@ bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count)
 		return false;
 	}
 
-	printf("ext4_write: %" PRIu32 " * %" PRIu32 " ...\n", rw_szie,
+	printf("ext4_write: %" PRIu32 " * %" PRIu32 " ...\n", rw_size,
 	       rw_count);
 	for (i = 0; i < rw_count; ++i) {
 
-		memset(rw_buff, i % 10 + '0', rw_szie);
+		memset(rw_buff, i % 10 + '0', rw_size);
 
-		r = ext4_fwrite(&f, rw_buff, rw_szie, &size);
+		r = ext4_fwrite(&f, rw_buff, rw_size, &size);
 
-		if ((r != EOK) || (size != rw_szie))
+		if ((r != EOK) || (size != rw_size))
 			break;
 	}
 
@@ -272,7 +272,7 @@ bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count)
 
 	stop = get_ms();
 	diff = stop - start;
-	size_bytes = rw_szie * rw_count;
+	size_bytes = rw_size * rw_count;
 	size_bytes = (size_bytes * 1000) / 1024;
 	kbps = (size_bytes) / (diff + 1);
 	printf("  write time: %d ms\n", (int)diff);
@@ -288,15 +288,15 @@ bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count)
 		return false;
 	}
 
-	printf("ext4_read: %" PRIu32 " * %" PRIu32 " ...\n", rw_szie, rw_count);
+	printf("ext4_read: %" PRIu32 " * %" PRIu32 " ...\n", rw_size, rw_count);
 
 	for (i = 0; i < rw_count; ++i) {
-		r = ext4_fread(&f, rw_buff, rw_szie, &size);
+		r = ext4_fread(&f, rw_buff, rw_size, &size);
 
-		if ((r != EOK) || (size != rw_szie))
+		if ((r != EOK) || (size != rw_size))
 			break;
 
-		if (verify_buf(rw_buff, rw_szie, i % 10 + '0'))
+		if (verify_buf(rw_buff, rw_size, i % 10 + '0'))
 			break;
 	}
 
@@ -307,7 +307,7 @@ bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count)
 
 	stop = get_ms();
 	diff = stop - start;
-	size_bytes = rw_szie * rw_count;
+	size_bytes = rw_size * rw_count;
 	size_bytes = (size_bytes * 1000) / 1024;
 	kbps = (size_bytes) / (diff + 1);
 	printf("  read time: %d ms\n", (int)diff);
