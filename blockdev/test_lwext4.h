@@ -25,15 +25,35 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef TIMINGS_H_
-#define TIMINGS_H_
 
-#include <config.h>
+#ifndef TEST_LWEXT4_H_
+#define TEST_LWEXT4_H_
+
 #include <stdint.h>
+#include <stdbool.h>
+
+void test_lwext4_dir_ls(const char *path);
+void test_lwext4_mp_stats(void);
+void test_lwext4_block_stats(void);
+bool test_lwext4_dir_test(int len);
+bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count);
+void test_lwext4_cleanup(void);
+
+bool test_lwext4_mount(struct ext4_blockdev *bdev, struct ext4_bcache *bcache);
+bool test_lwext4_umount(void);
 
 void tim_wait_ms(uint32_t v);
 
 uint32_t tim_get_ms(void);
 uint64_t tim_get_us(void);
 
-#endif /* TIMINGS_H_ */
+struct ext4_io_stats {
+	float io_read;
+	float io_write;
+	float cpu;
+};
+
+void io_timings_clear(void);
+const struct ext4_io_stats *io_timings_get(uint32_t time_sum_ms);
+
+#endif /* TEST_LWEXT4_H_ */

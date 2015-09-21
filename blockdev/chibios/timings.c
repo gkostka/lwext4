@@ -26,12 +26,13 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../chibios/timings.h"
+
 #include <config.h>
 
 #include <ch.h>
 #include <chvt.h>
 
-#include "timings.h"
 
 void tim_wait_ms(uint32_t v) { chThdSleepMilliseconds(v); }
 

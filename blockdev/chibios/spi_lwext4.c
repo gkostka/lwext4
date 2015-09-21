@@ -26,6 +26,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../chibios/spi_lwext4.h"
+
 #include <config.h>
 #include <ext4_config.h>
 #include <ext4_blockdev.h>
@@ -38,8 +40,6 @@
 #include <hal.h>
 #include <mmc_spi.h>
 
-#include "spi_lwext4.h"
-#include "timings.h"
 
 #if HAL_USE_MMC_SPI
 extern MMCDriver MMCD1;

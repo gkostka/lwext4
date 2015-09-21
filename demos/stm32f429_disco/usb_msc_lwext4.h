@@ -35,23 +35,9 @@
 #include <stdbool.h>
 
 /**@brief   USB MSC cache get.*/
-struct ext4_bcache*   ext4_usb_msc_cache_get(void);
+struct ext4_bcache *ext4_usb_msc_cache_get(void);
 
 /**@brief   USB MSC blockdev get.*/
-struct ext4_blockdev* ext4_usb_msc_get(void);
-
-
-
-struct ext4_io_stats {
-    float io_read;
-    float io_write;
-    float cpu;
-};
-
-void io_timings_clear(void);
-const struct ext4_io_stats * io_timings_get(uint32_t time_sum_ms);
-
-
-
+struct ext4_blockdev *ext4_usb_msc_get(void);
 
 #endif /* USB_MSC_LWEXT4_H_ */

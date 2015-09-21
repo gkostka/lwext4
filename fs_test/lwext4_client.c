@@ -107,13 +107,13 @@ static bool parse_opt(int argc, char **argv)
 	int c;
 
 	static struct option long_options[] = {
-	    {"call", required_argument, 0, 'c'},
-	    {"port", required_argument, 0, 'p'},
-	    {"addr", required_argument, 0, 'a'},
-	    {0, 0, 0, 0}};
+			{"call", required_argument, 0, 'c'},
+			{"port", required_argument, 0, 'p'},
+			{"addr", required_argument, 0, 'a'},
+			{0, 0, 0, 0}};
 
 	while (-1 != (c = getopt_long(argc, argv, "c:p:a:", long_options,
-				      &option_index))) {
+			&option_index))) {
 
 		switch (c) {
 		case 'a':
@@ -198,15 +198,15 @@ static int inet_pton(int af, const char *src, void *dst)
 	src_copy[INET6_ADDRSTRLEN] = 0;
 
 	if (WSAStringToAddress(src_copy, af, NULL, (struct sockaddr *)&ss,
-			       &size) == 0) {
+			&size) == 0) {
 		switch (af) {
 		case AF_INET:
 			*(struct in_addr *)dst =
-			    ((struct sockaddr_in *)&ss)->sin_addr;
+					((struct sockaddr_in *)&ss)->sin_addr;
 			return 1;
 		case AF_INET6:
 			*(struct in6_addr *)dst =
-			    ((struct sockaddr_in6 *)&ss)->sin6_addr;
+					((struct sockaddr_in6 *)&ss)->sin6_addr;
 			return 1;
 		}
 	}

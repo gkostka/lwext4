@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)
+ * Copyright (c) 2014 Grzegorz Kostka (kostka.grzegorz@gmail.com)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,19 +25,21 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef IO_RAW_H_
-#define IO_RAW_H_
+#ifndef SDC_LWEXT4_H_
+#define SDC_LWEXT4_H_
 
+#include <config.h>
 #include <ext4_config.h>
 #include <ext4_blockdev.h>
 
 #include <stdint.h>
 #include <stdbool.h>
 
-/**@brief   IO raw blockdev get.*/
-struct ext4_blockdev *ext4_io_raw_dev_get(void);
+/**@brief   SDC cache get.*/
+struct ext4_bcache *sdc_cache_get(void);
 
-/**@brief   Set filrname to open.*/
-void ext4_io_raw_filename(const char *n);
+/**@brief   SDC blockdev get.*/
+struct ext4_blockdev *sdc_bdev_get(void);
 
-#endif /* IO_RAW_H_ */
+
+#endif /* CHIBI_SDC_LWEXT4_H_ */

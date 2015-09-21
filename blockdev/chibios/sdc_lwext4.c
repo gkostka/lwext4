@@ -26,6 +26,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../chibios/sdc_lwext4.h"
+
 #include <config.h>
 #include <ext4_config.h>
 #include <ext4_blockdev.h>
@@ -38,8 +40,6 @@
 #include <hal.h>
 #include <sdc.h>
 
-#include "sdc_lwext4.h"
-#include "timings.h"
 
 /**@brief   Block size.*/
 #define SDC_BLOCK_SIZE 512
