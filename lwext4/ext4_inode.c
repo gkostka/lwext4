@@ -327,7 +327,8 @@ bool ext4_inode_can_truncate(struct ext4_sblock *sb, struct ext4_inode *inode)
 		return false;
 
 	if ((ext4_inode_is_type(sb, inode, EXT4_INODE_MODE_FILE)) ||
-	    (ext4_inode_is_type(sb, inode, EXT4_INODE_MODE_DIRECTORY)))
+	    (ext4_inode_is_type(sb, inode, EXT4_INODE_MODE_DIRECTORY)) ||
+	    (ext4_inode_is_type(sb, inode, EXT4_INODE_MODE_SOFTLINK)))
 		return true;
 
 	return false;

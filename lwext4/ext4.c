@@ -1202,22 +1202,6 @@ static int ext4_ftruncate_no_lock(ext4_file *f, uint64_t size)
 		goto Finish;
 	}
 
-	if (ext4_inode_is_type(&f->mp->fs.sb, ref.inode, EXT4_INODE_MODE_SOFTLINK)
-			&& f->fsize < sizeof(ref.inode->blocks)
-			&& !ext4_inode_get_blocks_count(&f->mp->fs.sb, ref.inode)) {
-		char *content = (char *)ref.inode->blocks;
-		memset(content + size, 0, sizeof(ref.inode->blocks) - size);
-		ext4_inode_set_size(ref.inode, size);
-		ref.dirty = true;
-
-		f->fsize = size;
-		if (f->fpos > size)
-			f->fpos = size;
-
-		r = EOK;
-		goto Finish;
-	}
-
 	/*Start write back cache mode.*/
 	r = ext4_block_cache_write_back(f->mp->fs.bdev, 1);
 	if (r != EOK)

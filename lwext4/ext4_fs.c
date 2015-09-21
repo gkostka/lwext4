@@ -895,6 +895,18 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 	if (old_size < new_size)
 		return EINVAL;
 
+	if (ext4_inode_is_type(sb, inode_ref->inode, EXT4_INODE_MODE_SOFTLINK)
+			&& old_size < sizeof(inode_ref->inode->blocks)
+			&& !ext4_inode_get_blocks_count(sb, inode_ref->inode)) {
+		char *content = (char *)inode_ref->inode->blocks;
+		memset(content + new_size, 0,
+			sizeof(inode_ref->inode->blocks) - new_size);
+		ext4_inode_set_size(inode_ref->inode, new_size);
+		inode_ref->dirty = true;
+
+		return EOK;
+	}
+
 	/* Compute how many blocks will be released */
 	uint64_t size_diff = old_size - new_size;
 	uint32_t block_size = ext4_sb_get_block_size(sb);
