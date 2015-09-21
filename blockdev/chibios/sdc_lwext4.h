@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)
+ * Copyright (c) 2014 Grzegorz Kostka (kostka.grzegorz@gmail.com)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,19 +25,21 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef USB_MSC_LWEXT4_H_
-#define USB_MSC_LWEXT4_H_
+#ifndef SDC_LWEXT4_H_
+#define SDC_LWEXT4_H_
 
+#include <config.h>
 #include <ext4_config.h>
 #include <ext4_blockdev.h>
 
 #include <stdint.h>
 #include <stdbool.h>
 
-/**@brief   USB MSC cache get.*/
-struct ext4_bcache*   ext4_usb_msc_cache_get(void);
+/**@brief   SDC cache get.*/
+struct ext4_bcache *sdc_cache_get(void);
 
-/**@brief   USB MSC blockdev get.*/
-struct ext4_blockdev* ext4_usb_msc_get(void);
+/**@brief   SDC blockdev get.*/
+struct ext4_blockdev *sdc_bdev_get(void);
 
-#endif /* USB_MSC_LWEXT4_H_ */
+
+#endif /* CHIBI_SDC_LWEXT4_H_ */

@@ -33,6 +33,7 @@ set_target_properties(stm32f429_demo PROPERTIES COMPILE_FLAGS "-Wno-format")
 set_target_properties(stm32f429_demo PROPERTIES COMPILE_DEFINITIONS "STM32F429_439xx")
 
 set_target_properties(stm32f429_demo PROPERTIES LINK_FLAGS "-T${CMAKE_SOURCE_DIR}/demos/stm32f429_disco/stm32f429.ld")
+target_link_libraries(stm32f429_demo blockdev)
 target_link_libraries(stm32f429_demo lwext4)
 
 add_custom_target(stm32f429_size ALL DEPENDS stm32f429_demo COMMAND ${SIZE} -B stm32f429_demo)

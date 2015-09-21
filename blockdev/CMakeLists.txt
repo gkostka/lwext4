@@ -1,5 +1,15 @@
 #Blockdev library
-aux_source_directory(filedev BLOCKDEV_SRC)
-aux_source_directory(filedev_win BLOCKDEV_SRC)
+
+if    (BLOCKDEV_TYPE STREQUAL  linux)
+aux_source_directory(linux BLOCKDEV_SRC)
+elseif    (BLOCKDEV_TYPE STREQUAL  windows)
+aux_source_directory(windows BLOCKDEV_SRC)
+elseif    (BLOCKDEV_TYPE STREQUAL  chibios)
+aux_source_directory(chibios BLOCKDEV_SRC)
+else()
+endif()
+
+aux_source_directory(. BLOCKDEV_SRC)
+
 add_library(blockdev  ${BLOCKDEV_SRC})
 

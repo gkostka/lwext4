@@ -40,6 +40,7 @@
 #include <usbh_msc.h>
 
 #include <usb_msc_lwext4.h>
+#include "../../blockdev/test_lwext4.h"
 
 extern USBH_HandleTypeDef hUSB_Host;
 

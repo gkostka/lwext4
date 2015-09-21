@@ -6,6 +6,7 @@ include_directories(lwext4)
 include_directories(blockdev/filedev)
 include_directories(blockdev/filedev_win)
 
+set(BLOCKDEV_TYPE  none)
 
 #Examples
 if    (CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m0)
@@ -34,10 +35,12 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  msp430g2210)
     #...
 else()
     #Generic example target
-    add_subdirectory(blockdev)
+    set(BLOCKDEV_TYPE  linux)
     add_subdirectory(fs_test)
     add_subdirectory(demos/generic)
 endif()
+
+add_subdirectory(blockdev)
 
 #Library build
 add_subdirectory(lwext4)
