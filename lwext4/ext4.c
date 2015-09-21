@@ -253,7 +253,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 
 			} else {
 #if CONFIG_DIR_INDEX_ENABLE
-				rc = ext4_dir_dx_reset_parent_inode(parent,
+				rc = ext4_dir_dx_reset_parent_inode(child,
 						parent->index);
 				if (rc != EOK)
 					return rc;
