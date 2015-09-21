@@ -290,11 +290,15 @@ void ext4_inode_set_indirect_block(struct ext4_inode *inode, uint32_t idx,
 	inode->blocks[idx + EXT4_INODE_INDIRECT_BLOCK] = to_le32(block);
 }
 
+uint32_t ext4_inode_type(struct ext4_sblock *sb, struct ext4_inode *inode)
+{
+	return (ext4_inode_get_mode(sb, inode) & EXT4_INODE_MODE_TYPE_MASK);
+}
+
 bool ext4_inode_is_type(struct ext4_sblock *sb, struct ext4_inode *inode,
 			uint32_t type)
 {
-	return (ext4_inode_get_mode(sb, inode) & EXT4_INODE_MODE_TYPE_MASK) ==
-	       type;
+	return ext4_inode_type(sb, inode) == type;
 }
 
 bool ext4_inode_has_flag(struct ext4_inode *inode, uint32_t f)

@@ -613,14 +613,59 @@ int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref)
 	return ext4_block_set(ref->fs->bdev, &ref->block);
 }
 
+void ext4_fs_inode_blocks_init(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref)
+{
+	int i;
+	struct ext4_inode *inode = inode_ref->inode;
+
+	for (i = 0; i < EXT4_INODE_BLOCKS; i++)
+		inode->blocks[i] = 0;
+
+#if CONFIG_EXTENT_ENABLE
+	/* Initialize extents if needed */
+	if (ext4_sb_has_feature_incompatible(&fs->sb,
+				EXT4_FEATURE_INCOMPAT_EXTENTS)) {
+		ext4_inode_set_flag(inode, EXT4_INODE_FLAG_EXTENTS);
+
+		/* Initialize extent root header */
+		struct ext4_extent_header *header = ext4_inode_get_extent_header(inode);
+		ext4_extent_header_set_depth(header, 0);
+		ext4_extent_header_set_entries_count(header, 0);
+		ext4_extent_header_set_generation(header, 0);
+		ext4_extent_header_set_magic(header, EXT4_EXTENT_MAGIC);
+
+		uint16_t max_entries = (EXT4_INODE_BLOCKS * sizeof(uint32_t) -
+				sizeof(struct ext4_extent_header)) /
+			sizeof(struct ext4_extent);
+
+		ext4_extent_header_set_max_entries_count(header, max_entries);
+	}
+#endif
+}
+
+static uint32_t ext4_fs_correspond_inode_mode(int filetype)
+{
+	switch (filetype) {
+	case EXT4_DIRECTORY_FILETYPE_DIR:
+		return EXT4_INODE_MODE_DIRECTORY;
+	case EXT4_DIRECTORY_FILETYPE_REG_FILE:
+		return EXT4_INODE_MODE_FILE;
+	case EXT4_DIRECTORY_FILETYPE_SYMLINK:
+		return EXT4_INODE_MODE_SOFTLINK;
+	default:
+		/* FIXME: right now we only support 3 file type. */
+		ext4_assert(0);
+	}
+	return 0;
+}
+
 int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
-			bool is_directory)
+			int filetype)
 {
 	/* Check if newly allocated i-node will be a directory */
-	uint32_t i;
 	bool is_dir;
 
-	is_dir = is_directory;
+	is_dir = (filetype == EXT4_DIRECTORY_FILETYPE_DIR);
 
 	/* Allocate inode by allocation algorithm */
 	uint32_t index;
@@ -638,7 +683,7 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	/* Initialize i-node */
 	struct ext4_inode *inode = inode_ref->inode;
 
-	uint16_t mode;
+	uint32_t mode;
 	if (is_dir) {
 		/*
 		 * Default directory permissions to be compatible with other
@@ -648,7 +693,6 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 
 		mode = 0777;
 		mode |= EXT4_INODE_MODE_DIRECTORY;
-		ext4_inode_set_mode(&fs->sb, inode, mode);
 	} else {
 		/*
 		 * Default file permissions to be compatible with other systems
@@ -656,9 +700,9 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 		 */
 
 		mode = 0666;
-		mode |= EXT4_INODE_MODE_FILE;
-		ext4_inode_set_mode(&fs->sb, inode, mode);
+		mode |= ext4_fs_correspond_inode_mode(filetype);
 	}
+	ext4_inode_set_mode(&fs->sb, inode, mode);
 
 	ext4_inode_set_links_count(inode, 0);
 	ext4_inode_set_uid(inode, 0);
@@ -672,31 +716,14 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	ext4_inode_set_flags(inode, 0);
 	ext4_inode_set_generation(inode, 0);
 
-	/* Reset blocks array */
-	for (i = 0; i < EXT4_INODE_BLOCKS; i++)
-		inode->blocks[i] = 0;
+	/* Reset blocks array. For symbolic link inode, just
+	 * fill in blocks with 0 */
+	if (ext4_inode_is_type(&fs->sb, inode, EXT4_INODE_MODE_SOFTLINK)) {
+		for (int i = 0; i < EXT4_INODE_BLOCKS; i++)
+			inode->blocks[i] = 0;
 
-#if CONFIG_EXTENT_ENABLE
-	/* Initialize extents if needed */
-	if (ext4_sb_has_feature_incompatible(&fs->sb,
-					     EXT4_FEATURE_INCOMPAT_EXTENTS)) {
-		ext4_inode_set_flag(inode, EXT4_INODE_FLAG_EXTENTS);
-
-		/* Initialize extent root header */
-		struct ext4_extent_header *header =
-		    ext4_inode_get_extent_header(inode);
-		ext4_extent_header_set_depth(header, 0);
-		ext4_extent_header_set_entries_count(header, 0);
-		ext4_extent_header_set_generation(header, 0);
-		ext4_extent_header_set_magic(header, EXT4_EXTENT_MAGIC);
-
-		uint16_t max_entries = (EXT4_INODE_BLOCKS * sizeof(uint32_t) -
-					sizeof(struct ext4_extent_header)) /
-				       sizeof(struct ext4_extent);
-
-		ext4_extent_header_set_max_entries_count(header, max_entries);
-	}
-#endif
+	} else
+		ext4_fs_inode_blocks_init(fs, inode_ref);
 
 	inode_ref->dirty = true;
 

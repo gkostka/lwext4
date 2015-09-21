@@ -245,6 +245,13 @@ uint32_t ext4_inode_get_indirect_block(struct ext4_inode *inode, uint32_t idx);
 void ext4_inode_set_indirect_block(struct ext4_inode *inode, uint32_t idx,
 				   uint32_t block);
 
+/**@brief return the type of i-node
+ * @param sb    Superblock
+ * @param inode I-node to return the type of
+ * @return Result of check operation
+ */
+uint32_t ext4_inode_type(struct ext4_sblock *sb, struct ext4_inode *inode);
+
 /**@brief Check if i-node has specified type.
  * @param sb    Superblock
  * @param inode I-node to check type of
