@@ -276,10 +276,6 @@ uint8_t  USBH_FindInterface(USBH_HandleTypeDef *phost, uint8_t Class, uint8_t Su
   pif = (USBH_InterfaceDescTypeDef *)0;
   pcfg = &phost->device.CfgDesc;  
   
-  if((pif->bInterfaceClass == 0xFF) &&(pif->bInterfaceSubClass == 0xFF) && (pif->bInterfaceProtocol == 0xFF))
-  {
-    return 0xFF;
-  }
   
   while (if_ix < USBH_MAX_NUM_INTERFACES)
   {
