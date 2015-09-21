@@ -43,24 +43,23 @@
 #include <ext4.h>
 #include "../../blockdev/test_lwext4.h"
 
-
 /**@brief   Read-write size*/
 #define READ_WRITE_SZIZE 1024 * 16
 
 /**@brief   Delay test (slower LCD scroll)*/
-#define TEST_DELAY_MS    1000
+#define TEST_DELAY_MS 1000
 
 /**@brief   Input stream name.*/
 char input_name[128] = "ext2";
 
 /**@brief   Read-write size*/
-static int rw_szie  = READ_WRITE_SZIZE;
+static int rw_szie = READ_WRITE_SZIZE;
 
 /**@brief   Read-write size*/
 static int rw_count = 100;
 
 /**@brief   Directory test count*/
-static int dir_cnt  = 100;
+static int dir_cnt = 100;
 
 /**@brief   Static or dynamic cache mode*/
 static bool cache_mode = false;
@@ -78,14 +77,14 @@ static bool sbstat = false;
 static struct ext4_blockdev *bd;
 
 /**@brief   Block cache handle.*/
-static struct ext4_bcache   *bc;
+static struct ext4_bcache *bc;
 
 static bool open_filedev(void)
 {
 
 	bd = ext4_usb_msc_get();
 	bc = ext4_usb_msc_cache_get();
-	if(!bd || !bc){
+	if (!bd || !bc) {
 		printf("open_filedev: fail\n");
 		return false;
 	}
@@ -99,18 +98,18 @@ int main(void)
 	setbuf(stdout, 0);
 	printf("connect usb drive...\n");
 
-	while(!hw_usb_connected())
+	while (!hw_usb_connected())
 		hw_usb_process();
 	printf("usb drive connected\n");
 
-	while(!hw_usb_enum_done())
+	while (!hw_usb_enum_done())
 		hw_usb_process();
 	printf("usb drive enum done\n");
 
 	hw_led_red(1);
 
 	printf("test conditions:\n");
-	printf("  rw size: %d\n",  rw_szie);
+	printf("  rw size: %d\n", rw_szie);
 	printf("  rw count: %d\n", rw_count);
 	printf("  cache mode: %s\n", cache_mode ? "dynamic" : "static");
 
@@ -118,7 +117,7 @@ int main(void)
 		goto Finish;
 
 	tim_wait_ms(TEST_DELAY_MS);
-	if(!test_lwext4_mount(bd, bc))
+	if (!test_lwext4_mount(bd, bc))
 		return EXIT_FAILURE;
 
 	tim_wait_ms(TEST_DELAY_MS);
@@ -126,47 +125,45 @@ int main(void)
 	ext4_cache_write_back("/mp/", 1);
 	test_lwext4_cleanup();
 
-	if(sbstat){
+	if (sbstat) {
 		tim_wait_ms(TEST_DELAY_MS);
 		test_lwext4_mp_stats();
 	}
 
 	tim_wait_ms(TEST_DELAY_MS);
 	test_lwext4_dir_ls("/mp/");
-	if(!test_lwext4_dir_test(dir_cnt))
+	if (!test_lwext4_dir_test(dir_cnt))
 		return EXIT_FAILURE;
 
 	tim_wait_ms(TEST_DELAY_MS);
-	if(!test_lwext4_file_test(rw_szie, rw_count))
+	if (!test_lwext4_file_test(rw_szie, rw_count))
 		return EXIT_FAILURE;
 
-	if(sbstat){
+	if (sbstat) {
 		tim_wait_ms(TEST_DELAY_MS);
 		test_lwext4_mp_stats();
 	}
 
-	if(cleanup_flag){
+	if (cleanup_flag) {
 		tim_wait_ms(TEST_DELAY_MS);
 		test_lwext4_cleanup();
 	}
 
-	if(bstat){
+	if (bstat) {
 		tim_wait_ms(TEST_DELAY_MS);
 		test_lwext4_block_stats();
 	}
 
 	ext4_cache_write_back("/mp/", 0);
-	if(!test_lwext4_umount())
+	if (!test_lwext4_umount())
 		return EXIT_FAILURE;
 
 	printf("press RESET button to restart\n");
-	Finish:
+Finish:
 	while (1) {
 		tim_wait_ms(500);
 		hw_led_green(1);
 		tim_wait_ms(500);
 		hw_led_green(0);
-
 	}
 }
-

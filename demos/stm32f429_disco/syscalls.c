@@ -35,34 +35,32 @@
 
 #include <lcd_log.h>
 
-int _getpid(void)
-{
-    return 1;
-}
+int _getpid(void) { return 1; }
 
 int _kill(int pid, int sig)
 {
-    errno = EINVAL;
-    return -1;
+	errno = EINVAL;
+	return -1;
 }
 
-void _exit (int status)
+void _exit(int status)
 {
-    _kill(status, -1);
-    while (1) {}                /* Make sure we hang here */
+	_kill(status, -1);
+	while (1) {
+	} /* Make sure we hang here */
 }
 
 int _write(int file, char *ptr, int len)
 {
-    int todo;
+	int todo;
 
-    for (todo = 0; todo < len; todo++)
-    {
-        __io_putchar( *ptr++ );
-    }
+	for (todo = 0; todo < len; todo++) {
+		__io_putchar(*ptr++);
+	}
 
-    /* Implement your write code here, this is used by puts and printf for example */
-    return len;
+	/* Implement your write code here, this is used by puts and printf for
+	 * example */
+	return len;
 }
 
 caddr_t _sbrk(int incr)
@@ -74,10 +72,9 @@ caddr_t _sbrk(int incr)
 
 	previous_heap_end = current_heap_end;
 
-	if (current_heap_end + incr > &__heap_end)
-	{
+	if (current_heap_end + incr > &__heap_end) {
 		errno = ENOMEM;
-		return (caddr_t) -1;
+		return (caddr_t)-1;
 	}
 
 	current_heap_end += incr;
@@ -85,72 +82,58 @@ caddr_t _sbrk(int incr)
 	return (caddr_t)previous_heap_end;
 }
 
-int _close(int file)
-{
-    return -1;
-}
-
+int _close(int file) { return -1; }
 
 int _fstat(int file, struct stat *st)
 {
-    st->st_mode = S_IFCHR;
-    return 0;
+	st->st_mode = S_IFCHR;
+	return 0;
 }
 
-int _isatty(int file)
-{
-    return 1;
-}
+int _isatty(int file) { return 1; }
 
-int _lseek(int file, int ptr, int dir)
-{
-    return 0;
-}
+int _lseek(int file, int ptr, int dir) { return 0; }
 
-int _read(int file, char *ptr, int len)
-{
-    return 0;
-}
+int _read(int file, char *ptr, int len) { return 0; }
 
 int _open(char *path, int flags, ...)
 {
-    /* Pretend like we always fail */
-    return -1;
+	/* Pretend like we always fail */
+	return -1;
 }
 
 int _wait(int *status)
 {
-    errno = ECHILD;
-    return -1;
+	errno = ECHILD;
+	return -1;
 }
 
 int _unlink(char *name)
 {
-    errno = ENOENT;
-    return -1;
+	errno = ENOENT;
+	return -1;
 }
-
 
 int _stat(char *file, struct stat *st)
 {
-    st->st_mode = S_IFCHR;
-    return 0;
+	st->st_mode = S_IFCHR;
+	return 0;
 }
 
 int _link(char *old, char *new)
 {
-    errno = EMLINK;
-    return -1;
+	errno = EMLINK;
+	return -1;
 }
 
 int _fork(void)
 {
-    errno = EAGAIN;
-    return -1;
+	errno = EAGAIN;
+	return -1;
 }
 
 int _execve(char *name, char **argv, char **env)
 {
-    errno = ENOMEM;
-    return -1;
+	errno = ENOMEM;
+	return -1;
 }

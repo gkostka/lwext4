@@ -29,14 +29,10 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-
 /**@brief   Main clock frequency.*/
-#define CFG_CCLK_FREQ       168000000ul
+#define CFG_CCLK_FREQ 168000000ul
 
 /**@brief   EXT partition block size (only when static cache on)*/
 #define EXT_LOGICAL_BLOCK_SIZE (1024 * 4)
 
-
 #endif /* CONFIG_H_ */
-
-
