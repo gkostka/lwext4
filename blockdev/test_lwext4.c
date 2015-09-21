@@ -36,7 +36,7 @@
 #include "test_lwext4.h"
 
 /**@brief   Read-write size*/
-#define READ_MAX_WRITE_SZIZE 1024 * 8
+#define READ_MAX_WRITE_SZIZE 1024 * 16
 
 /**@brief   File read/write buffer*/
 static uint8_t rw_buff[READ_MAX_WRITE_SZIZE];
@@ -232,6 +232,9 @@ bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count)
 	uint64_t size_bytes;
 
 	ext4_file f;
+
+	if (rw_size > READ_MAX_WRITE_SZIZE)
+		return false;
 
 	printf("file_test:\n");
 	printf("  rw size: %" PRIu32 "\n", rw_szie);
