@@ -77,6 +77,9 @@ static clock_t get_ms(void) { return tim_get_ms(); }
 static void printf_io_timings(clock_t diff)
 {
 	const struct ext4_io_stats *stats = io_timings_get(diff);
+	if (!stats)
+		return;
+
 	printf("io_timings:\n");
 	printf("  io_read: %.3f%%\n", stats->io_read);
 	printf("  io_write: %.3f%%\n", stats->io_write);
@@ -201,7 +204,7 @@ bool test_lwext4_dir_test(int len)
 	diff = stop - start;
 	test_lwext4_dir_ls("/mp/dir1");
 	printf("test_lwext4_dir_test: time: %d ms\n", (int)diff);
-	printf("test_lwext4_dir_test: av: %d ms/entry\n", (int)diff / len);
+	printf("test_lwext4_dir_test: av: %d ms/entry\n", (int)diff / (len + 1));
 	printf_io_timings(diff);
 	return true;
 }

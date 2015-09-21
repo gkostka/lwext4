@@ -109,8 +109,7 @@ void io_timings_clear(void)
 
 const struct ext4_io_stats *io_timings_get(uint32_t time_sum_ms)
 {
-	static struct ext4_io_stats s;
-	return &s;
+	return NULL;
 }
 
 uint32_t tim_get_ms(void)
