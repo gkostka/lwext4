@@ -360,6 +360,8 @@ int ext4_file_set_atime(ext4_file *f, uint32_t atime);
 int ext4_file_set_mtime(ext4_file *f, uint32_t mtime);
 int ext4_file_set_ctime(ext4_file *f, uint32_t ctime);
 
+int ext4_fsymlink(const char *target, const char *path);
+
 /*********************************DIRECTORY OPERATION***********************/
 
 /**@brief   Recursive directory remove.

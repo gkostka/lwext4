@@ -206,6 +206,25 @@ void ext4_dir_write_entry(struct ext4_sblock *sb,
 	/* Check maximum entry length */
 	ext4_assert(entry_len <= ext4_sb_get_block_size(sb));
 
+	/* Set type of entry */
+	switch (ext4_inode_type(sb, child->inode)) {
+	case EXT4_INODE_MODE_DIRECTORY:
+		ext4_dir_entry_ll_set_inode_type(sb, entry,
+						 EXT4_DIRECTORY_FILETYPE_DIR);
+		break;
+	case EXT4_INODE_MODE_FILE:
+		ext4_dir_entry_ll_set_inode_type(
+		    sb, entry, EXT4_DIRECTORY_FILETYPE_REG_FILE);
+		break;
+	case EXT4_INODE_MODE_SOFTLINK:
+		ext4_dir_entry_ll_set_inode_type(
+		    sb, entry, EXT4_DIRECTORY_FILETYPE_SYMLINK);
+		break;
+	default:
+		/* FIXME: right now we only support 3 inode type. */
+		ext4_assert(0);
+	}
+
 	/* Set basic attributes */
 	ext4_dir_entry_ll_set_inode(entry, child->index);
 	ext4_dir_entry_ll_set_entry_length(entry, entry_len);
@@ -213,14 +232,6 @@ void ext4_dir_write_entry(struct ext4_sblock *sb,
 
 	/* Write name */
 	memcpy(entry->name, name, name_len);
-
-	/* Set type of entry */
-	if (ext4_inode_is_type(sb, child->inode, EXT4_INODE_MODE_DIRECTORY))
-		ext4_dir_entry_ll_set_inode_type(sb, entry,
-						 EXT4_DIRECTORY_FILETYPE_DIR);
-	else
-		ext4_dir_entry_ll_set_inode_type(
-		    sb, entry, EXT4_DIRECTORY_FILETYPE_REG_FILE);
 }
 
 int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
