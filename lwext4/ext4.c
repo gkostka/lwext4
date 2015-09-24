@@ -1145,7 +1145,7 @@ int ext4_fopen(ext4_file *f, const char *path, const char *flags)
 	return r;
 }
 
-int ext4_fopen2(ext4_file *f, const char *path, int flags, bool file_expect)
+int ext4_fopen2(ext4_file *f, const char *path, int flags)
 {
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
 	int r;
@@ -1154,10 +1154,7 @@ int ext4_fopen2(ext4_file *f, const char *path, int flags, bool file_expect)
 	if (!mp)
 		return ENOENT;
 
-	if (file_expect == true)
-		filetype = EXT4_DIRECTORY_FILETYPE_REG_FILE;
-	else
-		filetype = EXT4_DIRECTORY_FILETYPE_DIR;
+        filetype = EXT4_DIRECTORY_FILETYPE_REG_FILE;
 
 	EXT4_MP_LOCK(mp);
 	ext4_block_cache_write_back(mp->fs.bdev, 1);

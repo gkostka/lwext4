@@ -297,7 +297,7 @@ int ext4_fopen(ext4_file *f, const char *path, const char *flags);
  *          /my_partition/my_file
  * @param   flags open file flags
  * @return  standard error code*/
-int ext4_fopen2(ext4_file *f, const char *path, int flags, bool file_expect);
+int ext4_fopen2(ext4_file *f, const char *path, int flags);
 
 /**@brief   File close function.
  * @param   f file handle
