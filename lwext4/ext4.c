@@ -1899,7 +1899,6 @@ int ext4_readlink(const char *path, char *buf, size_t bufsize, size_t *rcnt)
 	EXT4_MP_LOCK(mp);
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
 	r = ext4_generic_open2(&f, path, O_RDONLY, filetype, 0, 0);
-	EXT4_MP_UNLOCK(mp);
 	if (r == EOK)
 		r = ext4_fread(&f, buf, bufsize, rcnt);
 	else
@@ -1908,7 +1907,6 @@ int ext4_readlink(const char *path, char *buf, size_t bufsize, size_t *rcnt)
 	ext4_fclose(&f);
 
 Finish:
-	EXT4_MP_LOCK(mp);
 	ext4_block_cache_write_back(mp->fs.bdev, 0);
 	EXT4_MP_UNLOCK(mp);
 	return r;
