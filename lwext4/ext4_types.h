@@ -458,14 +458,15 @@ struct ext4_inode_ref {
 
 #define EXT4_DIRECTORY_FILENAME_LEN 255
 
-#define EXT4_DIRECTORY_FILETYPE_UNKNOWN 0
-#define EXT4_DIRECTORY_FILETYPE_REG_FILE 1
-#define EXT4_DIRECTORY_FILETYPE_DIR 2
-#define EXT4_DIRECTORY_FILETYPE_CHRDEV 3
-#define EXT4_DIRECTORY_FILETYPE_BLKDEV 4
-#define EXT4_DIRECTORY_FILETYPE_FIFO 5
-#define EXT4_DIRECTORY_FILETYPE_SOCK 6
-#define EXT4_DIRECTORY_FILETYPE_SYMLINK 7
+/**@brief   Directory entry types. */
+enum { EXT4_DIRENTRY_UNKNOWN = 0,
+       EXT4_DIRENTRY_REG_FILE,
+       EXT4_DIRENTRY_DIR,
+       EXT4_DIRENTRY_CHRDEV,
+       EXT4_DIRENTRY_BLKDEV,
+       EXT4_DIRENTRY_FIFO,
+       EXT4_DIRENTRY_SOCK,
+       EXT4_DIRENTRY_SYMLINK };
 
 union ext4_directory_entry_ll_internal {
 	uint8_t name_length_high; /* Higher 8 bits of name length */

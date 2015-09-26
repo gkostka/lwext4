@@ -210,15 +210,15 @@ void ext4_dir_write_entry(struct ext4_sblock *sb,
 	switch (ext4_inode_type(sb, child->inode)) {
 	case EXT4_INODE_MODE_DIRECTORY:
 		ext4_dir_entry_ll_set_inode_type(sb, entry,
-						 EXT4_DIRECTORY_FILETYPE_DIR);
+						 EXT4_DIRENTRY_DIR);
 		break;
 	case EXT4_INODE_MODE_FILE:
 		ext4_dir_entry_ll_set_inode_type(
-		    sb, entry, EXT4_DIRECTORY_FILETYPE_REG_FILE);
+		    sb, entry, EXT4_DIRENTRY_REG_FILE);
 		break;
 	case EXT4_INODE_MODE_SOFTLINK:
 		ext4_dir_entry_ll_set_inode_type(
-		    sb, entry, EXT4_DIRECTORY_FILETYPE_SYMLINK);
+		    sb, entry, EXT4_DIRENTRY_SYMLINK);
 		break;
 	default:
 		/* FIXME: right now we only support 3 inode type. */

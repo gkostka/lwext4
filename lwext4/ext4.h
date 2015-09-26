@@ -123,15 +123,6 @@ typedef struct ext4_file {
 } ext4_file;
 
 /*****************************DIRECTORY DESCRIPTOR***************************/
-/**@brief   Directory entry types. Copy from ext4_types.h*/
-enum { EXT4_DIRENTRY_UNKNOWN = 0,
-       EXT4_DIRENTRY_REG_FILE,
-       EXT4_DIRENTRY_DIR,
-       EXT4_DIRENTRY_CHRDEV,
-       EXT4_DIRENTRY_BLKDEV,
-       EXT4_DIRENTRY_FIFO,
-       EXT4_DIRENTRY_SOCK,
-       EXT4_DIRENTRY_SYMLINK };
 
 /**@brief   Directory entry descriptor. Copy from ext4_types.h*/
 typedef struct {
