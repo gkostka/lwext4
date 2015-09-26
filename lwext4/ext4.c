@@ -582,7 +582,7 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 			      uint32_t *name_off)
 {
 	bool is_goal = false;
-	uint8_t inode_type;
+	uint8_t inode_type = EXT4_DIRENTRY_UNKNOWN;
 	uint32_t next_inode;
 
 	int r;
