@@ -40,7 +40,10 @@
 #include "ext4_config.h"
 #include "ext4_errno.h"
 
+#if !CONFIG_HAVE_OWN_ASSERT
 #include <assert.h>
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 
@@ -102,14 +105,17 @@ uint32_t ext4_dmask_get(void);
 
 #if CONFIG_DEBUG_ASSERT
 /**@brief   Debug assertion.*/
-#define ext4_assert(_v)                                                        \
-	do {                                                                   \
-		if (!(_v)) {                                                   \
-			printf("Assertion failed:\nmodule: %s\nline: %d\n",    \
-			       __FILE__, __LINE__);                            \
-			assert(_v);                                            \
-		}                                                              \
-	} while (0)
+ #if CONFIG_HAVE_OWN_ASSERT
+ #define ext4_assert(_v)                                                        \
+ 	do {                                                                   \
+ 		if (!(_v)) {                                                   \
+ 			printf("Assertion failed:\nmodule: %s\nline: %d\n",    \
+ 			       __FILE__, __LINE__);                            \
+ 		}                                                              \
+ 	} while (0)
+ #else
+ #define ext4_assert(_v) assert(_v)
+ #endif
 #else
 #define ext4_assert(_v)
 #endif
