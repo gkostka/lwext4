@@ -874,10 +874,6 @@ static int __ext4_remove_hardlink(const char *path,
 		goto Finish;
 
 Finish:
-	if (r != EOK)
-		ext4_fs_put_inode_ref(child_ref);
-
-	ext4_fs_put_inode_ref(parent_ref);
 	return r;
 }
 
@@ -1085,17 +1081,31 @@ Finish:
 	return r;
 }
 
-int ext4_fill_raw_inode(const char *mount_point, uint32_t ino,
+int ext4_fill_raw_inode(const char *path,
+			uint32_t *ret_ino,
 			struct ext4_inode *inode)
 {
 	int r;
+	ext4_file f;
 	struct ext4_inode_ref inode_ref;
-	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	uint32_t ino;
 
 	if (!mp)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+
+	r = ext4_generic_open2(&f, path, O_RDONLY,
+			       EXT4_DIRECTORY_FILETYPE_UNKNOWN,
+			       NULL, NULL);
+	if (r != EOK) {
+		EXT4_MP_UNLOCK(mp);
+		return r;
+	}
+
+	ino = f.inode;
+	ext4_fclose(&f);
 
 	/*Load parent*/
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
@@ -1108,6 +1118,10 @@ int ext4_fill_raw_inode(const char *mount_point, uint32_t ino,
 
 	ext4_fs_put_inode_ref(&inode_ref);
 	EXT4_MP_UNLOCK(mp);
+
+	if (ret_ino)
+		*ret_ino = ino;
+
 	return r;
 }
 
@@ -1127,7 +1141,7 @@ int ext4_fopen(ext4_file *f, const char *path, const char *flags)
 	return r;
 }
 
-int ext4_fopen2(ext4_file *f, const char *path, int flags, bool file_expect)
+int ext4_fopen2(ext4_file *f, const char *path, int flags)
 {
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
 	int r;
@@ -1136,32 +1150,7 @@ int ext4_fopen2(ext4_file *f, const char *path, int flags, bool file_expect)
 	if (!mp)
 		return ENOENT;
 
-	if (file_expect == true)
-		filetype = EXT4_DIRECTORY_FILETYPE_REG_FILE;
-	else
-		filetype = EXT4_DIRECTORY_FILETYPE_DIR;
-
-	EXT4_MP_LOCK(mp);
-	ext4_block_cache_write_back(mp->fs.bdev, 1);
-	r = ext4_generic_open2(f, path, flags, filetype, 0, 0);
-	ext4_block_cache_write_back(mp->fs.bdev, 0);
-	EXT4_MP_UNLOCK(mp);
-	return r;
-}
-
-int ext4_fopen_all(ext4_file *f, const char *path, int flags)
-{
-	struct ext4_mountpoint *mp = ext4_get_mount(path);
-	int r;
-	int filetype;
-
-	if (!mp)
-		return ENOENT;
-
-	if (flags & O_CREAT)
-		return EINVAL;
-
-	filetype = EXT4_DIRECTORY_FILETYPE_UNKNOWN;
+        filetype = EXT4_DIRECTORY_FILETYPE_REG_FILE;
 
 	EXT4_MP_LOCK(mp);
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
@@ -1607,27 +1596,34 @@ uint64_t ext4_ftell(ext4_file *f) { return f->fpos; }
 
 uint64_t ext4_fsize(ext4_file *f) { return f->fsize; }
 
-int ext4_fchmod(ext4_file *f, uint32_t mode)
+int ext4_chmod(const char *path, uint32_t mode)
 {
 	int r;
 	uint32_t ino;
+	ext4_file f;
 	struct ext4_sblock *sb;
 	struct ext4_inode_ref inode_ref;
-	struct ext4_mountpoint *mp = f->mp;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
 
 	if (!mp)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
 
-	ino = f->inode;
+	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DIRECTORY_FILETYPE_UNKNOWN, 0, 0);
+	if (r != EOK) {
+		EXT4_MP_UNLOCK(mp);
+		return r;
+	}
+	ino = f.inode;
+	sb = &mp->fs.sb;
+	ext4_fclose(&f);
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
 
-	sb = &f->mp->fs.sb;
 	ext4_inode_set_mode(sb, inode_ref.inode, mode);
 	inode_ref.dirty = true;
 
@@ -1636,19 +1632,26 @@ int ext4_fchmod(ext4_file *f, uint32_t mode)
 	return r;
 }
 
-int ext4_fchown(ext4_file *f, uint32_t uid, uint32_t gid)
+int ext4_chown(const char *path, uint32_t uid, uint32_t gid)
 {
 	int r;
+	ext4_file f;
 	uint32_t ino;
 	struct ext4_inode_ref inode_ref;
-	struct ext4_mountpoint *mp = f->mp;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
 
 	if (!mp)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
 
-	ino = f->inode;
+	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DIRECTORY_FILETYPE_UNKNOWN, 0, 0);
+	if (r != EOK) {
+		EXT4_MP_UNLOCK(mp);
+		return r;
+	}
+	ino = f.inode;
+	ext4_fclose(&f);
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
@@ -1664,19 +1667,26 @@ int ext4_fchown(ext4_file *f, uint32_t uid, uint32_t gid)
 	return r;
 }
 
-int ext4_file_set_atime(ext4_file *f, uint32_t atime)
+int ext4_file_set_atime(const char *path, uint32_t atime)
 {
 	int r;
+	ext4_file f;
 	uint32_t ino;
 	struct ext4_inode_ref inode_ref;
-	struct ext4_mountpoint *mp = f->mp;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
 
 	if (!mp)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
 
-	ino = f->inode;
+	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DIRECTORY_FILETYPE_UNKNOWN, 0, 0);
+	if (r != EOK) {
+		EXT4_MP_UNLOCK(mp);
+		return r;
+	}
+	ino = f.inode;
+	ext4_fclose(&f);
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
@@ -1691,19 +1701,26 @@ int ext4_file_set_atime(ext4_file *f, uint32_t atime)
 	return r;
 }
 
-int ext4_file_set_mtime(ext4_file *f, uint32_t mtime)
+int ext4_file_set_mtime(const char *path, uint32_t mtime)
 {
 	int r;
+	ext4_file f;
 	uint32_t ino;
 	struct ext4_inode_ref inode_ref;
-	struct ext4_mountpoint *mp = f->mp;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
 
 	if (!mp)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
 
-	ino = f->inode;
+	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DIRECTORY_FILETYPE_UNKNOWN, 0, 0);
+	if (r != EOK) {
+		EXT4_MP_UNLOCK(mp);
+		return r;
+	}
+	ino = f.inode;
+	ext4_fclose(&f);
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
@@ -1718,19 +1735,26 @@ int ext4_file_set_mtime(ext4_file *f, uint32_t mtime)
 	return r;
 }
 
-int ext4_file_set_ctime(ext4_file *f, uint32_t ctime)
+int ext4_file_set_ctime(const char *path, uint32_t ctime)
 {
 	int r;
+	ext4_file f;
 	uint32_t ino;
 	struct ext4_inode_ref inode_ref;
-	struct ext4_mountpoint *mp = f->mp;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
 
 	if (!mp)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
 
-	ino = f->inode;
+	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DIRECTORY_FILETYPE_UNKNOWN, 0, 0);
+	if (r != EOK) {
+		EXT4_MP_UNLOCK(mp);
+		return r;
+	}
+	ino = f.inode;
+	ext4_fclose(&f);
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
@@ -1837,6 +1861,39 @@ int ext4_fsymlink(const char *target, const char *path)
 	r = ext4_generic_open2(&f, path, O_RDWR|O_CREAT, filetype, 0, 0);
 	if (r == EOK)
 		r = ext4_fsymlink_set(&f, target, strlen(target));
+	else
+		goto Finish;
+
+	ext4_fclose(&f);
+
+Finish:
+	ext4_block_cache_write_back(mp->fs.bdev, 0);
+	EXT4_MP_UNLOCK(mp);
+	return r;
+}
+
+int ext4_readlink(const char *path, char *buf, size_t bufsize, size_t *rcnt)
+{
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	int r;
+	ext4_file f;
+	int filetype;
+
+	if (!mp)
+		return ENOENT;
+
+	if (!buf)
+		return EINVAL;
+
+	memset(buf, 0, sizeof(bufsize));
+
+	filetype = EXT4_DIRECTORY_FILETYPE_SYMLINK;
+
+	EXT4_MP_LOCK(mp);
+	ext4_block_cache_write_back(mp->fs.bdev, 1);
+	r = ext4_generic_open2(&f, path, O_RDONLY, filetype, 0, 0);
+	if (r == EOK)
+		r = ext4_fread(&f, buf, bufsize, rcnt);
 	else
 		goto Finish;
 

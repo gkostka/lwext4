@@ -297,7 +297,7 @@ int ext4_fopen(ext4_file *f, const char *path, const char *flags);
  *          /my_partition/my_file
  * @param   flags open file flags
  * @return  standard error code*/
-int ext4_fopen2(ext4_file *f, const char *path, int flags, bool file_expect);
+int ext4_fopen2(ext4_file *f, const char *path, int flags);
 
 /**@brief   File close function.
  * @param   f file handle
@@ -305,11 +305,12 @@ int ext4_fopen2(ext4_file *f, const char *path, int flags, bool file_expect);
 int ext4_fclose(ext4_file *f);
 
 /**@brief   Fill in the ext4_inode buffer.
- * @param   mount_point
- * @param   inode no.
+ * @param   path fetch inode data of the path
+ * @param   ret_ino the inode id of the path
  * @param   ext4_inode buffer
  * @return  standard error code*/
-int ext4_fill_raw_inode(const char *mount_point, uint32_t ino,
+int ext4_fill_raw_inode(const char *path,
+			uint32_t *ret_ino,
 			struct ext4_inode *inode);
 
 /**@brief   File truncate function.
@@ -354,13 +355,15 @@ uint64_t ext4_ftell(ext4_file *f);
  * @return  file size */
 uint64_t ext4_fsize(ext4_file *f);
 
-int ext4_fchmod(ext4_file *f, uint32_t mode);
-int ext4_fchown(ext4_file *f, uint32_t uid, uint32_t gid);
-int ext4_file_set_atime(ext4_file *f, uint32_t atime);
-int ext4_file_set_mtime(ext4_file *f, uint32_t mtime);
-int ext4_file_set_ctime(ext4_file *f, uint32_t ctime);
+int ext4_chmod(const char *path, uint32_t mode);
+int ext4_chown(const char *path, uint32_t uid, uint32_t gid);
+int ext4_file_set_atime(const char *path, uint32_t atime);
+int ext4_file_set_mtime(const char *path, uint32_t mtime);
+int ext4_file_set_ctime(const char *path, uint32_t ctime);
 
 int ext4_fsymlink(const char *target, const char *path);
+
+int ext4_readlink(const char *path, char *buf, size_t bufsize, size_t *rcnt);
 
 /*********************************DIRECTORY OPERATION***********************/
 
