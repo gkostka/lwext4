@@ -40,6 +40,7 @@
 #include "ext4_config.h"
 #include "ext4_errno.h"
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -106,6 +107,7 @@ uint32_t ext4_dmask_get(void);
 		if (!(_v)) {                                                   \
 			printf("Assertion failed:\nmodule: %s\nline: %d\n",    \
 			       __FILE__, __LINE__);                            \
+			assert(_v);                                            \
 		}                                                              \
 	} while (0)
 #else

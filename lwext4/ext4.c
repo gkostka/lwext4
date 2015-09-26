@@ -874,10 +874,6 @@ static int __ext4_remove_hardlink(const char *path,
 		goto Finish;
 
 Finish:
-	if (r != EOK)
-		ext4_fs_put_inode_ref(child_ref);
-
-	ext4_fs_put_inode_ref(parent_ref);
 	return r;
 }
 
