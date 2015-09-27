@@ -908,25 +908,26 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 	}
 
 	/* Compute how many blocks will be released */
-	uint64_t size_diff = old_size - new_size;
 	uint32_t block_size = ext4_sb_get_block_size(sb);
-	uint32_t diff_blocks_count = size_diff / block_size;
-	if (size_diff % block_size != 0)
-		diff_blocks_count++;
-
-	uint32_t old_blocks_count = old_size / block_size;
-	if (old_size % block_size != 0)
-		old_blocks_count++;
+	uint32_t new_blocks_count = (new_size + block_size - 1) /
+				    block_size;
+	uint32_t old_blocks_count = (old_size + block_size - 1) /
+				    block_size;
+	uint32_t diff_blocks_count = old_blocks_count - new_blocks_count;
 #if CONFIG_EXTENT_ENABLE
 	if ((ext4_sb_has_feature_incompatible(sb,
 					      EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 
 		/* Extents require special operation */
-		int rc = ext4_extent_release_blocks_from(
-		    inode_ref, old_blocks_count - diff_blocks_count);
-		if (rc != EOK)
-			return rc;
+		if (diff_blocks_count) {
+			int rc = ext4_extent_release_blocks_from(
+					inode_ref,
+					new_blocks_count);
+			if (rc != EOK)
+				return rc;
+
+		}
 	} else
 #endif
 	{
@@ -934,9 +935,9 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 
 		/* Starting from 1 because of logical blocks are numbered from 0
 		 */
-		for (i = 1; i <= diff_blocks_count; ++i) {
+		for (i = 0; i < diff_blocks_count; ++i) {
 			int rc = ext4_fs_release_inode_block(
-			    inode_ref, old_blocks_count - i);
+			    inode_ref, new_blocks_count + i);
 			if (rc != EOK)
 				return rc;
 		}
