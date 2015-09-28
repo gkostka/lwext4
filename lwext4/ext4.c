@@ -180,7 +180,7 @@ static int ext4_has_children(bool *has_children, struct ext4_inode_ref *enode)
 
 static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 		     struct ext4_inode_ref *child, const char *name,
-		     uint32_t name_len)
+		     uint32_t name_len, bool rename)
 {
 	/* Check maximum name length */
 	if (name_len > EXT4_DIRECTORY_FILENAME_LEN)
@@ -196,7 +196,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 	 */
 	if (ext4_inode_is_type(&mp->fs.sb, child->inode,
 			       EXT4_INODE_MODE_DIRECTORY) &&
-	    ext4_inode_get_links_count(child->inode) == 0) {
+	    !rename) {
 		rc = ext4_dir_add_entry(child, ".", strlen("."), child);
 		if (rc != EOK) {
 			ext4_dir_remove_entry(parent, name, strlen(name));
@@ -231,6 +231,10 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 		child->dirty = true;
 		parent->dirty = true;
 	} else {
+		/*
+		 * In case we want to rename a directory,
+		 * we reset the original '..' pointer.
+		 */
 		if (ext4_inode_is_type(&mp->fs.sb, child->inode,
 					EXT4_INODE_MODE_DIRECTORY)) {
 			int has_flag_index =
@@ -263,7 +267,8 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 
 			ext4_fs_inode_links_count_inc(parent);
 			parent->dirty = true;
-		} else {
+		}
+		if (!rename) {
 			ext4_fs_inode_links_count_inc(child);
 			child->dirty = true;
 		}
@@ -632,6 +637,9 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 		r = ext4_dir_find_entry(&result, &ref, path, len);
 		if (r != EOK) {
 
+			/*Destroy last result*/
+			ext4_dir_destroy_result(&ref, &result);
+
 			if (r != ENOENT)
 				break;
 
@@ -647,11 +655,9 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 			if (r != EOK)
 				break;
 
-			/*Destroy last result*/
-			ext4_dir_destroy_result(&ref, &result);
 
 			/*Link with root dir.*/
-			r = ext4_link(mp, &ref, &child_ref, path, len);
+			r = ext4_link(mp, &ref, &child_ref, path, len, false);
 			if (r != EOK) {
 				/*Fail. Free new inode.*/
 				ext4_fs_free_inode(&child_ref);
@@ -758,7 +764,8 @@ static int ext4_generic_open(ext4_file *f, const char *path, const char *flags,
 }
 
 static int __ext4_create_hardlink(const char *path,
-		struct ext4_inode_ref *child_ref)
+		struct ext4_inode_ref *child_ref,
+		bool rename)
 {
 	bool is_goal = false;
 	uint8_t inode_type = EXT4_DIRENTRY_DIR;
@@ -799,14 +806,19 @@ static int __ext4_create_hardlink(const char *path,
 		r = ext4_dir_find_entry(&result, &ref, path, len);
 		if (r != EOK) {
 
-			if (r != ENOENT || !is_goal)
-				break;
-
 			/*Destroy last result*/
 			ext4_dir_destroy_result(&ref, &result);
 
+			if (r != ENOENT || !is_goal)
+				break;
+
 			/*Link with root dir.*/
-			r = ext4_link(mp, &ref, child_ref, path, len);
+			r = ext4_link(mp, &ref, child_ref, path, len, rename);
+			break;
+		} else if (r == EOK && is_goal) {
+			/*Destroy last result*/
+			ext4_dir_destroy_result(&ref, &result);
+			r = EEXIST;
 			break;
 		}
 
@@ -850,10 +862,10 @@ static int __ext4_create_hardlink(const char *path,
 	return r;
 }
 
-static int __ext4_remove_hardlink(const char *path,
-				  uint32_t name_off,
-				  struct ext4_inode_ref *parent_ref,
-				  struct ext4_inode_ref *child_ref)
+static int ext4_remove_orig_reference(const char *path,
+				      uint32_t name_off,
+				      struct ext4_inode_ref *parent_ref,
+				      struct ext4_inode_ref *child_ref)
 {
 	bool is_goal;
 	int r;
@@ -868,11 +880,16 @@ static int __ext4_remove_hardlink(const char *path,
 
 	len = ext4_path_check(path, &is_goal);
 
-	/*Unlink from parent*/
-	r = ext4_unlink(mp, parent_ref, child_ref, path, len);
+	/* Remove entry from parent directory */
+	r = ext4_dir_remove_entry(parent_ref, path, len);
 	if (r != EOK)
 		goto Finish;
 
+	if (ext4_inode_is_type(&mp->fs.sb, child_ref->inode,
+			       EXT4_INODE_MODE_DIRECTORY)) {
+		ext4_fs_inode_links_count_dec(parent_ref);
+		parent_ref->dirty = true;
+	}
 Finish:
 	return r;
 }
@@ -913,7 +930,14 @@ int ext4_flink(const char *path, const char *hardlink_path)
 
 	child_loaded = true;
 
-	r = __ext4_create_hardlink(hardlink_path, &child_ref);
+	/* Creating hardlink for directory is not allowed. */
+	if (ext4_inode_is_type(&mp->fs.sb, child_ref.inode,
+			       EXT4_INODE_MODE_DIRECTORY)) {
+		r = EINVAL;
+		goto Finish;
+	}
+
+	r = __ext4_create_hardlink(hardlink_path, &child_ref, false);
 
 Finish:
 	if (child_loaded)
@@ -962,11 +986,12 @@ int ext4_frename(const char *path, const char *new_path)
 
 	child_loaded = true;
 
-	r = __ext4_create_hardlink(new_path, &child_ref);
+	r = __ext4_create_hardlink(new_path, &child_ref, true);
 	if (r != EOK)
 		goto Finish;
 
-	r = __ext4_remove_hardlink(path, name_off, &parent_ref, &child_ref);
+	r = ext4_remove_orig_reference(path, name_off,
+				       &parent_ref, &child_ref);
 	if (r != EOK)
 		goto Finish;
 
