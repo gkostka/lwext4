@@ -93,6 +93,7 @@
 
 #else
  #include <unistd.h>
+ #include <fcntl.h>
 #endif
 
 /********************************OS LOCK INFERFACE***************************/
