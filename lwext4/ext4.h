@@ -47,7 +47,7 @@
 
 /********************************FILE OPEN FLAGS*****************************/
 
-#ifdef CONFIG_HAVE_OWN_OFLAGS
+#if CONFIG_HAVE_OWN_OFLAGS
 
  #ifndef O_RDONLY
  #define O_RDONLY 00
