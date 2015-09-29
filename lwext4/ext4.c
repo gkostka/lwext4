@@ -2180,7 +2180,10 @@ int ext4_dir_open(ext4_dir *d, const char *path)
 	return r;
 }
 
-int ext4_dir_close(ext4_dir *d) { return ext4_fclose(&d->f); }
+int ext4_dir_close(ext4_dir *d)
+{
+    return ext4_fclose(&d->f);
+}
 
 const ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
 {
@@ -2223,6 +2226,11 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
 Finish:
 	EXT4_MP_UNLOCK(d->f.mp);
 	return de;
+}
+
+void ext4_dir_entry_rewind(ext4_dir *d)
+{
+    d->next_off = 0;
 }
 
 /**

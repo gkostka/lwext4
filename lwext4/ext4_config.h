@@ -137,6 +137,11 @@
 #define CONFIG_EXT4_MOUNTPOINTS_COUNT 2
 #endif
 
+/**@brief   Include open flags from ext4_errno or standard library.*/
+#ifndef CONFIG_HAVE_OWN_OFLAGS
+#define CONFIG_HAVE_OWN_OFLAGS 0
+#endif
+
 #endif /* EXT4_CONFIG_H_ */
 
 /**

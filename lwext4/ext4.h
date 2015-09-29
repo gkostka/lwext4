@@ -47,46 +47,52 @@
 
 /********************************FILE OPEN FLAGS*****************************/
 
-#ifndef O_RDONLY
-#define O_RDONLY 00
-#endif
+#ifdef CONFIG_HAVE_OWN_OFLAGS
 
-#ifndef O_WRONLY
-#define O_WRONLY 01
-#endif
+ #ifndef O_RDONLY
+ #define O_RDONLY 00
+ #endif
 
-#ifndef O_RDWR
-#define O_RDWR 02
-#endif
+ #ifndef O_WRONLY
+ #define O_WRONLY 01
+ #endif
 
-#ifndef O_CREAT
-#define O_CREAT 0100
-#endif
+ #ifndef O_RDWR
+ #define O_RDWR 02
+ #endif
 
-#ifndef O_EXCL
-#define O_EXCL 0200
-#endif
+ #ifndef O_CREAT
+ #define O_CREAT 0100
+ #endif
 
-#ifndef O_TRUNC
-#define O_TRUNC 01000
-#endif
+ #ifndef O_EXCL
+ #define O_EXCL 0200
+ #endif
 
-#ifndef O_APPEND
-#define O_APPEND 02000
-#endif
+ #ifndef O_TRUNC
+ #define O_TRUNC 01000
+ #endif
+
+ #ifndef O_APPEND
+ #define O_APPEND 02000
+ #endif
 
 /********************************FILE SEEK FLAGS*****************************/
 
-#ifndef SEEK_SET
-#define SEEK_SET 0
-#endif
+ #ifndef SEEK_SET
+ #define SEEK_SET 0
+ #endif
 
-#ifndef SEEK_CUR
-#define SEEK_CUR 1
-#endif
+ #ifndef SEEK_CUR
+ #define SEEK_CUR 1
+ #endif
 
-#ifndef SEEK_END
-#define SEEK_END 2
+ #ifndef SEEK_END
+ #define SEEK_END 2
+ #endif
+
+#else
+ #include <unistd.h>
 #endif
 
 /********************************OS LOCK INFERFACE***************************/
@@ -384,6 +390,10 @@ int ext4_dir_close(ext4_dir *d);
  * @param   id entry id
  * @return  directory entry id (NULL if no entry)*/
 const ext4_direntry *ext4_dir_entry_next(ext4_dir *d);
+
+/**@brief   Rewine directory entry offset.
+ * @param   d directory handle*/
+void ext4_dir_entry_rewind(ext4_dir *d);
 
 #endif /* EXT4_H_ */
 
