@@ -450,18 +450,25 @@ int ext4_umount(const char *mount_point)
 	return ext4_block_fini(mp->fs.bdev);
 }
 
+static struct ext4_mountpoint *ext4_get_mount(const char *path)
+{
+	int i;
+	for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
+
+		if (!_mp[i].mounted)
+			continue;
+
+		if (!strncmp(_mp[i].name, path, strlen(_mp[i].name)))
+			return &_mp[i];
+	}
+	return 0;
+}
+
 int ext4_mount_point_stats(const char *mount_point,
 			   struct ext4_mount_stats *stats)
 {
-	uint32_t i;
-	struct ext4_mountpoint *mp = 0;
+	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
 
-	for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
-		if (!strcmp(_mp[i].name, mount_point)) {
-			mp = &_mp[i];
-			break;
-		}
-	}
 	if (!mp)
 		return ENOENT;
 
@@ -502,20 +509,6 @@ int ext4_mount_setup_locks(const char *mount_point,
 }
 
 /********************************FILE OPERATIONS*****************************/
-
-static struct ext4_mountpoint *ext4_get_mount(const char *path)
-{
-	int i;
-	for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
-
-		if (!_mp[i].mounted)
-			continue;
-
-		if (!strncmp(_mp[i].name, path, strlen(_mp[i].name)))
-			return &_mp[i];
-	}
-	return 0;
-}
 
 static int ext4_path_check(const char *path, bool *is_goal)
 {
