@@ -271,15 +271,70 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
 	return EOK;
 }
 
+/**@brief Determine whether the block is inside the group.
+ * @param baddr   block address
+ * @param bgid    block group id
+ * @return Error code
+ */
+static int ext4_block_in_group(struct ext4_sblock *s,
+			       uint32_t baddr,
+			       uint32_t bgid)
+{
+	uint32_t actual_bgid;
+	actual_bgid = ext4_balloc_get_bgid_of_block(s, baddr);
+	if (actual_bgid == bgid)
+		return 1;
+	return 0;
+}
+
+/**@brief   To avoid calling the atomic setbit hundreds or thousands of times, we only
+ *          need to use it within a single byte (to ensure we get endianness right).
+ *          We can use memset for the rest of the bitmap as there are no other users.
+ */
+static void ext4_fs_mark_bitmap_end(int start_bit, int end_bit, void *bitmap)
+{
+	int i;
+
+	if (start_bit >= end_bit)
+		return;
+
+	for (i = start_bit; (unsigned)i < ((start_bit + 7) & ~7UL); i++)
+		ext4_bmap_bit_set(bitmap, i);
+
+	if (i < end_bit)
+		memset((char *)bitmap + (i >> 3), 0xff, (end_bit - i) >> 3);
+}
+
 /**@brief Initialize block bitmap in block group.
  * @param bg_ref Reference to block group
  * @return Error code
  */
 static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 {
-	uint32_t i;
+	uint32_t i, bit, bit_max;
+	uint32_t group_blocks;
+	uint16_t inode_size = ext4_get16(&bg_ref->fs->sb, inode_size);
+	uint32_t block_size = ext4_sb_get_block_size(&bg_ref->fs->sb);
+	uint32_t inodes_per_group = ext4_get32(&bg_ref->fs->sb, inodes_per_group);
 	uint32_t bitmap_block_addr =
 	    ext4_bg_get_block_bitmap(bg_ref->block_group, &bg_ref->fs->sb);
+	uint32_t bitmap_inode_addr =
+	    ext4_bg_get_inode_bitmap(bg_ref->block_group, &bg_ref->fs->sb);
+	uint32_t inode_table_addr =
+	    ext4_bg_get_inode_table_first_block(bg_ref->block_group,
+						&bg_ref->fs->sb);
+	uint32_t first_group_addr =
+	    ext4_balloc_get_block_of_bgid(&bg_ref->fs->sb, bg_ref->index);
+
+	uint32_t dsc_per_block =
+	    ext4_sb_get_block_size(&bg_ref->fs->sb) /
+	    ext4_sb_get_desc_size(&bg_ref->fs->sb);
+
+	bool flex_bg =
+		ext4_sb_has_feature_incompatible(&bg_ref->fs->sb,
+						 EXT4_FEATURE_INCOMPAT_FLEX_BG);
+
+	uint32_t inode_table_bcnt = inodes_per_group * inode_size / block_size;
 
 	struct ext4_block block_bitmap;
 	int rc =
@@ -287,22 +342,67 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 	if (rc != EOK)
 		return rc;
 
-	memset(block_bitmap.data, 0, ext4_sb_get_block_size(&bg_ref->fs->sb));
+	memset(block_bitmap.data, 0, block_size);
 
-	/* Determine first block and first data block in group */
-	uint32_t first_idx = 0;
+	bit_max = ext4_sb_is_super_in_bg(&bg_ref->fs->sb, bg_ref->index);
+	if (!ext4_sb_has_feature_incompatible(&bg_ref->fs->sb,
+					      EXT4_FEATURE_INCOMPAT_META_BG) ||
+			bg_ref->index < ext4_sb_first_meta_bg(&bg_ref->fs->sb) *
+			dsc_per_block) {
+		if (bit_max) {
+			bit_max += ext4_bg_num_gdb(&bg_ref->fs->sb,
+						   bg_ref->index);
+			bit_max +=
+				ext4_get16(&bg_ref->fs->sb,
+					   s_reserved_gdt_blocks);
+		}
+	} else { /* For META_BG_BLOCK_GROUPS */
+		bit_max += ext4_bg_num_gdb(&bg_ref->fs->sb,
+					   bg_ref->index);
+	}
+        for (bit = 0; bit < bit_max; bit++)
+            ext4_bmap_bit_set(block_bitmap.data, bit);
 
-	uint32_t first_data =
-	    ext4_balloc_get_first_data_block_in_group(&bg_ref->fs->sb, bg_ref);
-	uint32_t first_data_idx =
-	    ext4_fs_baddr2_index_in_group(&bg_ref->fs->sb, first_data);
+	if (bg_ref->index == ext4_block_group_cnt(&bg_ref->fs->sb) - 1) {
+		/*
+		 * Even though mke2fs always initialize first and last group
+		 * if some other tool enabled the EXT4_BG_BLOCK_UNINIT we need
+		 * to make sure we calculate the right free blocks
+		 */
+		group_blocks = (ext4_sb_get_blocks_cnt(&bg_ref->fs->sb) -
+				ext4_get32(&bg_ref->fs->sb, first_data_block) -
+				(ext4_get32(&bg_ref->fs->sb, blocks_per_group) *
+				 (ext4_block_group_cnt(&bg_ref->fs->sb) - 1)));
+	} else {
+		group_blocks = ext4_get32(&bg_ref->fs->sb, blocks_per_group);
+	}
+	if (!flex_bg ||
+	    ext4_block_in_group(&bg_ref->fs->sb,
+				bitmap_block_addr, bg_ref->index))
+		ext4_bmap_bit_set(block_bitmap.data,
+				  bitmap_block_addr - first_group_addr);
 
-	/*Set bits from to first block to first data block - 1 to one
-	 * (allocated)*/
-	/*TODO: Optimize it*/
-	for (i = first_idx; i < first_data_idx; ++i)
-		ext4_bmap_bit_set(block_bitmap.data, i);
+	if (!flex_bg ||
+	    ext4_block_in_group(&bg_ref->fs->sb,
+				bitmap_inode_addr, bg_ref->index))
+		ext4_bmap_bit_set(block_bitmap.data,
+				  bitmap_inode_addr - first_group_addr);
 
+        for (i = inode_table_addr;
+		i < inode_table_addr + inode_table_bcnt; i++) {
+		if (!flex_bg ||
+		    ext4_block_in_group(&bg_ref->fs->sb,
+					i,
+					bg_ref->index))
+			ext4_bmap_bit_set(block_bitmap.data,
+					i - first_group_addr);
+	}
+        /*
+         * Also if the number of blocks within the group is
+         * less than the blocksize * 8 ( which is the size
+         * of bitmap ), set rest of the block bitmap to 1
+         */
+        ext4_fs_mark_bitmap_end(group_blocks, block_size * 8, block_bitmap.data);
 	block_bitmap.dirty = true;
 
 	/* Save bitmap */

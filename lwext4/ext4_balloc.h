@@ -48,13 +48,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/**@brief   Get first datablock in block group
- * @param   s superblock descriptor
- * @param   bg_ref block group reference
- * @return  block id of the first datablock in block group*/
-uint32_t
-ext4_balloc_get_first_data_block_in_group(struct ext4_sblock *s,
-					  struct ext4_block_group_ref *bg_ref);
+/**@brief Compute number of block group from block address.
+ * @param sb superblock pointer.
+ * @param baddr Absolute address of block.
+ * @return Block group index
+ */
+uint32_t ext4_balloc_get_bgid_of_block(struct ext4_sblock *s,
+				       uint32_t baddr);
+
+/**@brief Compute the starting block address of a block group
+ * @param sb   superblock pointer.
+ * @param bgid block group index
+ * @return Block address
+ */
+uint32_t ext4_balloc_get_block_of_bgid(struct ext4_sblock *s,
+				       uint32_t bgid);
 
 /**@brief   Free block from inode.
  * @param   inode_ref inode reference

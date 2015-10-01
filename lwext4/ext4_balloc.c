@@ -52,8 +52,8 @@
  * @param baddr Absolute address of block.
  * @return Block group index
  */
-static uint32_t ext4_balloc_get_bgid_of_block(struct ext4_sblock *s,
-					      uint32_t baddr)
+uint32_t ext4_balloc_get_bgid_of_block(struct ext4_sblock *s,
+				       uint32_t baddr)
 {
 	if (ext4_get32(s, first_data_block))
 		baddr--;
@@ -61,37 +61,20 @@ static uint32_t ext4_balloc_get_bgid_of_block(struct ext4_sblock *s,
 	return baddr / ext4_get32(s, blocks_per_group);
 }
 
-uint32_t
-ext4_balloc_get_first_data_block_in_group(struct ext4_sblock *s,
-					  struct ext4_block_group_ref *bg_ref)
+/**@brief Compute the starting block address of a block group
+ * @param sb   superblock pointer.
+ * @param bgid block group index
+ * @return Block address
+ */
+uint32_t ext4_balloc_get_block_of_bgid(struct ext4_sblock *s,
+				       uint32_t bgid)
 {
-	uint32_t block_group_count = ext4_block_group_cnt(s);
-	uint32_t inode_table_first_block =
-	    ext4_bg_get_inode_table_first_block(bg_ref->block_group, s);
-	uint32_t block_size = ext4_sb_get_block_size(s);
+	uint32_t baddr = 0;
+	if (ext4_get32(s, first_data_block))
+		baddr++;
 
-	uint16_t inode_size = ext4_get16(s, inode_size);
-	uint32_t inodes_per_group = ext4_get32(s, inodes_per_group);
-
-	uint32_t inode_table_bytes;
-
-	if (bg_ref->index < block_group_count - 1) {
-		inode_table_bytes = inodes_per_group * inode_size;
-	} else {
-		/* Last block group could be smaller */
-		uint32_t inodes_count_total = ext4_get32(s, inodes_count);
-		inode_table_bytes =
-		    (inodes_count_total -
-		     ((block_group_count - 1) * inodes_per_group)) *
-		    inode_size;
-	}
-
-	uint32_t inode_table_blocks = inode_table_bytes / block_size;
-
-	if (inode_table_bytes % block_size)
-		inode_table_blocks++;
-
-	return inode_table_first_block + inode_table_blocks;
+	baddr += bgid * ext4_get32(s, blocks_per_group);
+	return baddr;
 }
 
 int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, uint32_t baddr)
@@ -369,8 +352,7 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref, uint32_t *fblock)
 	}
 
 	/* Compute indexes */
-	uint32_t first_in_group =
-	    ext4_balloc_get_first_data_block_in_group(sb, &bg_ref);
+	uint32_t first_in_group = ext4_balloc_get_block_of_bgid(sb, bg_ref.index);
 
 	uint32_t first_in_group_index =
 	    ext4_fs_baddr2_index_in_group(sb, first_in_group);
@@ -488,8 +470,7 @@ goal_failed:
 		}
 
 		/* Compute indexes */
-		first_in_group =
-		    ext4_balloc_get_first_data_block_in_group(sb, &bg_ref);
+		first_in_group = ext4_balloc_get_block_of_bgid(sb, bgid);
 		index_in_group =
 		    ext4_fs_baddr2_index_in_group(sb, first_in_group);
 		blocks_in_group = ext4_blocks_in_group_cnt(sb, bgid);

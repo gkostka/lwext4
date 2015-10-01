@@ -56,7 +56,6 @@
 static inline uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s,
 						     uint32_t baddr)
 {
-	ext4_assert(baddr);
 	if (ext4_get32(s, first_data_block))
 		baddr--;
 

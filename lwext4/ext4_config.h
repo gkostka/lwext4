@@ -114,7 +114,7 @@
 
 /**@brief   Include assert codes from ext4_debug or standard library.*/
 #ifndef CONFIG_HAVE_OWN_ASSERT
-#define CONFIG_HAVE_OWN_ASSERT 1
+#define CONFIG_HAVE_OWN_ASSERT 0
 #endif
 
 /**@brief   Statistics of block device*/
