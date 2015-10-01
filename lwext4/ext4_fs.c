@@ -360,8 +360,8 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 		bit_max += ext4_bg_num_gdb(&bg_ref->fs->sb,
 					   bg_ref->index);
 	}
-        for (bit = 0; bit < bit_max; bit++)
-            ext4_bmap_bit_set(block_bitmap.data, bit);
+	for (bit = 0; bit < bit_max; bit++)
+		ext4_bmap_bit_set(block_bitmap.data, bit);
 
 	if (bg_ref->index == ext4_block_group_cnt(&bg_ref->fs->sb) - 1) {
 		/*
