@@ -834,7 +834,8 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
 {
 	struct ext4_fs *fs = inode_ref->fs;
 	uint32_t offset;
-	uint32_t suboffset;
+	uint32_t suboff;
+	int rc;
 #if CONFIG_EXTENT_ENABLE
 	/* For extents must be data block destroyed by other way */
 	if ((ext4_sb_has_feature_incompatible(&fs->sb,
@@ -872,14 +873,14 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
 		for (offset = 0; offset < count; ++offset) {
 			ind_block = to_le32(((uint32_t *)block.data)[offset]);
 
-			if (ind_block != 0) {
-				rc = ext4_balloc_free_block(inode_ref,
-							    ind_block);
-				if (rc != EOK) {
-					ext4_block_set(fs->bdev, &block);
-					return rc;
-				}
+			if (ind_block == 0)
+				continue;
+			rc = ext4_balloc_free_block(inode_ref, ind_block);
+			if (rc != EOK) {
+				ext4_block_set(fs->bdev, &block);
+				return rc;
 			}
+
 		}
 
 		ext4_block_set(fs->bdev, &block);
@@ -893,65 +894,58 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
 	/* 3) Tripple indirect */
 	struct ext4_block subblock;
 	fblock = ext4_inode_get_indirect_block(inode_ref->inode, 2);
-	if (fblock != 0) {
-		int rc = ext4_block_get(fs->bdev, &block, fblock);
-		if (rc != EOK)
+	if (fblock == 0)
+		goto finish;
+	rc = ext4_block_get(fs->bdev, &block, fblock);
+	if (rc != EOK)
+		return rc;
+
+	uint32_t ind_block;
+	for (offset = 0; offset < count; ++offset) {
+		ind_block = to_le32(((uint32_t *)block.data)[offset]);
+
+		if (ind_block == 0)
+			continue;
+		rc = ext4_block_get(fs->bdev, &subblock,
+				ind_block);
+		if (rc != EOK) {
+			ext4_block_set(fs->bdev, &block);
 			return rc;
-
-		uint32_t ind_block;
-		for (offset = 0; offset < count; ++offset) {
-			ind_block = to_le32(((uint32_t *)block.data)[offset]);
-
-			if (ind_block != 0) {
-				rc = ext4_block_get(fs->bdev, &subblock,
-						    ind_block);
-				if (rc != EOK) {
-					ext4_block_set(fs->bdev, &block);
-					return rc;
-				}
-
-				uint32_t ind_subblock;
-				for (suboffset = 0; suboffset < count;
-				     ++suboffset) {
-					ind_subblock = to_le32(
-					    ((uint32_t *)
-						 subblock.data)[suboffset]);
-
-					if (ind_subblock != 0) {
-						rc = ext4_balloc_free_block(
-						    inode_ref, ind_subblock);
-						if (rc != EOK) {
-							ext4_block_set(
-							    fs->bdev,
-							    &subblock);
-							ext4_block_set(fs->bdev,
-								       &block);
-							return rc;
-						}
-					}
-				}
-
-				ext4_block_set(fs->bdev, &subblock);
-
-				rc = ext4_balloc_free_block(inode_ref,
-							    ind_block);
-				if (rc != EOK) {
-					ext4_block_set(fs->bdev, &block);
-					return rc;
-				}
-			}
 		}
 
-		ext4_block_set(fs->bdev, &block);
-		rc = ext4_balloc_free_block(inode_ref, fblock);
-		if (rc != EOK)
-			return rc;
+		uint32_t ind_subblk;
+		for (suboff = 0; suboff < count; ++suboff) {
+			ind_subblk = to_le32(((uint32_t *)subblock.data)[suboff]);
 
-		ext4_inode_set_indirect_block(inode_ref->inode, 2, 0);
+			if (ind_subblk == 0)
+				continue;
+			rc = ext4_balloc_free_block(inode_ref, ind_subblk);
+			if (rc != EOK) {
+				ext4_block_set(fs->bdev, &subblock);
+				ext4_block_set(fs->bdev, &block);
+				return rc;
+			}
+
+		}
+
+		ext4_block_set(fs->bdev, &subblock);
+
+		rc = ext4_balloc_free_block(inode_ref,
+				ind_block);
+		if (rc != EOK) {
+			ext4_block_set(fs->bdev, &block);
+			return rc;
+		}
+
 	}
-#if CONFIG_EXTENT_ENABLE
+
+	ext4_block_set(fs->bdev, &block);
+	rc = ext4_balloc_free_block(inode_ref, fblock);
+	if (rc != EOK)
+		return rc;
+
+	ext4_inode_set_indirect_block(inode_ref->inode, 2, 0);
 finish:
-#endif
 	/* Mark inode dirty for writing to the physical device */
 	inode_ref->dirty = true;
 
@@ -967,7 +961,6 @@ finish:
 	}
 
 	/* Free inode by allocator */
-	int rc;
 	if (ext4_inode_is_type(&fs->sb, inode_ref->inode,
 			       EXT4_INODE_MODE_DIRECTORY))
 		rc = ext4_ialloc_free_inode(fs, inode_ref->index, true);
