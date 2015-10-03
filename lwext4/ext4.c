@@ -44,6 +44,7 @@
 #include "ext4_inode.h"
 #include "ext4_super.h"
 #include "ext4_dir_idx.h"
+#include "ext4_xattr.h"
 #include "ext4.h"
 
 #include <stdlib.h>
@@ -730,6 +731,31 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 
 		if (f->flags & O_APPEND)
 			f->fpos = f->fsize;
+
+		/* FIXME: Debugging code on EA. */
+		{
+			int private_ret;
+			struct ext4_xattr_ref xattr_ref;
+			struct ext4_xattr_entry *found_entry = NULL;
+			void *out_data = NULL;
+			size_t out_len = 0;
+			private_ret = ext4_fs_get_xattr_ref(&f->mp->fs, &ref,
+							  &xattr_ref);
+			if (private_ret == EOK) {
+				ext4_dmask_set(EXT4_DEBUG_ALL);
+				private_ret = ext4_xattr_lookup(&xattr_ref,
+								EXT4_XATTR_INDEX_POSIX_ACL_ACCESS,
+								"",
+								0,
+								&found_entry,
+								&out_data,
+								&out_len);
+				if (private_ret == EOK) {
+					private_ret;
+				}
+				ext4_fs_put_xattr_ref(&xattr_ref);
+			}
+		}
 	}
 
 	r = ext4_fs_put_inode_ref(&ref);

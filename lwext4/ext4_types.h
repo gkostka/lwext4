@@ -628,6 +628,88 @@ struct ext4_hash_info {
 	const uint32_t *seed;
 };
 
+/* Extended Attribute(EA) */
+
+/* Magic value in attribute blocks */
+#define EXT4_XATTR_MAGIC		0xEA020000
+
+/* Maximum number of references to one attribute block */
+#define EXT4_XATTR_REFCOUNT_MAX		1024
+
+/* Name indexes */
+#define EXT4_XATTR_INDEX_USER			1
+#define EXT4_XATTR_INDEX_POSIX_ACL_ACCESS	2
+#define EXT4_XATTR_INDEX_POSIX_ACL_DEFAULT	3
+#define EXT4_XATTR_INDEX_TRUSTED		4
+#define	EXT4_XATTR_INDEX_LUSTRE			5
+#define EXT4_XATTR_INDEX_SECURITY	        6
+#define EXT4_XATTR_INDEX_SYSTEM			7
+#define EXT4_XATTR_INDEX_RICHACL		8
+#define EXT4_XATTR_INDEX_ENCRYPTION		9
+
+struct ext4_xattr_header {
+	uint32_t h_magic;	/* magic number for identification */
+	uint32_t h_refcount;	/* reference count */
+	uint32_t h_blocks;	/* number of disk blocks used */
+	uint32_t h_hash;		/* hash value of all attributes */
+	uint32_t h_checksum;	/* crc32c(uuid+id+xattrblock) */
+				/* id = inum if refcount=1, blknum otherwise */
+	uint32_t h_reserved[3];	/* zero right now */
+} __attribute__((packed));
+
+struct ext4_xattr_ibody_header {
+	uint32_t h_magic;	/* magic number for identification */
+} __attribute__((packed));
+
+struct ext4_xattr_entry {
+	uint8_t e_name_len;	/* length of name */
+	uint8_t e_name_index;	/* attribute name index */
+	uint16_t e_value_offs;	/* offset in disk block of value */
+	uint32_t e_value_block;	/* disk block attribute is stored on (n/i) */
+	uint32_t e_value_size;	/* size of attribute value */
+	uint32_t e_hash;		/* hash value of name and value */
+} __attribute__((packed));
+
+struct ext4_xattr_ref {
+	bool block_loaded;
+	struct ext4_block block;
+	struct ext4_inode_ref *inode_ref;
+	struct ext4_fs *fs;
+};
+
+#define EXT4_GOOD_OLD_INODE_SIZE	128
+
+#define EXT4_XATTR_PAD_BITS		2
+#define EXT4_XATTR_PAD		(1<<EXT4_XATTR_PAD_BITS)
+#define EXT4_XATTR_ROUND		(EXT4_XATTR_PAD-1)
+#define EXT4_XATTR_LEN(name_len) \
+	(((name_len) + EXT4_XATTR_ROUND + \
+	sizeof(struct ext4_xattr_entry)) & ~EXT4_XATTR_ROUND)
+#define EXT4_XATTR_NEXT(entry) \
+	((struct ext4_xattr_entry *)( \
+	 (char *)(entry) + EXT4_XATTR_LEN((entry)->e_name_len)))
+#define EXT4_XATTR_SIZE(size) \
+	(((size) + EXT4_XATTR_ROUND) & ~EXT4_XATTR_ROUND)
+
+#define EXT4_XATTR_IHDR(raw_inode) \
+	((struct ext4_xattr_ibody_header *) \
+		((char *)raw_inode + \
+		EXT4_GOOD_OLD_INODE_SIZE + \
+		(raw_inode)->extra_isize))
+#define EXT4_XATTR_IFIRST(hdr) \
+	((struct ext4_xattr_entry *)((hdr)+1))
+
+#define EXT4_XATTR_BHDR(block) \
+	((struct ext4_xattr_header *)((block)->data))
+#define EXT4_XATTR_ENTRY(ptr) \
+	((struct ext4_xattr_entry *)(ptr))
+#define EXT4_XATTR_BFIRST(block) \
+	EXT4_XATTR_ENTRY(EXT4_XATTR_BHDR(block)+1)
+#define EXT4_XATTR_IS_LAST_ENTRY(entry) \
+	(*(uint32_t *)(entry) == 0)
+
+#define EXT4_ZERO_XATTR_VALUE ((void *)-1)
+
 /*****************************************************************************/
 
 #ifdef CONFIG_BIG_ENDIAN
