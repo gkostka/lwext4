@@ -1,3 +1,45 @@
+/*
+ * Copyright (c) 2015 Grzegorz Kostka (kostka.grzegorz@gmail.com)
+ * Copyright (c) 2015 Kaho Ng (ngkaho1234@gmail.com)
+ *
+ *
+ * HelenOS:
+ * Copyright (c) 2012 Martin Sucha
+ * Copyright (c) 2012 Frantisek Princ
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * - Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ * - The name of the author may not be used to endorse or promote products
+ *   derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/** @addtogroup lwext4
+ * @{
+ */
+/**
+ * @file  ext4_xattr.c
+ * @brief Extended Attribute manipulation.
+ */
+
 #include "ext4_config.h"
 #include "ext4_types.h"
 #include "ext4_fs.h"
@@ -13,6 +55,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+/**
+ * @file  ext4_xattr.c
+ * @brief Extended Attribute Manipulation
+ */
 static int ext4_xattr_item_cmp(struct ext4_xattr_item *a,
 				struct ext4_xattr_item *b)
 {
@@ -183,7 +229,7 @@ static int ext4_xattr_block_fetch(struct ext4_xattr_ref *xattr_ref)
 			goto Finish;
 		}
 		RB_INSERT(ext4_xattr_tree, &xattr_ref->root, item);
-
+		xattr_ref->ea_size += item->data_size;
 	}
 
 Finish:
@@ -235,6 +281,7 @@ static int ext4_xattr_inode_fetch(struct ext4_xattr_ref *xattr_ref)
 			goto Finish;
 		}
 		RB_INSERT(ext4_xattr_tree, &xattr_ref->root, item);
+		xattr_ref->ea_size += item->data_size;
 	}
 
 Finish:
@@ -258,6 +305,15 @@ static int ext4_xattr_fetch(struct ext4_xattr_ref *xattr_ref)
 
 	xattr_ref->dirty = false;
 	return ret;
+}
+
+static void
+ext4_xattr_lookup_items(struct ext4_xattr_ref *xattr_ref,
+			uint8_t name_index,
+			char   *name,
+			size_t  name_len)
+{
+
 }
 
 static void
@@ -319,3 +375,6 @@ void ext4_fs_put_xattr_ref(struct ext4_xattr_ref *ref)
 	ref->fs = NULL;
 }
 
+/**
+ * @}
+ */
