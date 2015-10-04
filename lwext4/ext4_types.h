@@ -45,6 +45,7 @@
 #include "ext4_config.h"
 #include "ext4_blockdev.h"
 #include "ext4_rbtree.h"
+#include "tree.h"
 
 #include <stdint.h>
 
@@ -678,16 +679,19 @@ struct ext4_xattr_item {
 	void  *data;
 	size_t data_size;
 
-	struct ext4_rb_node node;
+	RB_ENTRY(ext4_xattr_item) node;
 };
 
 struct ext4_xattr_ref {
 	bool block_loaded;
 	struct ext4_block block;
 	struct ext4_inode_ref *inode_ref;
-	struct ext4_rb_root root;
 	bool   dirty;
+	size_t ea_size;
 	struct ext4_fs *fs;
+
+	RB_HEAD(ext4_xattr_tree,
+		ext4_xattr_item) root;
 };
 
 #define EXT4_GOOD_OLD_INODE_SIZE	128

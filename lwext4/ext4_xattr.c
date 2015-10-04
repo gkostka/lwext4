@@ -13,13 +13,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-static int ext4_xattr_item_cmp(struct ext4_rb_node *a_,
-				struct ext4_rb_node *b_)
+static int ext4_xattr_item_cmp(struct ext4_xattr_item *a,
+				struct ext4_xattr_item *b)
 {
-	struct ext4_xattr_item *a, *b;
 	int result;
-	a = container_of(a_, struct ext4_xattr_item, node);
-	b = container_of(b_, struct ext4_xattr_item, node);
 	result = a->name_index - b->name_index;
 	if (result)
 		return result;
@@ -31,53 +28,10 @@ static int ext4_xattr_item_cmp(struct ext4_rb_node *a_,
 	return memcmp(a->name, b->name, a->name_len);
 }
 
-static struct ext4_xattr_item *
-ext4_xattr_item_lookup(struct ext4_rb_root *root,
-			uint8_t name_index,
-			char   *name,
-			size_t  name_len)
-{
-	struct ext4_rb_node *new = root->ext4_rb_node;
-
-	/* Figure out where to put new node */
-	while (new) {
-		struct ext4_xattr_item *item =
-			container_of(new, struct ext4_xattr_item, node);
-		int result = name_index - item->name_index;
-		if (!result) {
-			result = name_len - item->name_len;
-			if (!result)
-				result = memcmp(name,
-						item->name, name_len);
-
-		}
-
-		if (result < 0)
-			new = new->ext4_rb_left;
-		else if (result > 0)
-			new = new->ext4_rb_right;
-		else
-			return item;
-
-	}
-
-	return NULL;
-}
-
-static void
-ext4_xattr_item_insert(struct ext4_rb_root *root,
-			struct ext4_xattr_item *item)
-{
-	ext4_rb_insert(root, &item->node, ext4_xattr_item_cmp);
-}
-
-static void
-ext4_xattr_item_remove(struct ext4_rb_root *root,
-			struct ext4_xattr_item *item)
-{
-	ext4_rb_erase(&item->node, root);
-}
-
+RB_GENERATE (ext4_xattr_tree,
+	     ext4_xattr_item,
+	     node,
+	     ext4_xattr_item_cmp)
 
 static struct ext4_xattr_item *
 ext4_xattr_item_alloc(uint8_t name_index,
@@ -221,14 +175,13 @@ static int ext4_xattr_block_fetch(struct ext4_xattr_ref *xattr_ref)
 		}
 		if (ext4_xattr_item_alloc_data(item,
 					       data,
-					       to_le32(entry->e_value_size)
-			!= EOK)) {
+					       to_le32(entry->e_value_size))
+			!= EOK) {
 			ext4_xattr_item_free(item);
 			ret = ENOMEM;
 			goto Finish;
 		}
-		ext4_xattr_item_insert(&xattr_ref->root,
-					item);
+		RB_INSERT(ext4_xattr_tree, &xattr_ref->root, item);
 
 	}
 
@@ -274,16 +227,13 @@ static int ext4_xattr_inode_fetch(struct ext4_xattr_ref *xattr_ref)
 		}
 		if (ext4_xattr_item_alloc_data(item,
 					       data,
-					       to_le32(entry->e_value_size)
-			!= EOK)) {
+					       to_le32(entry->e_value_size))
+			!= EOK) {
 			ext4_xattr_item_free(item);
 			ret = ENOMEM;
 			goto Finish;
 		}
-		ext4_xattr_item_insert(&xattr_ref->root,
-					item);
-
-
+		RB_INSERT(ext4_xattr_tree, &xattr_ref->root, item);
 	}
 
 Finish:
@@ -312,13 +262,15 @@ static int ext4_xattr_fetch(struct ext4_xattr_ref *xattr_ref)
 static void
 ext4_xattr_purge_items(struct ext4_xattr_ref *xattr_ref)
 {
-	struct ext4_rb_node *node;
-	while ((node = ext4_rb_first(&xattr_ref->root))) {
-		struct ext4_xattr_item *item = ext4_rb_entry(
-				node, struct ext4_xattr_item, node);
-		ext4_xattr_item_remove(&xattr_ref->root, item);
+	struct ext4_xattr_item *item, *save_item;
+	RB_FOREACH_SAFE(item,
+			ext4_xattr_tree,
+			&xattr_ref->root,
+			save_item) {
+		RB_REMOVE(ext4_xattr_tree, &xattr_ref->root, item);
 		ext4_xattr_item_free(item);
 	}
+	xattr_ref->ea_size = 0;
 }
 
 int ext4_fs_get_xattr_ref(struct ext4_fs *fs,
@@ -329,7 +281,7 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs,
 	uint64_t xattr_block;
 	xattr_block = ext4_inode_get_file_acl(inode_ref->inode,
 					      &fs->sb);
-	memset(&ref->root, 0, sizeof(ref->root));
+	RB_INIT(&ref->root);
 	if (xattr_block) {
 		rc = ext4_block_get(fs->bdev,
 				    &inode_ref->block, xattr_block);
