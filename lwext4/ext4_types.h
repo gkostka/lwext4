@@ -44,6 +44,7 @@
 
 #include "ext4_config.h"
 #include "ext4_blockdev.h"
+#include "ext4_rbtree.h"
 
 #include <stdint.h>
 
@@ -670,10 +671,22 @@ struct ext4_xattr_entry {
 	uint32_t e_hash;		/* hash value of name and value */
 } __attribute__((packed));
 
+struct ext4_xattr_item {
+	uint8_t name_index;
+	char  *name;
+	size_t name_len;
+	void  *data;
+	size_t data_size;
+
+	struct ext4_rb_node node;
+};
+
 struct ext4_xattr_ref {
 	bool block_loaded;
 	struct ext4_block block;
 	struct ext4_inode_ref *inode_ref;
+	struct ext4_rb_root root;
+	bool   dirty;
 	struct ext4_fs *fs;
 };
 
