@@ -28,10 +28,11 @@ static int ext4_xattr_item_cmp(struct ext4_xattr_item *a,
 	return memcmp(a->name, b->name, a->name_len);
 }
 
-RB_GENERATE (ext4_xattr_tree,
-	     ext4_xattr_item,
-	     node,
-	     ext4_xattr_item_cmp)
+RB_GENERATE_INTERNAL(ext4_xattr_tree,
+		     ext4_xattr_item,
+		     node,
+		     ext4_xattr_item_cmp,
+		     static inline)
 
 static struct ext4_xattr_item *
 ext4_xattr_item_alloc(uint8_t name_index,
