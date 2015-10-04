@@ -706,6 +706,8 @@ struct ext4_xattr_ref {
 	 (char *)(entry) + EXT4_XATTR_LEN((entry)->e_name_len)))
 #define EXT4_XATTR_SIZE(size) \
 	(((size) + EXT4_XATTR_ROUND) & ~EXT4_XATTR_ROUND)
+#define EXT4_XATTR_NAME(entry) \
+	((char *)((entry) + 1))
 
 #define EXT4_XATTR_IHDR(raw_inode) \
 	((struct ext4_xattr_ibody_header *) \

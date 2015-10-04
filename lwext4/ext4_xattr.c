@@ -59,6 +59,37 @@
  * @file  ext4_xattr.c
  * @brief Extended Attribute Manipulation
  */
+
+#define NAME_HASH_SHIFT 5
+#define VALUE_HASH_SHIFT 16
+
+static inline void
+ext4_xattr_compute_hash(struct ext4_xattr_header *header,
+			struct ext4_xattr_entry *entry)
+{
+	uint32_t hash = 0;
+	char *name = EXT4_XATTR_NAME(entry);
+	int n;
+
+	for (n = 0; n < entry->e_name_len; n++) {
+		hash = (hash << NAME_HASH_SHIFT) ^
+			(hash >> (8*sizeof(hash) - NAME_HASH_SHIFT)) ^
+			*name++;
+	}
+
+	if (entry->e_value_block == 0 && entry->e_value_size != 0) {
+		uint32_t *value = (uint32_t *)((char *)header +
+				to_le16(entry->e_value_offs));
+		for (n = (to_le32(entry->e_value_size) +
+					EXT4_XATTR_ROUND) >> EXT4_XATTR_PAD_BITS; n; n--) {
+			hash = (hash << VALUE_HASH_SHIFT) ^
+				(hash >> (8*sizeof(hash) - VALUE_HASH_SHIFT)) ^
+				to_le32(*value++);
+		}
+	}
+	entry->e_hash = to_le32(hash);
+}
+
 static int ext4_xattr_item_cmp(struct ext4_xattr_item *a,
 				struct ext4_xattr_item *b)
 {
@@ -204,7 +235,7 @@ static int ext4_xattr_block_fetch(struct ext4_xattr_ref *xattr_ref)
 	    entry = EXT4_XATTR_NEXT(entry),
 	    size_rem -= EXT4_XATTR_LEN(entry->e_name_len)) {
 		struct ext4_xattr_item *item;
-		char *e_name = (char *)(entry + 1);
+		char *e_name = EXT4_XATTR_NAME(entry);
 
 		data = ext4_xattr_entry_data(xattr_ref, entry,
 					     false);
@@ -256,7 +287,7 @@ static int ext4_xattr_inode_fetch(struct ext4_xattr_ref *xattr_ref)
 	    entry = EXT4_XATTR_NEXT(entry),
 	    size_rem -= EXT4_XATTR_LEN(entry->e_name_len)) {
 		struct ext4_xattr_item *item;
-		char *e_name = (char *)(entry + 1);
+		char *e_name = EXT4_XATTR_NAME(entry);
 
 		data = ext4_xattr_entry_data(xattr_ref, entry,
 					     true);
@@ -334,6 +365,48 @@ ext4_xattr_purge_items(struct ext4_xattr_ref *xattr_ref)
 		ext4_xattr_item_free(item);
 	}
 	xattr_ref->ea_size = 0;
+}
+
+static size_t
+ext4_xattr_inode_space(struct ext4_xattr_ref *xattr_ref)
+{
+	uint16_t inode_size = ext4_get16(&xattr_ref->fs->sb,
+					 inode_size);
+	uint16_t size_rem = inode_size -
+			EXT4_GOOD_OLD_INODE_SIZE -
+			xattr_ref->inode_ref->inode->extra_isize;
+	return size_rem;
+}
+
+static size_t
+ext4_xattr_block_space(struct ext4_xattr_ref *xattr_ref)
+{
+	return ext4_sb_get_block_size(&xattr_ref->fs->sb);
+}
+
+static int
+ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
+{
+	int ret = EOK;
+	struct ext4_xattr_item *item, *save_item;
+	size_t inode_size_rem, block_size_rem;
+	inode_size_rem = ext4_xattr_inode_space(xattr_ref);
+	block_size_rem = ext4_xattr_block_space(xattr_ref);
+
+	if (xattr_ref->dirty) {
+		RB_FOREACH_SAFE(item,
+				ext4_xattr_tree,
+				&xattr_ref->root,
+				save_item) {
+			/*This should not fail!*/
+			ext4_assert(inode_size_rem + block_size_rem);
+			if (inode_size_rem) {
+				
+			}
+		}
+		xattr_ref->dirty = false;
+	}
+	return ret;
 }
 
 int ext4_fs_get_xattr_ref(struct ext4_fs *fs,
