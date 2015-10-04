@@ -44,7 +44,6 @@
 
 #include "ext4_config.h"
 #include "ext4_blockdev.h"
-#include "ext4_rbtree.h"
 #include "tree.h"
 
 #include <stdint.h>
