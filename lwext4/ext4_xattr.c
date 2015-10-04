@@ -307,13 +307,19 @@ static int ext4_xattr_fetch(struct ext4_xattr_ref *xattr_ref)
 	return ret;
 }
 
-static void
-ext4_xattr_lookup_items(struct ext4_xattr_ref *xattr_ref,
-			uint8_t name_index,
-			char   *name,
-			size_t  name_len)
+static struct ext4_xattr_item *
+ext4_xattr_lookup_item(struct ext4_xattr_ref *xattr_ref,
+		       uint8_t name_index,
+		       char   *name,
+		       size_t  name_len)
 {
-
+	struct ext4_xattr_item tmp, *ret;
+	tmp.name_index = name_index;
+	tmp.name       = name;
+	tmp.name_len   = name_len;
+	ret = RB_FIND(ext4_xattr_tree, &xattr_ref->root,
+			&tmp);
+	return ret;
 }
 
 static void
