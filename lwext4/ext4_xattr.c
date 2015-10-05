@@ -515,7 +515,7 @@ ext4_xattr_try_alloc_block(struct ext4_xattr_ref *xattr_ref)
 			goto Finish;
 
 		ret = ext4_block_get(xattr_ref->fs->bdev,
-				&xattr_ref->inode_ref->block,
+				&xattr_ref->block,
 				xattr_block);
 		if (ret != EOK) {
 			ext4_balloc_free_block(xattr_ref->inode_ref,
