@@ -237,8 +237,8 @@ static void *ext4_xattr_entry_data(struct ext4_xattr_ref *xattr_ref,
 			ret = NULL;
 
 	} else {
-		uint32_t block_size =
-				ext4_sb_get_block_size(&xattr_ref->fs->sb);
+		int32_t block_size =
+			ext4_sb_get_block_size(&xattr_ref->fs->sb);
 		ret = (void *)((char *)xattr_ref->block.data + 
 				to_le16(entry->e_value_offs));
 		if ((char *)ret + EXT4_XATTR_SIZE(to_le32(entry->e_value_size))
