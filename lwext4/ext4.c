@@ -739,17 +739,17 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 			private_ret = ext4_fs_get_xattr_ref(&f->mp->fs, &ref,
 							  &xattr_ref);
 			if (private_ret == EOK) {
-#define EXT4_XATTR_TEST_DATA_SIZE 1024
+#define EXT4_XATTR_TEST_DATA_SIZE 20
 #define EXT4_XATTR_TEST_NAME "bad_boy"
 				static char test_data[EXT4_XATTR_TEST_DATA_SIZE] = {'a'};
 				ext4_dmask_set(EXT4_DEBUG_ALL);
-				/*ext4_fs_set_xattr(&xattr_ref,*/
-						  /*EXT4_XATTR_INDEX_USER,*/
-						  /*EXT4_XATTR_TEST_NAME,*/
-						  /*strlen(EXT4_XATTR_TEST_NAME),*/
-						  /*test_data,*/
-						  /*EXT4_XATTR_TEST_DATA_SIZE,*/
-						  /*0);*/
+				ext4_fs_set_xattr(&xattr_ref,
+						  EXT4_XATTR_INDEX_USER,
+						  EXT4_XATTR_TEST_NAME,
+						  strlen(EXT4_XATTR_TEST_NAME),
+						  test_data,
+						  EXT4_XATTR_TEST_DATA_SIZE,
+						  0);
 				ext4_fs_put_xattr_ref(&xattr_ref);
 			}
 		}

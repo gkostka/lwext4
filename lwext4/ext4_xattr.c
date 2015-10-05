@@ -629,7 +629,8 @@ ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 				entry->e_name_len   = to_le32(item->name_len);
 				entry->e_name_index = item->name_index;
 				entry->e_value_offs =
-					(char *)ibody_data - (char *)ibody_header;
+					(char *)ibody_data -
+					(char *)EXT4_XATTR_IFIRST(ibody_header);
 				entry->e_value_block = 0;
 				entry->e_value_size = item->data_size;
 				memcpy(EXT4_XATTR_NAME(entry), item->name, item->name_len);
