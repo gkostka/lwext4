@@ -319,6 +319,24 @@ Finish:
 	return ret;
 }
 
+
+static size_t
+ext4_xattr_inode_space(struct ext4_xattr_ref *xattr_ref)
+{
+	uint16_t inode_size = ext4_get16(&xattr_ref->fs->sb,
+					 inode_size);
+	uint16_t size_rem = inode_size -
+			EXT4_GOOD_OLD_INODE_SIZE -
+			xattr_ref->inode_ref->inode->extra_isize;
+	return size_rem;
+}
+
+static size_t
+ext4_xattr_block_space(struct ext4_xattr_ref *xattr_ref)
+{
+	return ext4_sb_get_block_size(&xattr_ref->fs->sb);
+}
+
 static int ext4_xattr_fetch(struct ext4_xattr_ref *xattr_ref)
 {
 	int ret = EOK;
@@ -353,6 +371,95 @@ ext4_xattr_lookup_item(struct ext4_xattr_ref *xattr_ref,
 	return ret;
 }
 
+static struct ext4_xattr_item *
+ext4_xattr_insert_item(struct ext4_xattr_ref *xattr_ref,
+		       uint8_t name_index,
+		       char   *name,
+		       size_t  name_len,
+		       void   *data,
+		       size_t  data_size)
+{
+	struct ext4_xattr_item *item =
+		ext4_xattr_lookup_item(xattr_ref,
+				       name_index,
+				       name,
+				       name_len);
+	if (item)
+		return item;
+
+	item = ext4_xattr_item_alloc(name_index,
+				     name,
+				     name_len);
+	if (!item)
+		return NULL;
+
+	if (xattr_ref->ea_size + EXT4_XATTR_SIZE(item->data_size) +
+				EXT4_XATTR_LEN(item->name_len) >
+		ext4_xattr_inode_space(xattr_ref) +
+		ext4_xattr_block_space(xattr_ref)) {
+		ext4_xattr_item_free(item);
+		return NULL;
+	}
+	if (ext4_xattr_item_alloc_data(item,
+				       data,
+				       data_size) != EOK) {
+		ext4_xattr_item_free(item);
+		return NULL;
+	}
+	RB_INSERT(ext4_xattr_tree, &xattr_ref->root, item);
+	xattr_ref->ea_size += EXT4_XATTR_SIZE(item->data_size) +
+				EXT4_XATTR_LEN(item->name_len);
+	xattr_ref->dirty = true;
+	return item;
+}
+
+static int
+ext4_xattr_remove_item(struct ext4_xattr_ref *xattr_ref,
+		       uint8_t name_index,
+		       char   *name,
+		       size_t  name_len)
+{
+	int ret = ENOENT;
+	struct ext4_xattr_item *item = 
+		ext4_xattr_lookup_item(xattr_ref,
+				       name_index,
+				       name,
+				       name_len);
+	if (item) {
+		RB_REMOVE(ext4_xattr_tree, &xattr_ref->root, item);
+		ext4_xattr_item_free(item);
+		xattr_ref->ea_size -= EXT4_XATTR_SIZE(item->data_size) +
+					EXT4_XATTR_LEN(item->name_len);
+		xattr_ref->dirty = true;
+		ret = EOK;
+	}
+	return ret;
+}
+
+static int
+ext4_xattr_resize_item(struct ext4_xattr_ref *xattr_ref,
+		       struct ext4_xattr_item *item,
+		       size_t new_data_size)
+{
+	int ret = EOK;
+	if (xattr_ref->ea_size - EXT4_XATTR_SIZE(item->data_size) +
+				EXT4_XATTR_SIZE(new_data_size) >
+		ext4_xattr_inode_space(xattr_ref) +
+		ext4_xattr_block_space(xattr_ref)) {
+
+		return ENOSPC;
+	}
+	ret = ext4_xattr_item_resize_data(item,
+					  new_data_size);
+	if (ret != EOK) {
+		return ret;
+	}
+	xattr_ref->ea_size -= EXT4_XATTR_SIZE(item->data_size) +
+				EXT4_XATTR_SIZE(new_data_size);
+	xattr_ref->dirty = true;
+	return ret;
+}
+
 static void
 ext4_xattr_purge_items(struct ext4_xattr_ref *xattr_ref)
 {
@@ -364,48 +471,170 @@ ext4_xattr_purge_items(struct ext4_xattr_ref *xattr_ref)
 		RB_REMOVE(ext4_xattr_tree, &xattr_ref->root, item);
 		ext4_xattr_item_free(item);
 	}
-	xattr_ref->ea_size = 0;
+	xattr_ref->ea_size = sizeof(struct ext4_xattr_header) +
+				sizeof(struct ext4_xattr_ibody_header);
 }
 
-static size_t
-ext4_xattr_inode_space(struct ext4_xattr_ref *xattr_ref)
+
+static int
+ext4_xattr_try_alloc_block(struct ext4_xattr_ref *xattr_ref)
 {
-	uint16_t inode_size = ext4_get16(&xattr_ref->fs->sb,
-					 inode_size);
-	uint16_t size_rem = inode_size -
-			EXT4_GOOD_OLD_INODE_SIZE -
-			xattr_ref->inode_ref->inode->extra_isize;
-	return size_rem;
+	int ret = EOK;
+
+	uint64_t xattr_block;
+	xattr_block = ext4_inode_get_file_acl(xattr_ref->inode_ref->inode,
+					      &xattr_ref->fs->sb);
+	if (!xattr_block) {
+		ret = ext4_balloc_alloc_block(xattr_ref->inode_ref,
+				(uint32_t *)&xattr_block);
+		if (ret != EOK)
+			goto Finish;
+
+		ret = ext4_block_get(xattr_ref->fs->bdev,
+				&xattr_ref->inode_ref->block,
+				xattr_block);
+		if (ret != EOK) {
+			ext4_balloc_free_block(xattr_ref->inode_ref,
+					xattr_block);
+			goto Finish;
+		}
+
+		ext4_inode_set_file_acl(xattr_ref->inode_ref->inode,
+					&xattr_ref->fs->sb,
+					xattr_block);
+		xattr_ref->inode_ref->dirty = true;
+		xattr_ref->block_loaded = true;
+		xattr_ref->ea_size += sizeof(struct ext4_xattr_header);
 }
 
-static size_t
-ext4_xattr_block_space(struct ext4_xattr_ref *xattr_ref)
+Finish:
+	return ret;
+}
+
+static void
+ext4_xattr_try_free_block(struct ext4_xattr_ref *xattr_ref)
 {
-	return ext4_sb_get_block_size(&xattr_ref->fs->sb);
+	uint64_t xattr_block;
+	xattr_block =
+		ext4_inode_get_file_acl(xattr_ref->inode_ref->inode,
+				&xattr_ref->fs->sb);
+	ext4_inode_set_file_acl(xattr_ref->inode_ref->inode,
+			&xattr_ref->fs->sb,
+			0);
+	ext4_block_set(xattr_ref->fs->bdev,
+			&xattr_ref->block);
+	ext4_balloc_free_block(xattr_ref->inode_ref,
+			xattr_block);
+	xattr_ref->inode_ref->dirty = true;
+	xattr_ref->block_loaded = false;
+	xattr_ref->ea_size -= sizeof(struct ext4_xattr_header);
+
 }
 
 static int
 ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 {
 	int ret = EOK;
+	void *ibody_data, *block_data;
 	struct ext4_xattr_item *item, *save_item;
 	size_t inode_size_rem, block_size_rem;
+	struct ext4_xattr_header *header = NULL;
+	struct ext4_xattr_ibody_header *ibody_header = NULL;
+	struct ext4_xattr_entry *entry = NULL;
+	struct ext4_xattr_entry *block_entry = NULL;
+
 	inode_size_rem = ext4_xattr_inode_space(xattr_ref);
 	block_size_rem = ext4_xattr_block_space(xattr_ref);
+	if (inode_size_rem) {
+		ibody_header = EXT4_XATTR_IHDR(xattr_ref->inode_ref->inode);
+		entry = EXT4_XATTR_IFIRST(ibody_header);
+	}
 
 	if (xattr_ref->dirty) {
+		/* If there are enough spaces in the ibody EA table.*/
+		if (inode_size_rem > sizeof(struct ext4_xattr_ibody_header)) {
+			memset(ibody_header, 0, inode_size_rem);
+			ibody_header->h_magic = EXT4_XATTR_MAGIC;
+			xattr_ref->inode_ref->dirty = true;
+			ibody_data = (char *)ibody_header + inode_size_rem;
+		}
+		/* If we need an extra block to hold the EA entries*/
+		if (xattr_ref->ea_size > inode_size_rem) {
+			if (!xattr_ref->block_loaded) {
+				ret = ext4_xattr_try_alloc_block(xattr_ref);
+				if (ret != EOK)
+					goto Finish;
+
+			}
+			header = EXT4_XATTR_BHDR(&xattr_ref->block);
+			block_entry = EXT4_XATTR_BFIRST(&xattr_ref->block);
+			memset(header, 0, sizeof(struct ext4_xattr_header));
+			header->h_magic = EXT4_XATTR_MAGIC;
+			header->h_refcount = to_le32(1);
+			header->h_blocks = to_le32(1);
+			block_data = (char *)header + block_size_rem;
+			xattr_ref->block.dirty = true;
+		} else {
+			/* We don't need an extra block.*/
+			if (xattr_ref->block_loaded) {
+				header = EXT4_XATTR_BHDR(&xattr_ref->block);
+				header->h_refcount =
+					to_le32(to_le32(header->h_refcount) - 1);
+				if (!header->h_refcount) {
+					ext4_xattr_try_free_block(xattr_ref);
+					header = NULL;
+				} else {
+					xattr_ref->block.dirty = true;
+					block_entry = EXT4_XATTR_BFIRST(&xattr_ref->block);
+					block_data = (char *)header + block_size_rem;
+				}
+			}
+		}
 		RB_FOREACH_SAFE(item,
 				ext4_xattr_tree,
 				&xattr_ref->root,
 				save_item) {
-			/*This should not fail!*/
-			ext4_assert(inode_size_rem + block_size_rem);
-			if (inode_size_rem) {
-				
+			if (EXT4_XATTR_SIZE(item->data_size) +
+				EXT4_XATTR_LEN(item->name_len) <=
+			    inode_size_rem) {
+				ibody_data = (char *)ibody_data - EXT4_XATTR_SIZE(item->data_size);
+				entry->e_name_len   = to_le32(item->name_len);
+				entry->e_name_index = item->name_index;
+				entry->e_value_offs =
+					(char *)ibody_data - (char *)ibody_header;
+				entry->e_value_block = 0;
+				entry->e_value_size = item->data_size;
+				memcpy(EXT4_XATTR_NAME(entry), item->name, item->name_len);
+				memcpy(ibody_data, item->data, item->data_size);
+				entry = EXT4_XATTR_NEXT(entry);
+				inode_size_rem -=
+					EXT4_XATTR_SIZE(item->data_size) +
+					EXT4_XATTR_LEN(item->name_len);
+				continue;
 			}
+			if (EXT4_XATTR_SIZE(item->data_size) +
+				EXT4_XATTR_LEN(item->name_len) > block_size_rem) {
+				ret = ENOSPC;
+				goto Finish;
+			}
+			block_data = (char *)block_data - EXT4_XATTR_SIZE(item->data_size);
+			block_entry->e_name_len   = to_le32(item->name_len);
+			block_entry->e_name_index = item->name_index;
+			block_entry->e_value_offs =
+				(char *)block_data - (char *)header;
+			block_entry->e_value_block = 0;
+			block_entry->e_value_size = item->data_size;
+			memcpy(EXT4_XATTR_NAME(block_entry), item->name, item->name_len);
+			memcpy(block_data, item->data, item->data_size);
+			block_entry = EXT4_XATTR_NEXT(block_entry);
+			block_size_rem -=
+				EXT4_XATTR_SIZE(item->data_size) +
+				EXT4_XATTR_LEN(item->name_len);
 		}
 		xattr_ref->dirty = false;
 	}
+
+Finish:
 	return ret;
 }
 
@@ -418,18 +647,23 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs,
 	xattr_block = ext4_inode_get_file_acl(inode_ref->inode,
 					      &fs->sb);
 	RB_INIT(&ref->root);
+	ref->ea_size = 0;
 	if (xattr_block) {
 		rc = ext4_block_get(fs->bdev,
 				    &inode_ref->block, xattr_block);
 		if (rc != EOK)
 			return EIO;
 	
+		ref->ea_size += sizeof(struct ext4_xattr_header);
 		ref->block_loaded = true;
 	} else
 		ref->block_loaded = false;
 
 	ref->inode_ref = inode_ref;
 	ref->fs = fs;
+
+	if (ext4_xattr_inode_space(ref))
+		ref->ea_size += sizeof(struct ext4_xattr_ibody_header);
 
 	rc = ext4_xattr_fetch(ref);
 	if (rc != EOK) {
