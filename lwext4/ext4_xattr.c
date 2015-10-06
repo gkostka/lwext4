@@ -488,6 +488,8 @@ static void
 ext4_xattr_purge_items(struct ext4_xattr_ref *xattr_ref)
 {
 	struct ext4_xattr_item *item, *save_item;
+	uint64_t xattr_block = ext4_inode_get_file_acl(xattr_ref->inode_ref->inode,
+					      &xattr_ref->fs->sb);
 	RB_FOREACH_SAFE(item,
 			ext4_xattr_tree,
 			&xattr_ref->root,
@@ -495,8 +497,13 @@ ext4_xattr_purge_items(struct ext4_xattr_ref *xattr_ref)
 		RB_REMOVE(ext4_xattr_tree, &xattr_ref->root, item);
 		ext4_xattr_item_free(item);
 	}
-	xattr_ref->ea_size = sizeof(struct ext4_xattr_header) +
-				sizeof(struct ext4_xattr_ibody_header);
+	xattr_ref->ea_size = 0;
+	if (xattr_block)
+		xattr_ref->ea_size += sizeof(struct ext4_xattr_header);
+
+	if (ext4_xattr_inode_space(xattr_ref) >
+	    sizeof(struct ext4_xattr_ibody_header))
+		xattr_ref->ea_size += sizeof(struct ext4_xattr_ibody_header);
 }
 
 
@@ -555,6 +562,18 @@ ext4_xattr_try_free_block(struct ext4_xattr_ref *xattr_ref)
 
 }
 
+static void
+ext4_xattr_set_block_header(struct ext4_xattr_ref *xattr_ref)
+{
+	struct ext4_xattr_header *block_header = NULL;
+	block_header = EXT4_XATTR_BHDR(&xattr_ref->block);
+
+	memset(block_header, 0, sizeof(struct ext4_xattr_header));
+	block_header->h_magic = EXT4_XATTR_MAGIC;
+	block_header->h_refcount = to_le32(1);
+	block_header->h_blocks = to_le32(1);
+}
+
 static int
 ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 {
@@ -563,8 +582,8 @@ ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 	void *ibody_data, *block_data;
 	struct ext4_xattr_item *item, *save_item;
 	size_t inode_size_rem, block_size_rem;
-	struct ext4_xattr_header *header = NULL;
 	struct ext4_xattr_ibody_header *ibody_header = NULL;
+	struct ext4_xattr_header *block_header = NULL;
 	struct ext4_xattr_entry *entry = NULL;
 	struct ext4_xattr_entry *block_entry = NULL;
 
@@ -580,9 +599,10 @@ ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 		if (inode_size_rem > sizeof(struct ext4_xattr_ibody_header)) {
 			memset(ibody_header, 0, inode_size_rem);
 			ibody_header->h_magic = EXT4_XATTR_MAGIC;
-			xattr_ref->inode_ref->dirty = true;
 			ibody_data = (char *)ibody_header + inode_size_rem;
 			inode_size_rem -= sizeof(struct ext4_xattr_ibody_header);
+
+			xattr_ref->inode_ref->dirty = true;
 		}
 		/* If we need an extra block to hold the EA entries*/
 		if (xattr_ref->ea_size > inode_size_rem) {
@@ -592,33 +612,32 @@ ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 					goto Finish;
 
 			}
-			header = EXT4_XATTR_BHDR(&xattr_ref->block);
+			block_header = EXT4_XATTR_BHDR(&xattr_ref->block);
 			block_entry = EXT4_XATTR_BFIRST(&xattr_ref->block);
-			memset(header, 0, sizeof(struct ext4_xattr_header));
-			header->h_magic = EXT4_XATTR_MAGIC;
-			header->h_refcount = to_le32(1);
-			header->h_blocks = to_le32(1);
-			block_data = (char *)header + block_size_rem;
+			ext4_xattr_set_block_header(xattr_ref);
+			block_data = (char *)block_header + block_size_rem;
 			block_size_rem -= sizeof(struct ext4_xattr_header);
+
 			xattr_ref->block.dirty = true;
 		} else {
 			/* We don't need an extra block.*/
 			if (xattr_ref->block_loaded) {
-				header = EXT4_XATTR_BHDR(&xattr_ref->block);
-				header->h_refcount =
-					to_le32(to_le32(header->h_refcount) - 1);
-				if (!header->h_refcount) {
+				block_header = EXT4_XATTR_BHDR(&xattr_ref->block);
+				block_header->h_refcount =
+					to_le32(to_le32(block_header->h_refcount) - 1);
+				if (!block_header->h_refcount) {
 					ext4_xattr_try_free_block(xattr_ref);
-					header = NULL;
+					block_header = NULL;
 				} else {
-					xattr_ref->block.dirty = true;
 					block_entry = EXT4_XATTR_BFIRST(&xattr_ref->block);
-					block_data = (char *)header + block_size_rem;
+					block_data = (char *)block_header + block_size_rem;
 					block_size_rem -= sizeof(struct ext4_xattr_header);
 					ext4_inode_set_file_acl(xattr_ref->inode_ref->inode,
 							&xattr_ref->fs->sb,
 							0);
+
 					xattr_ref->inode_ref->dirty = true;
+					xattr_ref->block.dirty = true;
 				}
 			}
 		}
@@ -629,7 +648,8 @@ ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 			if (EXT4_XATTR_SIZE(item->data_size) +
 				EXT4_XATTR_LEN(item->name_len) <=
 			    inode_size_rem) {
-				ibody_data = (char *)ibody_data - EXT4_XATTR_SIZE(item->data_size);
+				ibody_data = (char *)ibody_data -
+					EXT4_XATTR_SIZE(item->data_size);
 				entry->e_name_len   = to_le32(item->name_len);
 				entry->e_name_index = item->name_index;
 				entry->e_value_offs =
@@ -637,12 +657,15 @@ ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 					(char *)EXT4_XATTR_IFIRST(ibody_header);
 				entry->e_value_block = 0;
 				entry->e_value_size = item->data_size;
-				memcpy(EXT4_XATTR_NAME(entry), item->name, item->name_len);
+				memcpy(EXT4_XATTR_NAME(entry),
+					item->name, item->name_len);
 				memcpy(ibody_data, item->data, item->data_size);
 				entry = EXT4_XATTR_NEXT(entry);
 				inode_size_rem -=
 					EXT4_XATTR_SIZE(item->data_size) +
 					EXT4_XATTR_LEN(item->name_len);
+
+				xattr_ref->inode_ref->dirty = true;
 				continue;
 			}
 			if (EXT4_XATTR_SIZE(item->data_size) +
@@ -650,25 +673,30 @@ ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 				ret = ENOSPC;
 				goto Finish;
 			}
-			block_data = (char *)block_data - EXT4_XATTR_SIZE(item->data_size);
+			block_data = (char *)block_data -
+				EXT4_XATTR_SIZE(item->data_size);
 			block_entry->e_name_len   = to_le32(item->name_len);
 			block_entry->e_name_index = item->name_index;
 			block_entry->e_value_offs =
-				(char *)block_data - (char *)header;
+				(char *)block_data - (char *)block_header;
 			block_entry->e_value_block = 0;
 			block_entry->e_value_size = item->data_size;
-			memcpy(EXT4_XATTR_NAME(block_entry), item->name, item->name_len);
-			memcpy(block_data, item->data, item->data_size);
+			memcpy(EXT4_XATTR_NAME(block_entry),
+				item->name, item->name_len);
+			memcpy(block_data,
+				item->data, item->data_size);
 			block_entry = EXT4_XATTR_NEXT(block_entry);
 			block_size_rem -=
 				EXT4_XATTR_SIZE(item->data_size) +
 				EXT4_XATTR_LEN(item->name_len);
+
 			block_modified = true;
 		}
 		xattr_ref->dirty = false;
 		if (block_modified) {
-			ext4_xattr_rehash(header,
+			ext4_xattr_rehash(block_header,
 					  EXT4_XATTR_BFIRST(&xattr_ref->block));
+			xattr_ref->block.dirty = true;
 		}
 	}
 
