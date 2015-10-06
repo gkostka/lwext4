@@ -505,7 +505,7 @@ ext4_xattr_try_alloc_block(struct ext4_xattr_ref *xattr_ref)
 {
 	int ret = EOK;
 
-	uint64_t xattr_block;
+	uint64_t xattr_block = 0;
 	xattr_block = ext4_inode_get_file_acl(xattr_ref->inode_ref->inode,
 					      &xattr_ref->fs->sb);
 	if (!xattr_block) {
@@ -529,7 +529,7 @@ ext4_xattr_try_alloc_block(struct ext4_xattr_ref *xattr_ref)
 		xattr_ref->inode_ref->dirty = true;
 		xattr_ref->block_loaded = true;
 		xattr_ref->ea_size += sizeof(struct ext4_xattr_header);
-}
+	}
 
 Finish:
 	return ret;
@@ -615,6 +615,10 @@ ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 					block_entry = EXT4_XATTR_BFIRST(&xattr_ref->block);
 					block_data = (char *)header + block_size_rem;
 					block_size_rem -= sizeof(struct ext4_xattr_header);
+					ext4_inode_set_file_acl(xattr_ref->inode_ref->inode,
+							&xattr_ref->fs->sb,
+							0);
+					xattr_ref->inode_ref->dirty = true;
 				}
 			}
 		}
@@ -777,7 +781,7 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs,
 	ref->ea_size = 0;
 	if (xattr_block) {
 		rc = ext4_block_get(fs->bdev,
-				    &inode_ref->block, xattr_block);
+				    &ref->block, xattr_block);
 		if (rc != EOK)
 			return EIO;
 	
@@ -807,11 +811,11 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs,
 
 void ext4_fs_put_xattr_ref(struct ext4_xattr_ref *ref)
 {
+	ext4_xattr_write_to_disk(ref);
 	if (ref->block_loaded) {
 		ext4_block_set(ref->fs->bdev, &ref->block);
 		ref->block_loaded = false;
 	}
-	ext4_xattr_write_to_disk(ref);
 	ext4_xattr_purge_items(ref);
 	ref->inode_ref = NULL;
 	ref->fs = NULL;
