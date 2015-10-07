@@ -737,9 +737,9 @@ ext4_fs_xattr_iterate(struct ext4_xattr_ref *ref,
 		      int (iter)(struct ext4_xattr_ref *ref,
 				 struct ext4_xattr_item *item))
 {
-	struct ext4_xattr_item *item = ref->iter_from;
-	if (!item)
-		item = RB_MIN(ext4_xattr_tree, &ref->root);
+	struct ext4_xattr_item *item;
+	if (!ref->iter_from)
+		ref->iter_from = RB_MIN(ext4_xattr_tree, &ref->root);
 
 	RB_FOREACH_FROM(item,
 			ext4_xattr_tree,
