@@ -450,6 +450,11 @@ ext4_xattr_remove_item(struct ext4_xattr_ref *xattr_ref,
 				       name,
 				       name_len);
 	if (item) {
+		if (item == xattr_ref->iter_from)
+			xattr_ref->iter_from = RB_NEXT(ext4_xattr_tree,
+						       &xattr_ref->root,
+						       item);
+
 		RB_REMOVE(ext4_xattr_tree, &xattr_ref->root, item);
 		ext4_xattr_item_free(item);
 		xattr_ref->ea_size -= EXT4_XATTR_SIZE(item->data_size) +
@@ -727,6 +732,36 @@ Finish:
 	return ret;
 }
 
+void
+ext4_fs_xattr_iterate(struct ext4_xattr_ref *ref,
+		      int (iter)(struct ext4_xattr_ref *ref,
+				 struct ext4_xattr_item *item))
+{
+	struct ext4_xattr_item *item = ref->iter_from;
+	if (!item)
+		item = RB_MIN(ext4_xattr_tree, &ref->root);
+
+	RB_FOREACH_FROM(item,
+			ext4_xattr_tree,
+			ref->iter_from) {
+		int ret = EXT4_XATTR_ITERATE_CONT;
+		if (iter)
+			iter(ref, item);
+
+		if (ret != EXT4_XATTR_ITERATE_CONT) {
+			if (ret == EXT4_XATTR_ITERATE_STOP)
+				ref->iter_from = NULL;
+
+			break;
+		}
+	}
+}
+
+static void
+ext4_fs_xattr_iterate_reset(struct ext4_xattr_ref *ref)
+{
+	ref->iter_from = NULL;
+}
 
 int ext4_fs_set_xattr(struct ext4_xattr_ref *ref,
 		      uint8_t name_index,
@@ -830,6 +865,7 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs,
 					      &fs->sb);
 	RB_INIT(&ref->root);
 	ref->ea_size = 0;
+	ref->iter_from = NULL;
 	if (xattr_block) {
 		rc = ext4_block_get(fs->bdev,
 				    &ref->block, xattr_block);

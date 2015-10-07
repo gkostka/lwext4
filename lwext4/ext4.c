@@ -572,6 +572,19 @@ static bool ext4_parse_flags(const char *flags, uint32_t *file_flags)
 	return false;
 }
 
+static int ext4_iterate_ea(struct ext4_xattr_ref *ref,
+			   struct ext4_xattr_item *item)
+{
+	int i;
+	ext4_dprintf(EXT4_DEBUG_INODE, "item->name: ");
+	for (i = 0;i < item->name_len;i++)
+		ext4_dprintf(EXT4_DEBUG_INODE, "%c", item->name[i]);
+
+	ext4_dprintf(EXT4_DEBUG_INODE, "\n");
+
+	return EXT4_XATTR_ITERATE_CONT;
+}
+
 /*
  * NOTICE: if filetype is equal to EXT4_DIRENTRY_UNKNOWN,
  * any filetype of the target dir entry will be accepted.
@@ -750,6 +763,8 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 						  test_data,
 						  EXT4_XATTR_TEST_DATA_SIZE,
 						  0);
+				ext4_fs_xattr_iterate(&xattr_ref,
+						      ext4_iterate_ea);
 				ext4_fs_put_xattr_ref(&xattr_ref);
 			}
 		}

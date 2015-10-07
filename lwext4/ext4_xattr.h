@@ -31,4 +31,12 @@ int ext4_fs_get_xattr(struct ext4_xattr_ref *ref,
 			  size_t   buf_size,
 			  size_t  *size_got);
 
+void
+ext4_fs_xattr_iterate(struct ext4_xattr_ref *ref,
+		      int (iter)(struct ext4_xattr_ref *ref,
+				 struct ext4_xattr_item *item));
+
+static void
+ext4_fs_xattr_iterate_reset(struct ext4_xattr_ref *ref);
+
 #endif

@@ -689,9 +689,15 @@ struct ext4_xattr_ref {
 	size_t ea_size;
 	struct ext4_fs *fs;
 
+	struct ext4_xattr_item *iter_from;
+
 	RB_HEAD(ext4_xattr_tree,
 		ext4_xattr_item) root;
 };
+
+#define EXT4_XATTR_ITERATE_CONT 0
+#define EXT4_XATTR_ITERATE_STOP 1
+#define EXT4_XATTR_ITERATE_PAUSE 2
 
 #define EXT4_GOOD_OLD_INODE_SIZE	128
 
