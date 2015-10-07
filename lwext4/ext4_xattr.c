@@ -559,7 +559,6 @@ ext4_xattr_try_free_block(struct ext4_xattr_ref *xattr_ref)
 	xattr_ref->inode_ref->dirty = true;
 	xattr_ref->block_loaded = false;
 	xattr_ref->ea_size -= sizeof(struct ext4_xattr_header);
-
 }
 
 static void
@@ -572,6 +571,35 @@ ext4_xattr_set_block_header(struct ext4_xattr_ref *xattr_ref)
 	block_header->h_magic = EXT4_XATTR_MAGIC;
 	block_header->h_refcount = to_le32(1);
 	block_header->h_blocks = to_le32(1);
+}
+
+static void
+ext4_xattr_set_inode_entry(struct ext4_xattr_item *item,
+			   struct ext4_xattr_ibody_header *ibody_header,
+			   struct ext4_xattr_entry *entry,
+			   void *ibody_data_ptr)
+{
+	entry->e_name_len   = to_le32(item->name_len);
+	entry->e_name_index = item->name_index;
+	entry->e_value_offs =
+		(char *)ibody_data_ptr -
+		(char *)EXT4_XATTR_IFIRST(ibody_header);
+	entry->e_value_block = 0;
+	entry->e_value_size = item->data_size;
+}
+
+static void
+ext4_xattr_set_block_entry(struct ext4_xattr_item *item,
+			   struct ext4_xattr_header *block_header,
+			   struct ext4_xattr_entry *block_entry,
+			   void *block_data_ptr)
+{
+	block_entry->e_name_len   = to_le32(item->name_len);
+	block_entry->e_name_index = item->name_index;
+	block_entry->e_value_offs =
+		(char *)block_data_ptr - (char *)block_header;
+	block_entry->e_value_block = 0;
+	block_entry->e_value_size = item->data_size;
 }
 
 static int
@@ -650,13 +678,10 @@ ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 			    inode_size_rem) {
 				ibody_data = (char *)ibody_data -
 					EXT4_XATTR_SIZE(item->data_size);
-				entry->e_name_len   = to_le32(item->name_len);
-				entry->e_name_index = item->name_index;
-				entry->e_value_offs =
-					(char *)ibody_data -
-					(char *)EXT4_XATTR_IFIRST(ibody_header);
-				entry->e_value_block = 0;
-				entry->e_value_size = item->data_size;
+				ext4_xattr_set_inode_entry(item,
+							   ibody_header,
+							   entry,
+							   ibody_data);
 				memcpy(EXT4_XATTR_NAME(entry),
 					item->name, item->name_len);
 				memcpy(ibody_data, item->data, item->data_size);
@@ -675,12 +700,10 @@ ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 			}
 			block_data = (char *)block_data -
 				EXT4_XATTR_SIZE(item->data_size);
-			block_entry->e_name_len   = to_le32(item->name_len);
-			block_entry->e_name_index = item->name_index;
-			block_entry->e_value_offs =
-				(char *)block_data - (char *)block_header;
-			block_entry->e_value_block = 0;
-			block_entry->e_value_size = item->data_size;
+			ext4_xattr_set_block_entry(item,
+						   block_header,
+						   block_entry,
+						   block_data);
 			memcpy(EXT4_XATTR_NAME(block_entry),
 				item->name, item->name_len);
 			memcpy(block_data,
