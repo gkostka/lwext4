@@ -2,12 +2,6 @@
  * Copyright (c) 2015 Grzegorz Kostka (kostka.grzegorz@gmail.com)
  * Copyright (c) 2015 Kaho Ng (ngkaho1234@gmail.com)
  *
- *
- * HelenOS:
- * Copyright (c) 2012 Martin Sucha
- * Copyright (c) 2012 Frantisek Princ
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
