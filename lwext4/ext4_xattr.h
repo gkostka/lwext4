@@ -36,7 +36,11 @@ ext4_fs_xattr_iterate(struct ext4_xattr_ref *ref,
 		      int (iter)(struct ext4_xattr_ref *ref,
 				 struct ext4_xattr_item *item));
 
-static void
-ext4_fs_xattr_iterate_reset(struct ext4_xattr_ref *ref);
+void ext4_fs_xattr_iterate_reset(struct ext4_xattr_ref *ref);
+
+char *ext4_extract_xattr_name(char *full_name,
+			      size_t full_name_len,
+			      uint8_t *name_index,
+			      size_t *name_len);
 
 #endif

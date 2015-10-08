@@ -745,29 +745,6 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 		if (f->flags & O_APPEND)
 			f->fpos = f->fsize;
 
-		/* FIXME: Debugging code on EA. */
-		{
-			int private_ret;
-			struct ext4_xattr_ref xattr_ref;
-			private_ret = ext4_fs_get_xattr_ref(&f->mp->fs, &ref,
-							  &xattr_ref);
-			if (private_ret == EOK) {
-#define EXT4_XATTR_TEST_DATA_SIZE 20
-#define EXT4_XATTR_TEST_NAME "bad_boy"
-				static char test_data[EXT4_XATTR_TEST_DATA_SIZE] = {'a'};
-				ext4_dmask_set(EXT4_DEBUG_ALL);
-				ext4_fs_set_xattr(&xattr_ref,
-						  EXT4_XATTR_INDEX_USER,
-						  EXT4_XATTR_TEST_NAME,
-						  strlen(EXT4_XATTR_TEST_NAME),
-						  test_data,
-						  EXT4_XATTR_TEST_DATA_SIZE,
-						  0);
-				ext4_fs_xattr_iterate(&xattr_ref,
-						      ext4_iterate_ea);
-				ext4_fs_put_xattr_ref(&xattr_ref);
-			}
-		}
 	}
 
 	r = ext4_fs_put_inode_ref(&ref);
@@ -1959,6 +1936,16 @@ Finish:
 	ext4_block_cache_write_back(mp->fs.bdev, 0);
 	EXT4_MP_UNLOCK(mp);
 	return r;
+}
+
+int ext4_fsetxattr(ext4_file *file,
+		   char *name,
+		   size_t name_len,
+		   void *data,
+		   size_t data_size,
+		   bool replace)
+{
+
 }
 
 /*********************************DIRECTORY OPERATION************************/

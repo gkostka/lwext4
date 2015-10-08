@@ -757,8 +757,7 @@ ext4_fs_xattr_iterate(struct ext4_xattr_ref *ref,
 	}
 }
 
-static void
-ext4_fs_xattr_iterate_reset(struct ext4_xattr_ref *ref)
+void ext4_fs_xattr_iterate_reset(struct ext4_xattr_ref *ref)
 {
 	ref->iter_from = NULL;
 }
@@ -906,6 +905,46 @@ void ext4_fs_put_xattr_ref(struct ext4_xattr_ref *ref)
 	ext4_xattr_purge_items(ref);
 	ref->inode_ref = NULL;
 	ref->fs = NULL;
+}
+
+struct xattr_prefix {
+	char    *prefix;
+	uint8_t  name_index;
+} prefix_tbl [] = {
+	{"user.", EXT4_XATTR_INDEX_USER},
+	{"system.", EXT4_XATTR_INDEX_SYSTEM},
+	{"system.posix_acl_access", EXT4_XATTR_INDEX_POSIX_ACL_ACCESS},
+	{"system.posix_acl_default", EXT4_XATTR_INDEX_POSIX_ACL_DEFAULT},
+	{NULL, 0},
+};
+
+char *ext4_extract_xattr_name(char *full_name,
+			      size_t full_name_len,
+			      uint8_t *name_index,
+			      size_t *name_len)
+{
+	int i;
+	ext4_assert(name_index);
+	if (!full_name_len)
+		return NULL;
+
+	for (i = 0;prefix_tbl[i].prefix;i++) {
+		int prefix_len = strlen(prefix_tbl[i].prefix);
+		if (full_name_len >= prefix_len &&
+		    !memcmp(full_name,
+			    prefix_tbl[i].prefix, prefix_len)) {
+			*name_index = prefix_tbl[i].name_index;
+			if (name_len)
+				*name_len = full_name_len -
+					prefix_len;
+
+			return full_name + prefix_len;
+		}
+	}
+	if (name_len)
+		*name_len = 0;
+
+	return NULL;
 }
 
 /**
