@@ -564,103 +564,99 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 		entry = EXT4_XATTR_IFIRST(ibody_header);
 	}
 
-	if (xattr_ref->dirty) {
-		/* If there are enough spaces in the ibody EA table.*/
-		if (inode_size_rem > sizeof(struct ext4_xattr_ibody_header)) {
-			memset(ibody_header, 0, inode_size_rem);
-			ibody_header->h_magic = EXT4_XATTR_MAGIC;
-			ibody_data = (char *)ibody_header + inode_size_rem;
-			inode_size_rem -=
-			    sizeof(struct ext4_xattr_ibody_header);
+	if (!xattr_ref->dirty)
+		goto Finish;
+	/* If there are enough spaces in the ibody EA table.*/
+	if (inode_size_rem > sizeof(struct ext4_xattr_ibody_header)) {
+		memset(ibody_header, 0, inode_size_rem);
+		ibody_header->h_magic = EXT4_XATTR_MAGIC;
+		ibody_data = (char *)ibody_header + inode_size_rem;
+		inode_size_rem -= sizeof(struct ext4_xattr_ibody_header);
 
-			xattr_ref->inode_ref->dirty = true;
+		xattr_ref->inode_ref->dirty = true;
+	}
+	/* If we need an extra block to hold the EA entries*/
+	if (xattr_ref->ea_size > inode_size_rem) {
+		if (!xattr_ref->block_loaded) {
+			ret = ext4_xattr_try_alloc_block(xattr_ref);
+			if (ret != EOK)
+				goto Finish;
 		}
-		/* If we need an extra block to hold the EA entries*/
-		if (xattr_ref->ea_size > inode_size_rem) {
-			if (!xattr_ref->block_loaded) {
-				ret = ext4_xattr_try_alloc_block(xattr_ref);
-				if (ret != EOK)
-					goto Finish;
-			}
+		block_header = EXT4_XATTR_BHDR(&xattr_ref->block);
+		block_entry = EXT4_XATTR_BFIRST(&xattr_ref->block);
+		ext4_xattr_set_block_header(xattr_ref);
+		block_data = (char *)block_header + block_size_rem;
+		block_size_rem -= sizeof(struct ext4_xattr_header);
+
+		xattr_ref->block.dirty = true;
+	} else {
+		/* We don't need an extra block.*/
+		if (xattr_ref->block_loaded) {
 			block_header = EXT4_XATTR_BHDR(&xattr_ref->block);
-			block_entry = EXT4_XATTR_BFIRST(&xattr_ref->block);
-			ext4_xattr_set_block_header(xattr_ref);
-			block_data = (char *)block_header + block_size_rem;
-			block_size_rem -= sizeof(struct ext4_xattr_header);
-
-			xattr_ref->block.dirty = true;
-		} else {
-			/* We don't need an extra block.*/
-			if (xattr_ref->block_loaded) {
-				block_header =
-				    EXT4_XATTR_BHDR(&xattr_ref->block);
-				block_header->h_refcount = to_le32(
-				    to_le32(block_header->h_refcount) - 1);
-				if (!block_header->h_refcount) {
-					ext4_xattr_try_free_block(xattr_ref);
-					block_header = NULL;
-				} else {
-					block_entry = EXT4_XATTR_BFIRST(
-					    &xattr_ref->block);
-					block_data = (char *)block_header +
-						     block_size_rem;
-					block_size_rem -=
-					    sizeof(struct ext4_xattr_header);
-					ext4_inode_set_file_acl(
-					    xattr_ref->inode_ref->inode,
-					    &xattr_ref->fs->sb, 0);
-
-					xattr_ref->inode_ref->dirty = true;
-					xattr_ref->block.dirty = true;
-				}
-			}
-		}
-		RB_FOREACH_SAFE(item, ext4_xattr_tree, &xattr_ref->root,
-				save_item)
-		{
-			if (EXT4_XATTR_SIZE(item->data_size) +
-				EXT4_XATTR_LEN(item->name_len) <=
-			    inode_size_rem) {
-				ibody_data = (char *)ibody_data -
-					     EXT4_XATTR_SIZE(item->data_size);
-				ext4_xattr_set_inode_entry(item, ibody_header,
-							   entry, ibody_data);
-				memcpy(EXT4_XATTR_NAME(entry), item->name,
-				       item->name_len);
-				memcpy(ibody_data, item->data, item->data_size);
-				entry = EXT4_XATTR_NEXT(entry);
-				inode_size_rem -=
-				    EXT4_XATTR_SIZE(item->data_size) +
-				    EXT4_XATTR_LEN(item->name_len);
+			block_header->h_refcount =
+			    to_le32(to_le32(block_header->h_refcount) - 1);
+			if (!block_header->h_refcount) {
+				ext4_xattr_try_free_block(xattr_ref);
+				block_header = NULL;
+			} else {
+				block_entry =
+				    EXT4_XATTR_BFIRST(&xattr_ref->block);
+				block_data =
+				    (char *)block_header + block_size_rem;
+				block_size_rem -=
+				    sizeof(struct ext4_xattr_header);
+				ext4_inode_set_file_acl(
+				    xattr_ref->inode_ref->inode,
+				    &xattr_ref->fs->sb, 0);
 
 				xattr_ref->inode_ref->dirty = true;
-				continue;
+				xattr_ref->block.dirty = true;
 			}
-			if (EXT4_XATTR_SIZE(item->data_size) +
-				EXT4_XATTR_LEN(item->name_len) >
-			    block_size_rem) {
-				ret = ENOSPC;
-				goto Finish;
-			}
-			block_data = (char *)block_data -
+		}
+	}
+	RB_FOREACH_SAFE(item, ext4_xattr_tree, &xattr_ref->root, save_item)
+	{
+		if (EXT4_XATTR_SIZE(item->data_size) +
+			EXT4_XATTR_LEN(item->name_len) <=
+		    inode_size_rem) {
+			ibody_data = (char *)ibody_data -
 				     EXT4_XATTR_SIZE(item->data_size);
-			ext4_xattr_set_block_entry(item, block_header,
-						   block_entry, block_data);
-			memcpy(EXT4_XATTR_NAME(block_entry), item->name,
+			ext4_xattr_set_inode_entry(item, ibody_header, entry,
+						   ibody_data);
+			memcpy(EXT4_XATTR_NAME(entry), item->name,
 			       item->name_len);
-			memcpy(block_data, item->data, item->data_size);
-			block_entry = EXT4_XATTR_NEXT(block_entry);
-			block_size_rem -= EXT4_XATTR_SIZE(item->data_size) +
+			memcpy(ibody_data, item->data, item->data_size);
+			entry = EXT4_XATTR_NEXT(entry);
+			inode_size_rem -= EXT4_XATTR_SIZE(item->data_size) +
 					  EXT4_XATTR_LEN(item->name_len);
 
-			block_modified = true;
+			xattr_ref->inode_ref->dirty = true;
+			continue;
 		}
-		xattr_ref->dirty = false;
-		if (block_modified) {
-			ext4_xattr_rehash(block_header,
-					  EXT4_XATTR_BFIRST(&xattr_ref->block));
-			xattr_ref->block.dirty = true;
+		if (EXT4_XATTR_SIZE(item->data_size) +
+			EXT4_XATTR_LEN(item->name_len) >
+		    block_size_rem) {
+			ret = ENOSPC;
+			goto Finish;
 		}
+		block_data =
+		    (char *)block_data - EXT4_XATTR_SIZE(item->data_size);
+		ext4_xattr_set_block_entry(item, block_header, block_entry,
+					   block_data);
+		memcpy(EXT4_XATTR_NAME(block_entry), item->name,
+		       item->name_len);
+		memcpy(block_data, item->data, item->data_size);
+		block_entry = EXT4_XATTR_NEXT(block_entry);
+		block_size_rem -= EXT4_XATTR_SIZE(item->data_size) +
+				  EXT4_XATTR_LEN(item->name_len);
+
+		block_modified = true;
+	}
+	xattr_ref->dirty = false;
+	if (block_modified) {
+		ext4_xattr_rehash(block_header,
+				  EXT4_XATTR_BFIRST(&xattr_ref->block));
+		xattr_ref->block.dirty = true;
 	}
 
 Finish:
