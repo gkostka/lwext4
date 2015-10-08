@@ -357,12 +357,13 @@ static struct ext4_xattr_item *
 ext4_xattr_lookup_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
 		       char *name, size_t name_len)
 {
-	struct ext4_xattr_item tmp, *ret;
-	tmp.name_index = name_index;
-	tmp.name = name;
-	tmp.name_len = name_len;
-	ret = RB_FIND(ext4_xattr_tree, &xattr_ref->root, &tmp);
-	return ret;
+	struct ext4_xattr_item tmp = {
+		.name_index = name_index,
+		.name = name,
+		.name_len = name_len,
+	};
+
+	return RB_FIND(ext4_xattr_tree, &xattr_ref->root, &tmp);
 }
 
 static struct ext4_xattr_item *
@@ -543,8 +544,8 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 {
 	int ret = EOK;
 	bool block_modified = false;
-	void *ibody_data = 0;
-	void *block_data = 0;
+	void *ibody_data = NULL;
+	void *block_data = NULL;
 	struct ext4_xattr_item *item, *save_item;
 	size_t inode_size_rem, block_size_rem;
 	struct ext4_xattr_ibody_header *ibody_header = NULL;
