@@ -814,7 +814,9 @@ void ext4_fs_put_xattr_ref(struct ext4_xattr_ref *ref)
 struct xattr_prefix {
 	char *prefix;
 	uint8_t name_index;
-} prefix_tbl[] = {
+};
+
+static const struct xattr_prefix prefix_tbl[] = {
     {"user.", EXT4_XATTR_INDEX_USER},
     {"system.", EXT4_XATTR_INDEX_SYSTEM},
     {"system.posix_acl_access", EXT4_XATTR_INDEX_POSIX_ACL_ACCESS},
