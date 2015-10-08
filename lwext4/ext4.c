@@ -1925,16 +1925,6 @@ Finish:
 	return r;
 }
 
-int ext4_fsetxattr(ext4_file *file,
-		   char *name,
-		   size_t name_len,
-		   void *data,
-		   size_t data_size,
-		   bool replace)
-{
-	return EOK;
-}
-
 /*********************************DIRECTORY OPERATION************************/
 
 int ext4_dir_rm(const char *path)
