@@ -11,8 +11,8 @@ Feel free to contact me:
 kostka.grzegorz@gmail.com
 
 ==Minimum memory requirements==
-* .text:  20KB - 30KB (dependent of feature set chosen)
-* .data:  8KB
+* .text:  20KB - 40KB (dependent of feature set chosen)
+* .data:  8KB         (minimum 8 x 1KB  block cache)
 * .stack: 2KB
 
 
@@ -52,7 +52,7 @@ Some features are based on FreeBSD and Linux implementations.
 *  dir_prealloc: no
 *  imagic_inodes: no
 *  has_journal: no
-*  ext_attr: no
+*  ext_attr: no (work in progress)
 *  resize_inode: no
 *  dir_index: yes
 ;Features read-only (mount in RO mode when NOT supported):
@@ -65,15 +65,15 @@ Some features are based on FreeBSD and Linux implementations.
 *  extra_isize: yes
 *  quota: no
 *  bigalloc: no
-*  metadata_csum: no
+*  metadata_csum: no (to be done ...)
 
 ==Supported filetypes:==
 * FIFO:      no
 * CHARDEV:   no
 * DIRECTORY: yes
 * BLOCKDEV:  no
-* FILE:      yes
-* SOFTLINK:  no
+* FILE:      yes (hardlinks supported)
+* SOFTLINK:  yes
 * SOCKET:    no
 
 ==Other==
@@ -167,7 +167,7 @@ Run server app for predefined images:
  make server_ext3
  make server_ext4
 Run tests:
- make all_tests
+ make test
 
 ==Cross-Compile standalone library==
 Build bf518 library:
@@ -195,11 +195,3 @@ Build cortex-m4 library:
  cd build_cortex-m4
  make lwext4
 
-==Demos==
-* STM32F429-DISCO USB flash drive Demo
-* ChibiOS demo applications
- 
-Build STM32F429 Demo:
- make cortex-m4
- cd build_cortex-m4
- make all
