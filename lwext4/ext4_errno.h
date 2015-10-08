@@ -76,6 +76,8 @@
 #define EDOM 33      /* Math argument out of domain of func */
 #define ERANGE 34    /* Math result not representable */
 #define ENOTEMPTY 39 /* Directory not empty */
+#define ENODATA 61   /* No data available */
+#define ENOATTR ENODATA   /* No attribute available */
 #define ENOTSUP 95   /* Not supported */
 #endif
 

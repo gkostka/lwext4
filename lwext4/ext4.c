@@ -44,6 +44,7 @@
 #include "ext4_inode.h"
 #include "ext4_super.h"
 #include "ext4_dir_idx.h"
+#include "ext4_xattr.h"
 #include "ext4.h"
 
 #include <stdlib.h>
@@ -730,6 +731,7 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 
 		if (f->flags & O_APPEND)
 			f->fpos = f->fsize;
+
 	}
 
 	r = ext4_fs_put_inode_ref(&ref);
