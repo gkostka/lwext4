@@ -29,7 +29,6 @@
 #include <ext4.h>
 
 #include <stdio.h>
-#include <time.h>
 #include <inttypes.h>
 #include <string.h>
 
@@ -72,18 +71,18 @@ static char *entry_to_str(uint8_t type)
 	return "[???]";
 }
 
-static clock_t get_ms(void) { return tim_get_ms(); }
+static long int get_ms(void) { return tim_get_ms(); }
 
-static void printf_io_timings(clock_t diff)
+static void printf_io_timings(long int diff)
 {
 	const struct ext4_io_stats *stats = io_timings_get(diff);
 	if (!stats)
 		return;
 
 	printf("io_timings:\n");
-	printf("  io_read: %.3f%%\n", stats->io_read);
-	printf("  io_write: %.3f%%\n", stats->io_write);
-	printf("  io_cpu: %.3f%%\n", stats->cpu);
+	printf("  io_read: %.3f%%\n", (double)stats->io_read);
+	printf("  io_write: %.3f%%\n", (double)stats->io_write);
+	printf("  io_cpu: %.3f%%\n", (double)stats->cpu);
 }
 
 void test_lwext4_dir_ls(const char *path)
@@ -175,9 +174,9 @@ bool test_lwext4_dir_test(int len)
 	int r;
 	int i;
 	char path[64];
-	clock_t diff;
-	clock_t stop;
-	clock_t start;
+	long int diff;
+	long int stop;
+	long int start;
 
 	printf("test_lwext4_dir_test: %d\n", len);
 	io_timings_clear();
@@ -225,9 +224,9 @@ bool test_lwext4_file_test(uint32_t rw_size, uint32_t rw_count)
 	int r;
 	size_t size;
 	uint32_t i;
-	clock_t start;
-	clock_t stop;
-	clock_t diff;
+	long int start;
+	long int stop;
+	long int diff;
 	uint32_t kbps;
 	uint64_t size_bytes;
 
@@ -319,9 +318,9 @@ bool test_lwext4_file_test(uint32_t rw_size, uint32_t rw_count)
 }
 void test_lwext4_cleanup(void)
 {
-	clock_t start;
-	clock_t stop;
-	clock_t diff;
+	long int start;
+	long int stop;
+	long int diff;
 
 	printf("\ncleanup:\n");
 	ext4_fremove("/mp/hello.txt");
