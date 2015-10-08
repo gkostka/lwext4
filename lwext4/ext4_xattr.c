@@ -929,7 +929,7 @@ char *ext4_extract_xattr_name(char *full_name,
 		return NULL;
 
 	for (i = 0;prefix_tbl[i].prefix;i++) {
-		int prefix_len = strlen(prefix_tbl[i].prefix);
+		size_t prefix_len = strlen(prefix_tbl[i].prefix);
 		if (full_name_len >= prefix_len &&
 		    !memcmp(full_name,
 			    prefix_tbl[i].prefix, prefix_len)) {
