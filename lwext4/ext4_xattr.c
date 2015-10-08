@@ -202,7 +202,7 @@ static void *ext4_xattr_entry_data(struct ext4_xattr_ref *xattr_ref,
 				   struct ext4_xattr_entry *entry,
 				   bool in_inode)
 {
-	void *ret;
+	char *ret;
 	if (in_inode) {
 		struct ext4_xattr_ibody_header *header;
 		struct ext4_xattr_entry *first_entry;
@@ -211,24 +211,19 @@ static void *ext4_xattr_entry_data(struct ext4_xattr_ref *xattr_ref,
 		header = EXT4_XATTR_IHDR(xattr_ref->inode_ref->inode);
 		first_entry = EXT4_XATTR_IFIRST(header);
 
-		ret = (void *)((char *)first_entry +
-			       to_le16(entry->e_value_offs));
-		if ((char *)ret +
-			EXT4_XATTR_SIZE(to_le32(entry->e_value_size)) -
-			(char *)xattr_ref->inode_ref->inode >
-		    inode_size)
+		ret = ((char *)first_entry + to_le16(entry->e_value_offs));
+		if (ret + EXT4_XATTR_SIZE(to_le32(entry->e_value_size)) -
+			(char *)xattr_ref->inode_ref->inode > inode_size)
 			ret = NULL;
 
-	} else {
-		int32_t block_size = ext4_sb_get_block_size(&xattr_ref->fs->sb);
-		ret = (void *)((char *)xattr_ref->block.data +
-			       to_le16(entry->e_value_offs));
-		if ((char *)ret +
-			EXT4_XATTR_SIZE(to_le32(entry->e_value_size)) -
-			(char *)xattr_ref->block.data >
-		    block_size)
-			ret = NULL;
+		return ret;
+
 	}
+	int32_t block_size = ext4_sb_get_block_size(&xattr_ref->fs->sb);
+	ret = ((char *)xattr_ref->block.data + to_le16(entry->e_value_offs));
+	if (ret + EXT4_XATTR_SIZE(to_le32(entry->e_value_size)) -
+			(char *)xattr_ref->block.data > block_size)
+		ret = NULL;
 	return ret;
 }
 
