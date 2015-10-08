@@ -26,7 +26,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../chibios/spi_lwext4.h"
+#include "spi_lwext4.h"
 
 #include <config.h>
 #include <ext4_config.h>

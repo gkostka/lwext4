@@ -26,7 +26,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../chibios/timings.h"
+#include "../test_lwext4.h"
 
 #include <config.h>
 

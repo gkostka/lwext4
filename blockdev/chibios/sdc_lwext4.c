@@ -26,7 +26,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../chibios/sdc_lwext4.h"
+#include "sdc_lwext4.h"
 
 #include <config.h>
 #include <ext4_config.h>
