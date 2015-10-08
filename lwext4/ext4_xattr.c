@@ -206,7 +206,7 @@ static void *ext4_xattr_entry_data(struct ext4_xattr_ref *xattr_ref,
 	if (in_inode) {
 		struct ext4_xattr_ibody_header *header;
 		struct ext4_xattr_entry *first_entry;
-		uint16_t inode_size =
+		int16_t inode_size =
 		    ext4_get16(&xattr_ref->fs->sb, inode_size);
 		header = EXT4_XATTR_IHDR(xattr_ref->inode_ref->inode);
 		first_entry = EXT4_XATTR_IFIRST(header);
