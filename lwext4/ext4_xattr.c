@@ -549,7 +549,8 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 {
 	int ret = EOK;
 	bool block_modified = false;
-	void *ibody_data, *block_data;
+	void *ibody_data = 0;
+	void *block_data = 0;
 	struct ext4_xattr_item *item, *save_item;
 	size_t inode_size_rem, block_size_rem;
 	struct ext4_xattr_ibody_header *ibody_header = NULL;
