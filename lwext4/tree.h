@@ -31,7 +31,9 @@
 #define	_SYS_TREE_H_
 
 #ifdef __GNUC__
+#ifndef __unused
 #define __unused __attribute__ ((__unused__))
+#endif
 #endif
 /*
  * This file defines data structures for different types of trees:
