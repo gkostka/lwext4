@@ -23,14 +23,17 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m4)
     #cortex-m4 demos
     add_subdirectory(demos/stm32f429_disco)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  bf518)
+    add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=1)
     #bf518 demos
     #...
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  avrxmega7)
+    add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=1)
     #avrxmega7 demos
     #...
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  msp430g2210)
     add_definitions(-DCONFIG_DEBUG_PRINTF=0)
     add_definitions(-DCONFIG_DEBUG_ASSERT=0)
+    add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=1)
     #msp430f6459 demos
     #...
 else()
