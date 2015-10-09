@@ -443,8 +443,6 @@ static int ext4_xattr_resize_item(struct ext4_xattr_ref *xattr_ref,
 static void ext4_xattr_purge_items(struct ext4_xattr_ref *xattr_ref)
 {
 	struct ext4_xattr_item *item, *save_item;
-	uint64_t xattr_block = ext4_inode_get_file_acl(
-	    xattr_ref->inode_ref->inode, &xattr_ref->fs->sb);
 	RB_FOREACH_SAFE(item, ext4_xattr_tree, &xattr_ref->root, save_item)
 	{
 		RB_REMOVE(ext4_xattr_tree, &xattr_ref->root, item);
