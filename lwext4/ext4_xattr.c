@@ -424,10 +424,17 @@ static int ext4_xattr_resize_item(struct ext4_xattr_ref *xattr_ref,
 {
 	int ret = EOK;
 	size_t old_data_size = item->data_size;
-	if (xattr_ref->ea_size - EXT4_XATTR_SIZE(old_data_size) +
-		EXT4_XATTR_SIZE(new_data_size) >
-	    ext4_xattr_inode_space(xattr_ref) +
-		ext4_xattr_block_space(xattr_ref)) {
+	if ((xattr_ref->ea_size - EXT4_XATTR_SIZE(old_data_size) +
+		EXT4_XATTR_SIZE(new_data_size)
+			>
+	    ext4_xattr_inode_space(xattr_ref) -
+	    	sizeof(struct ext4_xattr_ibody_header))
+		&&
+	    (xattr_ref->ea_size - EXT4_XATTR_SIZE(old_data_size) +
+		EXT4_XATTR_SIZE(new_data_size)
+			>
+	    ext4_xattr_block_space(xattr_ref) -
+	    	sizeof(struct ext4_xattr_header))) {
 
 		return ENOSPC;
 	}
@@ -437,7 +444,7 @@ static int ext4_xattr_resize_item(struct ext4_xattr_ref *xattr_ref,
 	}
 	xattr_ref->ea_size =
 	    xattr_ref->ea_size -
-	    EXT4_XATTR_SIZE(old_data_size);
+	    EXT4_XATTR_SIZE(old_data_size) +
 	    EXT4_XATTR_SIZE(new_data_size);
 	xattr_ref->dirty = true;
 	return ret;
