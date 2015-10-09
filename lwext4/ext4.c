@@ -2102,11 +2102,16 @@ int ext4_listxattr(const char *path, char *list, size_t size, size_t *ret_size)
 
 	xattr_ref.iter_arg = &lxi;
 	ext4_fs_xattr_iterate(&xattr_ref, ext4_iterate_ea_list);
-	if (ret_size && lxi.list_too_small) {
-		*ret_size = lxi.ret_size;
+	if (lxi.list_too_small)
 		r = ERANGE;
-	}
 
+	if (r == EOK) {
+		if (lxi.get_required_size) {
+			if (ret_size)
+				*ret_size = lxi.ret_size;
+
+		}
+	}
 	ext4_fs_put_xattr_ref(&xattr_ref);
 	ext4_fs_put_inode_ref(&inode_ref);
 Finish:
