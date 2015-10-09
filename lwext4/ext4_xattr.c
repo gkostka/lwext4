@@ -423,7 +423,8 @@ static int ext4_xattr_resize_item(struct ext4_xattr_ref *xattr_ref,
 				  size_t new_data_size)
 {
 	int ret = EOK;
-	if (xattr_ref->ea_size - EXT4_XATTR_SIZE(item->data_size) +
+	size_t old_data_size = item->data_size;
+	if (xattr_ref->ea_size - EXT4_XATTR_SIZE(old_data_size) +
 		EXT4_XATTR_SIZE(new_data_size) >
 	    ext4_xattr_inode_space(xattr_ref) +
 		ext4_xattr_block_space(xattr_ref)) {
@@ -436,7 +437,7 @@ static int ext4_xattr_resize_item(struct ext4_xattr_ref *xattr_ref,
 	}
 	xattr_ref->ea_size =
 	    xattr_ref->ea_size -
-	    EXT4_XATTR_SIZE(item->data_size) +
+	    EXT4_XATTR_SIZE(old_data_size);
 	    EXT4_XATTR_SIZE(new_data_size);
 	xattr_ref->dirty = true;
 	return ret;
