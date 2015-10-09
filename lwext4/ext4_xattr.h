@@ -46,15 +46,15 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 void ext4_fs_put_xattr_ref(struct ext4_xattr_ref *ref);
 
 int ext4_fs_set_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
-		      char *name, size_t name_len, void *data, size_t data_size,
-		      bool replace);
+		      const char *name, size_t name_len, const void *data,
+		      size_t data_size, bool replace);
 
 int ext4_fs_remove_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
-			 char *name, size_t name_len);
+			 const char *name, size_t name_len);
 
 int ext4_fs_get_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
-		      char *name, size_t name_len, void *buf, size_t buf_size,
-		      size_t *data_size);
+		      const char *name, size_t name_len, void *buf,
+		      size_t buf_size, size_t *data_size);
 
 void ext4_fs_xattr_iterate(struct ext4_xattr_ref *ref,
 			   int (*iter)(struct ext4_xattr_ref *ref,
@@ -62,7 +62,7 @@ void ext4_fs_xattr_iterate(struct ext4_xattr_ref *ref,
 
 void ext4_fs_xattr_iterate_reset(struct ext4_xattr_ref *ref);
 
-char *ext4_extract_xattr_name(char *full_name, size_t full_name_len,
+const char *ext4_extract_xattr_name(const char *full_name, size_t full_name_len,
 			      uint8_t *name_index, size_t *name_len);
 
 const char *ext4_get_xattr_name_prefix(uint8_t name_index,

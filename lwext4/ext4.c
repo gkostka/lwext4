@@ -1925,18 +1925,14 @@ Finish:
 	return r;
 }
 
-int ext4_setxattr(char *path,
-		   char *name,
-		   size_t name_len,
-		   void *data,
-		   size_t data_size,
-		   bool replace)
+int ext4_setxattr(const char *path, const char *name, size_t name_len,
+		  const void *data, size_t data_size, bool replace)
 {
 	int r = EOK;
 	ext4_file f;
 	uint32_t inode;
 	uint8_t name_index;
-	char *dissected_name = NULL;
+	const char *dissected_name = NULL;
 	size_t dissected_len = 0;
 	struct ext4_xattr_ref xattr_ref;
 	struct ext4_inode_ref inode_ref;
@@ -1968,10 +1964,8 @@ int ext4_setxattr(char *path,
 		goto Finish;
 	}
 
-	r = ext4_fs_set_xattr(&xattr_ref, name_index,
-				dissected_name, dissected_len,
-				data, data_size,
-				replace);
+	r = ext4_fs_set_xattr(&xattr_ref, name_index, dissected_name,
+			dissected_len, data, data_size, replace);
 
 	ext4_fs_put_xattr_ref(&xattr_ref);
 	ext4_fs_put_inode_ref(&inode_ref);
@@ -1980,18 +1974,14 @@ Finish:
 	return r;
 }
 
-int ext4_getxattr(char *path,
-		   char *name,
-		   size_t name_len,
-		   void  *buf,
-		   size_t buf_size,
-		   size_t *data_size)
+int ext4_getxattr(const char *path, const char *name, size_t name_len,
+		  void *buf, size_t buf_size, size_t *data_size)
 {
 	int r = EOK;
 	ext4_file f;
 	uint32_t inode;
 	uint8_t name_index;
-	char *dissected_name = NULL;
+	const char *dissected_name = NULL;
 	size_t dissected_len = 0;
 	struct ext4_xattr_ref xattr_ref;
 	struct ext4_inode_ref inode_ref;
@@ -2072,8 +2062,7 @@ static int ext4_iterate_ea_list(struct ext4_xattr_ref *ref,
 	return EXT4_XATTR_ITERATE_CONT;
 }
 
-int ext4_listxattr(const char *path, char *list, size_t size,
-		   size_t *ret_size)
+int ext4_listxattr(const char *path, char *list, size_t size, size_t *ret_size)
 {
 	int r = EOK;
 	ext4_file f;
@@ -2126,15 +2115,13 @@ Finish:
 
 }
 
-int ext4_removexattr(char *path,
-		   char *name,
-		   size_t name_len)
+int ext4_removexattr(const char *path, const char *name, size_t name_len)
 {
 	int r = EOK;
 	ext4_file f;
 	uint32_t inode;
 	uint8_t name_index;
-	char *dissected_name = NULL;
+	const char *dissected_name = NULL;
 	size_t dissected_len = 0;
 	struct ext4_xattr_ref xattr_ref;
 	struct ext4_inode_ref inode_ref;
@@ -2166,8 +2153,7 @@ int ext4_removexattr(char *path,
 		goto Finish;
 	}
 
-	r = ext4_fs_remove_xattr(&xattr_ref,
-				name_index, dissected_name,
+	r = ext4_fs_remove_xattr(&xattr_ref, name_index, dissected_name,
 				dissected_len);
 
 	ext4_fs_put_xattr_ref(&xattr_ref);

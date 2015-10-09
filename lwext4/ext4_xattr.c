@@ -131,7 +131,7 @@ RB_GENERATE_INTERNAL(ext4_xattr_tree, ext4_xattr_item, node,
 		     ext4_xattr_item_cmp, static inline)
 
 static struct ext4_xattr_item *
-ext4_xattr_item_alloc(uint8_t name_index, char *name, size_t name_len)
+ext4_xattr_item_alloc(uint8_t name_index, const char *name, size_t name_len)
 {
 	struct ext4_xattr_item *item;
 	item = malloc(sizeof(struct ext4_xattr_item) + name_len);
@@ -151,7 +151,7 @@ ext4_xattr_item_alloc(uint8_t name_index, char *name, size_t name_len)
 }
 
 static int ext4_xattr_item_alloc_data(struct ext4_xattr_item *item,
-				      void *orig_data, size_t data_size)
+				      const void *orig_data, size_t data_size)
 {
 	void *data = NULL;
 	ext4_assert(!item->data);
@@ -350,11 +350,11 @@ static int ext4_xattr_fetch(struct ext4_xattr_ref *xattr_ref)
 
 static struct ext4_xattr_item *
 ext4_xattr_lookup_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
-		       char *name, size_t name_len)
+		       const char *name, size_t name_len)
 {
 	struct ext4_xattr_item tmp = {
 		.name_index = name_index,
-		.name = name,
+		.name = (char *)name, /*RB_FIND - won't touch this string*/
 		.name_len = name_len,
 	};
 
@@ -363,7 +363,7 @@ ext4_xattr_lookup_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
 
 static struct ext4_xattr_item *
 ext4_xattr_insert_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
-		       char *name, size_t name_len, void *data,
+		       const char *name, size_t name_len, const void *data,
 		       size_t data_size)
 {
 	struct ext4_xattr_item *item;
@@ -390,7 +390,7 @@ ext4_xattr_insert_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
 }
 
 static int ext4_xattr_remove_item(struct ext4_xattr_ref *xattr_ref,
-				  uint8_t name_index, char *name,
+				  uint8_t name_index, const char *name,
 				  size_t name_len)
 {
 	int ret = ENOENT;
@@ -683,8 +683,8 @@ void ext4_fs_xattr_iterate_reset(struct ext4_xattr_ref *ref)
 }
 
 int ext4_fs_set_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
-		      char *name, size_t name_len, void *data, size_t data_size,
-		      bool replace)
+		      const char *name, size_t name_len, const void *data,
+		      size_t data_size, bool replace)
 {
 	int ret = EOK;
 	struct ext4_xattr_item *item =
@@ -716,13 +716,13 @@ Finish:
 }
 
 int ext4_fs_remove_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
-			 char *name, size_t name_len)
+			 const char *name, size_t name_len)
 {
 	return ext4_xattr_remove_item(ref, name_index, name, name_len);
 }
 
 int ext4_fs_get_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
-		      char *name, size_t name_len, void *buf, size_t buf_size,
+		      const char *name, size_t name_len, void *buf, size_t buf_size,
 		      size_t *data_size)
 {
 	int ret = EOK;
@@ -811,7 +811,7 @@ static const struct xattr_prefix prefix_tbl[] = {
     {NULL, 0},
 };
 
-char *ext4_extract_xattr_name(char *full_name, size_t full_name_len,
+const char *ext4_extract_xattr_name(const char *full_name, size_t full_name_len,
 			      uint8_t *name_index, size_t *name_len)
 {
 	int i;
