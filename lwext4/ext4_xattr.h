@@ -54,16 +54,19 @@ int ext4_fs_remove_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
 
 int ext4_fs_get_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
 		      char *name, size_t name_len, void *buf, size_t buf_size,
-		      size_t *size_got);
+		      size_t *data_size);
 
 void ext4_fs_xattr_iterate(struct ext4_xattr_ref *ref,
-			   int(iter)(struct ext4_xattr_ref *ref,
+			   int (*iter)(struct ext4_xattr_ref *ref,
 				     struct ext4_xattr_item *item));
 
 void ext4_fs_xattr_iterate_reset(struct ext4_xattr_ref *ref);
 
 char *ext4_extract_xattr_name(char *full_name, size_t full_name_len,
 			      uint8_t *name_index, size_t *name_len);
+
+const char *ext4_get_xattr_name_prefix(uint8_t name_index,
+					size_t *ret_prefix_len);
 
 #endif
 /**

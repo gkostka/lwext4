@@ -655,7 +655,7 @@ Finish:
 }
 
 void ext4_fs_xattr_iterate(struct ext4_xattr_ref *ref,
-			   int(iter)(struct ext4_xattr_ref *ref,
+			   int (*iter)(struct ext4_xattr_ref *ref,
 				     struct ext4_xattr_item *item))
 {
 	struct ext4_xattr_item *item;
@@ -723,7 +723,7 @@ int ext4_fs_remove_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
 
 int ext4_fs_get_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
 		      char *name, size_t name_len, void *buf, size_t buf_size,
-		      size_t *size_got)
+		      size_t *data_size)
 {
 	int ret = EOK;
 	size_t item_size = 0;
@@ -742,8 +742,8 @@ int ext4_fs_get_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
 		memcpy(buf, item->data, buf_size);
 
 Finish:
-	if (size_got)
-		*size_got = buf_size;
+	if (data_size)
+		*data_size = item_size;
 
 	return ret;
 }
@@ -799,7 +799,7 @@ void ext4_fs_put_xattr_ref(struct ext4_xattr_ref *ref)
 }
 
 struct xattr_prefix {
-	char *prefix;
+	const char *prefix;
 	uint8_t name_index;
 };
 
@@ -816,8 +816,12 @@ char *ext4_extract_xattr_name(char *full_name, size_t full_name_len,
 {
 	int i;
 	ext4_assert(name_index);
-	if (!full_name_len)
+	if (!full_name_len) {
+		if (name_len)
+			*name_len = 0;
+
 		return NULL;
+	}
 
 	for (i = 0; prefix_tbl[i].prefix; i++) {
 		size_t prefix_len = strlen(prefix_tbl[i].prefix);
@@ -832,6 +836,25 @@ char *ext4_extract_xattr_name(char *full_name, size_t full_name_len,
 	}
 	if (name_len)
 		*name_len = 0;
+
+	return NULL;
+}
+
+const char *ext4_get_xattr_name_prefix(uint8_t name_index, size_t *ret_prefix_len)
+{
+	int i;
+
+	for (i = 0; prefix_tbl[i].prefix; i++) {
+		size_t prefix_len = strlen(prefix_tbl[i].prefix);
+		if (prefix_tbl[i].name_index == name_index) {
+			if (ret_prefix_len)
+				*ret_prefix_len = prefix_len;
+
+			return prefix_tbl[i].prefix;
+		}
+	}
+	if (ret_prefix_len)
+		*ret_prefix_len = 0;
 
 	return NULL;
 }

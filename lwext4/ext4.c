@@ -1925,6 +1925,259 @@ Finish:
 	return r;
 }
 
+int ext4_setxattr(char *path,
+		   char *name,
+		   size_t name_len,
+		   void *data,
+		   size_t data_size,
+		   bool replace)
+{
+	int r = EOK;
+	ext4_file f;
+	uint32_t inode;
+	uint8_t name_index;
+	char *dissected_name = NULL;
+	size_t dissected_len = 0;
+	struct ext4_xattr_ref xattr_ref;
+	struct ext4_inode_ref inode_ref;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	if (!mp)
+		return ENOENT;
+
+	dissected_name = ext4_extract_xattr_name(name, name_len,
+				&name_index, &dissected_len);
+	if (!dissected_len)
+		return EINVAL;
+
+	EXT4_MP_LOCK(mp);
+	r = ext4_generic_open2(&f, path, O_RDWR,
+				EXT4_DIRENTRY_UNKNOWN, 0, 0);
+	if (r != EOK)
+		goto Finish;
+	inode = f.inode;
+	ext4_fclose(&f);
+
+	r = ext4_fs_get_inode_ref(&mp->fs, inode, &inode_ref);
+	if (r != EOK)
+		goto Finish;
+
+	r = ext4_fs_get_xattr_ref(&mp->fs, &inode_ref,
+			      &xattr_ref);
+	if (r != EOK) {
+		ext4_fs_put_inode_ref(&inode_ref);
+		goto Finish;
+	}
+
+	r = ext4_fs_set_xattr(&xattr_ref, name_index,
+				dissected_name, dissected_len,
+				data, data_size,
+				replace);
+
+	ext4_fs_put_xattr_ref(&xattr_ref);
+	ext4_fs_put_inode_ref(&inode_ref);
+Finish:
+	EXT4_MP_UNLOCK(mp);
+	return r;
+}
+
+int ext4_getxattr(char *path,
+		   char *name,
+		   size_t name_len,
+		   void  *buf,
+		   size_t buf_size,
+		   size_t *data_size)
+{
+	int r = EOK;
+	ext4_file f;
+	uint32_t inode;
+	uint8_t name_index;
+	char *dissected_name = NULL;
+	size_t dissected_len = 0;
+	struct ext4_xattr_ref xattr_ref;
+	struct ext4_inode_ref inode_ref;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	if (!mp)
+		return ENOENT;
+
+	dissected_name = ext4_extract_xattr_name(name, name_len,
+				&name_index, &dissected_len);
+	if (!dissected_len)
+		return EINVAL;
+
+	EXT4_MP_LOCK(mp);
+	r = ext4_generic_open2(&f, path, O_RDWR,
+				EXT4_DIRENTRY_UNKNOWN, 0, 0);
+	if (r != EOK)
+		goto Finish;
+	inode = f.inode;
+	ext4_fclose(&f);
+
+	r = ext4_fs_get_inode_ref(&mp->fs, inode, &inode_ref);
+	if (r != EOK)
+		goto Finish;
+
+	r = ext4_fs_get_xattr_ref(&mp->fs, &inode_ref,
+			      &xattr_ref);
+	if (r != EOK) {
+		ext4_fs_put_inode_ref(&inode_ref);
+		goto Finish;
+	}
+
+	r = ext4_fs_get_xattr(&xattr_ref, name_index,
+				dissected_name, dissected_len,
+				buf, buf_size, data_size);
+
+	ext4_fs_put_xattr_ref(&xattr_ref);
+	ext4_fs_put_inode_ref(&inode_ref);
+Finish:
+	EXT4_MP_UNLOCK(mp);
+	return r;
+}
+
+struct ext4_listxattr_iterator {
+	char *list;
+	char *list_ptr;
+	size_t size;
+	size_t ret_size;
+	bool list_too_small;
+	bool get_required_size;
+};
+
+static int ext4_iterate_ea_list(struct ext4_xattr_ref *ref,
+				struct ext4_xattr_item *item)
+{
+	struct ext4_listxattr_iterator *lxi;
+	lxi = ref->iter_arg;
+	if (!lxi->get_required_size) {
+		size_t prefix_len;
+		const char *prefix;
+		prefix = ext4_get_xattr_name_prefix(item->name_index,
+					&prefix_len);
+		if (lxi->ret_size +
+			prefix_len + item->name_len + 1 >
+			lxi->size) {
+
+			lxi->list_too_small = 1;
+			return EXT4_XATTR_ITERATE_STOP;
+		}
+		if (prefix) {
+			memcpy(lxi->list_ptr, prefix, prefix_len);
+			lxi->list_ptr += prefix_len;
+		}
+		memcpy(lxi->list_ptr, item->name, item->name_len);
+		lxi->list_ptr[item->name_len] = 0;
+		lxi->list_ptr += item->name_len + 1;
+	}
+	lxi->ret_size += item->name_len + 1;
+	return EXT4_XATTR_ITERATE_CONT;
+}
+
+int ext4_listxattr(const char *path, char *list, size_t size,
+		   size_t *ret_size)
+{
+	int r = EOK;
+	ext4_file f;
+	uint32_t inode;
+	struct ext4_xattr_ref xattr_ref;
+	struct ext4_inode_ref inode_ref;
+	struct ext4_listxattr_iterator lxi;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	if (!mp)
+		return ENOENT;
+
+	lxi.list = list;
+	lxi.list_ptr = list;
+	lxi.size = size;
+	lxi.ret_size = 0;
+	lxi.list_too_small = false;
+	lxi.get_required_size = (!size) ? true : false;
+
+	EXT4_MP_LOCK(mp);
+	r = ext4_generic_open2(&f, path, O_RDWR,
+				EXT4_DIRENTRY_UNKNOWN, 0, 0);
+	if (r != EOK)
+		goto Finish;
+	inode = f.inode;
+	ext4_fclose(&f);
+
+	r = ext4_fs_get_inode_ref(&mp->fs, inode, &inode_ref);
+	if (r != EOK)
+		goto Finish;
+
+	r = ext4_fs_get_xattr_ref(&mp->fs, &inode_ref,
+			      &xattr_ref);
+	if (r != EOK) {
+		ext4_fs_put_inode_ref(&inode_ref);
+		goto Finish;
+	}
+
+	xattr_ref.iter_arg = &lxi;
+	ext4_fs_xattr_iterate(&xattr_ref, ext4_iterate_ea_list);
+	if (ret_size && lxi.list_too_small) {
+		*ret_size = lxi.ret_size;
+		r = ERANGE;
+	}
+
+	ext4_fs_put_xattr_ref(&xattr_ref);
+	ext4_fs_put_inode_ref(&inode_ref);
+Finish:
+	EXT4_MP_UNLOCK(mp);
+	return r;
+
+}
+
+int ext4_removexattr(char *path,
+		   char *name,
+		   size_t name_len)
+{
+	int r = EOK;
+	ext4_file f;
+	uint32_t inode;
+	uint8_t name_index;
+	char *dissected_name = NULL;
+	size_t dissected_len = 0;
+	struct ext4_xattr_ref xattr_ref;
+	struct ext4_inode_ref inode_ref;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	if (!mp)
+		return ENOENT;
+
+	dissected_name = ext4_extract_xattr_name(name, name_len,
+				&name_index, &dissected_len);
+	if (!dissected_len)
+		return EINVAL;
+
+	EXT4_MP_LOCK(mp);
+	r = ext4_generic_open2(&f, path, O_RDWR,
+				EXT4_DIRENTRY_UNKNOWN, 0, 0);
+	if (r != EOK)
+		goto Finish;
+	inode = f.inode;
+	ext4_fclose(&f);
+
+	r = ext4_fs_get_inode_ref(&mp->fs, inode, &inode_ref);
+	if (r != EOK)
+		goto Finish;
+
+	r = ext4_fs_get_xattr_ref(&mp->fs, &inode_ref,
+			      &xattr_ref);
+	if (r != EOK) {
+		ext4_fs_put_inode_ref(&inode_ref);
+		goto Finish;
+	}
+
+	r = ext4_fs_remove_xattr(&xattr_ref,
+				name_index, dissected_name,
+				dissected_len);
+
+	ext4_fs_put_xattr_ref(&xattr_ref);
+	ext4_fs_put_inode_ref(&inode_ref);
+Finish:
+	EXT4_MP_UNLOCK(mp);
+	return r;
+
+}
+
 /*********************************DIRECTORY OPERATION************************/
 
 int ext4_dir_rm(const char *path)

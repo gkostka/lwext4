@@ -689,6 +689,7 @@ struct ext4_xattr_ref {
 	size_t ea_size;
 	struct ext4_fs *fs;
 
+	void *iter_arg;
 	struct ext4_xattr_item *iter_from;
 
 	RB_HEAD(ext4_xattr_tree,
