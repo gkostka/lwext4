@@ -434,8 +434,10 @@ static int ext4_xattr_resize_item(struct ext4_xattr_ref *xattr_ref,
 	if (ret != EOK) {
 		return ret;
 	}
-	xattr_ref->ea_size -=
-	    EXT4_XATTR_SIZE(item->data_size) + EXT4_XATTR_SIZE(new_data_size);
+	xattr_ref->ea_size =
+	    xattr_ref->ea_size -
+	    EXT4_XATTR_SIZE(item->data_size) +
+	    EXT4_XATTR_SIZE(new_data_size);
 	xattr_ref->dirty = true;
 	return ret;
 }
