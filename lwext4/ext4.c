@@ -2053,6 +2053,7 @@ static int ext4_iterate_ea_list(struct ext4_xattr_ref *ref,
 		if (prefix) {
 			memcpy(lxi->list_ptr, prefix, prefix_len);
 			lxi->list_ptr += prefix_len;
+			lxi->ret_size += prefix_len;
 		}
 		memcpy(lxi->list_ptr, item->name, item->name_len);
 		lxi->list_ptr[item->name_len] = 0;
@@ -2106,11 +2107,9 @@ int ext4_listxattr(const char *path, char *list, size_t size, size_t *ret_size)
 		r = ERANGE;
 
 	if (r == EOK) {
-		if (lxi.get_required_size) {
-			if (ret_size)
-				*ret_size = lxi.ret_size;
+		if (ret_size)
+			*ret_size = lxi.ret_size;
 
-		}
 	}
 	ext4_fs_put_xattr_ref(&xattr_ref);
 	ext4_fs_put_inode_ref(&inode_ref);
