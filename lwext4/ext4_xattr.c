@@ -408,10 +408,11 @@ static int ext4_xattr_remove_item(struct ext4_xattr_ref *xattr_ref,
 			xattr_ref->iter_from =
 			    RB_NEXT(ext4_xattr_tree, &xattr_ref->root, item);
 
-		RB_REMOVE(ext4_xattr_tree, &xattr_ref->root, item);
-		ext4_xattr_item_free(item);
 		xattr_ref->ea_size -= EXT4_XATTR_SIZE(item->data_size) +
 				      EXT4_XATTR_LEN(item->name_len);
+
+		RB_REMOVE(ext4_xattr_tree, &xattr_ref->root, item);
+		ext4_xattr_item_free(item);
 		xattr_ref->dirty = true;
 		ret = EOK;
 	}
