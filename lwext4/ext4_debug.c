@@ -40,11 +40,24 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-static uint32_t __dbg_mask__;
+static uint32_t debug_mask;
 
-void ext4_dmask_set(uint32_t m) { __dbg_mask__ = m; }
+void ext4_dmask_set(uint32_t m)
+{
+	debug_mask |= m;
+}
 
-uint32_t ext4_dmask_get(void) { return __dbg_mask__; }
+void ext4_dmask_clr(uint32_t m)
+{
+	debug_mask &= ~m;
+}
+
+uint32_t ext4_dmask_get(void)
+{
+	return debug_mask;
+}
+
+
 
 /**
  * @}

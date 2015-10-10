@@ -98,9 +98,10 @@ int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev)
 
 	/*Validate FS*/
 	tmp = ext4_get16(&fs->sb, state);
-	if (tmp & EXT4_SUPERBLOCK_STATE_ERROR_FS) {
-		ext4_dprintf(EXT4_DEBUG_FS, "last umount error\n");
-	}
+	if (tmp & EXT4_SUPERBLOCK_STATE_ERROR_FS)
+		ext4_dbg(DEBUG_FS, DBG_WARN
+				"last umount error: superblock fs_error flag\n");
+
 
 	/* Mark system as mounted */
 	ext4_set16(&fs->sb, state, EXT4_SUPERBLOCK_STATE_ERROR_FS);
@@ -124,106 +125,75 @@ int ext4_fs_fini(struct ext4_fs *fs)
 	return ext4_sb_write(fs->bdev, &fs->sb);
 }
 
-static void ext4_fs_debug_features_incomp(uint32_t features_incompatible)
+static void ext4_fs_debug_features_inc(uint32_t features_incompatible)
 {
-
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_COMPRESSION) {
-		ext4_dprintf(EXT4_DEBUG_FS, "compression\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_FILETYPE) {
-		ext4_dprintf(EXT4_DEBUG_FS, "filetype\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_RECOVER) {
-		ext4_dprintf(EXT4_DEBUG_FS, "recover\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_JOURNAL_DEV) {
-		ext4_dprintf(EXT4_DEBUG_FS, "journal_dev\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_META_BG) {
-		ext4_dprintf(EXT4_DEBUG_FS, "meta_bg\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_EXTENTS) {
-		ext4_dprintf(EXT4_DEBUG_FS, "extents\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_64BIT) {
-		ext4_dprintf(EXT4_DEBUG_FS, "64bit\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_MMP) {
-		ext4_dprintf(EXT4_DEBUG_FS, "mnp\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_FLEX_BG) {
-		ext4_dprintf(EXT4_DEBUG_FS, "flex_bg\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_EA_INODE) {
-		ext4_dprintf(EXT4_DEBUG_FS, "ea_inode\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_DIRDATA) {
-		ext4_dprintf(EXT4_DEBUG_FS, "dirdata\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM) {
-		ext4_dprintf(EXT4_DEBUG_FS, "meta_csum\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_LARGEDIR) {
-		ext4_dprintf(EXT4_DEBUG_FS, "largedir\n");
-	}
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_INLINE_DATA) {
-		ext4_dprintf(EXT4_DEBUG_FS, "inline_data\n");
-	}
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_COMPRESSION)
+		ext4_dbg(DEBUG_FS, DBG_NONE "compression\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_FILETYPE)
+		ext4_dbg(DEBUG_FS, DBG_NONE "filetype\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_RECOVER)
+		ext4_dbg(DEBUG_FS, DBG_NONE "recover\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_JOURNAL_DEV)
+		ext4_dbg(DEBUG_FS, DBG_NONE "journal_dev\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_META_BG)
+		ext4_dbg(DEBUG_FS, DBG_NONE "meta_bg\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_EXTENTS)
+		ext4_dbg(DEBUG_FS, DBG_NONE "extents\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_64BIT)
+		ext4_dbg(DEBUG_FS, DBG_NONE "64bit\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_MMP)
+		ext4_dbg(DEBUG_FS, DBG_NONE "mnp\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_FLEX_BG)
+		ext4_dbg(DEBUG_FS, DBG_NONE "flex_bg\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_EA_INODE)
+		ext4_dbg(DEBUG_FS, DBG_NONE "ea_inode\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_DIRDATA)
+		ext4_dbg(DEBUG_FS, DBG_NONE "dirdata\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM)
+		ext4_dbg(DEBUG_FS, DBG_NONE "meta_csum\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_LARGEDIR)
+		ext4_dbg(DEBUG_FS, DBG_NONE "largedir\n");
+	if (features_incompatible & EXT4_FEATURE_INCOMPAT_INLINE_DATA)
+		ext4_dbg(DEBUG_FS, DBG_NONE "inline_data\n");
 }
 static void ext4_fs_debug_features_comp(uint32_t features_compatible)
 {
-	if (features_compatible & EXT4_FEATURE_COMPAT_DIR_PREALLOC) {
-		ext4_dprintf(EXT4_DEBUG_FS, " dir_prealloc\n");
-	}
-	if (features_compatible & EXT4_FEATURE_COMPAT_IMAGIC_INODES) {
-		ext4_dprintf(EXT4_DEBUG_FS, "imagic_inodes\n");
-	}
-	if (features_compatible & EXT4_FEATURE_COMPAT_HAS_JOURNAL) {
-		ext4_dprintf(EXT4_DEBUG_FS, "has_journal\n");
-	}
-	if (features_compatible & EXT4_FEATURE_COMPAT_EXT_ATTR) {
-		ext4_dprintf(EXT4_DEBUG_FS, "ext_attr\n");
-	}
-	if (features_compatible & EXT4_FEATURE_COMPAT_RESIZE_INODE) {
-		ext4_dprintf(EXT4_DEBUG_FS, "resize_inode\n");
-	}
-	if (features_compatible & EXT4_FEATURE_COMPAT_DIR_INDEX) {
-		ext4_dprintf(EXT4_DEBUG_FS, "dir_index\n");
-	}
+	if (features_compatible & EXT4_FEATURE_COMPAT_DIR_PREALLOC)
+		ext4_dbg(DEBUG_FS, DBG_NONE "dir_prealloc\n");
+	if (features_compatible & EXT4_FEATURE_COMPAT_IMAGIC_INODES)
+		ext4_dbg(DEBUG_FS, DBG_NONE "imagic_inodes\n");
+	if (features_compatible & EXT4_FEATURE_COMPAT_HAS_JOURNAL)
+		ext4_dbg(DEBUG_FS, DBG_NONE "has_journal\n");
+	if (features_compatible & EXT4_FEATURE_COMPAT_EXT_ATTR)
+		ext4_dbg(DEBUG_FS, DBG_NONE "ext_attr\n");
+	if (features_compatible & EXT4_FEATURE_COMPAT_RESIZE_INODE)
+		ext4_dbg(DEBUG_FS, DBG_NONE "resize_inode\n");
+	if (features_compatible & EXT4_FEATURE_COMPAT_DIR_INDEX)
+		ext4_dbg(DEBUG_FS, DBG_NONE "dir_index\n");
 }
 
 static void ext4_fs_debug_features_ro(uint32_t features_ro)
 {
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER) {
-		ext4_dprintf(EXT4_DEBUG_FS, "sparse_super\n");
-	}
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_LARGE_FILE) {
-		ext4_dprintf(EXT4_DEBUG_FS, "large_file\n");
-	}
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_BTREE_DIR) {
-		ext4_dprintf(EXT4_DEBUG_FS, "btree_dir\n");
-	}
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_HUGE_FILE) {
-		ext4_dprintf(EXT4_DEBUG_FS, "huge_file\n");
-	}
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_GDT_CSUM) {
-		ext4_dprintf(EXT4_DEBUG_FS, "gtd_csum\n");
-	}
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_DIR_NLINK) {
-		ext4_dprintf(EXT4_DEBUG_FS, "dir_nlink\n");
-	}
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE) {
-		ext4_dprintf(EXT4_DEBUG_FS, "extra_isize\n");
-	}
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_QUOTA) {
-		ext4_dprintf(EXT4_DEBUG_FS, "quota\n");
-	}
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_BIGALLOC) {
-		ext4_dprintf(EXT4_DEBUG_FS, "bigalloc\n");
-	}
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_METADATA_CSUM) {
-		ext4_dprintf(EXT4_DEBUG_FS, "metadata_csum\n");
-	}
+	if (features_ro & EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER)
+		ext4_dbg(DEBUG_FS, DBG_NONE "sparse_super\n");
+	if (features_ro & EXT4_FEATURE_RO_COMPAT_LARGE_FILE)
+		ext4_dbg(DEBUG_FS, DBG_NONE "large_file\n");
+	if (features_ro & EXT4_FEATURE_RO_COMPAT_BTREE_DIR)
+		ext4_dbg(DEBUG_FS, DBG_NONE "btree_dir\n");
+	if (features_ro & EXT4_FEATURE_RO_COMPAT_HUGE_FILE)
+		ext4_dbg(DEBUG_FS, DBG_NONE "huge_file\n");
+	if (features_ro & EXT4_FEATURE_RO_COMPAT_GDT_CSUM)
+		ext4_dbg(DEBUG_FS, DBG_NONE "gtd_csum\n");
+	if (features_ro & EXT4_FEATURE_RO_COMPAT_DIR_NLINK)
+		ext4_dbg(DEBUG_FS, DBG_NONE "dir_nlink\n");
+	if (features_ro & EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE)
+		ext4_dbg(DEBUG_FS, DBG_NONE "extra_isize\n");
+	if (features_ro & EXT4_FEATURE_RO_COMPAT_QUOTA)
+		ext4_dbg(DEBUG_FS, DBG_NONE "quota\n");
+	if (features_ro & EXT4_FEATURE_RO_COMPAT_BIGALLOC)
+		ext4_dbg(DEBUG_FS, DBG_NONE "bigalloc\n");
+	if (features_ro & EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)
+		ext4_dbg(DEBUG_FS, DBG_NONE "metadata_csum\n");
 }
 
 int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
@@ -235,22 +205,22 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
 		return EOK;
 	}
 
-	ext4_dprintf(EXT4_DEBUG_FS, "\nSB features_incompatible:\n");
-	ext4_fs_debug_features_incomp(
-	    ext4_get32(&fs->sb, features_incompatible));
+	ext4_dbg(DEBUG_FS, DBG_INFO "sblock features_incompatible:\n");
+	ext4_fs_debug_features_inc(ext4_get32(&fs->sb, features_incompatible));
 
-	ext4_dprintf(EXT4_DEBUG_FS, "\nSB features_compatible:\n");
+	ext4_dbg(DEBUG_FS, DBG_INFO "sblock features_compatible:\n");
 	ext4_fs_debug_features_comp(ext4_get32(&fs->sb, features_compatible));
 
-	ext4_dprintf(EXT4_DEBUG_FS, "\nSB features_read_only:\n");
+	ext4_dbg(DEBUG_FS, DBG_INFO "sblock features_read_only:\n");
 	ext4_fs_debug_features_ro(ext4_get32(&fs->sb, features_read_only));
 
 	/*Check features_incompatible*/
 	v = (ext4_get32(&fs->sb, features_incompatible) &
 	     (~CONFIG_FEATURE_INCOMPAT_SUPP));
 	if (v) {
-		ext4_dprintf(EXT4_DEBUG_FS, "SB features_incompatible: fail\n");
-		ext4_fs_debug_features_incomp(v);
+		ext4_dbg(DEBUG_FS, DBG_ERROR
+				"sblock has unsupported features incompatible:\n");
+		ext4_fs_debug_features_inc(v);
 		return ENOTSUP;
 	}
 
@@ -258,11 +228,9 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
 	v = (ext4_get32(&fs->sb, features_read_only) &
 	     (~CONFIG_FEATURE_RO_COMPAT_SUPP));
 	if (v) {
-		ext4_dprintf(
-		    EXT4_DEBUG_FS,
-		    "\nERROR sblock features_read_only . Unsupported:\n");
-		ext4_fs_debug_features_incomp(v);
-
+		ext4_dbg(DEBUG_FS, DBG_WARN
+				"sblock has unsupported features read only:\n");
+		ext4_fs_debug_features_ro(v);
 		*read_only = true;
 		return EOK;
 	}

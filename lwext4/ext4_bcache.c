@@ -166,8 +166,8 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 		return EOK;
 	}
 
-	ext4_dprintf(EXT4_DEBUG_BCACHE,
-		     "ext4_bcache_alloc: FAIL, unable to alloc block cache!\n");
+	ext4_dbg(DEBUG_BCACHE, DBG_ERROR
+		     "unable to alloc block cache!\n");
 	return ENOMEM;
 }
 

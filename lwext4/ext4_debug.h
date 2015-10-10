@@ -47,45 +47,72 @@
 #include <stdint.h>
 #include <stdio.h>
 
-/**@brief   Debug mask: ext4_blockdev.c*/
-#define EXT4_DEBUG_BLOCKDEV (1 << 0)
+#define DEBUG_BALLOC (1 << 0)
+#define DEBUG_BCACHE (1 << 1)
+#define DEBUG_BITMAP (1 << 2)
+#define DEBUG_BLOCK_GROUP (1 << 3)
+#define DEBUG_BLOCKDEV (1 << 4)
+#define DEBUG_DIR_IDX (1 << 5)
+#define DEBUG_DIR (1 << 6)
+#define DEBUG_EXTENT (1 << 7)
+#define DEBUG_FS (1 << 8)
+#define DEBUG_HASH (1 << 9)
+#define DEBUG_IALLOC (1 << 10)
+#define DEBUG_INODE (1 << 11)
+#define DEBUG_SUPER (1 << 12)
+#define DEBUG_XATTR (1 << 13)
+#define DEBUG_EXT4 (1 << 14)
 
-/**@brief   Debug mask: ext4_fs.c*/
-#define EXT4_DEBUG_FS (1 << 1)
+#define DEBUG_ALL (0xFFFFFFFF)
 
-/**@brief   Debug mask: ext4_balloc.c*/
-#define EXT4_DEBUG_BALLOC (1 << 2)
+static inline const char *ext4_dmask_id2str(uint32_t m)
+{
+	switch(m) {
+	case DEBUG_BALLOC:
+		return "ext4_balloc: ";
+	case DEBUG_BCACHE:
+		return "ext4_bcache: ";
+	case DEBUG_BITMAP:
+		return "ext4_bitmap: ";
+	case DEBUG_BLOCK_GROUP:
+		return "ext4_block_group: ";
+	case DEBUG_BLOCKDEV:
+		return "ext4_blockdev: ";
+	case DEBUG_DIR_IDX:
+		return "ext4_dir_idx: ";
+	case DEBUG_DIR:
+		return "ext4_dir: ";
+	case DEBUG_EXTENT:
+		return "ext4_extent: ";
+	case DEBUG_FS:
+		return "ext4_fs: ";
+	case DEBUG_HASH:
+		return "ext4_hash: ";
+	case DEBUG_IALLOC:
+		return "ext4_ialloc: ";
+	case DEBUG_INODE:
+		return "ext4_inode: ";
+	case DEBUG_SUPER:
+		return "ext4_super: ";
+	case DEBUG_XATTR:
+		return "ext4_xattr: ";
+	case DEBUG_EXT4:
+		return "ext4: ";
+	}
+	return "";
+}
+#define DBG_NONE  "        "
+#define DBG_INFO  "[info]  "
+#define DBG_WARN  "[warn]  "
+#define DBG_ERROR "[error] "
 
-/**@brief   Debug mask: ext4_bitmap.c*/
-#define EXT4_DEBUG_BITMAP (1 << 3)
-
-/**@brief   Debug mask: ext4_dir_idx.c*/
-#define EXT4_DEBUG_DIR_IDX (1 << 4)
-
-/**@brief   Debug mask: ext4_dir.c*/
-#define EXT4_DEBUG_DIR (1 << 5)
-
-/**@brief   Debug mask: ext4_ialloc.c*/
-#define EXT4_DEBUG_IALLOC (1 << 6)
-
-/**@brief   Debug mask: ext4_inode.c*/
-#define EXT4_DEBUG_INODE (1 << 7)
-
-/**@brief   Debug mask: ext4_super.c*/
-#define EXT4_DEBUG_SUPER (1 << 8)
-
-/**@brief   Debug mask: ext4_bcache.c*/
-#define EXT4_DEBUG_BCACHE (1 << 9)
-
-/**@brief   Debug mask: ext4_extents.c*/
-#define EXT4_DEBUG_EXTENTS (1 << 10)
-
-/**@brief   All debug printf enabled.*/
-#define EXT4_DEBUG_ALL (0xFFFFFFFF)
-
-/**@brief   Global mask debug settings.
+/**@brief   Global mask debug set.
  * @brief   m new debug mask.*/
 void ext4_dmask_set(uint32_t m);
+
+/**@brief   Global mask debug clear.
+ * @brief   m new debug mask.*/
+void ext4_dmask_clr(uint32_t m);
 
 /**@brief   Global debug mask get.
  * @return  debug mask*/
@@ -93,24 +120,28 @@ uint32_t ext4_dmask_get(void);
 
 #if CONFIG_DEBUG_PRINTF
 /**@brief   Debug printf.*/
-#define ext4_dprintf(m, ...)                                                   \
+#define ext4_dbg(m, ...)                                                       \
 	do {                                                                   \
-		if (m & ext4_dmask_get())                                      \
-			printf(__VA_ARGS__);                                   \
-		fflush(stdout);                                                \
+		if (m & ext4_dmask_get()) {                                    \
+			printf(ext4_dmask_id2str(m));			       \
+			printf(__VA_ARGS__);              		       \
+			fflush(stdout);                                        \
+		}							       \
 	} while (0)
 #else
-#define ext4_dprintf(m, ...)
+#define ext4_dbg(m, ...) do { } while (0)
 #endif
 
 #if CONFIG_DEBUG_ASSERT
 /**@brief   Debug assertion.*/
  #if CONFIG_HAVE_OWN_ASSERT
- #define ext4_assert(_v)                                                        \
+ #define ext4_assert(_v)                                                       \
  	do {                                                                   \
  		if (!(_v)) {                                                   \
- 			printf("Assertion failed:\nmodule: %s\nline: %d\n",    \
+ 			printf("assertion failed:\nfile: %s\nline: %d\n",      \
  			       __FILE__, __LINE__);                            \
+ 			       while (1)				       \
+			       	       ;				       \
  		}                                                              \
  	} while (0)
  #else
