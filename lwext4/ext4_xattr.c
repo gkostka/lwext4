@@ -699,7 +699,7 @@ int ext4_fs_set_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
 	    ext4_xattr_lookup_item(ref, name_index, name, name_len);
 	if (replace) {
 		if (!item) {
-			ret = ENOATTR;
+			ret = ENODATA;
 			goto Finish;
 		}
 		if (item->data_size != data_size)
@@ -739,7 +739,7 @@ int ext4_fs_get_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
 	    ext4_xattr_lookup_item(ref, name_index, name, name_len);
 
 	if (!item) {
-		ret = ENOATTR;
+		ret = ENODATA;
 		goto Finish;
 	}
 	item_size = item->data_size;
