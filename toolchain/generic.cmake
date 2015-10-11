@@ -2,8 +2,8 @@
 set(CMAKE_SYSTEM_PROCESSOR generic)
 
 # Toolchain settings
-set(CMAKE_C_COMPILER    gcc)
-set(CMAKE_CXX_COMPILER  g++)
+set(CMAKE_C_COMPILER    cc)
+set(CMAKE_CXX_COMPILER  c++)
 set(AS                  as)
 set(AR                  ar)
 set(OBJCOPY             objcopy)

@@ -80,6 +80,14 @@
 #define ENOTSUP 95   /* Not supported */
 #endif
 
+#ifndef ENODATA
+ #ifdef ENOATTR
+ #define ENODATA ENOATTR
+ #else
+ #define ENODATA 61
+ #endif
+#endif
+
 #ifndef ENOTSUP
 #define ENOTSUP 95
 #endif
