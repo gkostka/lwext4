@@ -555,6 +555,15 @@ struct ext4_directory_dx_block {
 
 #define EXT4_LINK_MAX 65000
 
+#define EXT4_BAD_INO 1
+#define EXT4_ROOT_INO 2
+#define EXT4_BOOT_LOADER_INO 5
+#define EXT4_UNDEL_DIR_INO 6
+#define EXT4_RESIZE_INO 7
+#define EXT4_JOURNAL_INO 8
+
+#define EXT4_GOOD_OLD_FIRST_INO 11
+
 #define EXT4_EXT_UNWRITTEN_MASK (1L << 15)
 
 #define EXT4_EXT_MAX_LEN_WRITTEN (1L << 15)

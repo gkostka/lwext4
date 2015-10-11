@@ -62,6 +62,16 @@ struct fs_aux_info {
 	uint32_t blocks_per_tind;
 };
 
+static inline int log_2(int j)
+{
+	int i;
+
+	for (i = 0; j > 0; i++)
+		j >>= 1;
+
+	return i - 1;
+}
+
 static int sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info)
 {
         if (to_le16(sb->magic) != EXT4_SUPERBLOCK_MAGIC)
@@ -143,6 +153,14 @@ static uint32_t compute_journal_blocks(struct ext4_mkfs_info *info)
 	return journal_blocks;
 }
 
+static bool has_superblock(struct ext4_mkfs_info *info, uint32_t bgid)
+{
+	if (!(info->feat_ro_compat & EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER))
+		return true;
+
+	return ext4_sb_sparse(bgid);
+}
+
 static void create_fs_aux_info(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info)
 {
 	aux_info->first_data_block = (info->block_size > 1024) ? 0 : 1;
@@ -163,8 +181,7 @@ static void create_fs_aux_info(struct fs_aux_info *aux_info, struct ext4_mkfs_in
 
 	uint32_t last_group_size = aux_info->len_blocks % info->blocks_per_group;
 	uint32_t last_header_size = 2 + aux_info->inode_table_blocks;
-	if (!(info->feat_ro_compat & EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER) ||
-			ext4_sb_sparse(aux_info->groups - 1))
+	if (has_superblock(info, aux_info->groups - 1))
 		last_header_size += 1 + aux_info->bg_desc_blocks +
 			info->bg_desc_reserve_blocks;
 
@@ -193,6 +210,126 @@ static void create_fs_aux_info(struct fs_aux_info *aux_info, struct ext4_mkfs_in
 	aux_info->xattrs = NULL;
 }
 
+
+/* Fill in the superblock memory buffer based on the filesystem parameters */
+static void fill_in_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info)
+{
+	unsigned int i;
+	struct ext4_sblock *sb = aux_info->sb;
+
+	sb->inodes_count = info->inodes_per_group * aux_info->groups;
+	sb->blocks_count_lo = aux_info->len_blocks;
+	sb->reserved_blocks_count_lo = 0;
+	sb->free_blocks_count_lo = 0;
+	sb->free_inodes_count = 0;
+	sb->first_data_block = aux_info->first_data_block;
+	sb->log_block_size = log_2(info->block_size / 1024);
+	sb->log_cluster_size = log_2(info->block_size / 1024);
+	sb->blocks_per_group = info->blocks_per_group;
+	sb->frags_per_group = info->blocks_per_group;
+	sb->inodes_per_group = info->inodes_per_group;
+	sb->mount_time = 0;
+	sb->write_time = 0;
+	sb->mount_count = 0;
+	sb->max_mount_count = 0xFFFF;
+	sb->magic = EXT4_SUPERBLOCK_MAGIC;
+	sb->state = EXT4_SUPERBLOCK_STATE_VALID_FS;
+	sb->errors = EXT4_SUPERBLOCK_ERRORS_RO;
+	sb->minor_rev_level = 0;
+	sb->last_check_time = 0;
+	sb->check_interval = 0;
+	sb->creator_os = EXT4_SUPERBLOCK_OS_LINUX;
+	sb->rev_level = 1;
+	sb->def_resuid = 0;
+	sb->def_resgid = 0;
+
+	sb->first_inode = EXT4_GOOD_OLD_FIRST_INO;
+	sb->inode_size = info->inode_size;
+	sb->block_group_index = 0;
+	sb->features_compatible = info->feat_compat;
+	sb->features_incompatible = info->feat_incompat;
+	sb->features_read_only = info->feat_ro_compat;
+
+	memset(sb->uuid, 0, sizeof(sb->uuid));
+
+	memset(sb->volume_name, 0, sizeof(sb->volume_name));
+	strncpy(sb->volume_name, info->label, sizeof(sb->volume_name));
+	memset(sb->last_mounted, 0, sizeof(sb->last_mounted));
+	sb->algorithm_usage_bitmap = 0;
+
+	sb->s_reserved_gdt_blocks = info->bg_desc_reserve_blocks;
+	sb->s_prealloc_blocks = 0;
+	sb->s_prealloc_dir_blocks = 0;
+
+	//memcpy(sb->journal_uuid, sb->uuid, sizeof(sb->journal_uuid));
+	if (info->feat_compat & EXT4_FEATURE_COMPAT_HAS_JOURNAL)
+		sb->journal_inode_number = EXT4_JOURNAL_INO;
+	sb->journal_dev = 0;
+	sb->last_orphan = 0;
+	sb->hash_seed[0] = 0; /* FIXME */
+	sb->default_hash_version = EXT2_HTREE_HALF_MD4;
+	sb->reserved_char_pad = 1;
+	sb->desc_size = EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE;
+	sb->default_mount_opts = 0; /* FIXME */
+	sb->first_meta_bg = 0;
+	sb->mkfs_time = 0;
+	//sb->jnl_blocks[17]; /* FIXME */
+
+	sb->blocks_count_hi = aux_info->len_blocks >> 32;
+	sb->reserved_blocks_count_hi = 0;
+	sb->free_blocks_count_hi = 0;
+	sb->min_extra_isize = sizeof(struct ext4_inode) -
+		EXT4_GOOD_OLD_INODE_SIZE;
+	sb->want_extra_isize = sizeof(struct ext4_inode) -
+		EXT4_GOOD_OLD_INODE_SIZE;
+	sb->flags = 2;
+	sb->raid_stride = 0;
+	sb->mmp_interval = 0;
+	sb->mmp_block = 0;
+	sb->raid_stripe_width = 0;
+	sb->log_groups_per_flex = 0;
+	sb->kbytes_written = 0;
+
+	sb->block_group_index = 0;
+
+	for (i = 0; i < aux_info->groups; i++) {
+
+		uint64_t group_start_block = aux_info->first_data_block + i *
+			info->blocks_per_group;
+		uint32_t header_size = 0;
+
+		if (has_superblock(info, i)) {
+			if (i != 0) {
+
+				/* Update the block group nr of this backup superblock */
+				sb->block_group_index  = i;
+				/*TODO: write superblock i*/
+
+			}
+
+			header_size = 1 + aux_info->bg_desc_blocks + info->bg_desc_reserve_blocks;
+		}
+
+		aux_info->bg_desc[i].block_bitmap_lo = group_start_block + header_size;
+		aux_info->bg_desc[i].inode_bitmap_lo = group_start_block + header_size + 1;
+		aux_info->bg_desc[i].inode_table_first_block_lo = group_start_block + header_size + 2;
+
+		aux_info->bg_desc[i].free_blocks_count_lo = sb->blocks_per_group;
+		aux_info->bg_desc[i].free_inodes_count_lo = sb->inodes_per_group;
+		aux_info->bg_desc[i].used_dirs_count_lo = 0;
+	}
+
+	/* Queue the primary superblock to be written out - if it's a block device,
+	 * queue a zero-filled block first, the correct version of superblock will
+	 * be written to the block device after all other blocks are written.
+	 *
+	 * The file-system on the block device will not be valid until the correct
+	 * version of superblocks are written, this is to avoid the likelihood of a
+	 * partially created file-system.
+	 */
+	sb->block_group_index  = 0;
+	/*TODO: write superblock 0*/
+}
 
 
 int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
