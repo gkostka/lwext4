@@ -555,9 +555,9 @@ struct ext4_directory_dx_block {
 
 #define EXT4_LINK_MAX 65000
 
-#define EXT4_EXT_UNWRITTEN_MASK (1 << 15)
+#define EXT4_EXT_UNWRITTEN_MASK (1L << 15)
 
-#define EXT4_EXT_MAX_LEN_WRITTEN (1 << 15)
+#define EXT4_EXT_MAX_LEN_WRITTEN (1L << 15)
 #define EXT4_EXT_MAX_LEN_UNWRITTEN \
 	(EXT4_EXT_MAX_LEN_WRITTEN - 1)
 
