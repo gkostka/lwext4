@@ -117,6 +117,17 @@ static uint32_t compute_bg_desc_reserve_blocks(struct ext4_mkfs_info *info)
 	return bg_desc_reserve_blocks;
 }
 
+static uint32_t compute_journal_blocks(struct ext4_mkfs_info *info)
+{
+	uint32_t journal_blocks = DIV_ROUND_UP(info->len, info->block_size) / 64;
+	if (journal_blocks < 1024)
+		journal_blocks = 1024;
+	if (journal_blocks > 32768)
+		journal_blocks = 32768;
+	return journal_blocks;
+}
+
+
 
 int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 {
@@ -165,6 +176,8 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	/* Round down the filesystem length to be a multiple of the block size */
 	info->len &= ~((uint64_t)info->block_size - 1);
 
+	if (info->journal_blocks == 0)
+		info->journal_blocks = compute_journal_blocks(info);
 
 	if (info->blocks_per_group == 0)
 		info->blocks_per_group = compute_blocks_per_group(info);
@@ -184,6 +197,9 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	info->feat_ro_compat = CONFIG_FEATURE_RO_COMPAT_SUPP;
 	info->feat_incompat = CONFIG_FEATURE_INCOMPAT_SUPP;
 
+	if (info->no_journal == 0)
+		info->feat_compat |= EXT4_FEATURE_COMPAT_HAS_JOURNAL;
+
 	info->bg_desc_reserve_blocks = compute_bg_desc_reserve_blocks(info);
 
 	r = info2sb(info, sb);
@@ -198,7 +214,9 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inodes per group: %d\n",
 			info->inodes_per_group);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inode size: %d\n", info->inode_size);
-	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inods: %d\n", info->inodes);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inodes: %d\n", info->inodes);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Journal blocks: %d\n",
+			info->journal_blocks);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Features ro_compat: 0x%x\n",
 			info->feat_ro_compat);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Features compat: 0x%x\n",
@@ -207,6 +225,8 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 			info->feat_incompat);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "BG desc reserve: 0x%x\n",
 			info->bg_desc_reserve_blocks);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "journal: %s\n",
+			!info->no_journal ? "yes" : "no");
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Label: %s\n", info->label);
 
 	/*TODO: write filesystem metadata*/
