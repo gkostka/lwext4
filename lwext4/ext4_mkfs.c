@@ -48,7 +48,6 @@
 
 struct fs_aux_info {
 	struct ext4_sblock *sb;
-	struct ext4_sblock *sb_block;
 	struct ext4_bgroup *bg_desc;
 	struct xattr_list_element *xattrs;
 	uint32_t first_data_block;
@@ -88,15 +87,6 @@ static int sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info)
 	info->bg_desc_reserve_blocks = to_le16(sb->s_reserved_gdt_blocks);
 	info->label = sb->volume_name;
 	info->len = (uint64_t)info->block_size * ext4_sb_get_blocks_cnt(sb);
-
-	return EOK;
-}
-
-static int info2sb(struct ext4_mkfs_info *info, struct ext4_sblock *sb)
-{
-	(void)info;
-	memset(sb, 0, sizeof(struct ext4_sblock));
-	/*TODO: Fill superblock with proper values*/
 
 	return EOK;
 }
@@ -161,7 +151,7 @@ static bool has_superblock(struct ext4_mkfs_info *info, uint32_t bgid)
 	return ext4_sb_sparse(bgid);
 }
 
-static void create_fs_aux_info(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info)
+static int create_fs_aux_info(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info)
 {
 	aux_info->first_data_block = (info->block_size > 1024) ? 0 : 1;
 	aux_info->len_blocks = info->len / info->block_size;
@@ -190,24 +180,25 @@ static void create_fs_aux_info(struct fs_aux_info *aux_info, struct ext4_mkfs_in
 		aux_info->len_blocks -= last_group_size;
 	}
 
-	/* The write_data* functions expect only block aligned calls.
-	 * This is not an issue, except when we write out the super
-	 * block on a system with a block size > 1K.  So, we need to
-	 * deal with that here.
-	 */
-	aux_info->sb_block = calloc(1, info->block_size);
-	ext4_assert(aux_info->sb_block);
+	aux_info->sb = calloc(1, sizeof(struct ext4_sblock));
+	if (!aux_info->sb)
+		return ENOMEM;
 
-
-	if (info->block_size > 1024)
-		aux_info->sb = (struct ext4_sblock *)((char *)aux_info->sb_block + 1024);
-	else
-		aux_info->sb = aux_info->sb_block;
-
-	aux_info->bg_desc = calloc(info->block_size, aux_info->bg_desc_blocks);
-	ext4_assert(aux_info->bg_desc);
+	aux_info->bg_desc = calloc(sizeof(struct ext4_bgroup),
+			aux_info->bg_desc_blocks);
+	if (!aux_info->bg_desc)
+		return ENOMEM;
 
 	aux_info->xattrs = NULL;
+	return EOK;
+}
+
+static void release_fs_aux_info(struct fs_aux_info *aux_info)
+{
+	if (aux_info->sb)
+		free(aux_info->sb);
+	if (aux_info->sb)
+		free(aux_info->bg_desc);
 }
 
 
@@ -298,17 +289,9 @@ static void fill_in_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info
 			info->blocks_per_group;
 		uint32_t header_size = 0;
 
-		if (has_superblock(info, i)) {
-			if (i != 0) {
-
-				/* Update the block group nr of this backup superblock */
-				sb->block_group_index  = i;
-				/*TODO: write superblock i*/
-
-			}
-
+		if (has_superblock(info, i))
 			header_size = 1 + aux_info->bg_desc_blocks + info->bg_desc_reserve_blocks;
-		}
+
 
 		aux_info->bg_desc[i].block_bitmap_lo = group_start_block + header_size;
 		aux_info->bg_desc[i].inode_bitmap_lo = group_start_block + header_size + 1;
@@ -318,17 +301,31 @@ static void fill_in_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info
 		aux_info->bg_desc[i].free_inodes_count_lo = sb->inodes_per_group;
 		aux_info->bg_desc[i].used_dirs_count_lo = 0;
 	}
+}
 
-	/* Queue the primary superblock to be written out - if it's a block device,
-	 * queue a zero-filled block first, the correct version of superblock will
-	 * be written to the block device after all other blocks are written.
-	 *
-	 * The file-system on the block device will not be valid until the correct
-	 * version of superblocks are written, this is to avoid the likelihood of a
-	 * partially created file-system.
-	 */
-	sb->block_group_index  = 0;
-	/*TODO: write superblock 0*/
+static int bdev_write_sb(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
+			  struct ext4_mkfs_info *info)
+{
+	uint64_t offset;
+	uint32_t i;
+	int r;
+
+	/* write out the backup superblocks */
+	for (i = 1; i < aux_info->groups; i++) {
+		if (has_superblock(info, i)) {
+			offset = info->block_size * (aux_info->first_data_block
+				+ i * info->blocks_per_group);
+
+			aux_info->sb->block_group_index = i;
+			r = ext4_block_writebytes(bd, offset, aux_info->sb, 1024);
+			if (r != EOK)
+				return r;
+		}
+	}
+
+	/* write out the primary superblock */
+	aux_info->sb->block_group_index = 0;
+	return ext4_block_writebytes(bd, 1024, aux_info->sb, 1024);
 }
 
 
@@ -361,14 +358,9 @@ Finish:
 int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 {
 	int r;
-	struct ext4_sblock *sb = NULL;
 	r = ext4_block_init(bd);
 	if (r != EOK)
 		return r;
-
-	sb = malloc(sizeof(struct ext4_sblock));
-	if (!sb)
-		goto Finish;
 
 	if (info->len == 0)
 		info->len = bd->ph_bcnt * bd->ph_bsize;
@@ -405,10 +397,6 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 
 	info->bg_desc_reserve_blocks = compute_bg_desc_reserve_blocks(info);
 
-	r = info2sb(info, sb);
-	if (r != EOK)
-		return r;
-
 	ext4_dbg(DEBUG_MKFS, DBG_INFO "Creating filesystem with parameters:\n");
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Size: %"PRIu64"\n", info->len);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Block size: %d\n", info->block_size);
@@ -433,13 +421,21 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Label: %s\n", info->label);
 
 	struct fs_aux_info aux_info;
-	create_fs_aux_info(&aux_info, info);
+	memset(&aux_info, 0, sizeof(struct fs_aux_info));
 
-	/*TODO: write filesystem metadata*/
+	r = create_fs_aux_info(&aux_info, info);
+	if (r != EOK)
+		goto Finish;
+
+	fill_in_sb(&aux_info, info);
+
+
+	r = bdev_write_sb(bd, &aux_info, info);
+	if (r != EOK)
+		goto Finish;
 
 	Finish:
-	if (sb)
-		free(sb);
+	release_fs_aux_info(&aux_info);
 	ext4_block_fini(bd);
 	return r;
 }
