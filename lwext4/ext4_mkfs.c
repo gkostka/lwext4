@@ -36,8 +36,10 @@
 
 #include "ext4_config.h"
 #include "ext4_super.h"
+#include "ext4_debug.h"
 #include "ext4_mkfs.h"
 
+#include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -46,12 +48,7 @@
 
 static int sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info)
 {
-
         if (to_le16(sb->magic) != EXT4_SUPERBLOCK_MAGIC)
-                return EINVAL;
-
-        if ((to_le16(sb->state) & EXT4_SUPERBLOCK_STATE_VALID_FS)
-        		!= EXT4_SUPERBLOCK_STATE_VALID_FS)
                 return EINVAL;
 
 	info->block_size = 1024 << to_le32(sb->log_block_size);
@@ -103,6 +100,23 @@ static uint32_t compute_inodes_per_group(struct ext4_mkfs_info *info)
 	return inodes;
 }
 
+static uint32_t compute_bg_desc_reserve_blocks(struct ext4_mkfs_info *info)
+{
+	uint32_t blocks = DIV_ROUND_UP(info->len, info->block_size);
+	uint32_t block_groups = DIV_ROUND_UP(blocks, info->blocks_per_group);
+	uint32_t bg_desc_blocks = DIV_ROUND_UP(block_groups * sizeof(struct ext4_bgroup),
+			info->block_size);
+
+	uint32_t bg_desc_reserve_blocks =
+			DIV_ROUND_UP(block_groups * 1024 * sizeof(struct ext4_bgroup),
+					info->block_size) - bg_desc_blocks;
+
+	if (bg_desc_reserve_blocks > info->block_size / sizeof(uint32_t))
+		bg_desc_reserve_blocks = info->block_size / sizeof(uint32_t);
+
+	return bg_desc_reserve_blocks;
+}
+
 
 int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 {
@@ -142,6 +156,9 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	if (!sb)
 		goto Finish;
 
+	if (info->len == 0)
+		info->len = bd->ph_bcnt * bd->ph_bsize;
+
 	if (info->block_size == 0)
 		info->block_size = 4096; /*Set block size to default value*/
 
@@ -167,12 +184,32 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	info->feat_ro_compat = CONFIG_FEATURE_RO_COMPAT_SUPP;
 	info->feat_incompat = CONFIG_FEATURE_INCOMPAT_SUPP;
 
+	info->bg_desc_reserve_blocks = compute_bg_desc_reserve_blocks(info);
 
 	r = info2sb(info, sb);
 	if (r != EOK)
 		return r;
 
-	/*TODO: write fisesystem metadata*/
+	ext4_dbg(DEBUG_MKFS, DBG_INFO "Creating filesystem with parameters:\n");
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Size: %"PRIu64"\n", info->len);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Block size: %d\n", info->block_size);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Blocks per group: %d\n",
+			info->blocks_per_group);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inodes per group: %d\n",
+			info->inodes_per_group);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inode size: %d\n", info->inode_size);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inods: %d\n", info->inodes);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Features ro_compat: 0x%x\n",
+			info->feat_ro_compat);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Features compat: 0x%x\n",
+			info->feat_compat);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Features incompat: 0x%x\n",
+			info->feat_incompat);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "BG desc reserve: 0x%x\n",
+			info->bg_desc_reserve_blocks);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Label: %s\n", info->label);
+
+	/*TODO: write filesystem metadata*/
 
 	Finish:
 	if (sb)
