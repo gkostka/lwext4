@@ -67,12 +67,28 @@ static int ext4_mkfs_sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info
 
 int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 {
-	(void)bd;
-	(void)info;
+	int r;
+	struct ext4_sblock *sb = NULL;
+	r = ext4_block_init(bd);
+	if (r != EOK)
+		return r;
 
-	ext4_mkfs_sb2info(0, 0);
+	sb = malloc(sizeof(struct ext4_sblock));
+	if (!sb)
+		goto Finish;
 
-	return EOK;
+
+	r = ext4_sb_read(bd, sb);
+	if (r != EOK)
+		goto Finish;
+
+	r = ext4_mkfs_sb2info(sb, info);
+
+Finish:
+	if (sb)
+		free(sb);
+	ext4_block_fini(bd);
+	return r;
 }
 
 int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
