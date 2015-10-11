@@ -61,12 +61,18 @@ void ext4_extent_set_first_block(struct ext4_extent *extent, uint32_t iblock)
 
 uint16_t ext4_extent_get_block_count(struct ext4_extent *extent)
 {
-	return to_le16(extent->block_count);
+	if (EXT4_EXT_IS_UNWRITTEN(extent))
+		return EXT4_EXT_GET_LEN_UNWRITTEN(extent);
+	else
+		return EXT4_EXT_GET_LEN(extent);
 }
 
-void ext4_extent_set_block_count(struct ext4_extent *extent, uint16_t count)
+void ext4_extent_set_block_count(struct ext4_extent *extent, uint16_t count,
+				 bool unwritten)
 {
-	extent->block_count = to_le16(count);
+	EXT4_EXT_SET_LEN(extent, count);
+	if (unwritten)
+		EXT4_EXT_SET_UNWRITTEN(extent);
 }
 
 uint64_t ext4_extent_get_start(struct ext4_extent *extent)
@@ -493,7 +499,8 @@ int ext4_extent_release_blocks_from(struct ext4_inode_ref *inode_ref,
 
 	/* Correct counter */
 	block_count -= delete_count;
-	ext4_extent_set_block_count(path_ptr->extent, block_count);
+	ext4_extent_set_block_count(path_ptr->extent, block_count,
+				EXT4_EXT_IS_UNWRITTEN(path_ptr->extent));
 
 	/* Initialize the following loop */
 	uint16_t entries =
@@ -873,7 +880,8 @@ int ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 			ext4_extent_set_first_block(path_ptr->extent,
 						    new_block_idx);
 			ext4_extent_set_start(path_ptr->extent, phys_block);
-			ext4_extent_set_block_count(path_ptr->extent, 1);
+			ext4_extent_set_block_count(path_ptr->extent, 1,
+						false);
 
 			/* Update i-node */
 			if (update_size) {
@@ -908,7 +916,8 @@ int ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 
 			/* Update extent */
 			ext4_extent_set_block_count(path_ptr->extent,
-						    block_count + 1);
+						    block_count + 1,
+						    false);
 
 			/* Update i-node */
 			if (update_size) {
@@ -943,7 +952,7 @@ append_extent:
 	path_ptr = path + tree_depth;
 
 	/* Initialize newly created extent */
-	ext4_extent_set_block_count(path_ptr->extent, 1);
+	ext4_extent_set_block_count(path_ptr->extent, 1, false);
 	ext4_extent_set_first_block(path_ptr->extent, new_block_idx);
 	ext4_extent_set_start(path_ptr->extent, phys_block);
 

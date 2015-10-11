@@ -555,6 +555,25 @@ struct ext4_directory_dx_block {
 
 #define EXT4_LINK_MAX 65000
 
+#define EXT4_EXT_UNWRITTEN_MASK (1 << 15)
+
+#define EXT4_EXT_MAX_LEN_WRITTEN (1 << 15)
+#define EXT4_EXT_MAX_LEN_UNWRITTEN \
+	(EXT4_EXT_MAX_LEN_WRITTEN - 1)
+
+#define EXT4_EXT_GET_LEN(ex) to_le16((ex)->block_count)
+#define EXT4_EXT_GET_LEN_UNWRITTEN(ex) \
+	(EXT4_EXT_GET_LEN(ex) &= ~(EXT4_EXT_UNWRITTEN_MASK))
+#define EXT4_EXT_SET_LEN(ex, count) \
+	((ex)->block_count = to_le16(count))
+
+#define EXT4_EXT_IS_UNWRITTEN(ex) \
+	(EXT4_EXT_GET_LEN(ex) > EXT4_EXT_MAX_LEN_WRITTEN)
+#define EXT4_EXT_SET_UNWRITTEN(ex) \
+	((ex)->block_count |= to_le16(EXT4_EXT_UNWRITTEN_MASK))
+#define EXT4_EXT_SET_WRITTEN(ex) \
+	((ex)->block_count &= ~(to_le16(EXT4_EXT_UNWRITTEN_MASK)))
+
 /*
  * This is the extent on-disk structure.
  * It's used at the bottom of the tree.

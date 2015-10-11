@@ -61,8 +61,10 @@ uint16_t ext4_extent_get_block_count(struct ext4_extent *extent);
 
 /**@brief Set number of blocks covered by extent.
  * @param extent Extent to load count from
- * @param count  Number of blocks covered by extent */
-void ext4_extent_set_block_count(struct ext4_extent *extent, uint16_t count);
+ * @param count  Number of blocks covered by extent
+ * @param unwritten Whether the extent is unwritten or not */
+void ext4_extent_set_block_count(struct ext4_extent *extent, uint16_t count,
+				 bool unwritten);
 
 /**@brief Get physical number of the first block covered by extent.
  * @param extent Extent to load number
