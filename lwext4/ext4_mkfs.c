@@ -38,8 +38,13 @@
 #include "ext4_super.h"
 #include "ext4_mkfs.h"
 
+#include <string.h>
+#include <stdlib.h>
 
-static int ext4_mkfs_sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info)
+#define DIV_ROUND_UP(x, y) (((x) + (y) - 1)/(y))
+#define EXT4_ALIGN(x, y) ((y) * DIV_ROUND_UP((x), (y)))
+
+static int sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info)
 {
 
         if (to_le16(sb->magic) != EXT4_SUPERBLOCK_MAGIC)
@@ -64,6 +69,40 @@ static int ext4_mkfs_sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info
 	return EOK;
 }
 
+static int info2sb(struct ext4_mkfs_info *info, struct ext4_sblock *sb)
+{
+	(void)info;
+	memset(sb, 0, sizeof(struct ext4_sblock));
+	/*TODO: Fill superblock with proper values*/
+
+	return EOK;
+}
+
+static uint32_t compute_blocks_per_group(struct ext4_mkfs_info *info)
+{
+	return info->block_size * 8;
+}
+
+static uint32_t compute_inodes(struct ext4_mkfs_info *info)
+{
+	return DIV_ROUND_UP(info->len, info->block_size) / 4;
+}
+
+static uint32_t compute_inodes_per_group(struct ext4_mkfs_info *info)
+{
+	uint32_t blocks = DIV_ROUND_UP(info->len, info->block_size);
+	uint32_t block_groups = DIV_ROUND_UP(blocks, info->blocks_per_group);
+	uint32_t inodes = DIV_ROUND_UP(info->inodes, block_groups);
+	inodes = EXT4_ALIGN(inodes, (info->block_size / info->inode_size));
+
+	/* After properly rounding up the number of inodes/group,
+	 * make sure to update the total inodes field in the info struct.
+	 */
+	info->inodes = inodes * block_groups;
+
+	return inodes;
+}
+
 
 int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 {
@@ -82,7 +121,7 @@ int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	if (r != EOK)
 		goto Finish;
 
-	r = ext4_mkfs_sb2info(sb, info);
+	r = sb2info(sb, info);
 
 Finish:
 	if (sb)
@@ -93,9 +132,53 @@ Finish:
 
 int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 {
-	(void)bd;
-	(void)info;
-	return EOK;
+	int r;
+	struct ext4_sblock *sb = NULL;
+	r = ext4_block_init(bd);
+	if (r != EOK)
+		return r;
+
+	sb = malloc(sizeof(struct ext4_sblock));
+	if (!sb)
+		goto Finish;
+
+	if (info->block_size == 0)
+		info->block_size = 4096; /*Set block size to default value*/
+
+	/* Round down the filesystem length to be a multiple of the block size */
+	info->len &= ~((uint64_t)info->block_size - 1);
+
+
+	if (info->blocks_per_group == 0)
+		info->blocks_per_group = compute_blocks_per_group(info);
+
+	if (info->inodes == 0)
+		info->inodes = compute_inodes(info);
+
+	if (info->inode_size == 0)
+		info->inode_size = 256;
+
+	if (info->label == NULL)
+		info->label = "";
+
+	info->inodes_per_group = compute_inodes_per_group(info);
+
+	info->feat_compat = CONFIG_FEATURE_COMPAT_SUPP;
+	info->feat_ro_compat = CONFIG_FEATURE_RO_COMPAT_SUPP;
+	info->feat_incompat = CONFIG_FEATURE_INCOMPAT_SUPP;
+
+
+	r = info2sb(info, sb);
+	if (r != EOK)
+		return r;
+
+	/*TODO: write fisesystem metadata*/
+
+	Finish:
+	if (sb)
+		free(sb);
+	ext4_block_fini(bd);
+	return r;
 }
 
 /**
