@@ -398,15 +398,16 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	info->bg_desc_reserve_blocks = compute_bg_desc_reserve_blocks(info);
 
 	ext4_dbg(DEBUG_MKFS, DBG_INFO "Creating filesystem with parameters:\n");
-	ext4_dbg(DEBUG_MKFS, DBG_NONE "Size: %"PRIu64"\n", info->len);
-	ext4_dbg(DEBUG_MKFS, DBG_NONE "Block size: %d\n", info->block_size);
-	ext4_dbg(DEBUG_MKFS, DBG_NONE "Blocks per group: %d\n",
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Size: %llu\n",
+			(long long unsigned int)info->len);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Block size: %"PRIu32"\n", info->block_size);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Blocks per group: %"PRIu32"\n",
 			info->blocks_per_group);
-	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inodes per group: %d\n",
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inodes per group: %"PRIu32"\n",
 			info->inodes_per_group);
-	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inode size: %d\n", info->inode_size);
-	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inodes: %d\n", info->inodes);
-	ext4_dbg(DEBUG_MKFS, DBG_NONE "Journal blocks: %d\n",
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inode size: %"PRIu32"\n", info->inode_size);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Inodes: %"PRIu32"\n", info->inodes);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Journal blocks: %"PRIu32"\n",
 			info->journal_blocks);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Features ro_compat: 0x%x\n",
 			info->feat_ro_compat);
@@ -414,7 +415,7 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 			info->feat_compat);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Features incompat: 0x%x\n",
 			info->feat_incompat);
-	ext4_dbg(DEBUG_MKFS, DBG_NONE "BG desc reserve: 0x%x\n",
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "BG desc reserve: %"PRIu32"\n",
 			info->bg_desc_reserve_blocks);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "journal: %s\n",
 			!info->no_journal ? "yes" : "no");
