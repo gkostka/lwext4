@@ -46,6 +46,22 @@
 #define DIV_ROUND_UP(x, y) (((x) + (y) - 1)/(y))
 #define EXT4_ALIGN(x, y) ((y) * DIV_ROUND_UP((x), (y)))
 
+struct fs_aux_info {
+	struct ext4_sblock *sb;
+	struct ext4_sblock *sb_block;
+	struct ext4_bgroup *bg_desc;
+	struct xattr_list_element *xattrs;
+	uint32_t first_data_block;
+	uint64_t len_blocks;
+	uint32_t inode_table_blocks;
+	uint32_t groups;
+	uint32_t bg_desc_blocks;
+	uint32_t default_i_flags;
+	uint32_t blocks_per_ind;
+	uint32_t blocks_per_dind;
+	uint32_t blocks_per_tind;
+};
+
 static int sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info)
 {
         if (to_le16(sb->magic) != EXT4_SUPERBLOCK_MAGIC)
@@ -125,6 +141,56 @@ static uint32_t compute_journal_blocks(struct ext4_mkfs_info *info)
 	if (journal_blocks > 32768)
 		journal_blocks = 32768;
 	return journal_blocks;
+}
+
+static void create_fs_aux_info(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info)
+{
+	aux_info->first_data_block = (info->block_size > 1024) ? 0 : 1;
+	aux_info->len_blocks = info->len / info->block_size;
+	aux_info->inode_table_blocks = DIV_ROUND_UP(info->inodes_per_group * info->inode_size,
+		info->block_size);
+	aux_info->groups = DIV_ROUND_UP(aux_info->len_blocks - aux_info->first_data_block,
+		info->blocks_per_group);
+	aux_info->blocks_per_ind = info->block_size / sizeof(uint32_t);
+	aux_info->blocks_per_dind = aux_info->blocks_per_ind * aux_info->blocks_per_ind;
+	aux_info->blocks_per_tind = aux_info->blocks_per_dind * aux_info->blocks_per_dind;
+
+	aux_info->bg_desc_blocks =
+		DIV_ROUND_UP(aux_info->groups * sizeof(struct ext4_bgroup),
+			info->block_size);
+
+	aux_info->default_i_flags = EXT4_INODE_FLAG_NOATIME;
+
+	uint32_t last_group_size = aux_info->len_blocks % info->blocks_per_group;
+	uint32_t last_header_size = 2 + aux_info->inode_table_blocks;
+	if (!(info->feat_ro_compat & EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER) ||
+			ext4_sb_sparse(aux_info->groups - 1))
+		last_header_size += 1 + aux_info->bg_desc_blocks +
+			info->bg_desc_reserve_blocks;
+
+	if (last_group_size > 0 && last_group_size < last_header_size) {
+		aux_info->groups--;
+		aux_info->len_blocks -= last_group_size;
+	}
+
+	/* The write_data* functions expect only block aligned calls.
+	 * This is not an issue, except when we write out the super
+	 * block on a system with a block size > 1K.  So, we need to
+	 * deal with that here.
+	 */
+	aux_info->sb_block = calloc(1, info->block_size);
+	ext4_assert(aux_info->sb_block);
+
+
+	if (info->block_size > 1024)
+		aux_info->sb = (struct ext4_sblock *)((char *)aux_info->sb_block + 1024);
+	else
+		aux_info->sb = aux_info->sb_block;
+
+	aux_info->bg_desc = calloc(info->block_size, aux_info->bg_desc_blocks);
+	ext4_assert(aux_info->bg_desc);
+
+	aux_info->xattrs = NULL;
 }
 
 
@@ -228,6 +294,9 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "journal: %s\n",
 			!info->no_journal ? "yes" : "no");
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Label: %s\n", info->label);
+
+	struct fs_aux_info aux_info;
+	create_fs_aux_info(&aux_info, info);
 
 	/*TODO: write filesystem metadata*/
 
