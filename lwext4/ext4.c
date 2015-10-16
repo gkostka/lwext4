@@ -1326,15 +1326,21 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 		if (r != EOK)
 			goto Finish;
 
-		r = ext4_block_get(f->mp->fs.bdev, &b, fblock);
-		if (r != EOK)
-			goto Finish;
+		/* Do we get an unwritten range? */
+		if (fblock != 0) {
+			r = ext4_block_get(f->mp->fs.bdev, &b, fblock);
+			if (r != EOK)
+				goto Finish;
 
-		memcpy(u8_buf, b.data + u, ll);
+			memcpy(u8_buf, b.data + u, ll);
 
-		r = ext4_block_set(f->mp->fs.bdev, &b);
-		if (r != EOK)
-			goto Finish;
+			r = ext4_block_set(f->mp->fs.bdev, &b);
+			if (r != EOK)
+				goto Finish;
+		} else {
+			/* Yes, we do. */
+			memset(u8_buf, 0, ll);
+		}
 
 		u8_buf += ll;
 		size -= ll;
@@ -1465,7 +1471,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 	if (u) {
 		uint32_t ll = size > (block_size - u) ? (block_size - u) : size;
 
-		r = ext4_fs_get_inode_data_block_index(&ref, sblock, &fblock);
+		r = ext4_fs_init_inode_data_block_index(&ref, sblock, &fblock);
 		if (r != EOK)
 			goto Finish;
 
@@ -1501,7 +1507,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 
 		while (sblock < sblock_end) {
 			if (sblock < file_blocks) {
-				r = ext4_fs_get_inode_data_block_index(
+				r = ext4_fs_init_inode_data_block_index(
 				    &ref, sblock, &fblock);
 				if (r != EOK)
 					break;
@@ -1548,7 +1554,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 
 	if (size) {
 		if (sblock < file_blocks) {
-			r = ext4_fs_get_inode_data_block_index(&ref, sblock,
+			r = ext4_fs_init_inode_data_block_index(&ref, sblock,
 							       &fblock);
 			if (r != EOK)
 				goto Finish;
