@@ -46,6 +46,16 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <inttypes.h>
+
+#ifndef PRIu64
+#define PRIu64 "llu"
+#endif
+
+#ifndef PRId64
+#define PRId64 "lld"
+#endif
+
 
 #define DEBUG_BALLOC (1 << 0)
 #define DEBUG_BCACHE (1 << 1)
