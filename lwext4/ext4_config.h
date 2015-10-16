@@ -142,6 +142,11 @@
 #define CONFIG_HAVE_OWN_OFLAGS 0
 #endif
 
+/**@brief   Use full extent implemrntation*/
+#ifndef CONFIG_EXTENT_FULL
+#define CONFIG_EXTENT_FULL 1
+#endif
+
 #ifdef __GNUC__
 #ifndef __unused
 #define __unused __attribute__ ((__unused__))

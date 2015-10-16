@@ -44,6 +44,8 @@
 #include "ext4_config.h"
 #include "ext4_types.h"
 
+#if !CONFIG_EXTENT_FULL
+
 /**@brief Get logical number of the block covered by extent.
  * @param extent Extent to load number from
  * @return Logical number of the first block covered by extent */
@@ -183,7 +185,9 @@ int ext4_extent_release_blocks_from(struct ext4_inode_ref *inode_ref,
 int ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 			     uint32_t *fblock, bool update_size);
 
+#endif
+
 #endif /* EXT4_EXTENT_H_ */
-       /**
-	* @}
-	*/
+/**
+* @}
+*/

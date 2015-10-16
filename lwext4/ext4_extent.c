@@ -49,6 +49,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#if !CONFIG_EXTENT_FULL
+
 uint32_t ext4_extent_get_first_block(struct ext4_extent *extent)
 {
 	return to_le32(extent->first_block);
@@ -988,6 +990,7 @@ finish:
 	return rc;
 }
 
+#endif
 /**
  * @}
  */
