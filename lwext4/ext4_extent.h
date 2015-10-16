@@ -49,113 +49,193 @@
 /**@brief Get logical number of the block covered by extent.
  * @param extent Extent to load number from
  * @return Logical number of the first block covered by extent */
-uint32_t ext4_extent_get_first_block(struct ext4_extent *extent);
+static inline uint32_t ext4_extent_get_first_block(struct ext4_extent *extent)
+{
+	return to_le32(extent->first_block);
+}
 
 /**@brief Set logical number of the first block covered by extent.
  * @param extent Extent to set number to
  * @param iblock Logical number of the first block covered by extent */
-void ext4_extent_set_first_block(struct ext4_extent *extent, uint32_t iblock);
+static inline void ext4_extent_set_first_block(struct ext4_extent *extent,
+		uint32_t iblock)
+{
+	extent->first_block = to_le32(iblock);
+}
 
 /**@brief Get number of blocks covered by extent.
  * @param extent Extent to load count from
  * @return Number of blocks covered by extent */
-uint16_t ext4_extent_get_block_count(struct ext4_extent *extent);
-
+static inline uint16_t ext4_extent_get_block_count(struct ext4_extent *extent)
+{
+	if (EXT4_EXT_IS_UNWRITTEN(extent))
+		return EXT4_EXT_GET_LEN_UNWRITTEN(extent);
+	else
+		return EXT4_EXT_GET_LEN(extent);
+}
 /**@brief Set number of blocks covered by extent.
  * @param extent Extent to load count from
  * @param count  Number of blocks covered by extent
  * @param unwritten Whether the extent is unwritten or not */
-void ext4_extent_set_block_count(struct ext4_extent *extent, uint16_t count,
-				 bool unwritten);
+static inline void ext4_extent_set_block_count(struct ext4_extent *extent,
+					       uint16_t count, bool unwritten)
+{
+	EXT4_EXT_SET_LEN(extent, count);
+	if (unwritten)
+		EXT4_EXT_SET_UNWRITTEN(extent);
+}
 
 /**@brief Get physical number of the first block covered by extent.
  * @param extent Extent to load number
  * @return Physical number of the first block covered by extent */
-uint64_t ext4_extent_get_start(struct ext4_extent *extent);
+static inline uint64_t ext4_extent_get_start(struct ext4_extent *extent)
+{
+	return ((uint64_t)to_le16(extent->start_hi)) << 32 |
+	       ((uint64_t)to_le32(extent->start_lo));
+}
+
 
 /**@brief Set physical number of the first block covered by extent.
  * @param extent Extent to load number
  * @param fblock Physical number of the first block covered by extent */
-void ext4_extent_set_start(struct ext4_extent *extent, uint64_t fblock);
+static inline void ext4_extent_set_start(struct ext4_extent *extent, uint64_t fblock)
+{
+	extent->start_lo = to_le32((fblock << 32) >> 32);
+	extent->start_hi = to_le16((uint16_t)(fblock >> 32));
+}
+
 
 /**@brief Get logical number of the block covered by extent index.
  * @param index Extent index to load number from
  * @return Logical number of the first block covered by extent index */
-uint32_t ext4_extent_index_get_first_block(struct ext4_extent_index *index);
+static inline uint32_t
+ext4_extent_index_get_first_block(struct ext4_extent_index *index)
+{
+	return to_le32(index->first_block);
+}
 
 /**@brief Set logical number of the block covered by extent index.
  * @param index  Extent index to set number to
  * @param iblock Logical number of the first block covered by extent index */
-void ext4_extent_index_set_first_block(struct ext4_extent_index *index,
-				       uint32_t iblock);
+static inline void
+ext4_extent_index_set_first_block(struct ext4_extent_index *index,
+				  uint32_t iblock)
+{
+	index->first_block = to_le32(iblock);
+}
 
 /**@brief Get physical number of block where the child node is located.
  * @param index Extent index to load number from
  * @return Physical number of the block with child node */
-uint64_t ext4_extent_index_get_leaf(struct ext4_extent_index *index);
+static inline uint64_t
+ext4_extent_index_get_leaf(struct ext4_extent_index *index)
+{
+	return ((uint64_t)to_le16(index->leaf_hi)) << 32 |
+	       ((uint64_t)to_le32(index->leaf_lo));
+}
 
 /**@brief Set physical number of block where the child node is located.
  * @param index  Extent index to set number to
  * @param fblock Ohysical number of the block with child node */
-void ext4_extent_index_set_leaf(struct ext4_extent_index *index,
-				uint64_t fblock);
+static inline void ext4_extent_index_set_leaf(struct ext4_extent_index *index,
+					      uint64_t fblock)
+{
+	index->leaf_lo = to_le32((fblock << 32) >> 32);
+	index->leaf_hi = to_le16((uint16_t)(fblock >> 32));
+}
 
 /**@brief Get magic value from extent header.
  * @param header Extent header to load value from
  * @return Magic value of extent header */
-uint16_t ext4_extent_header_get_magic(struct ext4_extent_header *header);
+static inline uint16_t
+ext4_extent_header_get_magic(struct ext4_extent_header *header)
+{
+	return to_le16(header->magic);
+}
 
 /**@brief Set magic value to extent header.
  * @param header Extent header to set value to
  * @param magic  Magic value of extent header */
-void ext4_extent_header_set_magic(struct ext4_extent_header *header,
-				  uint16_t magic);
+static inline void ext4_extent_header_set_magic(struct ext4_extent_header *header,
+						uint16_t magic)
+{
+	header->magic = to_le16(magic);
+}
 
 /**@brief Get number of entries from extent header
  * @param header Extent header to get value from
  * @return Number of entries covered by extent header */
-uint16_t
-ext4_extent_header_get_entries_count(struct ext4_extent_header *header);
+static inline uint16_t
+ext4_extent_header_get_entries_count(struct ext4_extent_header *header)
+{
+	return to_le16(header->entries_count);
+}
 
 /**@brief Set number of entries to extent header
  * @param header Extent header to set value to
  * @param count  Number of entries covered by extent header */
-void ext4_extent_header_set_entries_count(struct ext4_extent_header *header,
-					  uint16_t count);
+static inline void
+ext4_extent_header_set_entries_count(struct ext4_extent_header *header,
+				     uint16_t count)
+{
+	header->entries_count = to_le16(count);
+}
 
 /**@brief Get maximum number of entries from extent header
  * @param header Extent header to get value from
  * @return Maximum number of entries covered by extent header */
-uint16_t
-ext4_extent_header_get_max_entries_count(struct ext4_extent_header *header);
+static inline uint16_t
+ext4_extent_header_get_max_entries_count(struct ext4_extent_header *header)
+{
+	return to_le16(header->max_entries_count);
+}
 
 /**@brief Set maximum number of entries to extent header
  * @param header    Extent header to set value to
  * @param max_count Maximum number of entries covered by extent header */
-void ext4_extent_header_set_max_entries_count(struct ext4_extent_header *header,
-					      uint16_t max_count);
+static inline void
+ext4_extent_header_set_max_entries_count(struct ext4_extent_header *header,
+					      uint16_t max_count)
+{
+	header->max_entries_count = to_le16(max_count);
+}
 
 /**@brief Get depth of extent subtree.
  * @param header Extent header to get value from
  * @return Depth of extent subtree */
-uint16_t ext4_extent_header_get_depth(struct ext4_extent_header *header);
+static inline uint16_t
+ext4_extent_header_get_depth(struct ext4_extent_header *header)
+{
+	return to_le16(header->depth);
+}
 
 /**@brief Set depth of extent subtree.
  * @param header Extent header to set value to
  * @param depth  Depth of extent subtree */
-void ext4_extent_header_set_depth(struct ext4_extent_header *header,
-				  uint16_t depth);
+static inline void
+ext4_extent_header_set_depth(struct ext4_extent_header *header, uint16_t depth)
+{
+	header->depth = to_le16(depth);
+}
 
 /**@brief Get generation from extent header
  * @param header Extent header to get value from
  * @return Generation */
-uint32_t ext4_extent_header_get_generation(struct ext4_extent_header *header);
+static inline uint32_t
+ext4_extent_header_get_generation(struct ext4_extent_header *header)
+{
+	return to_le32(header->generation);
+}
 
 /**@brief Set generation to extent header
  * @param header     Extent header to set value to
  * @param generation Generation */
-void ext4_extent_header_set_generation(struct ext4_extent_header *header,
-				       uint32_t generation);
+static inline void
+ext4_extent_header_set_generation(struct ext4_extent_header *header,
+				       uint32_t generation)
+{
+	header->generation = to_le32(generation);
+}
 
 /**@brief Find physical block in the extent tree by logical block number.
  * There is no need to save path in the tree during this algorithm.
