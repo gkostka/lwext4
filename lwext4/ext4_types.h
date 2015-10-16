@@ -582,6 +582,17 @@ struct ext4_directory_dx_block {
 	((ex)->block_count |= to_le16(EXT4_EXT_UNWRITTEN_MASK))
 #define EXT4_EXT_SET_WRITTEN(ex) \
 	((ex)->block_count &= ~(to_le16(EXT4_EXT_UNWRITTEN_MASK)))
+/*
+ * This is the extent tail on-disk structure.
+ * All other extent structures are 12 bytes long.  It turns out that
+ * block_size % 12 >= 4 for at least all powers of 2 greater than 512, which
+ * covers all valid ext4 block sizes.  Therefore, this tail structure can be
+ * crammed into the end of the block without having to rebalance the tree.
+ */
+struct ext4_extent_tail
+{
+	uint32_t et_checksum; /* crc32c(uuid+inum+extent_block) */
+};
 
 /*
  * This is the extent on-disk structure.
@@ -618,17 +629,33 @@ struct ext4_extent_header {
 	uint16_t magic;
 	uint16_t entries_count;     /* Number of valid entries */
 	uint16_t max_entries_count; /* Capacity of store in entries */
-	uint16_t depth;		    /* Has tree real underlying blocks? */
-	uint32_t generation;	/* generation of the tree */
+	uint16_t depth;             /* Has tree real underlying blocks? */
+	uint32_t generation;    /* generation of the tree */
 };
 
+
+/*
+ * Types of blocks.
+ */
+typedef uint32_t ext4_lblk_t;
+typedef uint64_t ext4_fsblk_t;
+
+/*
+ * Array of ext4_ext_path contains path to some extent.
+ * Creation/lookup routines use it for traversal/splitting/etc.
+ * Truncate uses it to simulate recursive walking.
+ */
 struct ext4_extent_path {
+	ext4_fsblk_t p_block;
 	struct ext4_block block;
-	uint16_t depth;
+	int32_t depth;
+	int32_t maxdepth;
 	struct ext4_extent_header *header;
 	struct ext4_extent_index *index;
 	struct ext4_extent *extent;
+
 };
+
 
 #define EXT4_EXTENT_MAGIC 0xF30A
 
@@ -639,6 +666,57 @@ struct ext4_extent_path {
 #define EXT4_EXTENT_FIRST_INDEX(header)                                        \
 	((struct ext4_extent_index *)(((char *)(header)) +                     \
 				      sizeof(struct ext4_extent_header)))
+
+/*
+ * EXT_INIT_MAX_LEN is the maximum number of blocks we can have in an
+ * initialized extent. This is 2^15 and not (2^16 - 1), since we use the
+ * MSB of ee_len field in the extent datastructure to signify if this
+ * particular extent is an initialized extent or an uninitialized (i.e.
+ * preallocated).
+ * EXT_UNINIT_MAX_LEN is the maximum number of blocks we can have in an
+ * uninitialized extent.
+ * If ee_len is <= 0x8000, it is an initialized extent. Otherwise, it is an
+ * uninitialized one. In other words, if MSB of ee_len is set, it is an
+ * uninitialized extent with only one special scenario when ee_len = 0x8000.
+ * In this case we can not have an uninitialized extent of zero length and
+ * thus we make it as a special case of initialized extent with 0x8000 length.
+ * This way we get better extent-to-group alignment for initialized extents.
+ * Hence, the maximum number of blocks we can have in an *initialized*
+ * extent is 2^15 (32768) and in an *uninitialized* extent is 2^15-1 (32767).
+ */
+#define EXT_INIT_MAX_LEN (1L << 15)
+#define EXT_UNWRITTEN_MAX_LEN (EXT_INIT_MAX_LEN - 1)
+
+#define EXT_EXTENT_SIZE sizeof(struct ext4_extent)
+#define EXT_INDEX_SIZE sizeof(struct ext4_extent_idx)
+
+#define EXT_FIRST_EXTENT(__hdr__)                                              \
+	((struct ext4_extent *)(((char *)(__hdr__)) +                          \
+				sizeof(struct ext4_extent_header)))
+#define EXT_FIRST_INDEX(__hdr__)                                               \
+	((struct ext4_extent_index *)(((char *)(__hdr__)) +                    \
+				    sizeof(struct ext4_extent_header)))
+#define EXT_HAS_FREE_INDEX(__path__)                                           \
+	((__path__)->header->entries_count < (__path__)->header->max_entries_count)
+#define EXT_LAST_EXTENT(__hdr__)                                               \
+	(EXT_FIRST_EXTENT((__hdr__)) + (__hdr__)->entries_count - 1)
+#define EXT_LAST_INDEX(__hdr__)                                                \
+	(EXT_FIRST_INDEX((__hdr__)) + (__hdr__)->entries_count - 1)
+#define EXT_MAX_EXTENT(__hdr__)                                                \
+	(EXT_FIRST_EXTENT((__hdr__)) + (__hdr__)->max_entries_count - 1)
+#define EXT_MAX_INDEX(__hdr__)                                                 \
+	(EXT_FIRST_INDEX((__hdr__)) + (__hdr__)->max_entries_count - 1)
+
+#define EXT4_EXTENT_TAIL_OFFSET(hdr)                                           \
+	(sizeof(struct ext4_extent_header) +                                   \
+	 (sizeof(struct ext4_extent) * (hdr)->max_entries_count))
+
+
+#define IN_RANGE(b, first, len)	((b) >= (first) && (b) <= (first) + (len) - 1)
+
+
+
+/******************************************************************************/
 
 /* EXT3 HTree directory indexing */
 #define EXT2_HTREE_LEGACY 0
