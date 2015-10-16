@@ -123,7 +123,14 @@ static void ext4_extent_binsearch(struct ext4_extent_header *header,
 	*extent = l - 1;
 }
 
-int ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
+/**@brief Get physical block in the extent tree by logical block number.
+ * There is no need to save path in the tree during this algorithm.
+ * @param inode_ref I-node to load block from
+ * @param iblock    Logical block number to find
+ * @param fblock    Output value for physical block number
+ * @return Error code*/
+static int
+ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
 			   uint32_t *fblock)
 {
 	int rc;
@@ -348,13 +355,16 @@ static int ext4_extent_release_branch(struct ext4_inode_ref *inode_ref,
 	return ext4_balloc_free_block(inode_ref, fblock);
 }
 
-int ext4_extent_release_blocks_from(struct ext4_inode_ref *inode_ref,
-				    uint32_t iblock_from)
+int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
+			     ext4_lblk_t to)
 {
+	if (to != (ext4_lblk_t)-1)
+		return ENOTSUP;
+
 	/* Find the first extent to modify */
 	struct ext4_extent_path *path;
 	uint16_t i;
-	int rc = ext4_extent_find_extent(inode_ref, iblock_from, &path);
+	int rc = ext4_extent_find_extent(inode_ref, from, &path);
 	if (rc != EOK)
 		return rc;
 
@@ -368,7 +378,7 @@ int ext4_extent_release_blocks_from(struct ext4_inode_ref *inode_ref,
 	/* First extent maybe released partially */
 	uint32_t first_iblock = ext4_extent_get_first_block(path_ptr->extent);
 	uint32_t first_fblock = ext4_extent_get_start(path_ptr->extent) +
-				iblock_from - first_iblock;
+				from - first_iblock;
 
 	uint16_t block_count = ext4_extent_get_block_count(path_ptr->extent);
 
@@ -716,7 +726,17 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 	return EOK;
 }
 
-int ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
+/**@brief Append data block to the i-node.
+ * This function allocates data block, tries to append it
+ * to some existing extent or creates new extents.
+ * It includes possible extent tree modifications (splitting).
+ * @param inode_ref I-node to append block to
+ * @param iblock    Output logical number of newly allocated block
+ * @param fblock    Output physical block address of newly allocated block
+ *
+ * @return Error code*/
+static int
+ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 			     uint32_t *fblock, bool update_size)
 {
 	uint16_t i;
@@ -870,6 +890,28 @@ finish:
 	free(path);
 
 	return rc;
+}
+
+int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock,
+			   uint32_t max_blocks, ext4_fsblk_t *result, bool create,
+			   uint32_t *blocks_count)
+{
+	uint32_t iblk = iblock;
+	uint32_t fblk = 0;
+	int r;
+
+	if (blocks_count)
+		return ENOTSUP;
+	if (max_blocks != 1)
+		return ENOTSUP;
+
+	if (!create)
+		r = ext4_extent_find_block(inode_ref, iblk, &fblk);
+	else
+		r = ext4_extent_append_block(inode_ref, &iblk, &fblk, false);
+
+	*result = fblk;
+	return r;
 }
 
 #endif

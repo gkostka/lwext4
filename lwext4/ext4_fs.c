@@ -51,7 +51,6 @@
 #include "ext4_inode.h"
 #include "ext4_ialloc.h"
 #include "ext4_extent.h"
-#include "ext4_extent_full.h"
 
 #include <string.h>
 
@@ -698,7 +697,7 @@ void ext4_fs_inode_blocks_init(struct ext4_fs *fs, struct ext4_inode_ref *inode_
 		ext4_inode_set_flag(inode, EXT4_INODE_FLAG_EXTENTS);
 
 		/* Initialize extent root header */
-		ext4_ext_tree_init(inode_ref);
+		ext4_extent_tree_init(inode_ref);
 	}
 #endif
 }
@@ -974,10 +973,8 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 
 		/* Extents require special operation */
 		if (diff_blocks_count) {
-			int rc = ext4_ext_remove_space(
-					inode_ref,
-					new_blocks_count,
-					(ext4_lblk_t)-1);
+			int rc = ext4_extent_remove_space(inode_ref,
+					new_blocks_count, (ext4_lblk_t)-1);
 			if (rc != EOK)
 				return rc;
 
@@ -1026,8 +1023,8 @@ static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 
 		ext4_fsblk_t current_fsblk;
-		int rc = ext4_ext_get_blocks(inode_ref,	iblock, 1, &current_fsblk,
-					extent_create, NULL);
+		int rc = ext4_extent_get_blocks(inode_ref, iblock, 1,
+				&current_fsblk,	extent_create, NULL);
 		if (rc != EOK)
 			return rc;
 
@@ -1412,8 +1409,8 @@ int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
 		*iblock = (inode_size + block_size - 1) /
 				    block_size;
 
-		rc = ext4_ext_get_blocks(inode_ref, *iblock, 1,	&current_fsblk,
-					 true, NULL);
+		rc = ext4_extent_get_blocks(inode_ref, *iblock, 1,
+				&current_fsblk, true, NULL);
 
 
 		*fblock = current_fsblk;

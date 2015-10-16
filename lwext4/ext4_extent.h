@@ -43,8 +43,8 @@
 
 #include "ext4_config.h"
 #include "ext4_types.h"
+#include "ext4_inode.h"
 
-#if !CONFIG_EXTENT_FULL
 
 /**@brief Get logical number of the block covered by extent.
  * @param extent Extent to load number from
@@ -237,35 +237,42 @@ ext4_extent_header_set_generation(struct ext4_extent_header *header,
 	header->generation = to_le32(generation);
 }
 
-/**@brief Find physical block in the extent tree by logical block number.
- * There is no need to save path in the tree during this algorithm.
- * @param inode_ref I-node to load block from
- * @param iblock    Logical block number to find
- * @param fblock    Output value for physical block number
- * @return Error code*/
-int ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
-			   uint32_t *fblock);
+/******************************************************************************/
+
+/**TODO:  */
+static inline void ext4_extent_tree_init(struct ext4_inode_ref *inode_ref)
+{
+	/* Initialize extent root header */
+	struct ext4_extent_header *header =
+			ext4_inode_get_extent_header(inode_ref->inode);
+	ext4_extent_header_set_depth(header, 0);
+	ext4_extent_header_set_entries_count(header, 0);
+	ext4_extent_header_set_generation(header, 0);
+	ext4_extent_header_set_magic(header, EXT4_EXTENT_MAGIC);
+
+	uint16_t max_entries = (EXT4_INODE_BLOCKS * sizeof(uint32_t) -
+			sizeof(struct ext4_extent_header)) /
+					sizeof(struct ext4_extent);
+
+	ext4_extent_header_set_max_entries_count(header, max_entries);
+	inode_ref->dirty  = true;
+}
+
+
+
+/**TODO:  */
+int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock,
+			   uint32_t max_blocks, ext4_fsblk_t *result, bool create,
+			   uint32_t *blocks_count);
+
 
 /**@brief Release all data blocks starting from specified logical block.
  * @param inode_ref   I-node to release blocks from
  * @param iblock_from First logical block to release
  * @return Error code */
-int ext4_extent_release_blocks_from(struct ext4_inode_ref *inode_ref,
-				    uint32_t iblock_from);
+int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
+			     ext4_lblk_t to);
 
-/**@brief Append data block to the i-node.
- * This function allocates data block, tries to append it
- * to some existing extent or creates new extents.
- * It includes possible extent tree modifications (splitting).
- * @param inode_ref I-node to append block to
- * @param iblock    Output logical number of newly allocated block
- * @param fblock    Output physical block address of newly allocated block
- *
- * @return Error code*/
-int ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
-			     uint32_t *fblock, bool update_size);
-
-#endif
 
 #endif /* EXT4_EXTENT_H_ */
 /**

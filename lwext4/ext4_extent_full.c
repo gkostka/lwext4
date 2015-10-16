@@ -37,7 +37,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 
-#include "ext4_extent_full.h"
+#include "ext4_extent.h"
 
 #if CONFIG_EXTENT_FULL
 
@@ -1372,7 +1372,7 @@ static int ext4_ext_more_to_rm(struct ext4_extent_path *path, ext4_lblk_t to)
 	return 1;
 }
 
-int ext4_ext_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
+int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 			  ext4_lblk_t to)
 {
 	struct ext4_extent_path *path = NULL;
@@ -1566,19 +1566,6 @@ static int ext4_ext_convert_to_initialized(struct ext4_inode_ref *inode_ref,
 	return err;
 }
 
-int ext4_ext_tree_init(struct ext4_inode_ref *inode_ref)
-{
-	struct ext4_extent_header *eh;
-
-	eh = ext_inode_hdr(inode_ref->inode);
-	eh->depth = 0;
-	eh->entries_count = 0;
-	eh->magic = to_le16(EXT4_EXTENT_MAGIC);
-	eh->max_entries_count = to_le16(ext4_ext_space_root(inode_ref));
-	inode_ref->dirty = true;
-	return EOK;
-}
-
 /*
  * ext4_ext_next_allocated_block:
  * returns allocated block in subsequent extent or EXT_MAX_BLOCKS.
@@ -1641,7 +1628,7 @@ static int ext4_ext_zero_unwritten_range(struct ext4_inode_ref *inode_ref,
 	return err;
 }
 
-int ext4_ext_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock,
+int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock,
 			uint32_t max_blocks, ext4_fsblk_t *result, bool create,
 			uint32_t *blocks_count)
 {
