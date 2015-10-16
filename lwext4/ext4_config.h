@@ -142,6 +142,12 @@
 #define CONFIG_HAVE_OWN_OFLAGS 0
 #endif
 
+#ifdef __GNUC__
+#ifndef __unused
+#define __unused __attribute__ ((__unused__))
+#endif
+#endif
+
 #endif /* EXT4_CONFIG_H_ */
 
 /**
