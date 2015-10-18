@@ -1613,9 +1613,8 @@ static int ext4_ext_zero_unwritten_range(struct ext4_inode_ref *inode_ref,
 	uint32_t i;
 	uint32_t block_size = ext4_sb_get_block_size(&inode_ref->fs->sb);
 	for (i = 0; i < blocks_count; i++) {
-		uint32_t block_u32 = (uint32_t)block + (uint32_t)i;
 		struct ext4_block bh = EXT4_BLOCK_ZERO();
-		err = ext4_block_get(inode_ref->fs->bdev, &bh, block_u32);
+		err = ext4_block_get(inode_ref->fs->bdev, &bh, block + i);
 		if (err != EOK)
 			break;
 
