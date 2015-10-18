@@ -1370,18 +1370,18 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 	return err;
 }
 
-static int ext4_ext_more_to_rm(struct ext4_extent_path *path, ext4_lblk_t to)
+static bool ext4_ext_more_to_rm(struct ext4_extent_path *path, ext4_lblk_t to)
 {
 	if (!to_le16(path->header->entries_count))
-		return 0;
+		return false;
 
 	if (path->index > EXT_LAST_INDEX(path->header))
-		return 0;
+		return false;
 
 	if (to_le32(path->index->first_block) > to)
-		return 0;
+		return false;
 
-	return 1;
+	return true;
 }
 
 int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
@@ -1396,9 +1396,10 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 	if (ret)
 		goto out;
 
-	if (!path[depth].extent ||
-	    !IN_RANGE(from, to_le32(path[depth].extent->first_block),
-		      ext4_ext_get_actual_len(path[depth].extent))) {
+	bool in_range = IN_RANGE(from, to_le32(path[depth].extent->first_block),
+			ext4_ext_get_actual_len(path[depth].extent));
+
+	if (!path[depth].extent || !in_range) {
 		ret = EOK;
 		goto out;
 	}
@@ -1579,15 +1580,6 @@ static int ext4_ext_convert_to_initialized(struct ext4_inode_ref *inode_ref,
 	return err;
 }
 
-/*
- * ext4_ext_next_allocated_block:
- * returns allocated block in subsequent extent or EXT_MAX_BLOCKS.
- * NOTE: it considers block number from index entry as
- * allocated block. Thus, index entries have to be consistent
- * with leaves.
- */
-#define EXT_MAX_BLOCKS (ext4_lblk_t) - 1
-
 static ext4_lblk_t ext4_ext_next_allocated_block(struct ext4_extent_path *path)
 {
 	int32_t depth;
@@ -1672,7 +1664,8 @@ int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock
 	 * this situations is possible, though, _during_ tree modification
 	 * this is why assert can't be put in ext4_ext_find_extent()
 	 */
-	if ((ex = path[depth].extent)) {
+	ex = path[depth].extent;
+	if (ex) {
 		ext4_lblk_t ee_block = to_le32(ex->first_block);
 		ext4_fsblk_t ee_start = ext4_ext_pblock(ex);
 		uint16_t ee_len = ext4_ext_get_actual_len(ex);

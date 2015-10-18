@@ -359,7 +359,7 @@ static int ext4_extent_release_branch(struct ext4_inode_ref *inode_ref,
 int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 			     ext4_lblk_t to)
 {
-	if (to != (ext4_lblk_t)-1)
+	if (to != EXT_MAX_BLOCKS)
 		return ENOTSUP;
 
 	/* Find the first extent to modify */

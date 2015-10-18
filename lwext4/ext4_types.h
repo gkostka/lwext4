@@ -711,9 +711,16 @@ struct ext4_extent_path {
 	(sizeof(struct ext4_extent_header) +                                   \
 	 (sizeof(struct ext4_extent) * (hdr)->max_entries_count))
 
+/*
+ * ext4_ext_next_allocated_block:
+ * returns allocated block in subsequent extent or EXT_MAX_BLOCKS.
+ * NOTE: it considers block number from index entry as
+ * allocated block. Thus, index entries have to be consistent
+ * with leaves.
+ */
+#define EXT_MAX_BLOCKS (ext4_lblk_t) (-1)
 
 #define IN_RANGE(b, first, len)	((b) >= (first) && (b) <= (first) + (len) - 1)
-
 
 
 /******************************************************************************/
