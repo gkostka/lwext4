@@ -44,7 +44,6 @@
 #include "ext4_block_group.h"
 #include "ext4_balloc.h"
 #include "ext4_inode.h"
-#include "ext4_extent.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -466,12 +465,16 @@ static int ext4_xattr_try_alloc_block(struct ext4_xattr_ref *xattr_ref)
 {
 	int ret = EOK;
 
-	uint64_t xattr_block = 0;
+	ext4_fsblk_t xattr_block = 0;
 	xattr_block = ext4_inode_get_file_acl(xattr_ref->inode_ref->inode,
 					      &xattr_ref->fs->sb);
 	if (!xattr_block) {
+		ext4_fsblk_t goal =
+			ext4_fs_inode_to_goal_block(xattr_ref->inode_ref);
+
 		ret = ext4_balloc_alloc_block(xattr_ref->inode_ref,
-					      (uint32_t *)&xattr_block);
+					      goal,
+					      &xattr_block);
 		if (ret != EOK)
 			goto Finish;
 
@@ -495,7 +498,7 @@ Finish:
 
 static void ext4_xattr_try_free_block(struct ext4_xattr_ref *xattr_ref)
 {
-	uint64_t xattr_block;
+	ext4_fsblk_t xattr_block;
 	xattr_block = ext4_inode_get_file_acl(xattr_ref->inode_ref->inode,
 					      &xattr_ref->fs->sb);
 	ext4_inode_set_file_acl(xattr_ref->inode_ref->inode, &xattr_ref->fs->sb,
@@ -760,7 +763,7 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 			  struct ext4_xattr_ref *ref)
 {
 	int rc;
-	uint64_t xattr_block;
+	ext4_fsblk_t xattr_block;
 	xattr_block = ext4_inode_get_file_acl(inode_ref->inode, &fs->sb);
 	RB_INIT(&ref->root);
 	ref->ea_size = 0;

@@ -207,7 +207,7 @@ static int ext4_dir_dx_hash_string(struct ext4_hash_info *hinfo, int len,
 int ext4_dir_dx_init(struct ext4_inode_ref *dir)
 {
 	/* Load block 0, where will be index root located */
-	uint32_t fblock;
+	ext4_fsblk_t fblock;
 	int rc = ext4_fs_get_inode_data_block_index(dir, 0, &fblock);
 	if (rc != EOK)
 		return rc;
@@ -411,7 +411,7 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 
 		indirect_level--;
 
-		uint32_t fblock;
+		ext4_fsblk_t fblock;
 		int rc = ext4_fs_get_inode_data_block_index(
 		    inode_ref, next_block, &fblock);
 		if (rc != EOK)
@@ -487,7 +487,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 	/* Fill new path */
 	while (num_handles--) {
 		uint32_t block_idx = ext4_dir_dx_entry_get_block(p->position);
-		uint32_t block_addr;
+		ext4_fsblk_t block_addr;
 
 		int rc = ext4_fs_get_inode_data_block_index(
 		    inode_ref, block_idx, &block_addr);
@@ -520,7 +520,7 @@ int ext4_dir_dx_find_entry(struct ext4_directory_search_result *result,
 			   const char *name)
 {
 	/* Load direct block 0 (index root) */
-	uint32_t root_block_addr;
+	ext4_fsblk_t root_block_addr;
 	int rc2;
 	int rc =
 	    ext4_fs_get_inode_data_block_index(inode_ref, 0, &root_block_addr);
@@ -561,7 +561,7 @@ int ext4_dir_dx_find_entry(struct ext4_directory_search_result *result,
 		/* Load leaf block */
 		uint32_t leaf_block_idx =
 		    ext4_dir_dx_entry_get_block(dx_block->position);
-		uint32_t leaf_block_addr;
+		ext4_fsblk_t leaf_block_addr;
 
 		rc = ext4_fs_get_inode_data_block_index(
 		    inode_ref, leaf_block_idx, &leaf_block_addr);
@@ -797,7 +797,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	      ext4_dir_dx_entry_comparator);
 #endif
 	/* Allocate new block for store the second part of entries */
-	uint32_t new_fblock;
+	ext4_fsblk_t new_fblock;
 	uint32_t new_iblock;
 	rc = ext4_fs_append_inode_block(inode_ref, &new_fblock, &new_iblock);
 	if (rc != EOK) {
@@ -938,7 +938,7 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
 			return ENOSPC;
 
 		/* Add new block to directory */
-		uint32_t new_fblock;
+		ext4_fsblk_t new_fblock;
 		uint32_t new_iblock;
 		int rc = ext4_fs_append_inode_block(inode_ref, &new_fblock,
 						    &new_iblock);
@@ -1078,7 +1078,7 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	int rc2 = EOK;
 
 	/* Get direct block 0 (index root) */
-	uint32_t root_block_addr;
+	ext4_fsblk_t root_block_addr;
 	int rc =
 	    ext4_fs_get_inode_data_block_index(parent, 0, &root_block_addr);
 	if (rc != EOK)
@@ -1118,7 +1118,7 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	/* Try to insert to existing data block */
 	uint32_t leaf_block_idx =
 	    ext4_dir_dx_entry_get_block(dx_block->position);
-	uint32_t leaf_block_addr;
+	ext4_fsblk_t leaf_block_addr;
 	rc = ext4_fs_get_inode_data_block_index(parent, leaf_block_idx,
 						&leaf_block_addr);
 	if (rc != EOK)
@@ -1197,7 +1197,7 @@ int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
                                    uint32_t parent_inode)
 {
 	/* Load block 0, where will be index root located */
-	uint32_t fblock;
+	ext4_fsblk_t fblock;
 	int rc = ext4_fs_get_inode_data_block_index(dir, 0, &fblock);
 	if (rc != EOK)
 		return rc;

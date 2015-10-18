@@ -1255,8 +1255,8 @@ int ext4_ftruncate(ext4_file *f, uint64_t size)
 int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 {
 	uint32_t u;
-	uint32_t fblock;
-	uint32_t fblock_start;
+	ext4_fsblk_t fblock;
+	ext4_fsblk_t fblock_start;
 	uint32_t fblock_cnt;
 	uint32_t sblock;
 	uint32_t sblock_end;
@@ -1419,13 +1419,13 @@ Finish:
 int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 {
 	uint32_t u;
-	uint32_t fblock;
+	ext4_fsblk_t fblock;
 
 	uint32_t sblock;
 	uint32_t sblock_end;
 	uint32_t file_blocks;
 	uint32_t block_size;
-	uint32_t fblock_start;
+	ext4_fsblk_t fblock_start;
 	uint32_t fblock_cnt;
 
 	struct ext4_block b;
@@ -1799,7 +1799,8 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 {
 	struct ext4_block b;
 	struct ext4_inode_ref ref;
-	uint32_t sblock, fblock;
+	uint32_t sblock;
+	ext4_fsblk_t fblock;
 	uint32_t block_size;
 	int r;
 

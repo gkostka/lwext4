@@ -138,7 +138,7 @@ static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
 				return rc;
 		}
 
-		uint32_t next_block_phys_idx;
+		ext4_fsblk_t next_block_phys_idx;
 		int rc = ext4_fs_get_inode_data_block_index(
 		    it->inode_ref, next_block_idx, &next_block_phys_idx);
 		if (rc != EOK)
@@ -262,7 +262,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 
 	/* Linear algorithm */
 	uint32_t iblock = 0;
-	uint32_t fblock = 0;
+	ext4_fsblk_t fblock = 0;
 	uint32_t block_size = ext4_sb_get_block_size(&fs->sb);
 	uint32_t inode_size = ext4_inode_get_size(&fs->sb, parent->inode);
 	uint32_t total_blocks = inode_size / block_size;
@@ -352,7 +352,7 @@ int ext4_dir_find_entry(struct ext4_directory_search_result *result,
 	/* Linear algorithm */
 
 	uint32_t iblock;
-	uint32_t fblock;
+	ext4_fsblk_t fblock;
 	uint32_t block_size = ext4_sb_get_block_size(sb);
 	uint32_t inode_size = ext4_inode_get_size(sb, parent->inode);
 	uint32_t total_blocks = inode_size / block_size;

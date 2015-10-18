@@ -28,6 +28,7 @@
 
 #include "ext4_config.h"
 #include "ext4_blockdev.h"
+#include "ext4_fs.h"
 #include "ext4_super.h"
 #include "ext4_balloc.h"
 #include "ext4_debug.h"
@@ -144,10 +145,10 @@ static void ext4_idx_store_pblock(struct ext4_extent_index *ix, ext4_fsblk_t pb)
 }
 
 static int ext4_allocate_single_block(struct ext4_inode_ref *inode_ref,
-				      ext4_fsblk_t goal __unused,
+				      ext4_fsblk_t goal,
 				      ext4_fsblk_t *blockp)
 {
-	return ext4_balloc_alloc_block(inode_ref, (uint32_t *)blockp);
+	return ext4_balloc_alloc_block(inode_ref, goal, blockp);
 }
 
 static ext4_fsblk_t ext4_new_meta_blocks(struct ext4_inode_ref *inode_ref,
@@ -167,9 +168,7 @@ static void ext4_ext_free_blocks(struct ext4_inode_ref *inode_ref,
 				 ext4_fsblk_t block, uint32_t count,
 				 uint32_t flags __unused)
 {
-	uint32_t i;
-	for (i = 0; i < count; i++)
-		ext4_balloc_free_block(inode_ref, (uint32_t)block + i);
+	ext4_balloc_free_blocks(inode_ref, block, count);
 }
 
 static size_t ext4_ext_space_block(struct ext4_inode_ref *inode_ref)
@@ -232,7 +231,8 @@ static size_t ext4_ext_max_entries(struct ext4_inode_ref *inode_ref,
 	return max;
 }
 
-static ext4_fsblk_t ext4_ext_find_goal(struct ext4_extent_path *path,
+static ext4_fsblk_t ext4_ext_find_goal(struct ext4_inode_ref *inode_ref,
+				       struct ext4_extent_path *path,
 				       ext4_lblk_t block)
 {
 	if (path) {
@@ -274,7 +274,7 @@ static ext4_fsblk_t ext4_ext_find_goal(struct ext4_extent_path *path,
 	}
 
 	/* OK. use inode's group */
-	return 0;
+	return ext4_fs_inode_to_goal_block(inode_ref);
 }
 
 /*
@@ -287,7 +287,7 @@ static ext4_fsblk_t ext4_ext_new_meta_block(struct ext4_inode_ref *inode_ref,
 {
 	ext4_fsblk_t goal, newblock;
 
-	goal = ext4_ext_find_goal(path, to_le32(ex->first_block));
+	goal = ext4_ext_find_goal(inode_ref, path, to_le32(ex->first_block));
 	newblock = ext4_new_meta_blocks(inode_ref, goal, flags, NULL, err);
 	return newblock;
 }
@@ -1054,7 +1054,7 @@ static int ext4_ext_grow_indepth(struct ext4_inode_ref *inode_ref,
 		goal = ext4_idx_pblock(
 		    EXT_FIRST_INDEX(ext_inode_hdr(inode_ref->inode)));
 	else
-		goal = 0;
+		goal = ext4_fs_inode_to_goal_block(inode_ref);
 
 	newblock = ext4_new_meta_blocks(inode_ref, goal, flags, NULL, &err);
 	if (newblock == 0)
@@ -1714,7 +1714,7 @@ int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock
 		allocated = max_blocks;
 
 	/* allocate new block */
-	goal = ext4_ext_find_goal(path, iblock);
+	goal = ext4_ext_find_goal(inode_ref, path, iblock);
 	newblock = ext4_new_meta_blocks(inode_ref, goal, 0, &allocated, &err);
 	if (!newblock)
 		goto out2;

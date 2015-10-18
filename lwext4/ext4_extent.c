@@ -131,7 +131,7 @@ static void ext4_extent_binsearch(struct ext4_extent_header *header,
  * @return Error code*/
 static int
 ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
-			   uint32_t *fblock)
+			   ext4_fsblk_t *fblock)
 {
 	int rc;
 	/* Compute bound defined by i-node size */
@@ -185,7 +185,7 @@ ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
 		*fblock = 0;
 	} else {
 		/* Compute requested physical block address */
-		uint32_t phys_block;
+		ext4_fsblk_t phys_block;
 		uint32_t first = ext4_extent_get_first_block(extent);
 		phys_block = ext4_extent_get_start(extent) + iblock - first;
 
@@ -313,7 +313,7 @@ static int ext4_extent_release(struct ext4_inode_ref *inode_ref,
 static int ext4_extent_release_branch(struct ext4_inode_ref *inode_ref,
 				      struct ext4_extent_index *index)
 {
-	uint32_t fblock = ext4_extent_index_get_leaf(index);
+	ext4_fsblk_t fblock = ext4_extent_index_get_leaf(index);
 	uint32_t i;
 	struct ext4_block block;
 	int rc = ext4_block_get(inode_ref->fs->bdev, &block, fblock);
@@ -377,7 +377,7 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 
 	/* First extent maybe released partially */
 	uint32_t first_iblock = ext4_extent_get_first_block(path_ptr->extent);
-	uint32_t first_fblock = ext4_extent_get_start(path_ptr->extent) +
+	ext4_fsblk_t first_fblock = ext4_extent_get_start(path_ptr->extent) +
 				from - first_iblock;
 
 	uint16_t block_count = ext4_extent_get_block_count(path_ptr->extent);
@@ -527,8 +527,12 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 
 		if (entries == limit) {
 			/* Full node - allocate block for new one */
-			uint32_t fblock;
-			int rc = ext4_balloc_alloc_block(inode_ref, &fblock);
+			ext4_fsblk_t goal, fblock;
+			int rc = ext4_fs_indirect_find_goal(inode_ref, &goal);
+			if (rc != EOK)
+				return rc;
+
+			rc = ext4_balloc_alloc_block(inode_ref, goal, &fblock);
 			if (rc != EOK)
 				return rc;
 
@@ -626,8 +630,12 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 	uint16_t limit = ext4_extent_header_get_max_entries_count(path->header);
 
 	if (entries == limit) {
-		uint32_t new_fblock;
-		int rc = ext4_balloc_alloc_block(inode_ref, &new_fblock);
+		ext4_fsblk_t goal, new_fblock;
+		int rc = ext4_fs_indirect_find_goal(inode_ref, &goal);
+		if (rc != EOK)
+			return rc;
+
+		rc = ext4_balloc_alloc_block(inode_ref, goal, &new_fblock);
 		if (rc != EOK)
 			return rc;
 
@@ -737,9 +745,10 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
  * @return Error code*/
 static int
 ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
-			     uint32_t *fblock, bool update_size)
+			     ext4_fsblk_t *fblock, bool update_size)
 {
 	uint16_t i;
+	ext4_fsblk_t goal;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 	uint64_t inode_size = ext4_inode_get_size(sb, inode_ref->inode);
 	uint32_t block_size = ext4_sb_get_block_size(sb);
@@ -771,12 +780,16 @@ ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 	uint16_t block_count = ext4_extent_get_block_count(path_ptr->extent);
 	uint16_t block_limit = (1 << 15);
 
-	uint32_t phys_block = 0;
+	ext4_fsblk_t phys_block = 0;
 	if (block_count < block_limit) {
 		/* There is space for new block in the extent */
 		if (block_count == 0) {
+			int rc = ext4_fs_indirect_find_goal(inode_ref, &goal);
+			if (rc != EOK)
+				goto finish;
+
 			/* Existing extent is empty */
-			rc = ext4_balloc_alloc_block(inode_ref, &phys_block);
+			rc = ext4_balloc_alloc_block(inode_ref, goal, &phys_block);
 			if (rc != EOK)
 				goto finish;
 
@@ -798,6 +811,11 @@ ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 
 			goto finish;
 		} else {
+			ext4_fsblk_t goal;
+			int rc = ext4_fs_indirect_find_goal(inode_ref, &goal);
+			if (rc != EOK)
+				goto finish;
+
 			/* Existing extent contains some blocks */
 			phys_block = ext4_extent_get_start(path_ptr->extent);
 			phys_block +=
@@ -840,8 +858,12 @@ append_extent:
 	/* Append new extent to the tree */
 	phys_block = 0;
 
+	rc = ext4_fs_indirect_find_goal(inode_ref, &goal);
+	if (rc != EOK)
+		goto finish;
+
 	/* Allocate new data block */
-	rc = ext4_balloc_alloc_block(inode_ref, &phys_block);
+	rc = ext4_balloc_alloc_block(inode_ref, goal, &phys_block);
 	if (rc != EOK)
 		goto finish;
 
@@ -893,11 +915,11 @@ finish:
 }
 
 int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock,
-			   uint32_t max_blocks, ext4_fsblk_t *result, bool create,
-			   uint32_t *blocks_count)
+			   ext4_lblk_t max_blocks, ext4_fsblk_t *result, bool create,
+			   ext4_lblk_t *blocks_count)
 {
 	uint32_t iblk = iblock;
-	uint32_t fblk = 0;
+	ext4_fsblk_t fblk = 0;
 	int r;
 
 	if (blocks_count)

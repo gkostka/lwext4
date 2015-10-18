@@ -54,7 +54,7 @@
  * @return Relative number of block
  */
 static inline uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s,
-						     uint32_t baddr)
+						     ext4_fsblk_t baddr)
 {
 	if (ext4_get32(s, first_data_block))
 		baddr--;
@@ -68,7 +68,7 @@ static inline uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s,
  * @param bgid Block group
  * @return Absolute block address
  */
-static inline uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s,
+static inline ext4_fsblk_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s,
 						     uint32_t index,
 						     uint32_t bgid)
 {
@@ -79,7 +79,7 @@ static inline uint32_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s,
 }
 
 /**@brief TODO: */
-static inline uint64_t ext4_fs_first_bg_block_no(struct ext4_sblock *s,
+static inline ext4_fsblk_t ext4_fs_first_bg_block_no(struct ext4_sblock *s,
 						 uint32_t bgid)
 {
 	return (uint64_t)bgid * ext4_get32(s, blocks_per_group) +
@@ -167,6 +167,20 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref);
  */
 int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size);
 
+/**@brief Compute 'goal' for inode index
+ * @param inode_ref Reference to inode, to allocate block for
+ * @return goal
+ */
+ext4_fsblk_t ext4_fs_inode_to_goal_block(struct ext4_inode_ref *inode_ref);
+
+/**@brief Compute 'goal' for allocation algorithm (For blockmap).
+ * @param inode_ref Reference to inode, to allocate block for
+ * @param goal
+ * @return error code
+ */
+int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
+				ext4_fsblk_t *goal);
+
 /**@brief Get physical block address by logical index of the block.
  * @param inode_ref I-node to read block address from
  * @param iblock    Logical index of block
@@ -174,7 +188,7 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size);
  * @return Error code
  */
 int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, uint32_t *fblock);
+				       uint64_t iblock, ext4_fsblk_t *fblock);
 
 /**@brief Initialize a part of unwritten range of the inode.
  * @param inode_ref I-node to proceed on.
@@ -183,7 +197,7 @@ int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
  * @return Error code
  */
 int ext4_fs_init_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, uint32_t *fblock);
+				       uint64_t iblock, ext4_fsblk_t *fblock);
 
 /**@brief Set physical block address for the block logical address into the
  * i-node.
@@ -193,7 +207,7 @@ int ext4_fs_init_inode_data_block_index(struct ext4_inode_ref *inode_ref,
  * @return Error code
  */
 int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, uint32_t fblock);
+				       uint64_t iblock, ext4_fsblk_t fblock);
 
 /**@brief Release data block from i-node
  * @param inode_ref I-node to release block from
@@ -210,7 +224,7 @@ int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
  * @return Error code
  */
 int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
-			       uint32_t *fblock, uint32_t *iblock);
+			       ext4_fsblk_t *fblock, uint32_t *iblock);
 
 /**@brief   Increment inode link count.
  * @param   inode none handle
