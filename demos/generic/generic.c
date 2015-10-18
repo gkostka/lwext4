@@ -73,12 +73,6 @@ static bool sbstat = false;
 /**@brief   Indicates that input is windows partition.*/
 static bool winpart = false;
 
-/**@brief   File write buffer*/
-static uint8_t *wr_buff;
-
-/**@brief   File read buffer.*/
-static uint8_t *rd_buff;
-
 /**@brief   Block device handle.*/
 static struct ext4_blockdev *bd;
 
@@ -92,15 +86,15 @@ static const char *usage = "                                    \n\
 Welcome in ext4 generic demo.                                   \n\
 Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)  \n\
 Usage:                                                          \n\
-    --i   - input file              (default = ext2)            \n\
-    --rws - single R/W size         (default = 1024 * 1024)     \n\
-    --rwc - R/W count               (default = 10)              \n\
-    --cache  - 0 static, 1 dynamic  (default = 1)               \n\
-    --dirs   - directory test count (default = 0)               \n\
-    --clean  - clean up after test                              \n\
-    --bstat  - block device stats                               \n\
-    --sbstat - superblock stats                                 \n\
-    --wpart  - windows partition mode                           \n\
+[-i] --input    - input file         (default = ext2)           \n\
+[-w] --rw_size  - single R/W size    (default = 1024 * 1024)    \n\
+[-c] --rw_count - R/W count          (default = 10)             \n\
+[-a] --cache  - 0 static, 1 dynamic  (default = 1)              \n\
+[-d] --dirs   - directory test count (default = 0)              \n\
+[-l] --clean  - clean up after test                             \n\
+[-b] --bstat  - block device stats                              \n\
+[-t] --sbstat - superblock stats                                \n\
+[-w] --wpart  - windows partition mode                          \n\
 \n";
 
 void io_timings_clear(void)
@@ -161,46 +155,46 @@ static bool parse_opt(int argc, char **argv)
 	int c;
 
 	static struct option long_options[] = {
-	    {"in", required_argument, 0, 'a'},
-	    {"rws", required_argument, 0, 'b'},
-	    {"rwc", required_argument, 0, 'c'},
-	    {"cache", required_argument, 0, 'd'},
-	    {"dirs", required_argument, 0, 'e'},
-	    {"clean", no_argument, 0, 'f'},
-	    {"bstat", no_argument, 0, 'g'},
-	    {"sbstat", no_argument, 0, 'h'},
-	    {"wpart", no_argument, 0, 'i'},
+	    {"input", required_argument, 0, 'i'},
+	    {"rw_size", required_argument, 0, 's'},
+	    {"rw_count", required_argument, 0, 'c'},
+	    {"cache", required_argument, 0, 'a'},
+	    {"dirs", required_argument, 0, 'd'},
+	    {"clean", no_argument, 0, 'l'},
+	    {"bstat", no_argument, 0, 'b'},
+	    {"sbstat", no_argument, 0, 't'},
+	    {"wpart", no_argument, 0, 'w'},
 	    {0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "a:b:c:d:e:fghi",
+	while (-1 != (c = getopt_long(argc, argv, "i:s:c:q:d:lbtw",
 				      long_options, &option_index))) {
 
 		switch (c) {
-		case 'a':
+		case 'i':
 			strcpy(input_name, optarg);
 			break;
-		case 'b':
+		case 's':
 			rw_szie = atoi(optarg);
 			break;
 		case 'c':
 			rw_count = atoi(optarg);
 			break;
-		case 'd':
+		case 'a':
 			cache_mode = atoi(optarg);
 			break;
-		case 'e':
+		case 'd':
 			dir_cnt = atoi(optarg);
 			break;
-		case 'f':
+		case 'l':
 			cleanup_flag = true;
 			break;
-		case 'g':
+		case 'b':
 			bstat = true;
 			break;
-		case 'h':
+		case 't':
 			sbstat = true;
 			break;
-		case 'i':
+		case 'w':
 			winpart = true;
 			break;
 		default:
@@ -245,7 +239,10 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 
 	fflush(stdout);
-	if (!test_lwext4_file_test(rw_count, rw_szie))
+	uint8_t *rw_buff = malloc(rw_szie);
+	if (!rw_buff)
+		return EXIT_FAILURE;
+	if (!test_lwext4_file_test(rw_buff, rw_szie, rw_count))
 		return EXIT_FAILURE;
 
 	fflush(stdout);

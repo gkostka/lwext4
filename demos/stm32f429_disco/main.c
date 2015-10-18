@@ -55,6 +55,9 @@ char input_name[128] = "ext2";
 /**@brief   Read-write size*/
 static int rw_szie = READ_WRITE_SZIZE;
 
+/**@brief   Read-write buffer*/
+static uint8_t rw_buff[READ_WRITE_SZIZE];
+
 /**@brief   Read-write size*/
 static int rw_count = 100;
 
@@ -136,7 +139,7 @@ int main(void)
 		return EXIT_FAILURE;
 
 	tim_wait_ms(TEST_DELAY_MS);
-	if (!test_lwext4_file_test(rw_szie, rw_count))
+	if (!test_lwext4_file_test(rw_buff, rw_szie, rw_count))
 		return EXIT_FAILURE;
 
 	if (sbstat) {

@@ -141,18 +141,7 @@ Windows volumes:
 
 Linux block devices:
  cd build_generic
- generic --in /dev/your_block_device
-
-Usage:                                                          
- --i   - input file              (default = ext2)            
- --rws - single R/W size         (default = 1024 * 1024)     
- --rwc - R/W count               (default = 10)                     
- --cache  - 0 static, 1 dynamic  (default = 1)               
- --dirs   - directory test count (default = 0)               
- --clean  - clean up after test                              
- --bstat  - block device stats                               
- --sbstat - superblock stats                                 
- --wpart  - windows partition mode                           
+ generic -i /dev/your_block_device
 
 ==Build and run automatic tests==
 Build and run automatic tests

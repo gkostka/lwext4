@@ -36,7 +36,7 @@ void test_lwext4_dir_ls(const char *path);
 void test_lwext4_mp_stats(void);
 void test_lwext4_block_stats(void);
 bool test_lwext4_dir_test(int len);
-bool test_lwext4_file_test(uint32_t rw_szie, uint32_t rw_count);
+bool test_lwext4_file_test(uint8_t *rw_buff, uint32_t rw_size, uint32_t rw_count);
 void test_lwext4_cleanup(void);
 
 bool test_lwext4_mount(struct ext4_blockdev *bdev, struct ext4_bcache *bcache);
