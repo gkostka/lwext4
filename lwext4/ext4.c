@@ -1457,8 +1457,8 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 
 	block_size = ext4_sb_get_block_size(&f->mp->fs.sb);
 
-	sblock_end = (f->fpos + size) > f->fsize ? (f->fpos + size) : f->fsize;
-	sblock_end /= block_size;
+	sblock_end = (f->fpos + size) / block_size;
+
 	file_blocks = (f->fsize / block_size);
 
 	if (f->fsize % block_size)
