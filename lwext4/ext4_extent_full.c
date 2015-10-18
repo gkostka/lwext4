@@ -129,8 +129,8 @@ static ext4_fsblk_t ext4_idx_pblock(struct ext4_extent_index *ix)
  */
 static void ext4_ext_store_pblock(struct ext4_extent *ex, ext4_fsblk_t pb)
 {
-	ex->start_lo = to_le32((unsigned long)(pb & 0xffffffff));
-	ex->start_hi = to_le16((unsigned long)((pb >> 31) >> 1) & 0xffff);
+	ex->start_lo = to_le32((uint32_t)(pb & 0xffffffff));
+	ex->start_hi = to_le16((uint16_t)((pb >> 32)) & 0xffff);
 }
 
 /*
@@ -140,8 +140,8 @@ static void ext4_ext_store_pblock(struct ext4_extent *ex, ext4_fsblk_t pb)
  */
 static void ext4_idx_store_pblock(struct ext4_extent_index *ix, ext4_fsblk_t pb)
 {
-	ix->leaf_lo = to_le32((unsigned long)(pb & 0xffffffff));
-	ix->leaf_hi = to_le16((unsigned long)((pb >> 31) >> 1) & 0xffff);
+	ix->leaf_lo = to_le32((uint32_t)(pb & 0xffffffff));
+	ix->leaf_hi = to_le16((uint16_t)((pb >> 32)) & 0xffff);
 }
 
 static int ext4_allocate_single_block(struct ext4_inode_ref *inode_ref,
