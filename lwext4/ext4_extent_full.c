@@ -464,8 +464,6 @@ static void ext4_ext_binsearch(struct ext4_extent_path *path, ext4_lblk_t block)
 	path->extent = l - 1;
 }
 
-#define EXT4_EXT_PATH_INC_DEPTH 1
-
 static int ext4_find_extent(struct ext4_inode_ref *inode_ref, ext4_lblk_t block,
 			    struct ext4_extent_path **orig_path, uint32_t flags)
 {
@@ -488,7 +486,7 @@ static int ext4_find_extent(struct ext4_inode_ref *inode_ref, ext4_lblk_t block,
 		}
 	}
 	if (!path) {
-		int32_t path_depth = depth + EXT4_EXT_PATH_INC_DEPTH;
+		int32_t path_depth = depth + 1;
 		/* account possible depth increase */
 		path = calloc(1, sizeof(struct ext4_extent_path) *
 				     (path_depth + 1));
