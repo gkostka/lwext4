@@ -644,8 +644,6 @@ static ext4_lblk_t ext4_ext_block_index(struct ext4_extent_header *eh)
 	return to_le32(EXT_FIRST_EXTENT(eh)->first_block);
 }
 
-#define EXT_INODE_HDR_NEED_GROW 0x1
-
 struct ext_split_trans {
 	ext4_fsblk_t ptr;
 	struct ext4_extent_path path;
@@ -653,11 +651,13 @@ struct ext_split_trans {
 };
 
 static int ext4_ext_insert_index(struct ext4_inode_ref *inode_ref,
-				 struct ext4_extent_path *path, int32_t at,
+				 struct ext4_extent_path *path,
+				 int32_t at,
 				 struct ext4_extent *newext,
 				 ext4_lblk_t insert_index,
 				 ext4_fsblk_t insert_block,
-				 struct ext_split_trans *spt)
+				 struct ext_split_trans *spt,
+				 bool *need_grow)
 {
 	struct ext4_extent_index *ix;
 	struct ext4_extent_path *curp = path + at;
@@ -665,6 +665,8 @@ static int ext4_ext_insert_index(struct ext4_inode_ref *inode_ref,
 	int32_t len;
 	int err;
 	struct ext4_extent_header *eh;
+
+	*need_grow = false;
 
 	if (curp->index && insert_index == to_le32(curp->index->first_block))
 		return EIO;
@@ -697,7 +699,8 @@ static int ext4_ext_insert_index(struct ext4_inode_ref *inode_ref,
 				ix = EXT_LAST_INDEX(eh);
 			}
 		} else {
-			err = EXT_INODE_HDR_NEED_GROW;
+			err = EOK;
+			*need_grow = true;
 			goto out;
 		}
 	} else {
@@ -878,9 +881,12 @@ static bool ext4_ext_can_append(struct ext4_extent *ex1,
 }
 
 static int ext4_ext_insert_leaf(struct ext4_inode_ref *inode_ref,
-				struct ext4_extent_path *path, int32_t at,
+				struct ext4_extent_path *path,
+				int32_t at,
 				struct ext4_extent *newext,
-				struct ext_split_trans *spt, uint32_t flags)
+				struct ext_split_trans *spt,
+				uint32_t flags,
+				bool *need_grow)
 {
 	struct ext4_extent_path *curp = path + at;
 	struct ext4_extent *ex = curp->extent;
@@ -889,6 +895,8 @@ static int ext4_ext_insert_leaf(struct ext4_inode_ref *inode_ref,
 	int err = EOK;
 	int unwritten;
 	struct ext4_extent_header *eh = NULL;
+
+	*need_grow = false;
 
 	if (curp->extent &&
 	    to_le32(newext->first_block) == to_le32(curp->extent->first_block))
@@ -947,7 +955,8 @@ static int ext4_ext_insert_leaf(struct ext4_inode_ref *inode_ref,
 				ex = EXT_LAST_EXTENT(eh);
 			}
 		} else {
-			err = EXT_INODE_HDR_NEED_GROW;
+			err = EOK;
+			*need_grow = true;
 			goto out;
 		}
 	} else {
@@ -1147,6 +1156,7 @@ static int ext4_ext_insert_extent(struct ext4_inode_ref *inode_ref,
 	int32_t i, depth, level;
 	int ret = EOK;
 	ext4_fsblk_t ptr = 0;
+	bool need_grow = false;
 	struct ext4_extent_path *path = *ppath;
 	struct ext_split_trans *spt = NULL;
 	struct ext_split_trans newblock;
@@ -1172,18 +1182,21 @@ again:
 	do {
 		if (!i) {
 			ret = ext4_ext_insert_leaf(inode_ref, path, depth - i,
-						   newext, &newblock, flags);
+						   newext, &newblock, flags,
+						   &need_grow);
 		} else {
 			ret = ext4_ext_insert_index(
 			    inode_ref, path, depth - i, newext,
 			    ext4_ext_block_index(
 				ext_block_hdr(&spt[i - 1].path.block)),
-			    spt[i - 1].ptr, &newblock);
+			    spt[i - 1].ptr, &newblock,
+			    &need_grow);
 		}
 		ptr = newblock.ptr;
 
-		if (ret && ret != EXT_INODE_HDR_NEED_GROW)
+		if (ret != EOK)
 			goto out;
+
 		else if (spt && ptr && !ret) {
 			/* Prepare for the next iteration after splitting. */
 			spt[i] = newblock;
@@ -1192,7 +1205,7 @@ again:
 		i++;
 	} while (ptr != 0 && i <= depth);
 
-	if (ret == EXT_INODE_HDR_NEED_GROW) {
+	if (need_grow) {
 		ret = ext4_ext_grow_indepth(inode_ref, 0);
 		if (ret)
 			goto out;
