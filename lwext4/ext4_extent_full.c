@@ -315,10 +315,11 @@ static void ext4_ext_drop_refs(struct ext4_inode_ref *inode_ref,
 	else
 		depth = path->depth;
 
-	for (i = 0; i <= depth; i++, path++)
+	for (i = 0; i <= depth; i++, path++) {
 		if (path->block.lb_id) {
 			ext4_block_set(inode_ref->fs->bdev, &path->block);
 		}
+	}
 }
 
 /*
@@ -1411,51 +1412,52 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 				leaf_to = to;
 
 			ext4_ext_remove_leaf(inode_ref, path, leaf_from,
-					     leaf_to);
+					leaf_to);
 			ext4_ext_drop_refs(inode_ref, path + i, 0);
 			i--;
 			continue;
-		} else {
-			struct ext4_extent_header *eh;
-			eh = path[i].header;
-			if (ext4_ext_more_to_rm(path + i, to)) {
-				struct ext4_block bh = EXT4_BLOCK_ZERO();
-				if (path[i + 1].block.lb_id)
-					ext4_ext_drop_refs(inode_ref,
-							   path + i + 1, 0);
-
-				ret = read_extent_tree_block(
-				    inode_ref, ext4_idx_pblock(path[i].index),
-				    depth - i - 1, &bh, 0);
-				if (ret)
-					goto out;
-
-				path[i].p_block =
-				    ext4_idx_pblock(path[i].index);
-				path[i + 1].block = bh;
-				path[i + 1].header = ext_block_hdr(&bh);
-				path[i + 1].depth = depth - i - 1;
-				if (i + 1 == depth)
-					path[i + 1].extent = EXT_FIRST_EXTENT(
-					    path[i + 1].header);
-				else
-					path[i + 1].index =
-					    EXT_FIRST_INDEX(path[i + 1].header);
-
-				i++;
-			} else {
-				if (!eh->entries_count && i > 0) {
-
-					ret = ext4_ext_remove_idx(inode_ref,
-								  path, i - 1);
-				}
-				if (i) {
-					ext4_block_set(inode_ref->fs->bdev,
-						       &path[i].block);
-				}
-				i--;
-			}
 		}
+
+		struct ext4_extent_header *eh;
+		eh = path[i].header;
+		if (ext4_ext_more_to_rm(path + i, to)) {
+			struct ext4_block bh = EXT4_BLOCK_ZERO();
+			if (path[i + 1].block.lb_id)
+				ext4_ext_drop_refs(inode_ref, path + i + 1, 0);
+
+			ret = read_extent_tree_block(inode_ref,
+					ext4_idx_pblock(path[i].index),
+					depth - i - 1, &bh, 0);
+			if (ret)
+				goto out;
+
+			path[i].p_block =
+					ext4_idx_pblock(path[i].index);
+			path[i + 1].block = bh;
+			path[i + 1].header = ext_block_hdr(&bh);
+			path[i + 1].depth = depth - i - 1;
+			if (i + 1 == depth)
+				path[i + 1].extent = EXT_FIRST_EXTENT(
+					path[i + 1].header);
+			else
+				path[i + 1].index =
+					EXT_FIRST_INDEX(path[i + 1].header);
+
+			i++;
+		} else {
+			if (!eh->entries_count && i > 0)
+				ret = ext4_ext_remove_idx(inode_ref, path,
+						i - 1);
+
+
+			if (i)
+				ext4_block_set(inode_ref->fs->bdev,
+						&path[i].block);
+
+
+			i--;
+		}
+
 	}
 
 	/* TODO: flexible tree reduction should be here */
@@ -1668,31 +1670,32 @@ int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock
 			/* number of remain blocks in the extent */
 			allocated = ee_len - (iblock - ee_block);
 
-			if (ext4_ext_is_unwritten(ex)) {
-				if (create) {
-					uint32_t zero_range;
-					zero_range = allocated;
-					if (zero_range > max_blocks)
-						zero_range = max_blocks;
-
-					newblock = iblock - ee_block + ee_start;
-					err = ext4_ext_zero_unwritten_range(
-					    inode_ref, newblock, zero_range);
-					if (err != EOK)
-						goto out2;
-
-					err = ext4_ext_convert_to_initialized(
-					    inode_ref, &path, iblock,
-					    zero_range);
-					if (err != EOK)
-						goto out2;
-
-				} else {
-					newblock = 0;
-				}
-			} else {
+			if (!ext4_ext_is_unwritten(ex)) {
 				newblock = iblock - ee_block + ee_start;
+				goto out;
 			}
+
+			if (!create) {
+				newblock = 0;
+				goto out;
+			}
+
+			uint32_t zero_range;
+			zero_range = allocated;
+			if (zero_range > max_blocks)
+				zero_range = max_blocks;
+
+			newblock = iblock - ee_block + ee_start;
+			err = ext4_ext_zero_unwritten_range(inode_ref, newblock,
+					zero_range);
+			if (err != EOK)
+				goto out2;
+
+			err = ext4_ext_convert_to_initialized(inode_ref, &path,
+					iblock, zero_range);
+			if (err != EOK)
+				goto out2;
+
 			goto out;
 		}
 	}
