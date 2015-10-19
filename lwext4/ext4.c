@@ -1531,16 +1531,6 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 			fblock_count++;
 		}
 
-		if (rr != EOK) {
-			if (fblock_count == 1) {
-				/*ext4_fs_append_inode_block has failed and no
-				 * more blocks shold be written. But node size
-				 * should be updated.*/
-				r = rr;
-				goto out_fsize;
-			}
-		}
-
 		r = ext4_blocks_set_direct(f->mp->fs.bdev, u8_buf, fblock_start,
 					   fblock_count);
 		if (r != EOK)
@@ -1555,6 +1545,14 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 
 		fblock_start = fblock;
 		fblock_count = 1;
+
+		if (rr != EOK) {
+			/*ext4_fs_append_inode_block has failed and no
+			 * more blocks might be written. But node size
+			 * should be updated.*/
+			r = rr;
+			goto out_fsize;
+		}
 	}
 
 	/*Stop write back cache mode*/
