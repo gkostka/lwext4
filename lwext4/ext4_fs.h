@@ -183,12 +183,16 @@ int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
 
 /**@brief Get physical block address by logical index of the block.
  * @param inode_ref I-node to read block address from
- * @param iblock    Logical index of block
- * @param fblock    Output pointer for return physical block address
+ * @param iblock            Logical index of block
+ * @param fblock            Output pointer for return physical
+ *                          block address
+ * @param support_unwritten Indicate whether unwritten block range
+ *                          is supported under the current context
  * @return Error code
  */
 int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, ext4_fsblk_t *fblock);
+				       uint64_t iblock, ext4_fsblk_t *fblock,
+				       bool support_unwritten);
 
 /**@brief Initialize a part of unwritten range of the inode.
  * @param inode_ref I-node to proceed on.

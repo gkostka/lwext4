@@ -1319,7 +1319,9 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 
 		uint32_t ll = size > (block_size - u) ? (block_size - u) : size;
 
-		r = ext4_fs_get_inode_data_block_index(&ref, sblock, &fblock);
+		r = ext4_fs_get_inode_data_block_index(&ref,
+				sblock, &fblock,
+				true);
 		if (r != EOK)
 			goto Finish;
 
@@ -1353,7 +1355,8 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 	while (size >= block_size) {
 
 		r = ext4_fs_get_inode_data_block_index(&ref, sblock,
-						       &fblock);
+						       &fblock,
+						       true);
 		if (r != EOK)
 			goto Finish;
 
@@ -1375,7 +1378,9 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 	}
 
 	if (size) {
-		r = ext4_fs_get_inode_data_block_index(&ref, sblock, &fblock);
+		r = ext4_fs_get_inode_data_block_index(&ref,
+						sblock, &fblock,
+						true);
 		if (r != EOK)
 			goto Finish;
 

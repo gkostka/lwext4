@@ -208,7 +208,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir)
 {
 	/* Load block 0, where will be index root located */
 	ext4_fsblk_t fblock;
-	int rc = ext4_fs_get_inode_data_block_index(dir, 0, &fblock);
+	int rc = ext4_fs_get_inode_data_block_index(dir, 0, &fblock, false);
 	if (rc != EOK)
 		return rc;
 
@@ -413,7 +413,7 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 
 		ext4_fsblk_t fblock;
 		int rc = ext4_fs_get_inode_data_block_index(
-		    inode_ref, next_block, &fblock);
+		    inode_ref, next_block, &fblock, false);
 		if (rc != EOK)
 			return rc;
 
@@ -490,7 +490,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 		ext4_fsblk_t block_addr;
 
 		int rc = ext4_fs_get_inode_data_block_index(
-		    inode_ref, block_idx, &block_addr);
+		    inode_ref, block_idx, &block_addr, false);
 		if (rc != EOK)
 			return rc;
 
@@ -523,7 +523,8 @@ int ext4_dir_dx_find_entry(struct ext4_directory_search_result *result,
 	ext4_fsblk_t root_block_addr;
 	int rc2;
 	int rc =
-	    ext4_fs_get_inode_data_block_index(inode_ref, 0, &root_block_addr);
+	    ext4_fs_get_inode_data_block_index(inode_ref,
+			    0, &root_block_addr, false);
 	if (rc != EOK)
 		return rc;
 
@@ -564,7 +565,8 @@ int ext4_dir_dx_find_entry(struct ext4_directory_search_result *result,
 		ext4_fsblk_t leaf_block_addr;
 
 		rc = ext4_fs_get_inode_data_block_index(
-		    inode_ref, leaf_block_idx, &leaf_block_addr);
+		    inode_ref, leaf_block_idx, &leaf_block_addr,
+		    false);
 		if (rc != EOK)
 			goto cleanup;
 
@@ -1080,7 +1082,9 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	/* Get direct block 0 (index root) */
 	ext4_fsblk_t root_block_addr;
 	int rc =
-	    ext4_fs_get_inode_data_block_index(parent, 0, &root_block_addr);
+	    ext4_fs_get_inode_data_block_index(parent,
+			    0, &root_block_addr,
+			    false);
 	if (rc != EOK)
 		return rc;
 
@@ -1120,7 +1124,8 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	    ext4_dir_dx_entry_get_block(dx_block->position);
 	ext4_fsblk_t leaf_block_addr;
 	rc = ext4_fs_get_inode_data_block_index(parent, leaf_block_idx,
-						&leaf_block_addr);
+						&leaf_block_addr,
+						false);
 	if (rc != EOK)
 		goto release_index;
 
@@ -1198,7 +1203,7 @@ int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
 {
 	/* Load block 0, where will be index root located */
 	ext4_fsblk_t fblock;
-	int rc = ext4_fs_get_inode_data_block_index(dir, 0, &fblock);
+	int rc = ext4_fs_get_inode_data_block_index(dir, 0, &fblock, false);
 	if (rc != EOK)
 		return rc;
 

@@ -1033,7 +1033,7 @@ int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
 	/* If inode has some blocks, get last block address + 1 */
 	if (inode_block_count > 0) {
 		int rc = ext4_fs_get_inode_data_block_index(
-		    inode_ref, inode_block_count - 1, goal);
+		    inode_ref, inode_block_count - 1, goal, false);
 		if (rc != EOK)
 			return rc;
 
@@ -1090,7 +1090,8 @@ int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
 
 static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 				       uint64_t iblock, ext4_fsblk_t *fblock,
-				       bool extent_create)
+				       bool extent_create,
+				       bool support_unwritten)
 {
 	struct ext4_fs *fs = inode_ref->fs;
 
@@ -1118,7 +1119,7 @@ static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 		current_block = current_fsblk;
 		*fblock = current_block;
 
-		ext4_assert(*fblock);
+		ext4_assert(*fblock || support_unwritten);
 		return EOK;
 	}
 #endif
@@ -1207,17 +1208,18 @@ static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 
 
 int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, ext4_fsblk_t *fblock)
+				       uint64_t iblock, ext4_fsblk_t *fblock,
+				       bool support_unwritten)
 {
 	return ext4_fs_get_inode_data_block_idx(inode_ref, iblock, fblock,
-			false);
+			false, support_unwritten);
 }
 
 int ext4_fs_init_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 				       uint64_t iblock, ext4_fsblk_t *fblock)
 {
 	return ext4_fs_get_inode_data_block_idx(inode_ref, iblock, fblock,
-			true);
+			true, true);
 }
 
 int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,

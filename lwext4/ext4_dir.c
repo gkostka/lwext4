@@ -140,7 +140,9 @@ static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
 
 		ext4_fsblk_t next_block_phys_idx;
 		int rc = ext4_fs_get_inode_data_block_index(
-		    it->inode_ref, next_block_idx, &next_block_phys_idx);
+		    it->inode_ref, next_block_idx,
+		    &next_block_phys_idx,
+		    false);
 		if (rc != EOK)
 			return rc;
 
@@ -271,7 +273,9 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 	bool success = false;
 	for (iblock = 0; iblock < total_blocks; ++iblock) {
 		int rc =
-		    ext4_fs_get_inode_data_block_index(parent, iblock, &fblock);
+		    ext4_fs_get_inode_data_block_index(parent,
+				    iblock, &fblock,
+				    false);
 		if (rc != EOK)
 			return rc;
 
@@ -361,7 +365,9 @@ int ext4_dir_find_entry(struct ext4_directory_search_result *result,
 	for (iblock = 0; iblock < total_blocks; ++iblock) {
 		/* Load block address */
 		int rc =
-		    ext4_fs_get_inode_data_block_index(parent, iblock, &fblock);
+		    ext4_fs_get_inode_data_block_index(parent,
+				    iblock, &fblock,
+				    false);
 		if (rc != EOK)
 			return rc;
 
