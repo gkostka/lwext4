@@ -40,7 +40,6 @@
 
 #include "ext4_extent.h"
 
-#define AGGRESSIVE_TEST
 #if CONFIG_EXTENT_FULL
 
 /*
