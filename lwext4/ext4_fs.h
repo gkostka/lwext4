@@ -203,15 +203,6 @@ int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 int ext4_fs_init_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 				       uint64_t iblock, ext4_fsblk_t *fblock);
 
-/**@brief Set physical block address for the block logical address into the
- * i-node.
- * @param inode_ref I-node to set block address to
- * @param iblock    Logical index of block
- * @param fblock    Physical block address
- * @return Error code
- */
-int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, ext4_fsblk_t fblock);
 
 /**@brief Release data block from i-node
  * @param inode_ref I-node to release block from

@@ -1222,7 +1222,7 @@ int ext4_fs_init_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 			true, true);
 }
 
-int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
+static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 				       uint64_t iblock, ext4_fsblk_t fblock)
 {
 	struct ext4_fs *fs = inode_ref->fs;
