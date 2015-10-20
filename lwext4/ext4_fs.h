@@ -203,15 +203,6 @@ int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 int ext4_fs_init_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 				       uint64_t iblock, ext4_fsblk_t *fblock);
 
-
-/**@brief Release data block from i-node
- * @param inode_ref I-node to release block from
- * @param iblock    Logical block to be released
- * @return Error code
- */
-int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
-				uint32_t iblock);
-
 /**@brief Append following logical block to the i-node.
  * @param inode_ref I-node to append block to
  * @param fblock    Output physical block address of newly allocated block

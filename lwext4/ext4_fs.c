@@ -929,6 +929,113 @@ finish:
 	return rc;
 }
 
+
+/**@brief Release data block from i-node
+ * @param inode_ref I-node to release block from
+ * @param iblock    Logical block to be released
+ * @return Error code
+ */
+static int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
+				uint32_t iblock)
+{
+	ext4_fsblk_t fblock;
+
+	struct ext4_fs *fs = inode_ref->fs;
+
+	/* Extents are handled otherwise = there is not support in this function
+	 */
+	ext4_assert(!(
+	    ext4_sb_has_feature_incompatible(&fs->sb,
+					     EXT4_FEATURE_INCOMPAT_EXTENTS) &&
+	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))));
+
+	struct ext4_inode *inode = inode_ref->inode;
+
+	/* Handle simple case when we are dealing with direct reference */
+	if (iblock < EXT4_INODE_DIRECT_BLOCK_COUNT) {
+		fblock = ext4_inode_get_direct_block(inode, iblock);
+
+		/* Sparse file */
+		if (fblock == 0)
+			return EOK;
+
+		ext4_inode_set_direct_block(inode, iblock, 0);
+		return ext4_balloc_free_block(inode_ref, fblock);
+	}
+
+	/* Determine the indirection level needed to get the desired block */
+	unsigned int level = 0;
+	unsigned int i;
+	for (i = 1; i < 4; i++) {
+		if (iblock < fs->inode_block_limits[i]) {
+			level = i;
+			break;
+		}
+	}
+
+	if (level == 0)
+		return EIO;
+
+	/* Compute offsets for the topmost level */
+	uint64_t block_offset_in_level =
+	    iblock - fs->inode_block_limits[level - 1];
+	ext4_fsblk_t current_block =
+	    ext4_inode_get_indirect_block(inode, level - 1);
+	uint32_t offset_in_block =
+	    block_offset_in_level / fs->inode_blocks_per_level[level - 1];
+
+	/*
+	 * Navigate through other levels, until we find the block number
+	 * or find null reference meaning we are dealing with sparse file
+	 */
+	struct ext4_block block;
+
+	while (level > 0) {
+
+		/* Sparse check */
+		if (current_block == 0)
+			return EOK;
+
+		int rc = ext4_block_get(fs->bdev, &block, current_block);
+		if (rc != EOK)
+			return rc;
+
+		current_block =
+		    to_le32(((uint32_t *)block.data)[offset_in_block]);
+
+		/* Set zero if physical data block address found */
+		if (level == 1) {
+			((uint32_t *)block.data)[offset_in_block] = to_le32(0);
+			block.dirty = true;
+		}
+
+		rc = ext4_block_set(fs->bdev, &block);
+		if (rc != EOK)
+			return rc;
+
+		level--;
+
+		/*
+		 * If we are on the last level, break here as
+		 * there is no next level to visit
+		 */
+		if (level == 0)
+			break;
+
+		/* Visit the next level */
+		block_offset_in_level %= fs->inode_blocks_per_level[level];
+		offset_in_block = block_offset_in_level /
+				  fs->inode_blocks_per_level[level - 1];
+	}
+
+	fblock = current_block;
+	if (fblock == 0)
+		return EOK;
+
+	/* Physical block is not referenced, it can be released */
+	return ext4_balloc_free_block(inode_ref, fblock);
+}
+
 int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 {
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
@@ -1395,106 +1502,6 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 	return EOK;
 }
 
-int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
-				uint32_t iblock)
-{
-	ext4_fsblk_t fblock;
-
-	struct ext4_fs *fs = inode_ref->fs;
-
-	/* Extents are handled otherwise = there is not support in this function
-	 */
-	ext4_assert(!(
-	    ext4_sb_has_feature_incompatible(&fs->sb,
-					     EXT4_FEATURE_INCOMPAT_EXTENTS) &&
-	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))));
-
-	struct ext4_inode *inode = inode_ref->inode;
-
-	/* Handle simple case when we are dealing with direct reference */
-	if (iblock < EXT4_INODE_DIRECT_BLOCK_COUNT) {
-		fblock = ext4_inode_get_direct_block(inode, iblock);
-
-		/* Sparse file */
-		if (fblock == 0)
-			return EOK;
-
-		ext4_inode_set_direct_block(inode, iblock, 0);
-		return ext4_balloc_free_block(inode_ref, fblock);
-	}
-
-	/* Determine the indirection level needed to get the desired block */
-	unsigned int level = 0;
-	unsigned int i;
-	for (i = 1; i < 4; i++) {
-		if (iblock < fs->inode_block_limits[i]) {
-			level = i;
-			break;
-		}
-	}
-
-	if (level == 0)
-		return EIO;
-
-	/* Compute offsets for the topmost level */
-	uint64_t block_offset_in_level =
-	    iblock - fs->inode_block_limits[level - 1];
-	ext4_fsblk_t current_block =
-	    ext4_inode_get_indirect_block(inode, level - 1);
-	uint32_t offset_in_block =
-	    block_offset_in_level / fs->inode_blocks_per_level[level - 1];
-
-	/*
-	 * Navigate through other levels, until we find the block number
-	 * or find null reference meaning we are dealing with sparse file
-	 */
-	struct ext4_block block;
-
-	while (level > 0) {
-
-		/* Sparse check */
-		if (current_block == 0)
-			return EOK;
-
-		int rc = ext4_block_get(fs->bdev, &block, current_block);
-		if (rc != EOK)
-			return rc;
-
-		current_block =
-		    to_le32(((uint32_t *)block.data)[offset_in_block]);
-
-		/* Set zero if physical data block address found */
-		if (level == 1) {
-			((uint32_t *)block.data)[offset_in_block] = to_le32(0);
-			block.dirty = true;
-		}
-
-		rc = ext4_block_set(fs->bdev, &block);
-		if (rc != EOK)
-			return rc;
-
-		level--;
-
-		/*
-		 * If we are on the last level, break here as
-		 * there is no next level to visit
-		 */
-		if (level == 0)
-			break;
-
-		/* Visit the next level */
-		block_offset_in_level %= fs->inode_blocks_per_level[level];
-		offset_in_block = block_offset_in_level /
-				  fs->inode_blocks_per_level[level - 1];
-	}
-
-	fblock = current_block;
-	if (fblock == 0)
-		return EOK;
-
-	/* Physical block is not referenced, it can be released */
-	return ext4_balloc_free_block(inode_ref, fblock);
-}
 
 int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
 			       ext4_fsblk_t *fblock, uint32_t *iblock)
