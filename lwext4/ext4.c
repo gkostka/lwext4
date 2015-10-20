@@ -1843,9 +1843,8 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 
 	/*If the size of symlink is smaller than 60 bytes*/
 	if (size < sizeof(ref.inode->blocks)) {
-		char *content = (char *)ref.inode->blocks;
-		memset(content, 0, sizeof(ref.inode->blocks));
-		memcpy(content, buf, size);
+		memset(ref.inode->blocks, 0, sizeof(ref.inode->blocks));
+		memcpy(ref.inode->blocks, buf, size);
 		ext4_inode_clear_flag(ref.inode, EXT4_INODE_FLAG_EXTENTS);
 	} else {
 		ext4_fs_inode_blocks_init(&f->mp->fs, &ref);
@@ -1922,8 +1921,6 @@ int ext4_readlink(const char *path, char *buf, size_t bufsize, size_t *rcnt)
 
 	if (!buf)
 		return EINVAL;
-
-	memset(buf, 0, sizeof(bufsize));
 
 	filetype = EXT4_DIRENTRY_SYMLINK;
 
