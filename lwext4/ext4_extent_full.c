@@ -1425,10 +1425,15 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 	if (ret)
 		goto out;
 
+	if (!path[depth].extent) {
+		ret = EOK;
+		goto out;
+	}
+
 	bool in_range = IN_RANGE(from, to_le32(path[depth].extent->first_block),
 			ext4_ext_get_actual_len(path[depth].extent));
 
-	if (!path[depth].extent || !in_range) {
+	if (!in_range) {
 		ret = EOK;
 		goto out;
 	}
