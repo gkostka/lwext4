@@ -40,6 +40,7 @@
 
 #include "ext4_extent.h"
 
+#define AGGRESSIVE_TEST
 #if CONFIG_EXTENT_FULL
 
 /*
@@ -178,6 +179,10 @@ static size_t ext4_ext_space_block(struct ext4_inode_ref *inode_ref)
 
 	size = (block_size - sizeof(struct ext4_extent_header)) /
 	       sizeof(struct ext4_extent);
+#ifdef AGGRESSIVE_TEST
+	if (size > 6)
+		size = 6;
+#endif
 	return size;
 }
 
@@ -188,6 +193,10 @@ static size_t ext4_ext_space_block_idx(struct ext4_inode_ref *inode_ref)
 
 	size = (block_size - sizeof(struct ext4_extent_header)) /
 	       sizeof(struct ext4_extent_index);
+#ifdef AGGRESSIVE_TEST
+	if (size > 5)
+		size = 5;
+#endif
 	return size;
 }
 
@@ -198,6 +207,10 @@ static size_t ext4_ext_space_root(struct ext4_inode_ref *inode_ref)
 	size = sizeof(inode_ref->inode->blocks);
 	size -= sizeof(struct ext4_extent_header);
 	size /= sizeof(struct ext4_extent);
+#ifdef AGGRESSIVE_TEST
+	if (size > 3)
+		size = 3;
+#endif
 	return size;
 }
 
@@ -208,6 +221,10 @@ static size_t ext4_ext_space_root_idx(struct ext4_inode_ref *inode_ref)
 	size = sizeof(inode_ref->inode->blocks);
 	size -= sizeof(struct ext4_extent_header);
 	size /= sizeof(struct ext4_extent_index);
+#ifdef AGGRESSIVE_TEST
+	if (size > 4)
+		size = 4;
+#endif
 	return size;
 }
 
@@ -742,7 +759,7 @@ static int ext4_ext_insert_index(struct ext4_inode_ref *inode_ref,
 		err = EOK;
 
 out:
-	if (err != EOK) {
+	if (err != EOK || *need_grow) {
 		if (bh.lb_id)
 			ext4_block_set(inode_ref->fs->bdev, &bh);
 
@@ -841,6 +858,10 @@ static bool ext4_ext_can_prepend(struct ext4_extent *ex1,
 	    ext4_ext_pblock(ex1))
 		return false;
 
+#ifdef AGGRESSIVE_TEST
+	if (ext4_ext_get_actual_len(ex1) + ext4_ext_get_actual_len(ex2) > 4)
+		return 0;
+#else
 	if (ext4_ext_is_unwritten(ex1)) {
 		if (ext4_ext_get_actual_len(ex1) +
 			ext4_ext_get_actual_len(ex2) >
@@ -849,6 +870,7 @@ static bool ext4_ext_can_prepend(struct ext4_extent *ex1,
 	} else if (ext4_ext_get_actual_len(ex1) + ext4_ext_get_actual_len(ex2) >
 		   EXT_INIT_MAX_LEN)
 		return false;
+#endif
 
 	if (to_le32(ex2->first_block) + ext4_ext_get_actual_len(ex2) !=
 	    to_le32(ex1->first_block))
@@ -864,6 +886,10 @@ static bool ext4_ext_can_append(struct ext4_extent *ex1,
 	    ext4_ext_pblock(ex2))
 		return false;
 
+#ifdef AGGRESSIVE_TEST
+	if (ext4_ext_get_actual_len(ex1) + ext4_ext_get_actual_len(ex2) > 4)
+		return 0;
+#else
 	if (ext4_ext_is_unwritten(ex1)) {
 		if (ext4_ext_get_actual_len(ex1) +
 			ext4_ext_get_actual_len(ex2) >
@@ -872,6 +898,7 @@ static bool ext4_ext_can_append(struct ext4_extent *ex1,
 	} else if (ext4_ext_get_actual_len(ex1) + ext4_ext_get_actual_len(ex2) >
 		   EXT_INIT_MAX_LEN)
 		return false;
+#endif
 
 	if (to_le32(ex1->first_block) + ext4_ext_get_actual_len(ex1) !=
 	    to_le32(ex2->first_block))
@@ -1003,7 +1030,7 @@ static int ext4_ext_insert_leaf(struct ext4_inode_ref *inode_ref,
 		err = EOK;
 
 out:
-	if (err != EOK) {
+	if (err != EOK || *need_grow) {
 		if (bh.lb_id)
 			ext4_block_set(inode_ref->fs->bdev, &bh);
 
@@ -1140,13 +1167,13 @@ __unused static void print_path(struct ext4_extent_path *path)
 
 static void ext4_ext_replace_path(struct ext4_inode_ref *inode_ref,
 				  struct ext4_extent_path *path,
-				  struct ext_split_trans *spt, int32_t depth,
+				  struct ext_split_trans *spt,
 				  int32_t level)
 {
+	int32_t depth = ext_depth(inode_ref->inode);
 	int32_t i = depth - level;
-
 	ext4_ext_drop_refs(inode_ref, path + i, 1);
-	path[i] = spt->path;
+	path[i] = spt[level].path;
 }
 
 static int ext4_ext_insert_extent(struct ext4_inode_ref *inode_ref,
@@ -1234,7 +1261,7 @@ out:
 		while (--level >= 0 && spt) {
 			if (spt[level].switch_to)
 				ext4_ext_replace_path(inode_ref, path, spt,
-						      depth, level);
+						      level);
 			else if (spt[level].ptr)
 				ext4_ext_drop_refs(inode_ref, &spt[level].path,
 						   1);
@@ -1367,6 +1394,8 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 	 * remove it from index block above */
 	if (err == EOK && eh->entries_count == 0 && path[depth].block.lb_id)
 		err = ext4_ext_remove_idx(inode_ref, path, depth - 1);
+	else if (depth > 0)
+		path[depth - 1].index++;
 
 	return err;
 }
@@ -1376,7 +1405,7 @@ static bool ext4_ext_more_to_rm(struct ext4_extent_path *path, ext4_lblk_t to)
 	if (!to_le16(path->header->entries_count))
 		return false;
 
-	if (path->index >= EXT_LAST_INDEX(path->header))
+	if (path->index > EXT_LAST_INDEX(path->header))
 		return false;
 
 	if (to_le32(path->index->first_block) > to)
@@ -1458,10 +1487,14 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 
 			i++;
 		} else {
-			if (!eh->entries_count && i > 0)
-				ret = ext4_ext_remove_idx(inode_ref, path,
-						i - 1);
+			if (i > 0) {
+				if (!eh->entries_count)
+					ret = ext4_ext_remove_idx(inode_ref, path,
+							i - 1);
+				else
+					path[i - 1].index++;
 
+			}
 
 			if (i)
 				ext4_block_set(inode_ref->fs->bdev,
