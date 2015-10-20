@@ -1272,10 +1272,6 @@ out:
 	return ret;
 }
 
-static int ext4_ext_split_extent_at(struct ext4_inode_ref *inode_ref,
-				    struct ext4_extent_path **ppath,
-				    ext4_lblk_t split, uint32_t split_flag);
-
 static void ext4_ext_remove_blocks(struct ext4_inode_ref *inode_ref,
 				   struct ext4_extent *ex, ext4_lblk_t from,
 				   ext4_lblk_t to)
