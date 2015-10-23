@@ -146,9 +146,9 @@ int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
 	/* Free i-node in the bitmap */
 	uint32_t index_in_group = ext4_ialloc_inode2index_in_group(sb, index);
 	ext4_bmap_bit_clr(bitmap_block.data, index_in_group);
-	bitmap_block.dirty = true;
 	ext4_ialloc_set_bitmap_csum(sb, bg_ref.block_group,
 				    bitmap_block.data);
+	bitmap_block.dirty = true;
 
 	/* Put back the block with bitmap */
 	rc = ext4_block_set(fs->bdev, &bitmap_block);
@@ -261,9 +261,9 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
 			ext4_bmap_bit_set(bitmap_block.data, index_in_group);
 
 			/* Free i-node found, save the bitmap */
-			bitmap_block.dirty = true;
 			ext4_ialloc_set_bitmap_csum(sb, bg_ref.block_group,
 						    bitmap_block.data);
+			bitmap_block.dirty = true;
 
 			ext4_block_set(fs->bdev, &bitmap_block);
 			if (rc != EOK) {
