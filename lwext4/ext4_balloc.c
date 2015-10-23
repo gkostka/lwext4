@@ -42,6 +42,7 @@
 #include "ext4_config.h"
 #include "ext4_balloc.h"
 #include "ext4_super.h"
+#include "ext4_crc32c.h"
 #include "ext4_block_group.h"
 #include "ext4_fs.h"
 #include "ext4_bitmap.h"
@@ -77,6 +78,37 @@ uint64_t ext4_balloc_get_block_of_bgid(struct ext4_sblock *s,
 	return baddr;
 }
 
+static uint32_t ext4_balloc_bitmap_csum(struct ext4_sblock *sb,
+					void *bitmap)
+{
+	uint32_t checksum = 0;
+	if (ext4_sb_has_feature_read_only(sb,
+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		/* First calculate crc32 checksum against fs uuid */
+		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
+		/* Then calculate crc32 checksum against block_group_desc */
+		checksum = ext4_crc32c(checksum, bitmap,
+				     ext4_sb_get_block_size(sb));
+	}
+	return checksum;
+}
+
+static void ext4_balloc_set_bitmap_csum(struct ext4_sblock *sb,
+					struct ext4_bgroup *bg,
+					void *bitmap)
+{
+	int desc_size = ext4_sb_get_desc_size(sb);
+	uint32_t checksum = ext4_balloc_bitmap_csum(sb, bitmap);
+	uint16_t lo_checksum = to_le16(checksum & 0xFFFF),
+		 hi_checksum = to_le16(checksum >> 16);
+	
+	/* See if we need to assign a 32bit checksum */
+	bg->block_bitmap_csum_lo = lo_checksum;
+	if (desc_size == EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE)
+		bg->block_bitmap_csum_hi = hi_checksum;
+
+}
+
 int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 {
 	struct ext4_fs *fs = inode_ref->fs;
@@ -106,6 +138,8 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 	/* Modify bitmap */
 	ext4_bmap_bit_clr(bitmap_block.data, index_in_group);
 	bitmap_block.dirty = true;
+	ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
+				    bitmap_block.data);
 
 	/* Release block with bitmap */
 	rc = ext4_block_set(fs->bdev, &bitmap_block);
@@ -196,6 +230,8 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t first
 		ext4_bmap_bits_free(bitmap_block.data, index_in_group_first,
 				    free_cnt);
 		bitmap_block.dirty = true;
+		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
+					    bitmap_block.data);
 
 		count -= free_cnt;
 		first += free_cnt;
@@ -294,6 +330,8 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 	if (ext4_bmap_is_bit_clr(bitmap_block.data, index_in_group)) {
 		ext4_bmap_bit_set(bitmap_block.data, index_in_group);
 		bitmap_block.dirty = true;
+		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
+					    bitmap_block.data);
 		rc = ext4_block_set(inode_ref->fs->bdev, &bitmap_block);
 		if (rc != EOK) {
 			ext4_fs_put_block_group_ref(&bg_ref);
@@ -319,6 +357,8 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 			ext4_bmap_bit_set(bitmap_block.data, tmp_idx);
 
 			bitmap_block.dirty = true;
+			ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
+						    bitmap_block.data);
 			rc = ext4_block_set(inode_ref->fs->bdev, &bitmap_block);
 			if (rc != EOK)
 				return rc;
@@ -336,6 +376,8 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 	if (rc == EOK) {
 		ext4_bmap_bit_set(bitmap_block.data, rel_block_idx);
 		bitmap_block.dirty = true;
+		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
+					    bitmap_block.data);
 		rc = ext4_block_set(inode_ref->fs->bdev, &bitmap_block);
 		if (rc != EOK)
 			return rc;
@@ -409,6 +451,8 @@ goal_failed:
 			ext4_bmap_bit_set(bitmap_block.data, rel_block_idx);
 
 			bitmap_block.dirty = true;
+			ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
+						    bitmap_block.data);
 			rc = ext4_block_set(inode_ref->fs->bdev, &bitmap_block);
 			if (rc != EOK) {
 				ext4_fs_put_block_group_ref(&bg_ref);
@@ -508,6 +552,8 @@ int ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
 	if (*free) {
 		ext4_bmap_bit_set(bitmap_block.data, index_in_group);
 		bitmap_block.dirty = true;
+		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
+					    bitmap_block.data);
 	}
 
 	/* Release block with bitmap */

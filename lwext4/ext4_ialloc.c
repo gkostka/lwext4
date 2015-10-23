@@ -43,6 +43,7 @@
 #include "ext4_types.h"
 #include "ext4_ialloc.h"
 #include "ext4_super.h"
+#include "ext4_crc32c.h"
 #include "ext4_fs.h"
 #include "ext4_blockdev.h"
 #include "ext4_block_group.h"
@@ -85,6 +86,37 @@ static uint32_t ext4_ialloc_get_bgid_of_inode(struct ext4_sblock *sb,
 	return (inode - 1) / inodes_per_group;
 }
 
+static uint32_t ext4_ialloc_bitmap_csum(struct ext4_sblock *sb,
+					void *bitmap)
+{
+	uint32_t checksum = 0;
+	if (ext4_sb_has_feature_read_only(sb,
+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		/* First calculate crc32 checksum against fs uuid */
+		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
+		/* Then calculate crc32 checksum against block_group_desc */
+		checksum = ext4_crc32c(checksum, bitmap,
+				     ext4_sb_get_block_size(sb));
+	}
+	return checksum;
+}
+
+static void ext4_ialloc_set_bitmap_csum(struct ext4_sblock *sb,
+					struct ext4_bgroup *bg,
+					void *bitmap)
+{
+	int desc_size = ext4_sb_get_desc_size(sb);
+	uint32_t checksum = ext4_ialloc_bitmap_csum(sb, bitmap);
+	uint16_t lo_checksum = to_le16(checksum & 0xFFFF),
+		 hi_checksum = to_le16(checksum >> 16);
+	
+	/* See if we need to assign a 32bit checksum */
+	bg->block_bitmap_csum_lo = lo_checksum;
+	if (desc_size == EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE)
+		bg->block_bitmap_csum_hi = hi_checksum;
+
+}
+
 int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
 {
 	struct ext4_sblock *sb = &fs->sb;
@@ -110,6 +142,8 @@ int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
 	uint32_t index_in_group = ext4_ialloc_inode2index_in_group(sb, index);
 	ext4_bmap_bit_clr(bitmap_block.data, index_in_group);
 	bitmap_block.dirty = true;
+	ext4_ialloc_set_bitmap_csum(sb, bg_ref.block_group,
+				    bitmap_block.data);
 
 	/* Put back the block with bitmap */
 	rc = ext4_block_set(fs->bdev, &bitmap_block);
@@ -223,6 +257,8 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
 
 			/* Free i-node found, save the bitmap */
 			bitmap_block.dirty = true;
+			ext4_ialloc_set_bitmap_csum(sb, bg_ref.block_group,
+						    bitmap_block.data);
 
 			ext4_block_set(fs->bdev, &bitmap_block);
 			if (rc != EOK) {
