@@ -44,6 +44,7 @@
 #include "ext4_errno.h"
 #include "ext4_blockdev.h"
 #include "ext4_super.h"
+#include "ext4_crc32c.h"
 #include "ext4_debug.h"
 #include "ext4_block_group.h"
 #include "ext4_balloc.h"
@@ -559,7 +560,28 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
 
 	/* Compute the checksum only if the filesystem supports it */
 	if (ext4_sb_has_feature_read_only(sb,
-					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) {
+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		/* Use metadata_csum algorithm instead */
+		uint32_t le32_bgid = to_le32(bgid);
+		uint32_t orig_checksum, checksum;
+
+		/* Preparation: temporarily set bg checksum to 0 */
+		orig_checksum = bg->checksum;
+		bg->checksum = 0;
+
+		/* First calculate crc32 checksum against fs uuid */
+		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
+		/* Then calculate crc32 checksum against bgid */
+		checksum = ext4_crc32c(checksum, (uint8_t *)&le32_bgid,
+				     sizeof(bgid));
+		/* Finally calculate crc32 checksum against block_group_desc */
+		checksum = ext4_crc32c(checksum, (uint8_t *)bg,
+				     ext4_sb_get_desc_size(sb));
+		bg->checksum = orig_checksum;
+
+		crc = checksum & 0xFFFF;
+	} else if (ext4_sb_has_feature_read_only(sb,
+					EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) {
 		uint8_t *base = (uint8_t *)bg;
 		uint8_t *checksum = (uint8_t *)&bg->checksum;
 
@@ -611,6 +633,10 @@ int ext4_fs_put_block_group_ref(struct ext4_block_group_ref *ref)
 	return ext4_block_set(ref->fs->bdev, &ref->block);
 }
 
+/*
+ * BIG FAT NOTES:
+ *       Currently we do not verify the checksum of block_group_desc.
+ */
 int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
 			  struct ext4_inode_ref *ref)
 {
