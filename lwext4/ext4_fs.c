@@ -572,10 +572,10 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
 		/* First calculate crc32 checksum against fs uuid */
 		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
 		/* Then calculate crc32 checksum against bgid */
-		checksum = ext4_crc32c(checksum, (uint8_t *)&le32_bgid,
+		checksum = ext4_crc32c(checksum, &le32_bgid,
 				     sizeof(bgid));
 		/* Finally calculate crc32 checksum against block_group_desc */
-		checksum = ext4_crc32c(checksum, (uint8_t *)bg,
+		checksum = ext4_crc32c(checksum, bg,
 				     ext4_sb_get_desc_size(sb));
 		bg->checksum = orig_checksum;
 
