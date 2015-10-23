@@ -93,6 +93,11 @@ static uint32_t ext4_balloc_bitmap_csum(struct ext4_sblock *sb,
 	return checksum;
 }
 
+/*
+ * BIG FAT NOTES:
+ *       Currently we do not verify the checksum of bitmaps.
+ */
+
 static void ext4_balloc_set_bitmap_csum(struct ext4_sblock *sb,
 					struct ext4_bgroup *bg,
 					void *bitmap)
