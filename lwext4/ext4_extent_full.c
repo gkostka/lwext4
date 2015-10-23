@@ -348,12 +348,12 @@ static void ext4_extent_block_csum_set(struct ext4_inode_ref *inode_ref,
 static int ext4_ext_dirty(struct ext4_inode_ref *inode_ref,
 			  struct ext4_extent_path *path)
 {
-	if (path->block.lb_id)
+	if (path->block.lb_id) {
+		ext4_extent_block_csum_set(inode_ref, path->header);
 		path->block.dirty = true;
-	else
+	} else
 		inode_ref->dirty = true;
 
-	ext4_extent_block_csum_set(inode_ref, path->header);
 	return EOK;
 }
 
