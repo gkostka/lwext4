@@ -30,6 +30,7 @@
 #include "ext4_blockdev.h"
 #include "ext4_fs.h"
 #include "ext4_super.h"
+#include "ext4_crc32c.h"
 #include "ext4_balloc.h"
 #include "ext4_debug.h"
 
@@ -308,6 +309,42 @@ static ext4_fsblk_t ext4_ext_new_meta_block(struct ext4_inode_ref *inode_ref,
 	return newblock;
 }
 
+static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
+				    struct ext4_extent_header *eh)
+{
+	uint32_t checksum = 0;
+	struct ext4_sblock *sb = &inode_ref->fs->sb;
+
+	if (ext4_sb_has_feature_read_only(sb,
+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		uint32_t ino_index = to_le32(inode_ref->index);
+		uint32_t ino_gen =
+			to_le32(ext4_inode_get_generation(inode_ref->inode));
+		/* First calculate crc32 checksum against fs uuid */
+		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
+		/* Then calculate crc32 checksum against inode number
+		 * and inode generation */
+		checksum = ext4_crc32c(checksum, &ino_index,
+				     sizeof(ino_index));
+		checksum = ext4_crc32c(checksum, &ino_gen,
+				     sizeof(ino_gen));
+		/* Finally calculate crc32 checksum against 
+		 * the entire extent block up to the checksum field */
+		checksum = ext4_crc32c(checksum, eh,
+				EXT4_EXTENT_TAIL_OFFSET(eh));
+	}
+	return checksum;
+}
+
+static void ext4_extent_block_csum_set(struct ext4_inode_ref *inode_ref,
+				       struct ext4_extent_header *eh)
+{
+	struct ext4_extent_tail *tail;
+
+	tail = find_ext4_extent_tail(eh);
+	tail->et_checksum = ext4_ext_block_csum(inode_ref, eh);
+}
+
 static int ext4_ext_dirty(struct ext4_inode_ref *inode_ref,
 			  struct ext4_extent_path *path)
 {
@@ -316,6 +353,7 @@ static int ext4_ext_dirty(struct ext4_inode_ref *inode_ref,
 	else
 		inode_ref->dirty = true;
 
+	ext4_extent_block_csum_set(inode_ref, path->header);
 	return EOK;
 }
 
@@ -336,26 +374,6 @@ static void ext4_ext_drop_refs(struct ext4_inode_ref *inode_ref,
 			ext4_block_set(inode_ref->fs->bdev, &path->block);
 		}
 	}
-}
-
-/*
- * Temporarily we don't need to support checksum.
- */
-static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref __unused,
-				    struct ext4_extent_header *eh __unused)
-{
-	/*TODO: should we add crc32 here ?*/
-	/*return ext4_crc32c(inode->i_csum, eh, EXT4_EXTENT_TAIL_OFFSET(eh));*/
-	return 0;
-}
-
-static void ext4_extent_block_csum_set(struct ext4_inode_ref *inode_ref,
-				       struct ext4_extent_header *eh)
-{
-	struct ext4_extent_tail *tail;
-
-	tail = find_ext4_extent_tail(eh);
-	tail->et_checksum = ext4_ext_block_csum(inode_ref, eh);
 }
 
 /*
