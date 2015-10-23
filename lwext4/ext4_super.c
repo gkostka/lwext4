@@ -41,6 +41,7 @@
 
 #include "ext4_config.h"
 #include "ext4_super.h"
+#include "ext4_crc32c.h"
 
 uint32_t ext4_block_group_cnt(struct ext4_sblock *s)
 {
@@ -79,8 +80,36 @@ uint32_t ext4_inodes_in_group_cnt(struct ext4_sblock *s, uint32_t bgid)
 	return (total_inodes - ((block_group_count - 1) * inodes_per_group));
 }
 
+static uint32_t ext4_sb_csum(struct ext4_sblock *s)
+{
+	return ext4_crc32c(~0, s,
+			ext4_offsetof(struct ext4_sblock, checksum));
+}
+
+static bool ext4_sb_verify_csum(struct ext4_sblock *s)
+{
+	if (!ext4_sb_has_feature_read_only(s,
+					   EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM))
+		return true;
+
+	if (s->checksum_type != to_le32(EXT4_CHECKSUM_CRC32C))
+		return false;
+
+	return s->checksum == to_le32(ext4_sb_csum(s));
+}
+
+static void ext4_sb_set_csum(struct ext4_sblock *s)
+{
+	if (!ext4_sb_has_feature_read_only(s,
+					   EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM))
+		return;
+
+	s->checksum = to_le32(ext4_sb_csum(s));
+}
+
 int ext4_sb_write(struct ext4_blockdev *bdev, struct ext4_sblock *s)
 {
+	ext4_sb_set_csum(s);
 	return ext4_block_writebytes(bdev, EXT4_SUPERBLOCK_OFFSET, s,
 				     EXT4_SUPERBLOCK_SIZE);
 }
@@ -118,6 +147,9 @@ bool ext4_sb_check(struct ext4_sblock *s)
 		return false;
 
 	if (ext4_sb_get_desc_size(s) > EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE)
+		return false;
+
+	if (!ext4_sb_verify_csum(s))
 		return false;
 
 	return true;

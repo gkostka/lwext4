@@ -153,6 +153,11 @@
 #endif
 #endif
 
+#ifndef ext4_offsetof
+#define ext4_offsetof(type, field) \
+	((long)(&(((type *)0)->field)))
+#endif
+
 #endif /* EXT4_CONFIG_H_ */
 
 /**

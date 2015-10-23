@@ -48,6 +48,8 @@
 
 #include <stdint.h>
 
+#define EXT4_CHECKSUM_CRC32C 1
+
 /*
  * Structure of the super block
  */
@@ -126,7 +128,7 @@ struct ext4_sblock {
 	uint64_t mmp_block;	  /* Block for multi-mount protection */
 	uint32_t raid_stripe_width;  /* Blocks on all data disks (N * stride) */
 	uint8_t log_groups_per_flex; /* FLEX_BG group size */
-	uint8_t reserved_char_pad;
+	uint8_t checksum_type;
 	uint16_t reserved_pad;
 	uint64_t kbytes_written; /* Number of lifetime kilobytes written */
 	uint32_t snapshot_inum;  /* I-node number of active snapshot */
@@ -149,7 +151,15 @@ struct ext4_sblock {
 	uint64_t last_error_block;    /* Block involved of last error */
 	uint8_t last_error_func[32];  /* Function where the error happened */
 	uint8_t mount_opts[64];
-	uint32_t padding[112]; /* Padding to the end of the block */
+	uint32_t usr_quota_inum;	/* inode for tracking user quota */
+	uint32_t grp_quota_inum;	/* inode for tracking group quota */
+	uint32_t overhead_clusters;	/* overhead blocks/clusters in fs */
+	uint32_t backup_bgs[2];	/* groups with sparse_super2 SBs */
+	uint8_t  encrypt_algos[4];	/* Encryption algorithms in use  */
+	uint8_t  encrypt_pw_salt[16];	/* Salt used for string2key algorithm */
+	uint32_t lpf_ino;		/* Location of the lost+found inode */
+	uint32_t padding[100];	/* Padding to the end of the block */
+	uint32_t checksum;		/* crc32c(superblock) */
 } __attribute__((packed));
 
 #define EXT4_SUPERBLOCK_MAGIC 0xEF53

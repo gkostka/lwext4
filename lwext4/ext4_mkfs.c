@@ -259,7 +259,7 @@ static void fill_in_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info
 	sb->last_orphan = 0;
 	sb->hash_seed[0] = 0; /* FIXME */
 	sb->default_hash_version = EXT2_HTREE_HALF_MD4;
-	sb->reserved_char_pad = 1;
+	sb->checksum_type = 1;
 	sb->desc_size = EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE;
 	sb->default_mount_opts = 0; /* FIXME */
 	sb->first_meta_bg = 0;
