@@ -123,7 +123,7 @@ ext4_xattr_block_checksum(struct ext4_inode_ref *inode_ref,
 
 	if (ext4_sb_has_feature_read_only(sb,
 				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-		uint32_t orig_checksum, checksum;
+		uint32_t orig_checksum;
 
 		/* Preparation: temporarily set bg checksum to 0 */
 		orig_checksum = header->h_checksum;
