@@ -40,6 +40,7 @@
 #include "ext4_errno.h"
 #include "ext4_blockdev.h"
 #include "ext4_super.h"
+#include "ext4_crc32c.h"
 #include "ext4_debug.h"
 #include "ext4_block_group.h"
 #include "ext4_balloc.h"
@@ -109,6 +110,50 @@ static void ext4_xattr_rehash(struct ext4_xattr_header *header,
 		here = EXT4_XATTR_NEXT(here);
 	}
 	header->h_hash = to_le32(hash);
+}
+
+static uint32_t
+ext4_xattr_block_checksum(struct ext4_inode_ref *inode_ref,
+			  ext4_fsblk_t blocknr,
+			  struct ext4_xattr_header *header)
+{
+	uint32_t checksum = 0;
+	uint64_t le64_blocknr = blocknr;
+	struct ext4_sblock *sb = &inode_ref->fs->sb;
+
+	if (ext4_sb_has_feature_read_only(sb,
+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		uint32_t orig_checksum, checksum;
+
+		/* Preparation: temporarily set bg checksum to 0 */
+		orig_checksum = header->h_checksum;
+		header->h_checksum = 0;
+		/* First calculate crc32 checksum against fs uuid */
+		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
+		/* Then calculate crc32 checksum block number */
+		checksum = ext4_crc32c(checksum, &le64_blocknr,
+				     sizeof(le64_blocknr));
+		/* Finally calculate crc32 checksum against 
+		 * the entire xattr block */
+		checksum = ext4_crc32c(checksum, header,
+				   ext4_sb_get_block_size(sb));
+		header->h_checksum = orig_checksum;
+	}
+	return checksum;
+}
+
+static void
+ext4_xattr_set_block_checksum(struct ext4_inode_ref *inode_ref,
+			      ext4_fsblk_t blocknr,
+			      struct ext4_xattr_header *header)
+{
+	struct ext4_sblock *sb = &inode_ref->fs->sb;
+	if (!ext4_sb_has_feature_read_only(sb,
+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+		return;
+
+	header->h_checksum =
+		ext4_xattr_block_checksum(inode_ref, blocknr, header);
 }
 
 static int ext4_xattr_item_cmp(struct ext4_xattr_item *a,
@@ -658,6 +703,9 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 	if (block_modified) {
 		ext4_xattr_rehash(block_header,
 				  EXT4_XATTR_BFIRST(&xattr_ref->block));
+		ext4_xattr_set_block_checksum(xattr_ref->inode_ref,
+					      xattr_ref->block.lb_id,
+					      block_header);
 		xattr_ref->block.dirty = true;
 	}
 
