@@ -108,6 +108,31 @@ void ext4_inode_set_size(struct ext4_inode *inode, uint64_t size)
 	inode->size_hi = to_le32(size >> 32);
 }
 
+uint32_t
+ext4_inode_get_checksum(struct ext4_sblock *sb, struct ext4_inode *inode)
+{
+	uint16_t inode_size = ext4_get16(sb, inode_size);
+	uint32_t v = to_le16(inode->osd2.linux2.checksum_lo);
+
+	if (inode_size > EXT4_GOOD_OLD_INODE_SIZE)
+		v |= ((uint32_t)to_le16(inode->checksum_hi)) << 16;
+
+	return v;
+}
+
+void
+ext4_inode_set_checksum(struct ext4_sblock *sb, struct ext4_inode *inode,
+			uint32_t checksum)
+{
+	uint16_t inode_size = ext4_get16(sb, inode_size);
+	inode->osd2.linux2.checksum_lo =
+		to_le16((checksum << 16) >> 16);
+
+	if (inode_size > EXT4_GOOD_OLD_INODE_SIZE)
+		inode->checksum_hi = to_le16(checksum >> 16);
+
+}
+
 uint32_t ext4_inode_get_access_time(struct ext4_inode *inode)
 {
 	return to_le32(inode->access_time);

@@ -393,7 +393,8 @@ struct ext4_inode {
 			uint16_t file_acl_high;
 			uint16_t uid_high;
 			uint16_t gid_high;
-			uint32_t reserved2;
+			uint16_t checksum_lo; /* crc32c(uuid+inum+inode) LE */
+			uint16_t reserved2;
 		} linux2;
 		struct {
 			uint16_t reserved1;
@@ -405,7 +406,7 @@ struct ext4_inode {
 	} __attribute__((packed)) osd2;
 
 	uint16_t extra_isize;
-	uint16_t pad1;
+	uint16_t checksum_hi;	/* crc32c(uuid+inum+inode) BE */
 	uint32_t ctime_extra; /* Extra change time (nsec << 2 | epoch) */
 	uint32_t mtime_extra; /* Extra Modification time (nsec << 2 | epoch) */
 	uint32_t atime_extra; /* Extra Access time (nsec << 2 | epoch) */

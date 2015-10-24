@@ -546,6 +546,12 @@ int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid,
 	return EOK;
 }
 
+/*
+ * BIG FAT NOTES:
+ *       Currently we do not verify the checksum of block_group_desc
+ *       and inode.
+ */
+
 /**@brief  Compute checksum of block group descriptor.
  * @param sb   Superblock
  * @param bgid Index of block group in the filesystem
@@ -633,10 +639,53 @@ int ext4_fs_put_block_group_ref(struct ext4_block_group_ref *ref)
 	return ext4_block_set(ref->fs->bdev, &ref->block);
 }
 
-/*
- * BIG FAT NOTES:
- *       Currently we do not verify the checksum of block_group_desc.
- */
+static uint32_t ext4_fs_inode_checksum(struct ext4_inode_ref *inode_ref)
+{
+	uint32_t checksum = 0;
+	struct ext4_sblock *sb = &inode_ref->fs->sb;
+	uint16_t inode_size = ext4_get16(sb, inode_size);
+
+	if (ext4_sb_has_feature_read_only(sb,
+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		uint32_t orig_checksum;
+
+		uint32_t ino_index = to_le32(inode_ref->index);
+		uint32_t ino_gen =
+			to_le32(ext4_inode_get_generation(inode_ref->inode));
+
+		/* Preparation: temporarily set bg checksum to 0 */
+		orig_checksum = ext4_inode_get_checksum(sb, inode_ref->inode);
+		ext4_inode_set_checksum(sb, inode_ref->inode, 0);
+
+		/* First calculate crc32 checksum against fs uuid */
+		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
+		/* Then calculate crc32 checksum against inode number
+		 * and inode generation */
+		checksum = ext4_crc32c(checksum, &ino_index,
+				     sizeof(ino_index));
+		checksum = ext4_crc32c(checksum, &ino_gen,
+				     sizeof(ino_gen));
+		/* Finally calculate crc32 checksum against 
+		 * the entire inode */
+		checksum = ext4_crc32c(checksum, inode_ref->inode,
+				inode_size);
+		ext4_inode_set_checksum(sb, inode_ref->inode,
+				orig_checksum);
+	}
+	return checksum;
+}
+
+static void ext4_fs_set_inode_checksum(struct ext4_inode_ref *inode_ref)
+{
+	struct ext4_sblock *sb = &inode_ref->fs->sb;
+	if (!ext4_sb_has_feature_read_only(sb,
+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+		return;
+
+	ext4_inode_set_checksum(sb, inode_ref->inode,
+				ext4_fs_inode_checksum(inode_ref));
+}
+
 int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
 			  struct ext4_inode_ref *ref)
 {
@@ -700,6 +749,7 @@ int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref)
 	/* Check if reference modified */
 	if (ref->dirty) {
 		/* Mark block dirty for writing changes to physical device */
+		ext4_fs_set_inode_checksum(ref);
 		ref->block.dirty = true;
 	}
 
