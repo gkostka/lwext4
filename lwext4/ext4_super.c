@@ -89,7 +89,7 @@ static uint32_t ext4_sb_csum(struct ext4_sblock *s)
 static bool ext4_sb_verify_csum(struct ext4_sblock *s)
 {
 	if (!ext4_sb_has_feature_read_only(s,
-					   EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM))
+					   EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
 		return true;
 
 	if (s->checksum_type != to_le32(EXT4_CHECKSUM_CRC32C))
