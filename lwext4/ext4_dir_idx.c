@@ -506,7 +506,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 		if (rc != EOK)
 			return rc;
 
-		memcpy(&p->block, &p->block, sizeof(block));
+		memcpy(&p->block, &block, sizeof(block));
 		p->entries =
 		    ((struct ext4_directory_dx_node *)block.data)->entries;
 		p->position = p->entries;
