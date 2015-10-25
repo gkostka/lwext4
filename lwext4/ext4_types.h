@@ -268,6 +268,7 @@ struct ext4_sblock {
 
 #define EXT4_FEATURE_RO_COMPAT_SUPP                                            \
 	(EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER |                                 \
+	 EXT4_FEATURE_RO_COMPAT_METADATA_CSUM |                                 \
 	 EXT4_FEATURE_RO_COMPAT_LARGE_FILE | EXT4_FEATURE_RO_COMPAT_GDT_CSUM | \
 	 EXT4_FEATURE_RO_COMPAT_DIR_NLINK |                                    \
 	 EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE |                                  \
