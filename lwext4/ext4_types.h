@@ -480,6 +480,8 @@ enum { EXT4_DIRENTRY_UNKNOWN = 0,
        EXT4_DIRENTRY_SOCK,
        EXT4_DIRENTRY_SYMLINK };
 
+#define EXT4_DIRENTRY_DIR_CSUM 0xDE
+
 union ext4_directory_entry_ll_internal {
 	uint8_t name_length_high; /* Higher 8 bits of name length */
 	uint8_t inode_type;       /* Type of referenced inode (in rev >= 0.5) */
@@ -561,6 +563,31 @@ struct ext4_directory_dx_block {
 	struct ext4_directory_dx_entry *entries;
 	struct ext4_directory_dx_entry *position;
 };
+
+/*
+ * This goes at the end of each htree block.
+ */
+struct ext4_directory_dx_tail {
+	uint32_t reserved;
+	uint32_t checksum;	/* crc32c(uuid+inum+dirblock) */
+};
+
+/*
+ * This is a bogus directory entry at the end of each leaf block that
+ * records checksums.
+ */
+struct ext4_directory_entry_tail {
+	uint32_t reserved_zero1;	/* Pretend to be unused */
+	uint16_t rec_len;		/* 12 */
+	uint8_t reserved_zero2;	/* Zero name length */
+	uint8_t reserved_ft;	/* 0xDE, fake file type */
+	uint32_t checksum;		/* crc32c(uuid+inum+dirblock) */
+};
+
+#define EXT4_DIRENT_TAIL(block, blocksize) \
+	((struct ext4_directory_entry_tail *)(((char *)(block)) + \
+					     ((blocksize) - \
+					     sizeof(struct ext4_directory_entry_tail))))
 
 #define EXT4_ERR_BAD_DX_DIR (-25000)
 

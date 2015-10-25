@@ -229,6 +229,7 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
 
 /**@brief Try to insert entry to concrete data block.
  * @param sb           Superblock
+ * @param inode_ref     Directory i-node
  * @param target_block Block to try to insert entry to
  * @param child        Child i-node to be inserted by new entry
  * @param name         Name of the new entry
@@ -236,6 +237,7 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
  * @return Error code
  */
 int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
+			      struct ext4_inode_ref *inode_ref,
 			      struct ext4_block *target_block,
 			      struct ext4_inode_ref *child, const char *name,
 			      uint32_t name_len);
@@ -260,6 +262,9 @@ int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
  */
 int ext4_dir_destroy_result(struct ext4_inode_ref *parent,
 			    struct ext4_directory_search_result *result);
+
+void ext4_dir_set_checksum(struct ext4_inode_ref *inode_ref,
+			   struct ext4_directory_entry_ll *dirent);
 
 #endif /* EXT4_DIR_H_ */
 
