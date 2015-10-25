@@ -163,7 +163,7 @@ static void ext4_extent_block_csum_set(struct ext4_inode_ref *inode_ref,
 	struct ext4_extent_tail *tail;
 
 	tail = find_ext4_extent_tail(eh);
-	tail->et_checksum = ext4_ext_block_csum(inode_ref, eh);
+	tail->et_checksum = to_le32(ext4_ext_block_csum(inode_ref, eh));
 }
 
 /**@brief Get physical block in the extent tree by logical block number.

@@ -342,7 +342,7 @@ static void ext4_extent_block_csum_set(struct ext4_inode_ref *inode_ref,
 	struct ext4_extent_tail *tail;
 
 	tail = find_ext4_extent_tail(eh);
-	tail->et_checksum = ext4_ext_block_csum(inode_ref, eh);
+	tail->et_checksum = to_le32(ext4_ext_block_csum(inode_ref, eh));
 }
 
 static int ext4_ext_dirty(struct ext4_inode_ref *inode_ref,
@@ -409,7 +409,7 @@ static int ext4_ext_check(struct ext4_inode_ref *inode_ref,
 	}
 
 	tail = find_ext4_extent_tail(eh);
-	if (tail->et_checksum != ext4_ext_block_csum(inode_ref, eh)) {
+	if (tail->et_checksum != to_le32(ext4_ext_block_csum(inode_ref, eh))) {
 		/* FIXME: Warning: extent checksum damaged? */
 	}
 
