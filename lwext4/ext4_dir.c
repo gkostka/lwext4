@@ -105,6 +105,14 @@ ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
 	return 1;
 }
 
+/* checksumming functions */
+void initialize_dir_tail(struct ext4_directory_entry_tail *t)
+{
+	memset(t, 0, sizeof(struct ext4_directory_entry_tail));
+	t->rec_len = to_le16(sizeof(struct ext4_directory_entry_tail));
+	t->reserved_ft = EXT4_DIRENTRY_DIR_CSUM;
+}
+
 void ext4_dir_set_checksum(struct ext4_inode_ref *inode_ref,
 			   struct ext4_directory_entry_ll *dirent)
 {
@@ -396,6 +404,11 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 			     name_len);
 
 	/* Save new block */
+	if (ext4_sb_has_feature_read_only(&fs->sb,
+					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+		initialize_dir_tail(EXT4_DIRENT_TAIL(new_block.data,
+					ext4_sb_get_block_size(&fs->sb)));
+
 	ext4_dir_set_checksum(parent,
 			(struct ext4_directory_entry_ll *)new_block.data);
 	new_block.dirty = true;
