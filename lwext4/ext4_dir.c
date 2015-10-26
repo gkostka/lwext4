@@ -400,14 +400,19 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 	/* Fill block with zeroes */
 	memset(new_block.data, 0, block_size);
 	struct ext4_directory_entry_ll *block_entry = (void *)new_block.data;
-	ext4_dir_write_entry(&fs->sb, block_entry, block_size, child, name,
-			     name_len);
 
 	/* Save new block */
 	if (ext4_sb_has_feature_read_only(&fs->sb,
-					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		ext4_dir_write_entry(&fs->sb, block_entry,
+				block_size - sizeof(struct ext4_directory_entry_tail),
+				child,
+				name, name_len);
 		initialize_dir_tail(EXT4_DIRENT_TAIL(new_block.data,
 					ext4_sb_get_block_size(&fs->sb)));
+	} else
+		ext4_dir_write_entry(&fs->sb, block_entry, block_size, child, name,
+				     name_len);
 
 	ext4_dir_set_checksum(parent,
 			(struct ext4_directory_entry_ll *)new_block.data);
@@ -577,9 +582,12 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 	while (dentry < stop) {
 		uint32_t inode = ext4_dir_entry_ll_get_inode(dentry);
 		uint16_t rec_len = ext4_dir_entry_ll_get_entry_length(dentry);
+		uint8_t inode_type = ext4_dir_entry_ll_get_inode_type(sb, dentry);
 
 		/* If invalid and large enough entry, use it */
-		if ((inode == 0) && (rec_len >= required_len)) {
+		if ((inode == 0) &&
+		    (inode_type != EXT4_DIRENTRY_DIR_CSUM) &&
+		    (rec_len >= required_len)) {
 			ext4_dir_write_entry(sb, dentry, rec_len, child, name,
 					     name_len);
 			ext4_dir_set_checksum(inode_ref,

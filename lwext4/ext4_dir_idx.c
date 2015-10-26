@@ -408,12 +408,10 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir)
 						  0);
 		ext4_dir_entry_ll_set_inode_type(sb,
 						 block_entry,
-						 EXT4_DIRENTRY_DIR_CSUM);
-		if (ext4_sb_has_feature_read_only(sb,
-						  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-			initialize_dir_tail(EXT4_DIRENT_TAIL(block_entry,
-						ext4_sb_get_block_size(sb)));
+						 EXT4_DIRENTRY_UNKNOWN);
 
+		initialize_dir_tail(EXT4_DIRENT_TAIL(block_entry,
+					ext4_sb_get_block_size(sb)));
 		ext4_dir_set_checksum(dir,
 				(struct ext4_directory_entry_ll *)new_block.data);
 	} else {
@@ -1008,6 +1006,10 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	uint32_t offset = 0;
 	void *ptr;
 
+	if (ext4_sb_has_feature_read_only(&inode_ref->fs->sb,
+					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+		block_size -= sizeof(struct ext4_directory_entry_tail);
+
 	/* First part - to the old block */
 	for (i = 0; i < mid; ++i) {
 		ptr = old_data_block->data + offset;
@@ -1041,14 +1043,18 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 		offset += sort_array[i].rec_len;
 	}
 
+	block_size = ext4_sb_get_block_size(&inode_ref->fs->sb);
+
 	/* Do some steps to finish operation */
+	if (ext4_sb_has_feature_read_only(&inode_ref->fs->sb,
+					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		initialize_dir_tail(EXT4_DIRENT_TAIL(old_data_block->data,
+					block_size));
+		initialize_dir_tail(EXT4_DIRENT_TAIL(new_data_block_tmp.data,
+					block_size));
+	}
 	ext4_dir_set_checksum(inode_ref,
 			(struct ext4_directory_entry_ll *)old_data_block->data);
-	if (ext4_sb_has_feature_read_only(&inode_ref->fs->sb,
-					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-		initialize_dir_tail(EXT4_DIRENT_TAIL(new_data_block_tmp.data,
-					ext4_sb_get_block_size(&inode_ref->fs->sb)));
-
 	ext4_dir_set_checksum(inode_ref,
 			(struct ext4_directory_entry_ll *)new_data_block_tmp.data);
 	old_data_block->dirty = true;
