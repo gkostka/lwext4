@@ -409,8 +409,11 @@ static int ext4_ext_check(struct ext4_inode_ref *inode_ref,
 	}
 
 	tail = find_ext4_extent_tail(eh);
-	if (tail->et_checksum != to_le32(ext4_ext_block_csum(inode_ref, eh))) {
-		/* FIXME: Warning: extent checksum damaged? */
+	if (ext4_sb_has_feature_read_only(&inode_ref->fs->sb,
+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		if (tail->et_checksum != to_le32(ext4_ext_block_csum(inode_ref, eh))) {
+			/* FIXME: Warning: extent checksum damaged? */
+		}
 	}
 
 	return EOK;
