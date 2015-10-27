@@ -74,9 +74,19 @@ static uint32_t ext4_dir_checksum(struct ext4_inode_ref *inode_ref,
 {
 	uint32_t checksum;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
+	uint32_t ino_index = to_le32(inode_ref->index);
+	uint32_t ino_gen =
+		to_le32(ext4_inode_get_generation(inode_ref->inode));
+
 	/* First calculate crc32 checksum against fs uuid */
 	checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
-	/* Then calculate crc32 checksum against directory entries */
+	/* Then calculate crc32 checksum against inode number
+	 * and inode generation */
+	checksum = ext4_crc32c(checksum, &ino_index,
+			     sizeof(ino_index));
+	checksum = ext4_crc32c(checksum, &ino_gen,
+			     sizeof(ino_gen));
+	/* Finally calculate crc32 checksum against directory entries */
 	checksum = ext4_crc32c(checksum, dirent, size);
 	return checksum;
 }
