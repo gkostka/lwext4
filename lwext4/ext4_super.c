@@ -83,7 +83,7 @@ uint32_t ext4_inodes_in_group_cnt(struct ext4_sblock *s, uint32_t bgid)
 static uint32_t ext4_sb_csum(struct ext4_sblock *s)
 {
 	return ext4_crc32c(~0, s,
-			ext4_offsetof(struct ext4_sblock, checksum));
+			offsetof(struct ext4_sblock, checksum));
 }
 
 static bool ext4_sb_verify_csum(struct ext4_sblock *s)

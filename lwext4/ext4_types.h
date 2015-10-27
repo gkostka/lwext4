@@ -46,6 +46,7 @@
 #include "ext4_blockdev.h"
 #include "tree.h"
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define EXT4_CHECKSUM_CRC32C 1
@@ -932,6 +933,18 @@ static inline uint16_t to_le16(uint16_t n)
 #define ext4_set8                                                              \
 	(s, f, v) do { (s)->f = (v); }                                         \
 	while (0)
+
+
+#ifdef __GNUC__
+#ifndef __unused
+#define __unused __attribute__ ((__unused__))
+#endif
+#endif
+
+#ifndef offsetof
+#define offsetof(type, field) 		\
+	((size_t)(&(((type *)0)->field)))
+#endif
 
 #endif /* EXT4_TYPES_H_ */
 

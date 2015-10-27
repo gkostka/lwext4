@@ -855,7 +855,7 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	if (inode_size > EXT4_GOOD_OLD_INODE_SIZE)
 		ext4_inode_set_extra_isize(inode,
 				sizeof(struct ext4_inode) -
-				ext4_offsetof(struct ext4_inode,
+				offsetof(struct ext4_inode,
 					extra_isize));
 
 	/* Reset blocks array. For symbolic link inode, just
