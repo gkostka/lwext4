@@ -570,7 +570,7 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
 {
 	/* If checksum not supported, 0 will be returned */
 	uint16_t crc = 0;
-
+#if CONFIG_META_CSUM_ENABLE
 	/* Compute the checksum only if the filesystem supports it */
 	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		/* Use metadata_csum algorithm instead */
@@ -593,7 +593,10 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
 		bg->checksum = orig_checksum;
 
 		crc = checksum & 0xFFFF;
-	} else if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_GDT_CSUM)) {
+		return crc;
+	}
+#endif
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_GDT_CSUM)) {
 		uint8_t *base = (uint8_t *)bg;
 		uint8_t *checksum = (uint8_t *)&bg->checksum;
 
@@ -644,6 +647,7 @@ int ext4_fs_put_block_group_ref(struct ext4_block_group_ref *ref)
 	return ext4_block_set(ref->fs->bdev, &ref->block);
 }
 
+#if CONFIG_META_CSUM_ENABLE
 static uint32_t ext4_fs_inode_checksum(struct ext4_inode_ref *inode_ref)
 {
 	uint32_t checksum = 0;
@@ -679,6 +683,9 @@ static uint32_t ext4_fs_inode_checksum(struct ext4_inode_ref *inode_ref)
 	}
 	return checksum;
 }
+#else
+#define ext4_fs_inode_checksum(...) 0
+#endif
 
 static void ext4_fs_set_inode_checksum(struct ext4_inode_ref *inode_ref)
 {

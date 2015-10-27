@@ -86,6 +86,7 @@ static uint32_t ext4_ialloc_get_bgid_of_inode(struct ext4_sblock *sb,
 	return (inode - 1) / inodes_per_group;
 }
 
+#if CONFIG_META_CSUM_ENABLE
 static uint32_t ext4_ialloc_bitmap_csum(struct ext4_sblock *sb,
 					void *bitmap)
 {
@@ -103,6 +104,9 @@ static uint32_t ext4_ialloc_bitmap_csum(struct ext4_sblock *sb,
 	}
 	return checksum;
 }
+#else
+#define ext4_ialloc_bitmap_csum(...) 0
+#endif
 
 /*
  * BIG FAT NOTES:
@@ -111,7 +115,7 @@ static uint32_t ext4_ialloc_bitmap_csum(struct ext4_sblock *sb,
 
 void ext4_ialloc_set_bitmap_csum(struct ext4_sblock *sb,
 				 struct ext4_bgroup *bg,
-				 void *bitmap)
+				 void *bitmap __unused)
 {
 	int desc_size = ext4_sb_get_desc_size(sb);
 	uint32_t checksum = ext4_ialloc_bitmap_csum(sb, bitmap);

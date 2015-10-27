@@ -204,6 +204,7 @@ static int ext4_dir_dx_hash_string(struct ext4_hash_info *hinfo, int len,
 			       &hinfo->hash, &hinfo->minor_hash);
 }
 
+#if CONFIG_META_CSUM_ENABLE
 static uint32_t
 ext4_dir_dx_checksum(struct ext4_inode_ref *inode_ref,
 		 void *dirent,
@@ -277,7 +278,7 @@ ext4_dir_dx_get_countlimit(struct ext4_inode_ref *inode_ref,
  * BIG FAT NOTES:
  *       Currently we do not verify the checksum of HTree node.
  */
-__unused static int
+__unused static bool
 ext4_dir_dx_checksum_verify(struct ext4_inode_ref *inode_ref,
 				struct ext4_directory_entry_ll *dirent)
 {
@@ -289,7 +290,7 @@ ext4_dir_dx_checksum_verify(struct ext4_inode_ref *inode_ref,
 			ext4_dir_dx_get_countlimit(inode_ref, dirent, &count_offset);
 		if (!countlimit) {
 			/* Directory seems corrupted. */
-			return 1;
+			return true;
 		}
 		struct ext4_directory_dx_tail *t;
 		limit = ext4_dir_dx_countlimit_get_limit(countlimit);
@@ -298,7 +299,7 @@ ext4_dir_dx_checksum_verify(struct ext4_inode_ref *inode_ref,
 				ext4_sb_get_block_size(sb) -
 				sizeof(struct ext4_directory_dx_tail)) {
 			/* There is no space to hold the checksum */
-			return 1;
+			return true;
 		}
 		t = (struct ext4_directory_dx_tail *)
 			(((struct ext4_directory_dx_entry *)countlimit) + limit);
@@ -307,10 +308,11 @@ ext4_dir_dx_checksum_verify(struct ext4_inode_ref *inode_ref,
 								dirent,
 								count_offset,
 								count, t)))
-			return 0;
+			return false;
 	}
-	return 1;
+	return true;
 }
+
 
 static void
 ext4_dir_set_dx_checksum(struct ext4_inode_ref *inode_ref,
@@ -342,6 +344,9 @@ ext4_dir_set_dx_checksum(struct ext4_inode_ref *inode_ref,
 			to_le32(ext4_dir_dx_checksum(inode_ref, dirent, count_offset, count, t));
 	}
 }
+#else
+#define ext4_dir_set_dx_checksum(...)
+#endif
 
 /****************************************************************************/
 
@@ -875,7 +880,7 @@ static int ext4_dir_dx_entry_comparator(const void *arg1, const void *arg2)
  *
  */
 static void
-ext4_dir_dx_insert_entry(struct ext4_inode_ref *inode_ref,
+ext4_dir_dx_insert_entry(struct ext4_inode_ref *inode_ref __unused,
 			 struct ext4_directory_dx_block *index_block,
 			 uint32_t hash, uint32_t iblock)
 {

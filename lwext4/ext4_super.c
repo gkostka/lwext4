@@ -80,11 +80,16 @@ uint32_t ext4_inodes_in_group_cnt(struct ext4_sblock *s, uint32_t bgid)
 	return (total_inodes - ((block_group_count - 1) * inodes_per_group));
 }
 
+#if CONFIG_META_CSUM_ENABLE
 static uint32_t ext4_sb_csum(struct ext4_sblock *s)
 {
+
 	return ext4_crc32c(EXT4_CRC32_INIT, s,
 			offsetof(struct ext4_sblock, checksum));
 }
+#else
+#define ext4_sb_csum(...) 0
+#endif
 
 static bool ext4_sb_verify_csum(struct ext4_sblock *s)
 {

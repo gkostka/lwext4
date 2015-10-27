@@ -112,6 +112,7 @@ static void ext4_xattr_rehash(struct ext4_xattr_header *header,
 	header->h_hash = to_le32(hash);
 }
 
+#if CONFIG_META_CSUM_ENABLE
 static uint32_t
 ext4_xattr_block_checksum(struct ext4_inode_ref *inode_ref,
 			  ext4_fsblk_t blocknr,
@@ -141,10 +142,13 @@ ext4_xattr_block_checksum(struct ext4_inode_ref *inode_ref,
 	}
 	return checksum;
 }
+#else
+#define ext4_xattr_block_checksum(...) 0
+#endif
 
 static void
 ext4_xattr_set_block_checksum(struct ext4_inode_ref *inode_ref,
-			      ext4_fsblk_t blocknr,
+			      ext4_fsblk_t blocknr __unused,
 			      struct ext4_xattr_header *header)
 {
 	struct ext4_sblock *sb = &inode_ref->fs->sb;

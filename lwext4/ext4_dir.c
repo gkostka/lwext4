@@ -69,6 +69,7 @@ ext4_dir_get_tail(struct ext4_inode_ref *inode_ref,
 	return t;
 }
 
+#if CONFIG_META_CSUM_ENABLE
 static uint32_t ext4_dir_checksum(struct ext4_inode_ref *inode_ref,
 			       struct ext4_directory_entry_ll *dirent, int size)
 {
@@ -90,8 +91,11 @@ static uint32_t ext4_dir_checksum(struct ext4_inode_ref *inode_ref,
 	checksum = ext4_crc32c(checksum, dirent, size);
 	return checksum;
 }
+#else
+#define ext4_dir_checksum(...) 0
+#endif
 
-__unused int
+__unused static bool
 ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
 			 struct ext4_directory_entry_ll *dirent)
 {
@@ -103,15 +107,15 @@ ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
 		t = ext4_dir_get_tail(inode_ref, dirent);
 		if (!t) {
 			/* There is no space to hold the checksum */
-			return 0;
+			return false;
 		}
 
 		if (t->checksum != to_le32(ext4_dir_checksum(inode_ref, dirent,
 					(char *)t - (char *)dirent)))
-			return 0;
+			return false;
 
 	}
-	return 1;
+	return true;
 }
 
 /* checksumming functions */

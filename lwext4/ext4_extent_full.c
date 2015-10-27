@@ -309,6 +309,7 @@ static ext4_fsblk_t ext4_ext_new_meta_block(struct ext4_inode_ref *inode_ref,
 	return newblock;
 }
 
+#if CONFIG_META_CSUM_ENABLE
 static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
 				    struct ext4_extent_header *eh)
 {
@@ -335,8 +336,11 @@ static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
 	}
 	return checksum;
 }
+#else
+#define ext4_ext_block_csum(...) 0
+#endif
 
-static void ext4_extent_block_csum_set(struct ext4_inode_ref *inode_ref,
+static void ext4_extent_block_csum_set(struct ext4_inode_ref *inode_ref __unused,
 				       struct ext4_extent_header *eh)
 {
 	struct ext4_extent_tail *tail;
