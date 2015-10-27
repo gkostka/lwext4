@@ -374,6 +374,11 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
         ext4_fs_mark_bitmap_end(group_blocks, block_size * 8, block_bitmap.data);
 	block_bitmap.dirty = true;
 
+	ext4_balloc_set_bitmap_csum(&bg_ref->fs->sb,
+				    bg_ref->block_group,
+				    block_bitmap.data);
+	bg_ref->dirty = true;
+
 	/* Save bitmap */
 	return ext4_block_set(bg_ref->fs->bdev, &block_bitmap);
 }
@@ -412,6 +417,11 @@ static int ext4_fs_init_inode_bitmap(struct ext4_block_group_ref *bg_ref)
 		memset(block_bitmap.data + (i >> 3), 0xff, (end_bit - i) >> 3);
 
 	block_bitmap.dirty = true;
+
+	ext4_ialloc_set_bitmap_csum(&bg_ref->fs->sb,
+				    bg_ref->block_group,
+				    block_bitmap.data);
+	bg_ref->dirty = true;
 
 	/* Save bitmap */
 	return ext4_block_set(bg_ref->fs->bdev, &block_bitmap);

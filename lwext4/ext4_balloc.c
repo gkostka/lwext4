@@ -101,9 +101,9 @@ static uint32_t ext4_balloc_bitmap_csum(struct ext4_sblock *sb,
  *       Currently we do not verify the checksum of bitmaps.
  */
 
-static void ext4_balloc_set_bitmap_csum(struct ext4_sblock *sb,
-					struct ext4_bgroup *bg,
-					void *bitmap)
+void ext4_balloc_set_bitmap_csum(struct ext4_sblock *sb,
+				 struct ext4_bgroup *bg,
+				 void *bitmap)
 {
 	int desc_size = ext4_sb_get_desc_size(sb);
 	uint32_t checksum = ext4_balloc_bitmap_csum(sb, bitmap);

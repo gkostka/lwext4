@@ -64,6 +64,15 @@ uint32_t ext4_balloc_get_bgid_of_block(struct ext4_sblock *s,
 ext4_fsblk_t ext4_balloc_get_block_of_bgid(struct ext4_sblock *s,
 				       uint32_t bgid);
 
+/**@brief Calculate and set checksum of block bitmap.
+ * @param sb superblock pointer.
+ * @param bg block group
+ * @param bitmap bitmap buffer
+ */
+void ext4_balloc_set_bitmap_csum(struct ext4_sblock *sb,
+				 struct ext4_bgroup *bg,
+				 void *bitmap);
+
 /**@brief   Free block from inode.
  * @param   inode_ref inode reference
  * @param   baddr block address
