@@ -10,138 +10,117 @@ https://github.com/gkostka/lwext4
 Feel free to contact me:
 kostka.grzegorz@gmail.com
 
-==Minimum memory requirements==
-* .text:  20KB - 40KB (dependent of feature set chosen)
-* .data:  8KB         (minimum 8 x 1KB  block cache)
-* .stack: 2KB
-
-
-==ext2/3/4 vs FAT32==
-;ext2/3/4 > FAT32
-* fast fseek on big file (in FAT32 fseek equals many IO operations)
-* ext2/3/4 HTREE directory operations (like find entry) are faster
-* fast extent big file allocation (truncate/remove)
-* more at https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout
-
-;ext2/3/4 < FAT32
-* FAT32 has smaller footprint
-
 ==Credits==
 
 The most of the source code of lwext4 was taken from HelenOS:
 * http://helenos.org/
 Some features are based on FreeBSD and Linux implementations.
 
-==Supported ext2/3/4 fs features==
-;Features incompatible (unable to mount when NOT supported):
+KaHo Ng (https://github.com/ngkaho1234):
+* advanced extents implementation
+* xattr support
+* metadata checksum suport
+* many bugfixes & improvements
+
+fuse-lwext4 project:
+* https://github.com/ngkaho1234/fuse-lwext4
+
+==Features==
+
+* filetypes: regular, directories, softlinks
+* support for hardlinks
+* multiple blocksize supported: 1KB, 2KB, 4KB ... 64KB
+* little/big endian architectures supported
+* multiple configurations (ext2/ext3/ext4)
+* only C standard library dependency
+* various CPU architectures supported (x86/64, cortex-mX, msp430 ...)
+* small memory footprint
+
+
+;Memory footprint (for cortex-m4):
+* .text:  20KB - 40KB 
+* .data:  8KB         (minimum 8 x 1KB  block cache)
+* .stack: 2KB
+
+==Supported ext2/3/4 features==
+;Features incompatible:
 *  compression: no
 *  filetype: yes
-*  recover: no (could be ignored)
+*  recover: no
 *  journal_dev: no
 *  meta_bg: yes
 *  extents: yes
 *  64bit: yes
-*  mmp: no (could be ignored)
+*  mmp: no
 *  flex_bg: yes
 *  ea_inode: no
 *  dirdata: no
 *  bg_meta_csum: no
 *  largedir: no
 *  inline_data: no
-;Features compatible (mount when NOT supported is possible):
+;Features compatible:
 *  dir_prealloc: no
 *  imagic_inodes: no
 *  has_journal: no
-*  ext_attr: no (work in progress)
+*  ext_attr: yes
 *  resize_inode: no
 *  dir_index: yes
-;Features read-only (mount in RO mode when NOT supported):
+;Features read-only:
 *  sparse_super: yes
 *  large_file: yes
-*  btree_dir: yes (obsolete)
+*  btree_dir: yes
 *  huge_file: yes
 *  gdt_csum: yes
 *  dir_nlink: yes
 *  extra_isize: yes
 *  quota: no
 *  bigalloc: no
-*  metadata_csum: no (to be done ...)
+*  metadata_csum: yes
 
-==Supported filetypes:==
-* FIFO:      no
-* CHARDEV:   no
-* DIRECTORY: yes
-* BLOCKDEV:  no
-* FILE:      yes (hardlinks supported)
-* SOFTLINK:  yes
-* SOCKET:    no
-
-==Other==
- - block_size: 1KB, 2KB, 4KB ... 64KB
- - little/big endian architecture support
 
 ==Project tree==
 *  blockdev         - block devices set, supported blockdev
 *  demos            - demo directory sources
+*  fs_test          - test suite
 *  lwext4           - internals of the lwext4 library
 *  toolchain        - specific toolchain cmake files
 *  CMakeLists.txt   - CMake config file
 *  ext_images.7z    - compressed ext2/3/4 100MB images
 *  fs_test.mk       - automatic tests definitions
-*  Makefile         - helper makefile to trigger cmake, tests
+*  Makefile         - helper makefile to generate cmake and run test suite
 *  readme.mediawiki - readme file
   
-==Compile: Windows==
-Requirements:
+==Compile==
+Windows:
 * CMake:  http://www.cmake.org/cmake/resources/software.html
 * MinGw:  http://www.mingw.org/
 * GnuWin: http://gnuwin32.sourceforge.net/ 
 
-;Create CMake files:
+Linux:
+* CMake, make, gcc
+
+;Generate makefiles:
  make
 
-;Remove CMake files:
- clean
-
-;Build
+;Compile
  cd build_generic
  make
 
-==Compile: Linux==
-
-Requirements:
-* CMake:  http://www.cmake.org/cmake/resources/software.html
- 
-;Create CMake files:
- make
-
-;Remove CMake files:
- clean
-
-;Build
- cd build_generic
- make
 
 ==Generic demo application==
-Features:
+Simple lwext4 library presentation:
 * load ext2/3/4 images
 * load linux block device with ext2/3/4 part
 * load windows volume with ext2/3/4 filesystem 
 * directory speed test
 * file write/read speed test
 
-How to use:
-Windows/Linux fileimages:
+How to use for images/blockdevices:
  cd build_generic
- generic --in ext2 
+ generic -i ext_images/ext2 
+ generic -i ext_images/ext3 
+ generic -i ext_images/ext4 
 
-Windows volumes:
- cd build_generic
- generic --in I: --wpart
-
-Linux block devices:
- cd build_generic
- generic -i /dev/your_block_device
 
 ==Build and run automatic tests==
 Build and run automatic tests
@@ -151,14 +130,21 @@ Build automatic test tools:
  make
 Uncompress ext/2/3/4 images:
  make unpack_images
-Run server app for predefined images:
+Run server for one of the image file:
  make server_ext2
  make server_ext3
  make server_ext4
-Run tests:
+Execute tests:
  make test
 
-==Cross-Compile standalone library==
+==Cross compile standalone library==
+Toolchains needed:
+* arm-none-eabi-gcc for cortex-mX
+* avr-gcc for avr
+* bfin-elf-gcc for bfin
+* msp430-gcc for msp430
+
+
 Build bf518 library:
  make bf518
  cd build_bf518
