@@ -217,7 +217,7 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
 
 	/*Check features_incompatible*/
 	v = (ext4_get32(&fs->sb, features_incompatible) &
-	     (~CONFIG_FEATURE_INCOMPAT_SUPP));
+	     (~CONFIG_SUPPORTED_FINCOM));
 	if (v) {
 		ext4_dbg(DEBUG_FS, DBG_ERROR
 				"sblock has unsupported features incompatible:\n");
@@ -227,7 +227,7 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
 
 	/*Check features_read_only*/
 	v = (ext4_get32(&fs->sb, features_read_only) &
-	     (~CONFIG_FEATURE_RO_COMPAT_SUPP));
+	     (~CONFIG_SUPPORTED_FRO_COM));
 	if (v) {
 		ext4_dbg(DEBUG_FS, DBG_WARN
 				"sblock has unsupported features read only:\n");

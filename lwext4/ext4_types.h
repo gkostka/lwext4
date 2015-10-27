@@ -235,38 +235,38 @@ struct ext4_sblock {
 /*
  * EXT2 supported feature set
  */
-#define EXT2_FEATURE_COMPAT_SUPP 0x0000
+#define EXT2_SUPPORTED_FCOM 0x0000
 
-#define EXT2_FEATURE_INCOMPAT_SUPP                                   \
+#define EXT2_SUPPORTED_FINCOM                                   \
 	(EXT4_FINCOM_FILETYPE | EXT4_FINCOM_META_BG)
 
-#define EXT2_FEATURE_RO_COMPAT_SUPP                                  \
-	(EXT4_FRO_COM_SPARSE_SUPER |                                 \
+#define EXT2_SUPPORTED_FRO_COM                                  \
+	(EXT4_FRO_COM_SPARSE_SUPER |                            \
 	 EXT4_FRO_COM_LARGE_FILE | EXT4_FRO_COM_BTREE_DIR)
 
 /*
  * EXT3 supported feature set
  */
-#define EXT3_FEATURE_COMPAT_SUPP (EXT4_FCOM_DIR_INDEX)
+#define EXT3_SUPPORTED_FCOM (EXT4_FCOM_DIR_INDEX)
 
-#define EXT3_FEATURE_INCOMPAT_SUPP                            \
+#define EXT3_SUPPORTED_FINCOM                                 \
 	(EXT4_FINCOM_FILETYPE | EXT4_FINCOM_META_BG)
 
-#define EXT3_FEATURE_RO_COMPAT_SUPP                           \
+#define EXT3_SUPPORTED_FRO_COM                                \
 	(EXT4_FRO_COM_SPARSE_SUPER |                          \
 	 EXT4_FRO_COM_LARGE_FILE | EXT4_FRO_COM_BTREE_DIR)
 
 /*
  * EXT4 supported feature set
  */
-#define EXT4_FEATURE_COMPAT_SUPP (EXT4_FCOM_DIR_INDEX)
+#define EXT4_SUPPORTED_FCOM (EXT4_FCOM_DIR_INDEX)
 
-#define EXT4_FEATURE_INCOMPAT_SUPP                         \
+#define EXT4_SUPPORTED_FINCOM                              \
 	(EXT4_FINCOM_FILETYPE | EXT4_FINCOM_META_BG |      \
 	 EXT4_FINCOM_EXTENTS | EXT4_FINCOM_FLEX_BG |       \
 	 EXT4_FINCOM_64BIT)
 
-#define EXT4_FEATURE_RO_COMPAT_SUPP                        \
+#define EXT4_SUPPORTED_FRO_COM                             \
 	(EXT4_FRO_COM_SPARSE_SUPER |                       \
 	 EXT4_FRO_COM_METADATA_CSUM |                      \
 	 EXT4_FRO_COM_LARGE_FILE | EXT4_FRO_COM_GDT_CSUM | \
@@ -279,16 +279,16 @@ struct ext4_sblock {
  *           (probably won't be ever...)
  * MMP - multi-mout protection (impossible scenario)
  * */
-#define FEATURE_INCOMPAT_IGNORED                          \
+#define EXT_FINCOM_IGNORED                                 \
 	EXT4_FINCOM_RECOVER | EXT4_FINCOM_MMP
 
 #if 0
 /*TODO: Features incompatible to implement*/
-#define EXT4_FEATURE_INCOMPAT_SUPP
+#define EXT4_SUPPORTED_FINCOM
                      (EXT4_FINCOM_INLINE_DATA)
 
 /*TODO: Features read only to implement*/
-#define EXT4_FEATURE_RO_COMPAT_SUPP
+#define EXT4_SUPPORTED_FRO_COM
                      EXT4_FRO_COM_BIGALLOC |\
                      EXT4_FRO_COM_QUOTA)
 #endif
