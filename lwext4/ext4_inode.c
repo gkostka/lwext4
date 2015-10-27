@@ -271,6 +271,16 @@ void ext4_inode_set_generation(struct ext4_inode *inode, uint32_t gen)
 	inode->generation = to_le32(gen);
 }
 
+uint16_t ext4_inode_get_extra_isize(struct ext4_inode *inode)
+{
+	return to_le16(inode->extra_isize);
+}
+
+void ext4_inode_set_extra_isize(struct ext4_inode *inode, uint16_t size)
+{
+	inode->extra_isize = to_le16(size);
+}
+
 uint64_t ext4_inode_get_file_acl(struct ext4_inode *inode,
 				 struct ext4_sblock *sb)
 {

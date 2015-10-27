@@ -799,6 +799,7 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 {
 	/* Check if newly allocated i-node will be a directory */
 	bool is_dir;
+	uint16_t inode_size = ext4_get16(&fs->sb, inode_size);
 
 	is_dir = (filetype == EXT4_DIRENTRY_DIR);
 
@@ -850,6 +851,11 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	ext4_inode_set_blocks_count(&fs->sb, inode, 0);
 	ext4_inode_set_flags(inode, 0);
 	ext4_inode_set_generation(inode, 0);
+	if (inode_size > EXT4_GOOD_OLD_INODE_SIZE)
+		ext4_inode_set_extra_isize(inode,
+				sizeof(struct ext4_inode) -
+				ext4_offsetof(struct ext4_inode,
+					extra_isize));
 
 	/* Reset blocks array. For symbolic link inode, just
 	 * fill in blocks with 0 */
