@@ -1278,7 +1278,7 @@ int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
 static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 				       uint64_t iblock, ext4_fsblk_t *fblock,
 				       bool extent_create,
-				       bool support_unwritten)
+				       bool support_unwritten __unused)
 {
 	struct ext4_fs *fs = inode_ref->fs;
 
