@@ -198,21 +198,6 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 	if (ext4_inode_is_type(&mp->fs.sb, child->inode,
 			       EXT4_INODE_MODE_DIRECTORY) &&
 	    !rename) {
-		rc = ext4_dir_add_entry(child, ".", strlen("."), child);
-		if (rc != EOK) {
-			ext4_dir_remove_entry(parent, name, strlen(name));
-			return rc;
-		}
-
-		rc = ext4_dir_add_entry(child, "..", strlen(".."), parent);
-		if (rc != EOK) {
-			ext4_dir_remove_entry(parent, name, strlen(name));
-			ext4_dir_remove_entry(child, ".", strlen("."));
-			return rc;
-		}
-
-		/*New empty directory. Two links (. and ..) */
-		ext4_inode_set_links_count(child->inode, 2);
 
 #if CONFIG_DIR_INDEX_ENABLE
 		/* Initialize directory index if supported */
@@ -225,8 +210,25 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 			ext4_inode_set_flag(child->inode,
 					    EXT4_INODE_FLAG_INDEX);
 			child->dirty = true;
-		}
+		} else
 #endif
+		{
+			rc = ext4_dir_add_entry(child, ".", strlen("."), child);
+			if (rc != EOK) {
+				ext4_dir_remove_entry(parent, name, strlen(name));
+				return rc;
+			}
+
+			rc = ext4_dir_add_entry(child, "..", strlen(".."), parent);
+			if (rc != EOK) {
+				ext4_dir_remove_entry(parent, name, strlen(name));
+				ext4_dir_remove_entry(child, ".", strlen("."));
+				return rc;
+			}
+		}
+
+		/*New empty directory. Two links (. and ..) */
+		ext4_inode_set_links_count(child->inode, 2);
 
 		ext4_fs_inode_links_count_inc(parent);
 		child->dirty = true;
