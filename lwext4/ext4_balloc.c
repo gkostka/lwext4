@@ -91,7 +91,7 @@ static uint32_t ext4_balloc_bitmap_csum(struct ext4_sblock *sb,
 		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
 		/* Then calculate crc32 checksum against block_group_desc */
 		checksum = ext4_crc32c(checksum, bitmap,
-				     (blocks_per_group + 7) / 8);
+				     blocks_per_group / 8);
 	}
 	return checksum;
 }
