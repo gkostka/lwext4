@@ -92,11 +92,14 @@ static uint32_t ext4_ialloc_bitmap_csum(struct ext4_sblock *sb,
 	uint32_t checksum = 0;
 	if (ext4_sb_has_feature_read_only(sb,
 				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		uint32_t inodes_per_group =
+			ext4_get32(sb, inodes_per_group);
+
 		/* First calculate crc32 checksum against fs uuid */
 		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
-		/* Then calculate crc32 checksum against block_group_desc */
+		/* Then calculate crc32 checksum against inode bitmap */
 		checksum = ext4_crc32c(checksum, bitmap,
-				     ext4_sb_get_block_size(sb));
+				     (inodes_per_group + 7) / 8);
 	}
 	return checksum;
 }
@@ -116,9 +119,9 @@ static void ext4_ialloc_set_bitmap_csum(struct ext4_sblock *sb,
 		 hi_checksum = to_le16(checksum >> 16);
 	
 	/* See if we need to assign a 32bit checksum */
-	bg->block_bitmap_csum_lo = lo_checksum;
+	bg->inode_bitmap_csum_lo = lo_checksum;
 	if (desc_size == EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE)
-		bg->block_bitmap_csum_hi = hi_checksum;
+		bg->inode_bitmap_csum_hi = hi_checksum;
 
 }
 

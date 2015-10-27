@@ -84,11 +84,14 @@ static uint32_t ext4_balloc_bitmap_csum(struct ext4_sblock *sb,
 	uint32_t checksum = 0;
 	if (ext4_sb_has_feature_read_only(sb,
 				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		uint32_t blocks_per_group =
+			ext4_get32(sb, blocks_per_group);
+
 		/* First calculate crc32 checksum against fs uuid */
 		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
 		/* Then calculate crc32 checksum against block_group_desc */
 		checksum = ext4_crc32c(checksum, bitmap,
-				     ext4_sb_get_block_size(sb));
+				     (blocks_per_group + 7) / 8);
 	}
 	return checksum;
 }
