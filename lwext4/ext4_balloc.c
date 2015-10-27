@@ -83,7 +83,7 @@ static uint32_t ext4_balloc_bitmap_csum(struct ext4_sblock *sb,
 {
 	uint32_t checksum = 0;
 	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+				EXT4_FRO_COM_METADATA_CSUM)) {
 		uint32_t blocks_per_group =
 			ext4_get32(sb, blocks_per_group);
 

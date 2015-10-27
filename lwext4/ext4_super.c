@@ -89,7 +89,7 @@ static uint32_t ext4_sb_csum(struct ext4_sblock *s)
 static bool ext4_sb_verify_csum(struct ext4_sblock *s)
 {
 	if (!ext4_sb_has_feature_read_only(s,
-					   EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+					   EXT4_FRO_COM_METADATA_CSUM))
 		return true;
 
 	if (s->checksum_type != to_le32(EXT4_CHECKSUM_CRC32C))
@@ -101,7 +101,7 @@ static bool ext4_sb_verify_csum(struct ext4_sblock *s)
 static void ext4_sb_set_csum(struct ext4_sblock *s)
 {
 	if (!ext4_sb_has_feature_read_only(s,
-					   EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+					   EXT4_FRO_COM_METADATA_CSUM))
 		return;
 
 	s->checksum = to_le32(ext4_sb_csum(s));
@@ -183,7 +183,7 @@ bool ext4_sb_sparse(uint32_t group)
 bool ext4_sb_is_super_in_bg(struct ext4_sblock *s, uint32_t group)
 {
 	if (ext4_sb_has_feature_read_only(
-		s, EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER) &&
+		s, EXT4_FRO_COM_SPARSE_SUPER) &&
 	    !ext4_sb_sparse(group))
 		return false;
 	return true;

@@ -122,7 +122,7 @@ ext4_xattr_block_checksum(struct ext4_inode_ref *inode_ref,
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
 	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+				EXT4_FRO_COM_METADATA_CSUM)) {
 		uint32_t orig_checksum;
 
 		/* Preparation: temporarily set bg checksum to 0 */
@@ -149,7 +149,7 @@ ext4_xattr_set_block_checksum(struct ext4_inode_ref *inode_ref,
 {
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 	if (!ext4_sb_has_feature_read_only(sb,
-				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+				EXT4_FRO_COM_METADATA_CSUM))
 		return;
 
 	header->h_checksum =

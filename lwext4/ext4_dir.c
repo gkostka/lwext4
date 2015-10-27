@@ -100,7 +100,7 @@ ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
 
 	/* Compute the checksum only if the filesystem supports it */
 	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+				EXT4_FRO_COM_METADATA_CSUM)) {
 		t = ext4_dir_get_tail(inode_ref, dirent);
 		if (!t) {
 			/* There is no space to hold the checksum */
@@ -131,7 +131,7 @@ void ext4_dir_set_checksum(struct ext4_inode_ref *inode_ref,
 
 	/* Compute the checksum only if the filesystem supports it */
 	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+				EXT4_FRO_COM_METADATA_CSUM)) {
 		t = ext4_dir_get_tail(inode_ref, dirent);
 		if (!t) {
 			/* There is no space to hold the checksum */
@@ -413,7 +413,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 
 	/* Save new block */
 	if (ext4_sb_has_feature_read_only(&fs->sb,
-					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+					  EXT4_FRO_COM_METADATA_CSUM)) {
 		ext4_dir_write_entry(&fs->sb, block_entry,
 				block_size - sizeof(struct ext4_directory_entry_tail),
 				child,

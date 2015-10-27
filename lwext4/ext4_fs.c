@@ -175,25 +175,25 @@ static void ext4_fs_debug_features_comp(uint32_t features_compatible)
 
 static void ext4_fs_debug_features_ro(uint32_t features_ro)
 {
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER)
+	if (features_ro & EXT4_FRO_COM_SPARSE_SUPER)
 		ext4_dbg(DEBUG_FS, DBG_NONE "sparse_super\n");
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_LARGE_FILE)
+	if (features_ro & EXT4_FRO_COM_LARGE_FILE)
 		ext4_dbg(DEBUG_FS, DBG_NONE "large_file\n");
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_BTREE_DIR)
+	if (features_ro & EXT4_FRO_COM_BTREE_DIR)
 		ext4_dbg(DEBUG_FS, DBG_NONE "btree_dir\n");
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_HUGE_FILE)
+	if (features_ro & EXT4_FRO_COM_HUGE_FILE)
 		ext4_dbg(DEBUG_FS, DBG_NONE "huge_file\n");
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_GDT_CSUM)
+	if (features_ro & EXT4_FRO_COM_GDT_CSUM)
 		ext4_dbg(DEBUG_FS, DBG_NONE "gtd_csum\n");
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_DIR_NLINK)
+	if (features_ro & EXT4_FRO_COM_DIR_NLINK)
 		ext4_dbg(DEBUG_FS, DBG_NONE "dir_nlink\n");
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE)
+	if (features_ro & EXT4_FRO_COM_EXTRA_ISIZE)
 		ext4_dbg(DEBUG_FS, DBG_NONE "extra_isize\n");
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_QUOTA)
+	if (features_ro & EXT4_FRO_COM_QUOTA)
 		ext4_dbg(DEBUG_FS, DBG_NONE "quota\n");
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_BIGALLOC)
+	if (features_ro & EXT4_FRO_COM_BIGALLOC)
 		ext4_dbg(DEBUG_FS, DBG_NONE "bigalloc\n");
-	if (features_ro & EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)
+	if (features_ro & EXT4_FRO_COM_METADATA_CSUM)
 		ext4_dbg(DEBUG_FS, DBG_NONE "metadata_csum\n");
 }
 
@@ -576,7 +576,7 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
 
 	/* Compute the checksum only if the filesystem supports it */
 	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+				EXT4_FRO_COM_METADATA_CSUM)) {
 		/* Use metadata_csum algorithm instead */
 		uint32_t le32_bgid = to_le32(bgid);
 		uint32_t orig_checksum, checksum;
@@ -597,7 +597,7 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
 
 		crc = checksum & 0xFFFF;
 	} else if (ext4_sb_has_feature_read_only(sb,
-					EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) {
+					EXT4_FRO_COM_GDT_CSUM)) {
 		uint8_t *base = (uint8_t *)bg;
 		uint8_t *checksum = (uint8_t *)&bg->checksum;
 
@@ -656,7 +656,7 @@ static uint32_t ext4_fs_inode_checksum(struct ext4_inode_ref *inode_ref)
 	uint16_t inode_size = ext4_get16(sb, inode_size);
 
 	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+				EXT4_FRO_COM_METADATA_CSUM)) {
 		uint32_t orig_checksum;
 
 		uint32_t ino_index = to_le32(inode_ref->index);
@@ -689,7 +689,7 @@ static void ext4_fs_set_inode_checksum(struct ext4_inode_ref *inode_ref)
 {
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 	if (!ext4_sb_has_feature_read_only(sb,
-				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+				EXT4_FRO_COM_METADATA_CSUM))
 		return;
 
 	ext4_inode_set_checksum(sb, inode_ref->inode,
@@ -1686,7 +1686,7 @@ void ext4_fs_inode_links_count_inc(struct ext4_inode_ref *inode_ref)
 
 			uint32_t v =
 			    ext4_get32(&inode_ref->fs->sb, features_read_only);
-			v |= EXT4_FEATURE_RO_COMPAT_DIR_NLINK;
+			v |= EXT4_FRO_COM_DIR_NLINK;
 			ext4_set32(&inode_ref->fs->sb, features_read_only, v);
 		}
 	}

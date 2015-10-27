@@ -145,7 +145,7 @@ static uint32_t compute_journal_blocks(struct ext4_mkfs_info *info)
 
 static bool has_superblock(struct ext4_mkfs_info *info, uint32_t bgid)
 {
-	if (!(info->feat_ro_compat & EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER))
+	if (!(info->feat_ro_compat & EXT4_FRO_COM_SPARSE_SUPER))
 		return true;
 
 	return ext4_sb_sparse(bgid);
