@@ -50,9 +50,11 @@
 
 /**@brief Initialize index structure of new directory.
  * @param dir Pointer to directory i-node
+ * @param dir Pointer to parent directory i-node
  * @return Error code
  */
-int ext4_dir_dx_init(struct ext4_inode_ref *dir);
+int ext4_dir_dx_init(struct ext4_inode_ref *dir,
+		     struct ext4_inode_ref *parent);
 
 /**@brief Try to find directory entry using directory index.
  * @param result    Output value - if entry will be found,

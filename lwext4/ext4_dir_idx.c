@@ -40,6 +40,7 @@
 #include "ext4_blockdev.h"
 #include "ext4_fs.h"
 #include "ext4_super.h"
+#include "ext4_inode.h"
 #include "ext4_crc32c.h"
 #include "ext4_hash.h"
 
@@ -215,13 +216,23 @@ ext4_dir_dx_checksum(struct ext4_inode_ref *inode_ref,
 	/* Compute the checksum only if the filesystem supports it */
 	if (ext4_sb_has_feature_read_only(sb,
 				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+		uint32_t ino_index = to_le32(inode_ref->index);
+		uint32_t ino_gen =
+			to_le32(ext4_inode_get_generation(inode_ref->inode));
+
 		size = count_offset +
 			(count * sizeof(struct ext4_directory_dx_tail));
 		orig_checksum = t->checksum;
 		t->checksum = 0;
 		/* First calculate crc32 checksum against fs uuid */
 		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
-		/* Then calculate crc32 checksum against all the dx_entry */
+		/* Then calculate crc32 checksum against inode number
+		 * and inode generation */
+		checksum = ext4_crc32c(checksum, &ino_index,
+				     sizeof(ino_index));
+		checksum = ext4_crc32c(checksum, &ino_gen,
+				     sizeof(ino_gen));
+		/* After that calculate crc32 checksum against all the dx_entry */
 		checksum = ext4_crc32c(checksum, dirent, size);
 		/* Finally calculate crc32 checksum for dx_tail */
 		checksum = ext4_crc32c(checksum, t,
@@ -336,12 +347,13 @@ ext4_dir_set_dx_checksum(struct ext4_inode_ref *inode_ref,
 
 /****************************************************************************/
 
-int ext4_dir_dx_init(struct ext4_inode_ref *dir)
+int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 {
 	/* Load block 0, where will be index root located */
 	ext4_fsblk_t fblock;
+	uint32_t iblock;
 	struct ext4_sblock *sb = &dir->fs->sb;
-	int rc = ext4_fs_get_inode_data_block_index(dir, 0, &fblock, false);
+	int rc = ext4_fs_append_inode_block(dir, &fblock, &iblock);
 	if (rc != EOK)
 		return rc;
 
@@ -353,6 +365,21 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir)
 	/* Initialize pointers to data structures */
 	struct ext4_directory_dx_root *root = (void *)block.data;
 	struct ext4_directory_dx_root_info *info = &(root->info);
+
+	/* Initialize dot entries */
+	ext4_dir_write_entry(&dir->fs->sb,
+			(struct ext4_directory_entry_ll *)root->dots,
+			12,
+			dir,
+			".",
+			strlen("."));
+
+	ext4_dir_write_entry(&dir->fs->sb,
+			(struct ext4_directory_entry_ll *)(root->dots + 1),
+			ext4_sb_get_block_size(sb) - 12,
+			parent,
+			"..",
+			strlen(".."));
 
 	/* Initialize root info structure */
 	uint8_t hash_version = ext4_get8(&dir->fs->sb, default_hash_version);
@@ -380,7 +407,6 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir)
 	ext4_dir_dx_countlimit_set_limit(countlimit, root_limit);
 
 	/* Append new block, where will be new entries inserted in the future */
-	uint32_t iblock;
 	rc = ext4_fs_append_inode_block(dir, &fblock, &iblock);
 	if (rc != EOK) {
 		ext4_block_set(dir->fs->bdev, &block);
