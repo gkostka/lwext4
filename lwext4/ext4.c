@@ -202,7 +202,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 #if CONFIG_DIR_INDEX_ENABLE
 		/* Initialize directory index if supported */
 		if (ext4_sb_has_feature_compatible(
-			&mp->fs.sb, EXT4_FEATURE_COMPAT_DIR_INDEX)) {
+			&mp->fs.sb, EXT4_FCOM_DIR_INDEX)) {
 			rc = ext4_dir_dx_init(child, parent);
 			if (rc != EOK)
 				return rc;

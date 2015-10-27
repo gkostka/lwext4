@@ -159,17 +159,17 @@ static void ext4_fs_debug_features_inc(uint32_t features_incompatible)
 }
 static void ext4_fs_debug_features_comp(uint32_t features_compatible)
 {
-	if (features_compatible & EXT4_FEATURE_COMPAT_DIR_PREALLOC)
+	if (features_compatible & EXT4_FCOM_DIR_PREALLOC)
 		ext4_dbg(DEBUG_FS, DBG_NONE "dir_prealloc\n");
-	if (features_compatible & EXT4_FEATURE_COMPAT_IMAGIC_INODES)
+	if (features_compatible & EXT4_FCOM_IMAGIC_INODES)
 		ext4_dbg(DEBUG_FS, DBG_NONE "imagic_inodes\n");
-	if (features_compatible & EXT4_FEATURE_COMPAT_HAS_JOURNAL)
+	if (features_compatible & EXT4_FCOM_HAS_JOURNAL)
 		ext4_dbg(DEBUG_FS, DBG_NONE "has_journal\n");
-	if (features_compatible & EXT4_FEATURE_COMPAT_EXT_ATTR)
+	if (features_compatible & EXT4_FCOM_EXT_ATTR)
 		ext4_dbg(DEBUG_FS, DBG_NONE "ext_attr\n");
-	if (features_compatible & EXT4_FEATURE_COMPAT_RESIZE_INODE)
+	if (features_compatible & EXT4_FCOM_RESIZE_INODE)
 		ext4_dbg(DEBUG_FS, DBG_NONE "resize_inode\n");
-	if (features_compatible & EXT4_FEATURE_COMPAT_DIR_INDEX)
+	if (features_compatible & EXT4_FCOM_DIR_INDEX)
 		ext4_dbg(DEBUG_FS, DBG_NONE "dir_index\n");
 }
 
@@ -1677,7 +1677,7 @@ void ext4_fs_inode_links_count_inc(struct ext4_inode_ref *inode_ref)
 
 	bool is_dx =
 	    ext4_sb_has_feature_compatible(&inode_ref->fs->sb,
-					   EXT4_FEATURE_COMPAT_DIR_INDEX) &&
+					   EXT4_FCOM_DIR_INDEX) &&
 	    ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_INDEX);
 
 	if (is_dx && link > 1) {

@@ -253,7 +253,7 @@ static void fill_in_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info
 	sb->s_prealloc_dir_blocks = 0;
 
 	//memcpy(sb->journal_uuid, sb->uuid, sizeof(sb->journal_uuid));
-	if (info->feat_compat & EXT4_FEATURE_COMPAT_HAS_JOURNAL)
+	if (info->feat_compat & EXT4_FCOM_HAS_JOURNAL)
 		sb->journal_inode_number = EXT4_JOURNAL_INO;
 	sb->journal_dev = 0;
 	sb->last_orphan = 0;
@@ -393,7 +393,7 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	info->feat_incompat = CONFIG_FEATURE_INCOMPAT_SUPP;
 
 	if (info->no_journal == 0)
-		info->feat_compat |= EXT4_FEATURE_COMPAT_HAS_JOURNAL;
+		info->feat_compat |= EXT4_FCOM_HAS_JOURNAL;
 
 	info->bg_desc_reserve_blocks = compute_bg_desc_reserve_blocks(info);
 
