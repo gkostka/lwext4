@@ -315,8 +315,7 @@ static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
 	uint32_t checksum = 0;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
-	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FRO_COM_METADATA_CSUM)) {
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		uint32_t ino_index = to_le32(inode_ref->index);
 		uint32_t ino_gen =
 			to_le32(ext4_inode_get_generation(inode_ref->inode));
@@ -409,8 +408,8 @@ static int ext4_ext_check(struct ext4_inode_ref *inode_ref,
 	}
 
 	tail = find_ext4_extent_tail(eh);
-	if (ext4_sb_has_feature_read_only(&inode_ref->fs->sb,
-				EXT4_FRO_COM_METADATA_CSUM)) {
+	struct ext4_sblock *sb = &inode_ref->fs->sb;
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		if (tail->et_checksum != to_le32(ext4_ext_block_csum(inode_ref, eh))) {
 			/* FIXME: Warning: extent checksum damaged? */
 		}

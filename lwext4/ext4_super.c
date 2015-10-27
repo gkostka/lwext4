@@ -88,8 +88,7 @@ static uint32_t ext4_sb_csum(struct ext4_sblock *s)
 
 static bool ext4_sb_verify_csum(struct ext4_sblock *s)
 {
-	if (!ext4_sb_has_feature_read_only(s,
-					   EXT4_FRO_COM_METADATA_CSUM))
+	if (!ext4_sb_feature_ro_com(s, EXT4_FRO_COM_METADATA_CSUM))
 		return true;
 
 	if (s->checksum_type != to_le32(EXT4_CHECKSUM_CRC32C))
@@ -100,8 +99,7 @@ static bool ext4_sb_verify_csum(struct ext4_sblock *s)
 
 static void ext4_sb_set_csum(struct ext4_sblock *s)
 {
-	if (!ext4_sb_has_feature_read_only(s,
-					   EXT4_FRO_COM_METADATA_CSUM))
+	if (!ext4_sb_feature_ro_com(s, EXT4_FRO_COM_METADATA_CSUM))
 		return;
 
 	s->checksum = to_le32(ext4_sb_csum(s));
@@ -182,8 +180,7 @@ bool ext4_sb_sparse(uint32_t group)
 
 bool ext4_sb_is_super_in_bg(struct ext4_sblock *s, uint32_t group)
 {
-	if (ext4_sb_has_feature_read_only(
-		s, EXT4_FRO_COM_SPARSE_SUPER) &&
+	if (ext4_sb_feature_ro_com(s, EXT4_FRO_COM_SPARSE_SUPER) &&
 	    !ext4_sb_sparse(group))
 		return false;
 	return true;
@@ -213,7 +210,7 @@ static uint32_t ext4_bg_num_gdb_nometa(struct ext4_sblock *s, uint32_t group)
 	uint32_t db_count =
 	    (ext4_block_group_cnt(s) + dsc_per_block - 1) / dsc_per_block;
 
-	if (ext4_sb_has_feature_incompatible(s, EXT4_FINCOM_META_BG))
+	if (ext4_sb_feature_incom(s, EXT4_FINCOM_META_BG))
 		return ext4_sb_first_meta_bg(s);
 
 	return db_count;
@@ -226,8 +223,7 @@ uint32_t ext4_bg_num_gdb(struct ext4_sblock *s, uint32_t group)
 	uint32_t first_meta_bg = ext4_sb_first_meta_bg(s);
 	uint32_t metagroup = group / dsc_per_block;
 
-	if (!ext4_sb_has_feature_incompatible(s,
-					      EXT4_FINCOM_META_BG) ||
+	if (!ext4_sb_feature_incom(s,EXT4_FINCOM_META_BG) ||
 	    metagroup < first_meta_bg)
 		return ext4_bg_num_gdb_nometa(s, group);
 
@@ -243,8 +239,7 @@ uint32_t ext4_num_base_meta_clusters(struct ext4_sblock *s,
 
 	num = ext4_sb_is_super_in_bg(s, block_group);
 
-	if (!ext4_sb_has_feature_incompatible(s,
-					      EXT4_FINCOM_META_BG) ||
+	if (!ext4_sb_feature_incom(s, EXT4_FINCOM_META_BG) ||
 	    block_group < ext4_sb_first_meta_bg(s) * dsc_per_block) {
 		if (num) {
 			num += ext4_bg_num_gdb(s, block_group);

@@ -82,8 +82,7 @@ static uint32_t ext4_balloc_bitmap_csum(struct ext4_sblock *sb,
 					void *bitmap)
 {
 	uint32_t checksum = 0;
-	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FRO_COM_METADATA_CSUM)) {
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		uint32_t blocks_per_group =
 			ext4_get32(sb, blocks_per_group);
 
@@ -196,8 +195,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t first
 	uint32_t block_group_last =
 	    ext4_balloc_get_bgid_of_block(sb, first + count - 1);
 
-	if (!ext4_sb_has_feature_incompatible(sb,
-					      EXT4_FINCOM_FLEX_BG)) {
+	if (!ext4_sb_feature_incom(sb, EXT4_FINCOM_FLEX_BG)) {
 		/*It is not possible without flex_bg that blocks are continuous
 		 * and and last block belongs to other bg.*/
 		ext4_assert(block_group_first == ext4_balloc_get_bgid_of_block(

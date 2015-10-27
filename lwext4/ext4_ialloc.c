@@ -90,8 +90,7 @@ static uint32_t ext4_ialloc_bitmap_csum(struct ext4_sblock *sb,
 					void *bitmap)
 {
 	uint32_t checksum = 0;
-	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FRO_COM_METADATA_CSUM)) {
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		uint32_t inodes_per_group =
 			ext4_get32(sb, inodes_per_group);
 

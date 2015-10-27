@@ -214,8 +214,7 @@ ext4_dir_dx_checksum(struct ext4_inode_ref *inode_ref,
 	int size;
 
 	/* Compute the checksum only if the filesystem supports it */
-	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FRO_COM_METADATA_CSUM)) {
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		uint32_t ino_index = to_le32(inode_ref->index);
 		uint32_t ino_gen =
 			to_le32(ext4_inode_get_generation(inode_ref->inode));
@@ -284,8 +283,7 @@ ext4_dir_dx_checksum_verify(struct ext4_inode_ref *inode_ref,
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 	int count_offset, limit, count;
 
-	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FRO_COM_METADATA_CSUM)) {
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		struct ext4_directory_dx_countlimit *countlimit =
 			ext4_dir_dx_get_countlimit(inode_ref, dirent, &count_offset);
 		if (!countlimit) {
@@ -320,8 +318,7 @@ ext4_dir_set_dx_checksum(struct ext4_inode_ref *inode_ref,
 	int count_offset, limit, count;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
-	if (ext4_sb_has_feature_read_only(sb,
-				EXT4_FRO_COM_METADATA_CSUM)) {
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		struct ext4_directory_dx_countlimit *countlimit =
 			ext4_dir_dx_get_countlimit(inode_ref, dirent, &count_offset);
 		if (!countlimit) {
@@ -398,8 +395,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	uint32_t entry_space = block_size -
 			       2 * sizeof(struct ext4_directory_dx_dot_entry) -
 			       sizeof(struct ext4_directory_dx_root_info);
-	if (ext4_sb_has_feature_read_only(sb,
-					  EXT4_FRO_COM_METADATA_CSUM))
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 		entry_space -= sizeof(struct ext4_directory_dx_tail);
 
 	uint16_t root_limit =
@@ -425,8 +421,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	/* Fill the whole block with empty entry */
 	struct ext4_directory_entry_ll *block_entry = (void *)new_block.data;
 
-	if (ext4_sb_has_feature_read_only(sb,
-					  EXT4_FRO_COM_METADATA_CSUM)) {
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		ext4_dir_entry_ll_set_entry_length(block_entry,
 				block_size -
 				sizeof(struct ext4_directory_entry_tail));
@@ -499,8 +494,7 @@ static int ext4_dir_hinfo_init(struct ext4_hash_info *hinfo,
 	uint32_t entry_space = block_size;
 	entry_space -= 2 * sizeof(struct ext4_directory_dx_dot_entry);
 	entry_space -= sizeof(struct ext4_directory_dx_root_info);
-	if (ext4_sb_has_feature_read_only(sb,
-					  EXT4_FRO_COM_METADATA_CSUM))
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 		entry_space -= sizeof(struct ext4_directory_dx_tail);
 	entry_space = entry_space / sizeof(struct ext4_directory_dx_entry);
 
@@ -618,8 +612,8 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 		    ext4_sb_get_block_size(&inode_ref->fs->sb) -
 		    sizeof(struct ext4_fake_directory_entry);
 
-		if (ext4_sb_has_feature_read_only(&inode_ref->fs->sb,
-						  EXT4_FRO_COM_METADATA_CSUM))
+		if (ext4_sb_feature_ro_com(&inode_ref->fs->sb,
+				EXT4_FRO_COM_METADATA_CSUM))
 			entry_space -= sizeof(struct ext4_directory_dx_tail);
 
 		entry_space =
@@ -1039,9 +1033,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 
 	uint32_t offset = 0;
 	void *ptr;
-
-	if (ext4_sb_has_feature_read_only(&inode_ref->fs->sb,
-					  EXT4_FRO_COM_METADATA_CSUM))
+	struct ext4_sblock *sb = &inode_ref->fs->sb;
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 		block_size -= sizeof(struct ext4_directory_entry_tail);
 
 	/* First part - to the old block */
@@ -1080,8 +1073,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	block_size = ext4_sb_get_block_size(&inode_ref->fs->sb);
 
 	/* Do some steps to finish operation */
-	if (ext4_sb_has_feature_read_only(&inode_ref->fs->sb,
-					  EXT4_FRO_COM_METADATA_CSUM)) {
+	sb = &inode_ref->fs->sb;
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		initialize_dir_tail(EXT4_DIRENT_TAIL(old_data_block->data,
 					block_size));
 		initialize_dir_tail(EXT4_DIRENT_TAIL(new_data_block_tmp.data,
@@ -1209,12 +1202,11 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
 			uint32_t entry_space =
 			    block_size -
 			    sizeof(struct ext4_fake_directory_entry);
-			if (ext4_sb_has_feature_read_only(sb,
-							  EXT4_FRO_COM_METADATA_CSUM))
+			if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 				entry_space -= sizeof(struct ext4_directory_dx_tail);
+
 			uint32_t node_limit =
-			    entry_space /
-			    sizeof(struct ext4_directory_dx_entry);
+			    entry_space / sizeof(struct ext4_directory_dx_entry);
 
 			ext4_dir_dx_countlimit_set_limit(right_countlimit,
 							 node_limit);
@@ -1272,12 +1264,11 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
 			uint32_t entry_space =
 			    block_size -
 			    sizeof(struct ext4_fake_directory_entry);
-			if (ext4_sb_has_feature_read_only(sb,
-							  EXT4_FRO_COM_METADATA_CSUM))
+			if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 				entry_space -= sizeof(struct ext4_directory_dx_tail);
+
 			uint32_t node_limit =
-			    entry_space /
-			    sizeof(struct ext4_directory_dx_entry);
+			    entry_space / sizeof(struct ext4_directory_dx_entry);
 			ext4_dir_dx_countlimit_set_limit(new_countlimit,
 							 node_limit);
 
