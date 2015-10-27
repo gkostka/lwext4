@@ -213,7 +213,7 @@ static uint32_t ext4_bg_num_gdb_nometa(struct ext4_sblock *s, uint32_t group)
 	uint32_t db_count =
 	    (ext4_block_group_cnt(s) + dsc_per_block - 1) / dsc_per_block;
 
-	if (ext4_sb_has_feature_incompatible(s, EXT4_FEATURE_INCOMPAT_META_BG))
+	if (ext4_sb_has_feature_incompatible(s, EXT4_FINCOM_META_BG))
 		return ext4_sb_first_meta_bg(s);
 
 	return db_count;
@@ -227,7 +227,7 @@ uint32_t ext4_bg_num_gdb(struct ext4_sblock *s, uint32_t group)
 	uint32_t metagroup = group / dsc_per_block;
 
 	if (!ext4_sb_has_feature_incompatible(s,
-					      EXT4_FEATURE_INCOMPAT_META_BG) ||
+					      EXT4_FINCOM_META_BG) ||
 	    metagroup < first_meta_bg)
 		return ext4_bg_num_gdb_nometa(s, group);
 
@@ -244,7 +244,7 @@ uint32_t ext4_num_base_meta_clusters(struct ext4_sblock *s,
 	num = ext4_sb_is_super_in_bg(s, block_group);
 
 	if (!ext4_sb_has_feature_incompatible(s,
-					      EXT4_FEATURE_INCOMPAT_META_BG) ||
+					      EXT4_FINCOM_META_BG) ||
 	    block_group < ext4_sb_first_meta_bg(s) * dsc_per_block) {
 		if (num) {
 			num += ext4_bg_num_gdb(s, block_group);

@@ -217,30 +217,30 @@ struct ext4_sblock {
 /*
  * Incompatible features
  */
-#define EXT4_FEATURE_INCOMPAT_COMPRESSION 0x0001
-#define EXT4_FEATURE_INCOMPAT_FILETYPE 0x0002
-#define EXT4_FEATURE_INCOMPAT_RECOVER 0x0004     /* Needs recovery */
-#define EXT4_FEATURE_INCOMPAT_JOURNAL_DEV 0x0008 /* Journal device */
-#define EXT4_FEATURE_INCOMPAT_META_BG 0x0010
-#define EXT4_FEATURE_INCOMPAT_EXTENTS 0x0040 /* extents support */
-#define EXT4_FEATURE_INCOMPAT_64BIT 0x0080
-#define EXT4_FEATURE_INCOMPAT_MMP 0x0100
-#define EXT4_FEATURE_INCOMPAT_FLEX_BG 0x0200
-#define EXT4_FEATURE_INCOMPAT_EA_INODE 0x0400	 /* EA in inode */
-#define EXT4_FEATURE_INCOMPAT_DIRDATA 0x1000	  /* data in dirent */
-#define EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM 0x2000 /* use crc32c for bg */
-#define EXT4_FEATURE_INCOMPAT_LARGEDIR 0x4000	 /* >2GB or 3-lvl htree */
-#define EXT4_FEATURE_INCOMPAT_INLINE_DATA 0x8000      /* data in inode */
+#define EXT4_FINCOM_COMPRESSION 0x0001
+#define EXT4_FINCOM_FILETYPE 0x0002
+#define EXT4_FINCOM_RECOVER 0x0004     /* Needs recovery */
+#define EXT4_FINCOM_JOURNAL_DEV 0x0008 /* Journal device */
+#define EXT4_FINCOM_META_BG 0x0010
+#define EXT4_FINCOM_EXTENTS 0x0040 /* extents support */
+#define EXT4_FINCOM_64BIT 0x0080
+#define EXT4_FINCOM_MMP 0x0100
+#define EXT4_FINCOM_FLEX_BG 0x0200
+#define EXT4_FINCOM_EA_INODE 0x0400	 /* EA in inode */
+#define EXT4_FINCOM_DIRDATA 0x1000	  /* data in dirent */
+#define EXT4_FINCOM_BG_USE_META_CSUM 0x2000 /* use crc32c for bg */
+#define EXT4_FINCOM_LARGEDIR 0x4000	 /* >2GB or 3-lvl htree */
+#define EXT4_FINCOM_INLINE_DATA 0x8000      /* data in inode */
 
 /*
  * EXT2 supported feature set
  */
 #define EXT2_FEATURE_COMPAT_SUPP 0x0000
 
-#define EXT2_FEATURE_INCOMPAT_SUPP                                             \
-	(EXT4_FEATURE_INCOMPAT_FILETYPE | EXT4_FEATURE_INCOMPAT_META_BG)
+#define EXT2_FEATURE_INCOMPAT_SUPP                                   \
+	(EXT4_FINCOM_FILETYPE | EXT4_FINCOM_META_BG)
 
-#define EXT2_FEATURE_RO_COMPAT_SUPP                                            \
+#define EXT2_FEATURE_RO_COMPAT_SUPP                                  \
 	(EXT4_FRO_COM_SPARSE_SUPER |                                 \
 	 EXT4_FRO_COM_LARGE_FILE | EXT4_FRO_COM_BTREE_DIR)
 
@@ -249,11 +249,11 @@ struct ext4_sblock {
  */
 #define EXT3_FEATURE_COMPAT_SUPP (EXT4_FCOM_DIR_INDEX)
 
-#define EXT3_FEATURE_INCOMPAT_SUPP                                             \
-	(EXT4_FEATURE_INCOMPAT_FILETYPE | EXT4_FEATURE_INCOMPAT_META_BG)
+#define EXT3_FEATURE_INCOMPAT_SUPP                            \
+	(EXT4_FINCOM_FILETYPE | EXT4_FINCOM_META_BG)
 
-#define EXT3_FEATURE_RO_COMPAT_SUPP                                            \
-	(EXT4_FRO_COM_SPARSE_SUPER |                                 \
+#define EXT3_FEATURE_RO_COMPAT_SUPP                           \
+	(EXT4_FRO_COM_SPARSE_SUPER |                          \
 	 EXT4_FRO_COM_LARGE_FILE | EXT4_FRO_COM_BTREE_DIR)
 
 /*
@@ -261,17 +261,17 @@ struct ext4_sblock {
  */
 #define EXT4_FEATURE_COMPAT_SUPP (EXT4_FCOM_DIR_INDEX)
 
-#define EXT4_FEATURE_INCOMPAT_SUPP                                             \
-	(EXT4_FEATURE_INCOMPAT_FILETYPE | EXT4_FEATURE_INCOMPAT_META_BG |      \
-	 EXT4_FEATURE_INCOMPAT_EXTENTS | EXT4_FEATURE_INCOMPAT_FLEX_BG |       \
-	 EXT4_FEATURE_INCOMPAT_64BIT)
+#define EXT4_FEATURE_INCOMPAT_SUPP                         \
+	(EXT4_FINCOM_FILETYPE | EXT4_FINCOM_META_BG |      \
+	 EXT4_FINCOM_EXTENTS | EXT4_FINCOM_FLEX_BG |       \
+	 EXT4_FINCOM_64BIT)
 
-#define EXT4_FEATURE_RO_COMPAT_SUPP                                            \
-	(EXT4_FRO_COM_SPARSE_SUPER |                                 \
-	 EXT4_FRO_COM_METADATA_CSUM |                                 \
+#define EXT4_FEATURE_RO_COMPAT_SUPP                        \
+	(EXT4_FRO_COM_SPARSE_SUPER |                       \
+	 EXT4_FRO_COM_METADATA_CSUM |                      \
 	 EXT4_FRO_COM_LARGE_FILE | EXT4_FRO_COM_GDT_CSUM | \
-	 EXT4_FRO_COM_DIR_NLINK |                                    \
-	 EXT4_FRO_COM_EXTRA_ISIZE |                                  \
+	 EXT4_FRO_COM_DIR_NLINK |                          \
+	 EXT4_FRO_COM_EXTRA_ISIZE |                        \
 	 EXT4_FRO_COM_BTREE_DIR | EXT4_FRO_COM_HUGE_FILE)
 
 /*Ignored features:
@@ -279,18 +279,17 @@ struct ext4_sblock {
  *           (probably won't be ever...)
  * MMP - multi-mout protection (impossible scenario)
  * */
-#define FEATURE_INCOMPAT_IGNORED                                               \
-	EXT4_FEATURE_INCOMPAT_RECOVER | EXT4_FEATURE_INCOMPAT_MMP
+#define FEATURE_INCOMPAT_IGNORED                          \
+	EXT4_FINCOM_RECOVER | EXT4_FINCOM_MMP
 
 #if 0
 /*TODO: Features incompatible to implement*/
 #define EXT4_FEATURE_INCOMPAT_SUPP
-                     (EXT4_FEATURE_INCOMPAT_INLINE_DATA)
+                     (EXT4_FINCOM_INLINE_DATA)
 
 /*TODO: Features read only to implement*/
 #define EXT4_FEATURE_RO_COMPAT_SUPP
                      EXT4_FRO_COM_BIGALLOC |\
-                     EXT4_FRO_COM_METADATA_CSUM|\
                      EXT4_FRO_COM_QUOTA)
 #endif
 

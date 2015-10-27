@@ -197,7 +197,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t first
 	    ext4_balloc_get_bgid_of_block(sb, first + count - 1);
 
 	if (!ext4_sb_has_feature_incompatible(sb,
-					      EXT4_FEATURE_INCOMPAT_FLEX_BG)) {
+					      EXT4_FINCOM_FLEX_BG)) {
 		/*It is not possible without flex_bg that blocks are continuous
 		 * and and last block belongs to other bg.*/
 		ext4_assert(block_group_first == ext4_balloc_get_bgid_of_block(

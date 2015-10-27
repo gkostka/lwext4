@@ -128,33 +128,33 @@ int ext4_fs_fini(struct ext4_fs *fs)
 
 static void ext4_fs_debug_features_inc(uint32_t features_incompatible)
 {
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_COMPRESSION)
+	if (features_incompatible & EXT4_FINCOM_COMPRESSION)
 		ext4_dbg(DEBUG_FS, DBG_NONE "compression\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_FILETYPE)
+	if (features_incompatible & EXT4_FINCOM_FILETYPE)
 		ext4_dbg(DEBUG_FS, DBG_NONE "filetype\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_RECOVER)
+	if (features_incompatible & EXT4_FINCOM_RECOVER)
 		ext4_dbg(DEBUG_FS, DBG_NONE "recover\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_JOURNAL_DEV)
+	if (features_incompatible & EXT4_FINCOM_JOURNAL_DEV)
 		ext4_dbg(DEBUG_FS, DBG_NONE "journal_dev\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_META_BG)
+	if (features_incompatible & EXT4_FINCOM_META_BG)
 		ext4_dbg(DEBUG_FS, DBG_NONE "meta_bg\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_EXTENTS)
+	if (features_incompatible & EXT4_FINCOM_EXTENTS)
 		ext4_dbg(DEBUG_FS, DBG_NONE "extents\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_64BIT)
+	if (features_incompatible & EXT4_FINCOM_64BIT)
 		ext4_dbg(DEBUG_FS, DBG_NONE "64bit\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_MMP)
+	if (features_incompatible & EXT4_FINCOM_MMP)
 		ext4_dbg(DEBUG_FS, DBG_NONE "mnp\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_FLEX_BG)
+	if (features_incompatible & EXT4_FINCOM_FLEX_BG)
 		ext4_dbg(DEBUG_FS, DBG_NONE "flex_bg\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_EA_INODE)
+	if (features_incompatible & EXT4_FINCOM_EA_INODE)
 		ext4_dbg(DEBUG_FS, DBG_NONE "ea_inode\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_DIRDATA)
+	if (features_incompatible & EXT4_FINCOM_DIRDATA)
 		ext4_dbg(DEBUG_FS, DBG_NONE "dirdata\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM)
+	if (features_incompatible & EXT4_FINCOM_BG_USE_META_CSUM)
 		ext4_dbg(DEBUG_FS, DBG_NONE "meta_csum\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_LARGEDIR)
+	if (features_incompatible & EXT4_FINCOM_LARGEDIR)
 		ext4_dbg(DEBUG_FS, DBG_NONE "largedir\n");
-	if (features_incompatible & EXT4_FEATURE_INCOMPAT_INLINE_DATA)
+	if (features_incompatible & EXT4_FINCOM_INLINE_DATA)
 		ext4_dbg(DEBUG_FS, DBG_NONE "inline_data\n");
 }
 static void ext4_fs_debug_features_comp(uint32_t features_compatible)
@@ -301,7 +301,7 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 
 	bool flex_bg =
 		ext4_sb_has_feature_incompatible(&bg_ref->fs->sb,
-						 EXT4_FEATURE_INCOMPAT_FLEX_BG);
+						 EXT4_FINCOM_FLEX_BG);
 
 	uint32_t inode_table_bcnt = inodes_per_group * inode_size / block_size;
 
@@ -315,7 +315,7 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 
 	bit_max = ext4_sb_is_super_in_bg(&bg_ref->fs->sb, bg_ref->index);
 	if (!ext4_sb_has_feature_incompatible(&bg_ref->fs->sb,
-					      EXT4_FEATURE_INCOMPAT_META_BG) ||
+					      EXT4_FINCOM_META_BG) ||
 			bg_ref->index < ext4_sb_first_meta_bg(&bg_ref->fs->sb) *
 			dsc_per_block) {
 		if (bit_max) {
@@ -482,7 +482,7 @@ static ext4_fsblk_t ext4_fs_get_descriptor_block(struct ext4_sblock *s,
 	first_meta_bg = ext4_sb_first_meta_bg(s);
 
 	if (!ext4_sb_has_feature_incompatible(s,
-					      EXT4_FEATURE_INCOMPAT_META_BG) ||
+					      EXT4_FINCOM_META_BG) ||
 	    dsc_id < first_meta_bg)
 		return ext4_get32(s, first_data_block) + dsc_id + 1;
 
@@ -622,7 +622,7 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
 
 		/* Checksum of the rest of block group descriptor */
 		if ((ext4_sb_has_feature_incompatible(
-			sb, EXT4_FEATURE_INCOMPAT_64BIT)) &&
+			sb, EXT4_FINCOM_64BIT)) &&
 		    (offset < ext4_sb_get_desc_size(sb)))
 
 			crc = ext4_bg_crc16(crc, ((uint8_t *)bg) + offset,
@@ -779,7 +779,7 @@ void ext4_fs_inode_blocks_init(struct ext4_fs *fs, struct ext4_inode_ref *inode_
 #if CONFIG_EXTENT_ENABLE
 	/* Initialize extents if needed */
 	if (ext4_sb_has_feature_incompatible(&fs->sb,
-				EXT4_FEATURE_INCOMPAT_EXTENTS)) {
+				EXT4_FINCOM_EXTENTS)) {
 		ext4_inode_set_flag(inode, EXT4_INODE_FLAG_EXTENTS);
 
 		/* Initialize extent root header */
@@ -890,7 +890,7 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
 #if CONFIG_EXTENT_ENABLE
 	/* For extents must be data block destroyed by other way */
 	if ((ext4_sb_has_feature_incompatible(&fs->sb,
-					      EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
+					      EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 		/* Data structures are released during truncate operation... */
 		goto finish;
@@ -1038,7 +1038,7 @@ static int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
 	 */
 	ext4_assert(!(
 	    ext4_sb_has_feature_incompatible(&fs->sb,
-					     EXT4_FEATURE_INCOMPAT_EXTENTS) &&
+					     EXT4_FINCOM_EXTENTS) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))));
 
 	struct ext4_inode *inode = inode_ref->inode;
@@ -1167,7 +1167,7 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 	uint32_t diff_blocks_count = old_blocks_count - new_blocks_count;
 #if CONFIG_EXTENT_ENABLE
 	if ((ext4_sb_has_feature_incompatible(sb,
-					      EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
+					      EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 
 		/* Extents require special operation */
@@ -1306,7 +1306,7 @@ static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 #if CONFIG_EXTENT_ENABLE
 	/* Handle i-node using extents */
 	if ((ext4_sb_has_feature_incompatible(&fs->sb,
-					      EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
+					      EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 
 		ext4_fsblk_t current_fsblk;
@@ -1429,7 +1429,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 #if CONFIG_EXTENT_ENABLE
 	/* Handle inode using extents */
 	if ((ext4_sb_has_feature_incompatible(&fs->sb,
-					      EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
+					      EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 		/* Not reachable */
 		return ENOTSUP;
@@ -1601,7 +1601,7 @@ int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
 #if CONFIG_EXTENT_ENABLE
 	/* Handle extents separately */
 	if ((ext4_sb_has_feature_incompatible(&inode_ref->fs->sb,
-					      EXT4_FEATURE_INCOMPAT_EXTENTS)) &&
+					      EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 		int rc;
 		ext4_fsblk_t current_fsblk;
