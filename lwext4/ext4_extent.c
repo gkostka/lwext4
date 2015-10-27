@@ -43,6 +43,7 @@
 #include "ext4_extent.h"
 #include "ext4_inode.h"
 #include "ext4_super.h"
+#include "ext4_crc32c.h"
 #include "ext4_blockdev.h"
 #include "ext4_balloc.h"
 #include "ext4_fs.h"
@@ -149,6 +150,18 @@ static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
 				EXT4_EXTENT_TAIL_OFFSET(eh));
 	}
 	return checksum;
+}
+
+static struct ext4_extent_header *ext_block_hdr(struct ext4_block *block)
+{
+	return (struct ext4_extent_header *)block->data;
+}
+
+static struct ext4_extent_tail *
+find_ext4_extent_tail(struct ext4_extent_header *eh)
+{
+	return (struct ext4_extent_tail *)(((char *)eh) +
+					   EXT4_EXTENT_TAIL_OFFSET(eh));
 }
 
 /*
@@ -465,7 +478,7 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 	}
 
 	ext4_extent_header_set_entries_count(path_ptr->header, entries);
-	ext4_extent_block_csum_set(inode_ref, path_ptr->header);
+	ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
 	path_ptr->block.dirty = true;
 
 	/* If leaf node is empty, parent entry must be modified */
@@ -507,7 +520,7 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 		}
 
 		ext4_extent_header_set_entries_count(path_ptr->header, entries);
-		ext4_extent_block_csum_set(inode_ref, path_ptr->header);
+		ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
 		path_ptr->block.dirty = true;
 
 		/* Free the node if it is empty */
@@ -635,7 +648,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 						     path_ptr->depth);
 			ext4_extent_header_set_generation(path_ptr->header, 0);
 
-			ext4_extent_block_csum_set(inode_ref, path_ptr->header);
+			ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
 			path_ptr->block.dirty = true;
 
 			/* Jump to the preceding item */
@@ -661,7 +674,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 
 			ext4_extent_header_set_entries_count(path_ptr->header,
 							     entries + 1);
-			ext4_extent_block_csum_set(inode_ref, path_ptr->header);
+			ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
 			path_ptr->block.dirty = true;
 
 			/* No more splitting needed */
@@ -744,7 +757,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 		ext4_extent_header_set_max_entries_count(old_root->header,
 							 limit);
 
-		ext4_extent_block_csum_set(inode_ref, ext_block_hdr(old_root->block));
+		ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&old_root->block));
 		old_root->block.dirty = true;
 
 		/* Re-initialize new root metadata */
@@ -859,7 +872,7 @@ ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 				inode_ref->dirty = true;
 			}
 
-			ext4_extent_block_csum_set(inode_ref, ext_block_hdr(path_ptr->block));
+			ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
 			path_ptr->block.dirty = true;
 
 			goto finish;
@@ -901,7 +914,7 @@ ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 				inode_ref->dirty = true;
 			}
 
-			ext4_extent_block_csum_set(inode_ref, ext_block_hdr(path_ptr->block));
+			ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
 			path_ptr->block.dirty = true;
 
 			goto finish;
@@ -942,7 +955,7 @@ append_extent:
 		inode_ref->dirty = true;
 	}
 
-	ext4_extent_block_csum_set(inode_ref, ext_block_hdr(path_ptr->block));
+	ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
 	path_ptr->block.dirty = true;
 
 finish:
