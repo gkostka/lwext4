@@ -889,6 +889,9 @@ struct ext4_xattr_ref {
 
 /*****************************************************************************/
 
+#define EXT4_CRC32_INIT (0xFFFFFFFFUL)
+
+/*****************************************************************************/
 #ifdef CONFIG_BIG_ENDIAN
 static inline uint64_t to_le64(uint64_t n)
 {

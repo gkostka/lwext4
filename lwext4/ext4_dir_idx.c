@@ -224,7 +224,8 @@ ext4_dir_dx_checksum(struct ext4_inode_ref *inode_ref,
 		orig_checksum = t->checksum;
 		t->checksum = 0;
 		/* First calculate crc32 checksum against fs uuid */
-		checksum = ext4_crc32c(~0, sb->uuid, sizeof(sb->uuid));
+		checksum = ext4_crc32c(EXT4_CRC32_INIT, sb->uuid,
+				sizeof(sb->uuid));
 		/* Then calculate crc32 checksum against inode number
 		 * and inode generation */
 		checksum = ext4_crc32c(checksum, &ino_index,
