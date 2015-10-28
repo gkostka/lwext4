@@ -129,6 +129,34 @@ void ext4_ialloc_set_bitmap_csum(struct ext4_sblock *sb,
 
 }
 
+#if CONFIG_META_CSUM_ENABLE
+static bool
+ext4_ialloc_verify_bitmap_csum(struct ext4_sblock *sb,
+			       struct ext4_bgroup *bg,
+			       void *bitmap __unused)
+{
+
+	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
+		return true;
+
+	int desc_size = ext4_sb_get_desc_size(sb);
+	uint32_t checksum = ext4_ialloc_bitmap_csum(sb, bitmap);
+	uint16_t lo_checksum = to_le16(checksum & 0xFFFF),
+		 hi_checksum = to_le16(checksum >> 16);
+	
+	if (bg->inode_bitmap_csum_lo != lo_checksum)
+		return false;
+
+	if (desc_size == EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE)
+		if (bg->inode_bitmap_csum_hi != hi_checksum)
+			return false;
+
+	return true;
+}
+#else
+#define ext4_balloc_verify_bitmap_csum(...) true
+#endif
+
 int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
 {
 	struct ext4_sblock *sb = &fs->sb;
@@ -149,6 +177,15 @@ int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
 	rc = ext4_block_get(fs->bdev, &bitmap_block, bitmap_block_addr);
 	if (rc != EOK)
 		return rc;
+
+	if (!ext4_ialloc_verify_bitmap_csum(sb,
+			       bg_ref.block_group,
+			       bitmap_block.data)) {
+		ext4_dbg(DEBUG_IALLOC,
+			DBG_WARN "Bitmap checksum failed."
+			"Group: %" PRIu32"\n",
+			bg_ref.index);
+	}
 
 	/* Free i-node in the bitmap */
 	uint32_t index_in_group = ext4_ialloc_inode2index_in_group(sb, index);
@@ -240,6 +277,15 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir)
 			if (rc != EOK) {
 				ext4_fs_put_block_group_ref(&bg_ref);
 				return rc;
+			}
+
+			if (!ext4_ialloc_verify_bitmap_csum(sb,
+					       bg_ref.block_group,
+					       bitmap_block.data)) {
+				ext4_dbg(DEBUG_IALLOC,
+					DBG_WARN "Bitmap checksum failed."
+					"Group: %" PRIu32"\n",
+					bg_ref.index);
 			}
 
 			/* Try to allocate i-node in the bitmap */
