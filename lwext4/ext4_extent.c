@@ -53,6 +53,67 @@
 
 #if !CONFIG_EXTENT_FULL
 
+static struct ext4_extent_header *ext_inode_hdr(struct ext4_inode *inode)
+{
+	return (struct ext4_extent_header *)inode->blocks;
+}
+
+static uint16_t ext_depth(struct ext4_inode *inode)
+{
+	return to_le16(ext_inode_hdr(inode)->depth);
+}
+
+static struct ext4_extent_tail *
+find_ext4_extent_tail(struct ext4_extent_header *eh)
+{
+	return (struct ext4_extent_tail *)(((char *)eh) +
+					   EXT4_EXTENT_TAIL_OFFSET(eh));
+}
+
+static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
+				    struct ext4_extent_header *eh)
+{
+	uint32_t checksum = 0;
+	struct ext4_sblock *sb = &inode_ref->fs->sb;
+
+	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
+		uint32_t ino_index = to_le32(inode_ref->index);
+		uint32_t ino_gen =
+			to_le32(ext4_inode_get_generation(inode_ref->inode));
+		/* First calculate crc32 checksum against fs uuid */
+		checksum = ext4_crc32c(EXT4_CRC32_INIT, sb->uuid,
+				sizeof(sb->uuid));
+		/* Then calculate crc32 checksum against inode number
+		 * and inode generation */
+		checksum = ext4_crc32c(checksum, &ino_index,
+				     sizeof(ino_index));
+		checksum = ext4_crc32c(checksum, &ino_gen,
+				     sizeof(ino_gen));
+		/* Finally calculate crc32 checksum against 
+		 * the entire extent block up to the checksum field */
+		checksum = ext4_crc32c(checksum, eh,
+				EXT4_EXTENT_TAIL_OFFSET(eh));
+	}
+	return checksum;
+}
+
+/*
+ * BIG FAT NOTES:
+ *       Currently we do not verify the checksum of extent
+ *       (only the case in ext4_extent.c)
+ */
+
+static void ext4_extent_block_csum_set(struct ext4_inode_ref *inode_ref,
+				       struct ext4_extent_header *eh)
+{
+	struct ext4_extent_tail *tail;
+
+	if (to_le16(eh->depth) < ext_depth(inode_ref->inode)) {
+		tail = find_ext4_extent_tail(eh);
+		tail->et_checksum = to_le32(ext4_ext_block_csum(inode_ref, eh));
+	}
+}
+
 /**@brief Binary search in extent index node.
  * @param header Extent header of index node
  * @param index  Output value - found index will be set here
@@ -123,60 +184,6 @@ static void ext4_extent_binsearch(struct ext4_extent_header *header,
 
 	/* Set output value */
 	*extent = l - 1;
-}
-
-static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
-				    struct ext4_extent_header *eh)
-{
-	uint32_t checksum = 0;
-	struct ext4_sblock *sb = &inode_ref->fs->sb;
-
-	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
-		uint32_t ino_index = to_le32(inode_ref->index);
-		uint32_t ino_gen =
-			to_le32(ext4_inode_get_generation(inode_ref->inode));
-		/* First calculate crc32 checksum against fs uuid */
-		checksum = ext4_crc32c(EXT4_CRC32_INIT, sb->uuid,
-				sizeof(sb->uuid));
-		/* Then calculate crc32 checksum against inode number
-		 * and inode generation */
-		checksum = ext4_crc32c(checksum, &ino_index,
-				     sizeof(ino_index));
-		checksum = ext4_crc32c(checksum, &ino_gen,
-				     sizeof(ino_gen));
-		/* Finally calculate crc32 checksum against 
-		 * the entire extent block up to the checksum field */
-		checksum = ext4_crc32c(checksum, eh,
-				EXT4_EXTENT_TAIL_OFFSET(eh));
-	}
-	return checksum;
-}
-
-static struct ext4_extent_header *ext_block_hdr(struct ext4_block *block)
-{
-	return (struct ext4_extent_header *)block->data;
-}
-
-static struct ext4_extent_tail *
-find_ext4_extent_tail(struct ext4_extent_header *eh)
-{
-	return (struct ext4_extent_tail *)(((char *)eh) +
-					   EXT4_EXTENT_TAIL_OFFSET(eh));
-}
-
-/*
- * BIG FAT NOTES:
- *       Currently we do not verify the checksum of extent
- *       (only the case in ext4_extent.c)
- */
-
-static void ext4_extent_block_csum_set(struct ext4_inode_ref *inode_ref,
-				       struct ext4_extent_header *eh)
-{
-	struct ext4_extent_tail *tail;
-
-	tail = find_ext4_extent_tail(eh);
-	tail->et_checksum = to_le32(ext4_ext_block_csum(inode_ref, eh));
 }
 
 /**@brief Get physical block in the extent tree by logical block number.
@@ -478,7 +485,7 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 	}
 
 	ext4_extent_header_set_entries_count(path_ptr->header, entries);
-	ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
+	ext4_extent_block_csum_set(inode_ref, path_ptr->header);
 	path_ptr->block.dirty = true;
 
 	/* If leaf node is empty, parent entry must be modified */
@@ -520,7 +527,7 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 		}
 
 		ext4_extent_header_set_entries_count(path_ptr->header, entries);
-		ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
+		ext4_extent_block_csum_set(inode_ref, path_ptr->header);
 		path_ptr->block.dirty = true;
 
 		/* Free the node if it is empty */
@@ -648,7 +655,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 						     path_ptr->depth);
 			ext4_extent_header_set_generation(path_ptr->header, 0);
 
-			ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
+			ext4_extent_block_csum_set(inode_ref, path_ptr->header);
 			path_ptr->block.dirty = true;
 
 			/* Jump to the preceding item */
@@ -674,7 +681,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 
 			ext4_extent_header_set_entries_count(path_ptr->header,
 							     entries + 1);
-			ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
+			ext4_extent_block_csum_set(inode_ref, path_ptr->header);
 			path_ptr->block.dirty = true;
 
 			/* No more splitting needed */
@@ -757,7 +764,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 		ext4_extent_header_set_max_entries_count(old_root->header,
 							 limit);
 
-		ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&old_root->block));
+		ext4_extent_block_csum_set(inode_ref, old_root->header);
 		old_root->block.dirty = true;
 
 		/* Re-initialize new root metadata */
@@ -872,7 +879,7 @@ ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 				inode_ref->dirty = true;
 			}
 
-			ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
+			ext4_extent_block_csum_set(inode_ref, path_ptr->header);
 			path_ptr->block.dirty = true;
 
 			goto finish;
@@ -914,7 +921,7 @@ ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 				inode_ref->dirty = true;
 			}
 
-			ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
+			ext4_extent_block_csum_set(inode_ref, path_ptr->header);
 			path_ptr->block.dirty = true;
 
 			goto finish;
@@ -955,7 +962,7 @@ append_extent:
 		inode_ref->dirty = true;
 	}
 
-	ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&path_ptr->block));
+	ext4_extent_block_csum_set(inode_ref, path_ptr->header);
 	path_ptr->block.dirty = true;
 
 finish:
