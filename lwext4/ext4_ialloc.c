@@ -152,7 +152,7 @@ ext4_ialloc_verify_bitmap_csum(struct ext4_sblock *sb,
 	return true;
 }
 #else
-#define ext4_balloc_verify_bitmap_csum(...) true
+#define ext4_ialloc_verify_bitmap_csum(...) true
 #endif
 
 int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
