@@ -101,22 +101,43 @@ static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
 #define ext4_ext_block_csum(...) 0
 #endif
 
-/*
- * BIG FAT NOTES:
- *       Currently we do not verify the checksum of extent
- *       (only the case in ext4_extent.c)
- */
-
 static void ext4_extent_block_csum_set(struct ext4_inode_ref *inode_ref,
 				       struct ext4_extent_header *eh)
 {
 	struct ext4_extent_tail *tail;
+	if (!ext4_sb_feature_ro_com(&inode_ref->fs->sb,
+				    EXT4_FRO_COM_METADATA_CSUM))
+		return;
 
 	if (to_le16(eh->depth) < ext_depth(inode_ref->inode)) {
 		tail = find_ext4_extent_tail(eh);
 		tail->et_checksum = to_le32(ext4_ext_block_csum(inode_ref, eh));
 	}
 }
+
+#if CONFIG_META_CSUM_ENABLE
+static bool
+ext4_extent_verify_block_csum(struct ext4_inode_ref *inode_ref,
+			      struct ext4_block *block)
+{
+	struct ext4_extent_header *eh;
+	struct ext4_extent_tail *tail;
+	eh = (struct ext4_extent_header *)block->data;
+	if (!ext4_sb_feature_ro_com(&inode_ref->fs->sb,
+				    EXT4_FRO_COM_METADATA_CSUM))
+		return true;
+
+	if (to_le16(eh->depth) < ext_depth(inode_ref->inode)) {
+		tail = find_ext4_extent_tail(eh);
+		return tail->et_checksum ==
+			to_le32(ext4_ext_block_csum(inode_ref, eh));
+	}
+
+	return true;
+}
+#else
+#define ext4_extent_verify_block_csum(...) true
+#endif
 
 /**@brief Binary search in extent index node.
  * @param header Extent header of index node
@@ -239,6 +260,13 @@ ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
 		int rc = ext4_block_get(inode_ref->fs->bdev, &block, child);
 		if (rc != EOK)
 			return rc;
+		if (!ext4_extent_verify_block_csum(inode_ref,
+						   &block)) {
+			ext4_dbg(DEBUG_EXTENT,
+				 DBG_WARN "Extent block checksum failed."
+				 "Blocknr: %" PRIu64"\n",
+				 child);
+		}
 
 		header = (struct ext4_extent_header *)block.data;
 	}
@@ -318,6 +346,14 @@ static int ext4_extent_find_extent(struct ext4_inode_ref *inode_ref,
 		if (rc != EOK)
 			goto cleanup;
 
+		if (!ext4_extent_verify_block_csum(inode_ref,
+						   &block)) {
+			ext4_dbg(DEBUG_EXTENT,
+				 DBG_WARN "Extent block checksum failed."
+				 "Blocknr: %" PRIu64"\n",
+				 fblock);
+		}
+
 		pos++;
 
 		eh = (struct ext4_extent_header *)block.data;
@@ -386,6 +422,14 @@ static int ext4_extent_release_branch(struct ext4_inode_ref *inode_ref,
 	int rc = ext4_block_get(inode_ref->fs->bdev, &block, fblock);
 	if (rc != EOK)
 		return rc;
+
+	if (!ext4_extent_verify_block_csum(inode_ref,
+				&block)) {
+		ext4_dbg(DEBUG_EXTENT,
+			 DBG_WARN "Extent block checksum failed."
+			 "Blocknr: %" PRIu64"\n",
+			 fblock);
+	}
 
 	struct ext4_extent_header *header = (void *)block.data;
 
@@ -613,6 +657,14 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 				return rc;
 			}
 
+			if (!ext4_extent_verify_block_csum(inode_ref,
+						&block)) {
+				ext4_dbg(DEBUG_EXTENT,
+					 DBG_WARN "Extent block checksum failed."
+					 "Blocknr: %" PRIu64"\n",
+					 fblock);
+			}
+
 			/* Put back not modified old block */
 			rc = ext4_block_set(inode_ref->fs->bdev,
 					    &path_ptr->block);
@@ -714,6 +766,14 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 		rc = ext4_block_get(inode_ref->fs->bdev, &block, new_fblock);
 		if (rc != EOK)
 			return rc;
+
+		if (!ext4_extent_verify_block_csum(inode_ref,
+					&block)) {
+			ext4_dbg(DEBUG_EXTENT,
+				 DBG_WARN "Extent block checksum failed."
+				 "Blocknr: %" PRIu64"\n",
+				 new_fblock);
+		}
 
 		/* Initialize newly allocated block */
 		memset(block.data, 0, block_size);
