@@ -108,6 +108,9 @@ void ext4_balloc_set_bitmap_csum(struct ext4_sblock *sb,
 	uint32_t checksum = ext4_balloc_bitmap_csum(sb, bitmap);
 	uint16_t lo_checksum = to_le16(checksum & 0xFFFF),
 		 hi_checksum = to_le16(checksum >> 16);
+
+	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
+		return;
 	
 	/* See if we need to assign a 32bit checksum */
 	bg->block_bitmap_csum_lo = lo_checksum;
@@ -122,14 +125,13 @@ ext4_balloc_verify_bitmap_csum(struct ext4_sblock *sb,
 			       struct ext4_bgroup *bg,
 			       void *bitmap __unused)
 {
-
-	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
-		return true;
-
 	int desc_size = ext4_sb_get_desc_size(sb);
 	uint32_t checksum = ext4_balloc_bitmap_csum(sb, bitmap);
 	uint16_t lo_checksum = to_le16(checksum & 0xFFFF),
 		 hi_checksum = to_le16(checksum >> 16);
+
+	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
+		return true;
 	
 	if (bg->block_bitmap_csum_lo != lo_checksum)
 		return false;
