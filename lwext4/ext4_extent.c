@@ -70,6 +70,7 @@ find_ext4_extent_tail(struct ext4_extent_header *eh)
 					   EXT4_EXTENT_TAIL_OFFSET(eh));
 }
 
+#if CONFIG_META_CSUM_ENABLE
 static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
 				    struct ext4_extent_header *eh)
 {
@@ -96,6 +97,9 @@ static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
 	}
 	return checksum;
 }
+#else
+#define ext4_ext_block_csum(...) 0
+#endif
 
 /*
  * BIG FAT NOTES:
