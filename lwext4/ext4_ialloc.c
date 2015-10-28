@@ -108,11 +108,6 @@ static uint32_t ext4_ialloc_bitmap_csum(struct ext4_sblock *sb,
 #define ext4_ialloc_bitmap_csum(...) 0
 #endif
 
-/*
- * BIG FAT NOTES:
- *       Currently we do not verify the checksum of bitmaps.
- */
-
 void ext4_ialloc_set_bitmap_csum(struct ext4_sblock *sb,
 				 struct ext4_bgroup *bg,
 				 void *bitmap __unused)
