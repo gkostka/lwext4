@@ -392,6 +392,7 @@ static int ext4_ext_check(struct ext4_inode_ref *inode_ref,
 			  ext4_fsblk_t pblk __unused)
 {
 	struct ext4_extent_tail *tail;
+	struct ext4_sblock *sb = &inode_ref->fs->sb;
 	const char *error_msg;
 	(void)error_msg;
 
@@ -413,10 +414,13 @@ static int ext4_ext_check(struct ext4_inode_ref *inode_ref,
 	}
 
 	tail = find_ext4_extent_tail(eh);
-	struct ext4_sblock *sb = &inode_ref->fs->sb;
 	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		if (tail->et_checksum != to_le32(ext4_ext_block_csum(inode_ref, eh))) {
-			/* FIXME: Warning: extent checksum damaged? */
+			ext4_dbg(DEBUG_EXTENT,
+				 DBG_WARN "Extent block checksum failed."
+				 "Blocknr: %" PRIu64"\n",
+				 pblk);
+
 		}
 	}
 
