@@ -34,6 +34,7 @@
 #include <stdbool.h>
 #include <getopt.h>
 #include <time.h>
+#include <inttypes.h>
 #include <sys/time.h>
 
 #ifdef WIN32
@@ -450,16 +451,19 @@ int _mount_point_stats(char *p)
 		return rc;
 
 	if (verbose) {
-		printf("\tinodes_count = %d\n", stats.inodes_count);
-		printf("\tfree_inodes_count = %d\n", stats.free_inodes_count);
-		printf("\tblocks_count = %llu\n", stats.blocks_count);
-		printf("\tfree_blocks_count = %llu\n", stats.free_blocks_count);
-
-		printf("\tblock_size = %d\n", stats.block_size);
-		printf("\tblock_group_count = %d\n", stats.block_group_count);
-		printf("\tblocks_per_group = %d\n", stats.blocks_per_group);
-		printf("\tinodes_per_group = %d\n", stats.inodes_per_group);
-
+		printf("\tinodes_count = %" PRIu32"\n", stats.inodes_count);
+		printf("\tfree_inodes_count = %" PRIu32"\n",
+				stats.free_inodes_count);
+		printf("\tblocks_count = %" PRIu64"\n", stats.blocks_count);
+		printf("\tfree_blocks_count = %" PRIu64"\n",
+				stats.free_blocks_count);
+		printf("\tblock_size = %" PRIu32"\n", stats.block_size);
+		printf("\tblock_group_count = %" PRIu32"\n",
+				stats.block_group_count);
+		printf("\tblocks_per_group = %" PRIu32"\n",
+				stats.blocks_per_group);
+		printf("\tinodes_per_group = %" PRIu32"\n",
+				stats.inodes_per_group);
 		printf("\tvolume_name = %s\n", stats.volume_name);
 	}
 
@@ -598,7 +602,7 @@ int _fwrite(char *p)
 	int d;
 	int rc;
 
-	size_t len;
+	int len;
 	size_t wb;
 
 	if (sscanf(p, "%d %d %d %d", &fid, &d, &len, &d) != 4) {
@@ -1058,37 +1062,38 @@ int _stats_check(char *p)
 		if (verbose) {
 			printf("\tMount point stats error:\n");
 			printf("\tsaved_stats:\n");
-			printf("\tinodes_count = %d\n",
+			printf("\tinodes_count = %" PRIu32"\n",
 			       saved_stats.inodes_count);
-			printf("\tfree_inodes_count = %d\n",
+			printf("\tfree_inodes_count = %" PRIu32"\n",
 			       saved_stats.free_inodes_count);
-			printf("\tblocks_count = %llu\n",
+			printf("\tblocks_count = %" PRIu64"\n",
 			       saved_stats.blocks_count);
-			printf("\tfree_blocks_count = %llu\n",
+			printf("\tfree_blocks_count = %" PRIu64"\n",
 			       saved_stats.free_blocks_count);
-			printf("\tblock_size = %d\n", saved_stats.block_size);
-			printf("\tblock_group_count = %d\n",
+			printf("\tblock_size = %" PRIu32"\n",
+					saved_stats.block_size);
+			printf("\tblock_group_count = %" PRIu32"\n",
 			       saved_stats.block_group_count);
-			printf("\tblocks_per_group = %d\n",
+			printf("\tblocks_per_group = %" PRIu32"\n",
 			       saved_stats.blocks_per_group);
-			printf("\tinodes_per_group = %d\n",
+			printf("\tinodes_per_group = %" PRIu32"\n",
 			       saved_stats.inodes_per_group);
 			printf("\tvolume_name = %s\n", saved_stats.volume_name);
 			printf("\tactual_stats:\n");
-			printf("\tinodes_count = %d\n",
+			printf("\tinodes_count = %" PRIu32"\n",
 			       actual_stats.inodes_count);
-			printf("\tfree_inodes_count = %d\n",
+			printf("\tfree_inodes_count = %" PRIu32"\n",
 			       actual_stats.free_inodes_count);
-			printf("\tblocks_count = %llu\n",
+			printf("\tblocks_count = %" PRIu64"\n",
 			       actual_stats.blocks_count);
-			printf("\tfree_blocks_count = %llu\n",
+			printf("\tfree_blocks_count = %" PRIu64"\n",
 			       actual_stats.free_blocks_count);
 			printf("\tblock_size = %d\n", actual_stats.block_size);
-			printf("\tblock_group_count = %d\n",
+			printf("\tblock_group_count = %" PRIu32"\n",
 			       actual_stats.block_group_count);
-			printf("\tblocks_per_group = %d\n",
+			printf("\tblocks_per_group = %" PRIu32"\n",
 			       actual_stats.blocks_per_group);
-			printf("\tinodes_per_group = %d\n",
+			printf("\tinodes_per_group = %" PRIu32"\n",
 			       actual_stats.inodes_per_group);
 			printf("\tvolume_name = %s\n",
 			       actual_stats.volume_name);
