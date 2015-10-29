@@ -135,13 +135,14 @@ uint32_t ext4_dmask_get(void);
 /**@brief   Debug printf.*/
 #define ext4_dbg(m, ...)                                                       \
 	do {                                                                   \
-		int __line = __LINE__;					       \
 		if (m & ext4_dmask_get()) {                                    \
-			printf(ext4_dmask_id2str(m));			       \
-			printf("line: %d   ", __line);			       \
-			printf(__VA_ARGS__);              		       \
+			if (CONFIG_DEBUG_PREFIX) {                             \
+				printf(ext4_dmask_id2str(m));                  \
+				printf("l: %d   ", __LINE__);                  \
+			}                                                      \
+			printf(__VA_ARGS__);                                   \
 			fflush(stdout);                                        \
-		}							       \
+		}                                                              \
 	} while (0)
 #else
 #define ext4_dbg(m, ...) do { } while (0)
