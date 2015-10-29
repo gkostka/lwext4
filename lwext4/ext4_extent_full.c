@@ -1151,6 +1151,7 @@ static int ext4_ext_grow_indepth(struct ext4_inode_ref *inode_ref,
 		    to_le16(ext4_ext_space_block(inode_ref));
 
 	neh->magic = to_le16(EXT4_EXTENT_MAGIC);
+	ext4_extent_block_csum_set(inode_ref, neh);
 
 	/* Update top-level index: num,max,pointer */
 	neh = ext_inode_hdr(inode_ref->inode);
@@ -1165,7 +1166,6 @@ static int ext4_ext_grow_indepth(struct ext4_inode_ref *inode_ref,
 	}
 	neh->depth = to_le16(to_le16(neh->depth) + 1);
 
-	ext4_extent_block_csum_set(inode_ref, neh);
 	bh.dirty = true;
 	inode_ref->dirty = true;
 	ext4_block_set(inode_ref->fs->bdev, &bh);
