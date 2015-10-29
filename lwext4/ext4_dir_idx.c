@@ -345,6 +345,7 @@ ext4_dir_set_dx_checksum(struct ext4_inode_ref *inode_ref,
 	}
 }
 #else
+#define ext4_dir_dx_checksum_verify(...) true
 #define ext4_dir_set_dx_checksum(...)
 #endif
 
