@@ -137,7 +137,7 @@ uint32_t ext4_dmask_get(void);
 	do {                                                                   \
 		if (m & ext4_dmask_get()) {                                    \
 			if (CONFIG_DEBUG_PREFIX) {                             \
-				printf(ext4_dmask_id2str(m));                  \
+				printf("%s", ext4_dmask_id2str(m));            \
 				printf("l: %d   ", __LINE__);                  \
 			}                                                      \
 			printf(__VA_ARGS__);                                   \
