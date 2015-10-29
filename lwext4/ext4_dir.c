@@ -95,10 +95,11 @@ static uint32_t ext4_dir_checksum(struct ext4_inode_ref *inode_ref,
 #define ext4_dir_checksum(...) 0
 #endif
 
-__unused static bool
+bool
 ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
 			 struct ext4_directory_entry_ll *dirent)
 {
+#ifdef CONFIG_META_CSUM_ENABLE
 	struct ext4_directory_entry_tail *t;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
@@ -115,6 +116,7 @@ ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
 			return false;
 
 	}
+#endif
 	return true;
 }
 
@@ -217,7 +219,7 @@ static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
 	/* Compute next block address */
 	uint32_t block_size = ext4_sb_get_block_size(&it->inode_ref->fs->sb);
 	uint64_t current_block_idx = it->current_offset / block_size;
-	uint64_t next_block_idx = pos / block_size;
+	uint32_t next_block_idx = pos / block_size;
 
 	/*
 	 * If we don't have a block or are moving across block boundary,
@@ -247,6 +249,18 @@ static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
 		if (rc != EOK) {
 			it->current_block.lb_id = 0;
 			return rc;
+		}
+
+		if (!ext4_dir_checksum_verify(
+				it->inode_ref,
+				(struct ext4_directory_entry_ll *)
+					it->current_block.data)) {
+			ext4_dbg(DEBUG_DIR,
+				 DBG_WARN "Leaf block checksum failed."
+				 "Inode: %" PRIu32", "
+				 "Block: %" PRIu32"\n",
+				 it->inode_ref->index,
+				 next_block_idx);
 		}
 	}
 
@@ -379,6 +393,18 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 		if (rc != EOK)
 			return rc;
 
+		if (!ext4_dir_checksum_verify(
+				parent,
+				(struct ext4_directory_entry_ll *)
+					block.data)) {
+			ext4_dbg(DEBUG_DIR,
+				 DBG_WARN "Leaf block checksum failed."
+				 "Inode: %" PRIu32", "
+				 "Block: %" PRIu32"\n",
+				 parent->index,
+				 iblock);
+		}
+
 		/* If adding is successful, function can finish */
 		rc = ext4_dir_try_insert_entry(&fs->sb, parent, &block, child, name,
 					       name_len);
@@ -481,6 +507,18 @@ int ext4_dir_find_entry(struct ext4_directory_search_result *result,
 		rc = ext4_block_get(parent->fs->bdev, &block, fblock);
 		if (rc != EOK)
 			return rc;
+
+		if (!ext4_dir_checksum_verify(
+				parent,
+				(struct ext4_directory_entry_ll *)
+					block.data)) {
+			ext4_dbg(DEBUG_DIR,
+				 DBG_WARN "Leaf block checksum failed."
+				 "Inode: %" PRIu32", "
+				 "Block: %" PRIu32"\n",
+				 parent->index,
+				 iblock);
+		}
 
 		/* Try to find entry in block */
 		struct ext4_directory_entry_ll *res_entry;
