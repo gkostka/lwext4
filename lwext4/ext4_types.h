@@ -483,7 +483,7 @@ enum { EXT4_DIRENTRY_UNKNOWN = 0,
 
 #define EXT4_DIRENTRY_DIR_CSUM 0xDE
 
-union ext4_directory_entry_ll_internal {
+union ext4_dir_entry_ll_internal {
 	uint8_t name_length_high; /* Higher 8 bits of name length */
 	uint8_t inode_type;       /* Type of referenced inode (in rev >= 0.5) */
 } __attribute__((packed));
@@ -491,36 +491,36 @@ union ext4_directory_entry_ll_internal {
 /**
  * Linked list directory entry structure
  */
-struct ext4_directory_entry_ll {
+struct ext4_dir_entry_ll {
 	uint32_t inode;	/* I-node for the entry */
 	uint16_t entry_length; /* Distance to the next directory entry */
 	uint8_t name_length;   /* Lower 8 bits of name length */
 
-	union ext4_directory_entry_ll_internal in;
+	union ext4_dir_entry_ll_internal in;
 
 	uint8_t name[EXT4_DIRECTORY_FILENAME_LEN]; /* Entry name */
 } __attribute__((packed));
 
-struct ext4_directory_iterator {
+struct ext4_dir_iterator {
 	struct ext4_inode_ref *inode_ref;
 	struct ext4_block current_block;
 	uint64_t current_offset;
-	struct ext4_directory_entry_ll *current;
+	struct ext4_dir_entry_ll *current;
 };
 
-struct ext4_directory_search_result {
+struct ext4_dir_search_result {
 	struct ext4_block block;
-	struct ext4_directory_entry_ll *dentry;
+	struct ext4_dir_entry_ll *dentry;
 };
 
 /* Structures for indexed directory */
 
-struct ext4_directory_dx_countlimit {
+struct ext4_dir_idx_countlimit {
 	uint16_t limit;
 	uint16_t count;
 };
 
-struct ext4_directory_dx_dot_entry {
+struct ext4_dir_idx_dot_entry {
 	uint32_t inode;
 	uint16_t entry_length;
 	uint8_t name_length;
@@ -528,7 +528,7 @@ struct ext4_directory_dx_dot_entry {
 	uint8_t name[4];
 };
 
-struct ext4_directory_dx_root_info {
+struct ext4_dir_idx_root_info {
 	uint32_t reserved_zero;
 	uint8_t hash_version;
 	uint8_t info_length;
@@ -536,39 +536,39 @@ struct ext4_directory_dx_root_info {
 	uint8_t unused_flags;
 };
 
-struct ext4_directory_dx_entry {
+struct ext4_dir_idx_entry {
 	uint32_t hash;
 	uint32_t block;
 };
 
-struct ext4_directory_dx_root {
-	struct ext4_directory_dx_dot_entry dots[2];
-	struct ext4_directory_dx_root_info info;
-	struct ext4_directory_dx_entry entries[];
+struct ext4_dir_idx_root {
+	struct ext4_dir_idx_dot_entry dots[2];
+	struct ext4_dir_idx_root_info info;
+	struct ext4_dir_idx_entry entries[];
 };
 
-struct ext4_fake_directory_entry {
+struct ext4_fake_dir_entry {
 	uint32_t inode;
 	uint16_t entry_length;
 	uint8_t name_length;
 	uint8_t inode_type;
 };
 
-struct ext4_directory_dx_node {
-	struct ext4_fake_directory_entry fake;
-	struct ext4_directory_dx_entry entries[];
+struct ext4_dir_idx_node {
+	struct ext4_fake_dir_entry fake;
+	struct ext4_dir_idx_entry entries[];
 };
 
-struct ext4_directory_dx_block {
+struct ext4_dir_idx_block {
 	struct ext4_block block;
-	struct ext4_directory_dx_entry *entries;
-	struct ext4_directory_dx_entry *position;
+	struct ext4_dir_idx_entry *entries;
+	struct ext4_dir_idx_entry *position;
 };
 
 /*
  * This goes at the end of each htree block.
  */
-struct ext4_directory_dx_tail {
+struct ext4_dir_idx_tail {
 	uint32_t reserved;
 	uint32_t checksum;	/* crc32c(uuid+inum+dirblock) */
 };
@@ -577,7 +577,7 @@ struct ext4_directory_dx_tail {
  * This is a bogus directory entry at the end of each leaf block that
  * records checksums.
  */
-struct ext4_directory_entry_tail {
+struct ext4_dir_entry_tail {
 	uint32_t reserved_zero1;	/* Pretend to be unused */
 	uint16_t rec_len;		/* 12 */
 	uint8_t reserved_zero2;	/* Zero name length */
@@ -586,9 +586,8 @@ struct ext4_directory_entry_tail {
 };
 
 #define EXT4_DIRENT_TAIL(block, blocksize) \
-	((struct ext4_directory_entry_tail *)(((char *)(block)) + \
-					     ((blocksize) - \
-					     sizeof(struct ext4_directory_entry_tail))))
+	((struct ext4_dir_entry_tail *)(((char *)(block)) + ((blocksize) - \
+					sizeof(struct ext4_dir_entry_tail))))
 
 #define EXT4_ERR_BAD_DX_DIR (-25000)
 

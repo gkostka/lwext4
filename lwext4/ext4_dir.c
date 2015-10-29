@@ -51,17 +51,17 @@
 /****************************************************************************/
 
 /* Walk through a dirent block to find a checksum "dirent" at the tail */
-static struct ext4_directory_entry_tail *
+static struct ext4_dir_entry_tail *
 ext4_dir_get_tail(struct ext4_inode_ref *inode_ref,
-		struct ext4_directory_entry_ll *de)
+		struct ext4_dir_entry_ll *de)
 {
-	struct ext4_directory_entry_tail *t;
+	struct ext4_dir_entry_tail *t;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
 	t = EXT4_DIRENT_TAIL(de, ext4_sb_get_block_size(sb));
 
 	if (t->reserved_zero1 ||
-	    to_le16(t->rec_len) != sizeof(struct ext4_directory_entry_tail) ||
+	    to_le16(t->rec_len) != sizeof(struct ext4_dir_entry_tail) ||
 	    t->reserved_zero2 ||
 	    t->reserved_ft != EXT4_DIRENTRY_DIR_CSUM)
 		return NULL;
@@ -71,7 +71,7 @@ ext4_dir_get_tail(struct ext4_inode_ref *inode_ref,
 
 #if CONFIG_META_CSUM_ENABLE
 static uint32_t ext4_dir_checksum(struct ext4_inode_ref *inode_ref,
-			       struct ext4_directory_entry_ll *dirent, int size)
+			       struct ext4_dir_entry_ll *dirent, int size)
 {
 	uint32_t checksum;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
@@ -97,10 +97,10 @@ static uint32_t ext4_dir_checksum(struct ext4_inode_ref *inode_ref,
 
 bool
 ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
-			 struct ext4_directory_entry_ll *dirent)
+			 struct ext4_dir_entry_ll *dirent)
 {
 #ifdef CONFIG_META_CSUM_ENABLE
-	struct ext4_directory_entry_tail *t;
+	struct ext4_dir_entry_tail *t;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
 	/* Compute the checksum only if the filesystem supports it */
@@ -121,17 +121,17 @@ ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
 }
 
 /* checksumming functions */
-void initialize_dir_tail(struct ext4_directory_entry_tail *t)
+void initialize_dir_tail(struct ext4_dir_entry_tail *t)
 {
-	memset(t, 0, sizeof(struct ext4_directory_entry_tail));
-	t->rec_len = to_le16(sizeof(struct ext4_directory_entry_tail));
+	memset(t, 0, sizeof(struct ext4_dir_entry_tail));
+	t->rec_len = to_le16(sizeof(struct ext4_dir_entry_tail));
 	t->reserved_ft = EXT4_DIRENTRY_DIR_CSUM;
 }
 
 void ext4_dir_set_checksum(struct ext4_inode_ref *inode_ref,
-			   struct ext4_directory_entry_ll *dirent)
+			   struct ext4_dir_entry_ll *dirent)
 {
-	struct ext4_directory_entry_tail *t;
+	struct ext4_dir_entry_tail *t;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
 	/* Compute the checksum only if the filesystem supports it */
@@ -152,7 +152,7 @@ void ext4_dir_set_checksum(struct ext4_inode_ref *inode_ref,
  * @param block_size Size of data block
  * @return Error code
  */
-static int ext4_dir_iterator_set(struct ext4_directory_iterator *it,
+static int ext4_dir_iterator_set(struct ext4_dir_iterator *it,
 				 uint32_t block_size)
 {
 	it->current = NULL;
@@ -167,7 +167,7 @@ static int ext4_dir_iterator_set(struct ext4_directory_iterator *it,
 	if (offset_in_block > block_size - 8)
 		return EIO;
 
-	struct ext4_directory_entry_ll *entry =
+	struct ext4_dir_entry_ll *entry =
 	    (void *)(it->current_block.data + offset_in_block);
 
 	/* Ensure that the whole entry does not overflow the block */
@@ -191,7 +191,7 @@ static int ext4_dir_iterator_set(struct ext4_directory_iterator *it,
  * @param pos Position of the next entry
  * @return Error code
  */
-static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
+static int ext4_dir_iterator_seek(struct ext4_dir_iterator *it,
 				  uint64_t pos)
 {
 	uint64_t size =
@@ -257,7 +257,7 @@ static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
 	return ext4_dir_iterator_set(it, block_size);
 }
 
-int ext4_dir_iterator_init(struct ext4_directory_iterator *it,
+int ext4_dir_iterator_init(struct ext4_dir_iterator *it,
 			   struct ext4_inode_ref *inode_ref, uint64_t pos)
 {
 	it->inode_ref = inode_ref;
@@ -268,7 +268,7 @@ int ext4_dir_iterator_init(struct ext4_directory_iterator *it,
 	return ext4_dir_iterator_seek(it, pos);
 }
 
-int ext4_dir_iterator_next(struct ext4_directory_iterator *it)
+int ext4_dir_iterator_next(struct ext4_dir_iterator *it)
 {
 	int r = EOK;
 	uint16_t skip;
@@ -287,7 +287,7 @@ int ext4_dir_iterator_next(struct ext4_directory_iterator *it)
 	return r;
 }
 
-int ext4_dir_iterator_fini(struct ext4_directory_iterator *it)
+int ext4_dir_iterator_fini(struct ext4_dir_iterator *it)
 {
 	it->current = 0;
 
@@ -299,7 +299,7 @@ int ext4_dir_iterator_fini(struct ext4_directory_iterator *it)
 }
 
 void ext4_dir_write_entry(struct ext4_sblock *sb,
-			  struct ext4_directory_entry_ll *entry,
+			  struct ext4_dir_entry_ll *entry,
 			  uint16_t entry_len, struct ext4_inode_ref *child,
 			  const char *name, size_t name_len)
 {
@@ -383,7 +383,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 
 		if (!ext4_dir_checksum_verify(
 				parent,
-				(struct ext4_directory_entry_ll *)
+				(struct ext4_dir_entry_ll *)
 					block.data)) {
 			ext4_dbg(DEBUG_DIR,
 				 DBG_WARN "Leaf block checksum failed."
@@ -424,12 +424,12 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 
 	/* Fill block with zeroes */
 	memset(new_block.data, 0, block_size);
-	struct ext4_directory_entry_ll *block_entry = (void *)new_block.data;
+	struct ext4_dir_entry_ll *block_entry = (void *)new_block.data;
 
 	/* Save new block */
 	if (ext4_sb_feature_ro_com(&fs->sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		ext4_dir_write_entry(&fs->sb, block_entry,
-				block_size - sizeof(struct ext4_directory_entry_tail),
+				block_size - sizeof(struct ext4_dir_entry_tail),
 				child,
 				name, name_len);
 		initialize_dir_tail(EXT4_DIRENT_TAIL(new_block.data,
@@ -439,14 +439,14 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 				     name_len);
 
 	ext4_dir_set_checksum(parent,
-			(struct ext4_directory_entry_ll *)new_block.data);
+			(struct ext4_dir_entry_ll *)new_block.data);
 	new_block.dirty = true;
 	rc = ext4_block_set(fs->bdev, &new_block);
 
 	return rc;
 }
 
-int ext4_dir_find_entry(struct ext4_directory_search_result *result,
+int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 			struct ext4_inode_ref *parent, const char *name,
 			uint32_t name_len)
 {
@@ -498,7 +498,7 @@ int ext4_dir_find_entry(struct ext4_directory_search_result *result,
 
 		if (!ext4_dir_checksum_verify(
 				parent,
-				(struct ext4_directory_entry_ll *)
+				(struct ext4_dir_entry_ll *)
 					block.data)) {
 			ext4_dbg(DEBUG_DIR,
 				 DBG_WARN "Leaf block checksum failed."
@@ -509,7 +509,7 @@ int ext4_dir_find_entry(struct ext4_directory_search_result *result,
 		}
 
 		/* Try to find entry in block */
-		struct ext4_directory_entry_ll *res_entry;
+		struct ext4_dir_entry_ll *res_entry;
 		rc = ext4_dir_find_in_block(&block, sb, name_len, name,
 					    &res_entry);
 		if (rc == EOK) {
@@ -542,7 +542,7 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
 		return ENOTDIR;
 
 	/* Try to find entry */
-	struct ext4_directory_search_result result;
+	struct ext4_dir_search_result result;
 	int rc = ext4_dir_find_entry(&result, parent, name, name_len);
 	if (rc != EOK)
 		return rc;
@@ -561,7 +561,7 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
 		uint32_t offset = 0;
 
 		/* Start from the first entry in block */
-		struct ext4_directory_entry_ll *tmp_dentry =
+		struct ext4_dir_entry_ll *tmp_dentry =
 		    (void *)result.block.data;
 		uint16_t tmp_dentry_length =
 		    ext4_dir_entry_ll_get_entry_length(tmp_dentry);
@@ -585,7 +585,7 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
 	}
 
 	ext4_dir_set_checksum(parent,
-			(struct ext4_directory_entry_ll *)result.block.data);
+			(struct ext4_dir_entry_ll *)result.block.data);
 	result.block.dirty = true;
 
 	return ext4_dir_destroy_result(parent, &result);
@@ -600,14 +600,14 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 	/* Compute required length entry and align it to 4 bytes */
 	uint32_t block_size = ext4_sb_get_block_size(sb);
 	uint16_t required_len =
-	    sizeof(struct ext4_fake_directory_entry) + name_len;
+	    sizeof(struct ext4_fake_dir_entry) + name_len;
 
 	if ((required_len % 4) != 0)
 		required_len += 4 - (required_len % 4);
 
 	/* Initialize pointers, stop means to upper bound */
-	struct ext4_directory_entry_ll *dentry = (void *)target_block->data;
-	struct ext4_directory_entry_ll *stop =
+	struct ext4_dir_entry_ll *dentry = (void *)target_block->data;
+	struct ext4_dir_entry_ll *stop =
 	    (void *)(target_block->data + block_size);
 
 	/*
@@ -626,7 +626,7 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 			ext4_dir_write_entry(sb, dentry, rec_len, child, name,
 					     name_len);
 			ext4_dir_set_checksum(inode_ref,
-						(struct ext4_directory_entry_ll *)
+						(struct ext4_dir_entry_ll *)
 						target_block->data);
 			target_block->dirty = true;
 
@@ -639,7 +639,7 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 			    ext4_dir_entry_ll_get_name_length(sb, dentry);
 
 			uint16_t used_space =
-			    sizeof(struct ext4_fake_directory_entry) +
+			    sizeof(struct ext4_fake_dir_entry) +
 			    used_name_len;
 
 			if ((used_name_len % 4) != 0)
@@ -652,13 +652,13 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 				/* Cut tail of current entry */
 				ext4_dir_entry_ll_set_entry_length(dentry,
 								   used_space);
-				struct ext4_directory_entry_ll *new_entry =
+				struct ext4_dir_entry_ll *new_entry =
 				    (void *)((uint8_t *)dentry + used_space);
 				ext4_dir_write_entry(sb, new_entry, free_space,
 						     child, name, name_len);
 
 				ext4_dir_set_checksum(inode_ref,
-						(struct ext4_directory_entry_ll *)
+						(struct ext4_dir_entry_ll *)
 						target_block->data);
 				target_block->dirty = true;
 				return EOK;
@@ -675,11 +675,11 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 
 int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
 			   size_t name_len, const char *name,
-			   struct ext4_directory_entry_ll **res_entry)
+			   struct ext4_dir_entry_ll **res_entry)
 {
 	/* Start from the first entry in block */
-	struct ext4_directory_entry_ll *dentry =
-	    (struct ext4_directory_entry_ll *)block->data;
+	struct ext4_dir_entry_ll *dentry =
+	    (struct ext4_dir_entry_ll *)block->data;
 
 	/* Set upper bound for cycling */
 	uint8_t *addr_limit = block->data + ext4_sb_get_block_size(sb);
@@ -712,7 +712,7 @@ int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
 			return EINVAL;
 
 		/* Jump to next entry */
-		dentry = (struct ext4_directory_entry_ll *)((uint8_t *)dentry +
+		dentry = (struct ext4_dir_entry_ll *)((uint8_t *)dentry +
 							    dentry_len);
 	}
 
@@ -721,7 +721,7 @@ int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
 }
 
 int ext4_dir_destroy_result(struct ext4_inode_ref *parent,
-			    struct ext4_directory_search_result *result)
+			    struct ext4_dir_search_result *result)
 {
 	if (result->block.lb_id)
 		return ext4_block_set(parent->fs->bdev, &result->block);

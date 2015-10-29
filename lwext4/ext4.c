@@ -147,7 +147,7 @@ static int ext4_has_children(bool *has_children, struct ext4_inode_ref *enode)
 		return EOK;
 	}
 
-	struct ext4_directory_iterator it;
+	struct ext4_dir_iterator it;
 	int rc = ext4_dir_iterator_init(&it, enode, 0);
 	if (rc != EOK)
 		return rc;
@@ -243,7 +243,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 			int has_flag_index =
 				ext4_inode_has_flag(child->inode,
 						    EXT4_INODE_FLAG_INDEX);
-			struct ext4_directory_search_result result;
+			struct ext4_dir_search_result result;
 			if (!has_flag_index) {
 				rc = ext4_dir_find_entry(&result,
 							 child, "..",
@@ -588,7 +588,7 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 
 	int r;
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
-	struct ext4_directory_search_result result;
+	struct ext4_dir_search_result result;
 	struct ext4_inode_ref ref;
 
 	f->mp = 0;
@@ -770,7 +770,7 @@ static int __ext4_create_hardlink(const char *path,
 
 	int r;
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
-	struct ext4_directory_search_result result;
+	struct ext4_dir_search_result result;
 	struct ext4_inode_ref ref;
 
 	if (!mp)
@@ -2196,7 +2196,7 @@ int ext4_dir_rm(const char *path)
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
 	struct ext4_inode_ref current;
 	struct ext4_inode_ref child;
-	struct ext4_directory_iterator it;
+	struct ext4_dir_iterator it;
 
 	uint32_t name_off;
 	uint32_t inode_up;
@@ -2447,7 +2447,7 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
 	int r;
 	ext4_direntry *de = 0;
 	struct ext4_inode_ref dir;
-	struct ext4_directory_iterator it;
+	struct ext4_dir_iterator it;
 
 	EXT4_MP_LOCK(d->f.mp);
 

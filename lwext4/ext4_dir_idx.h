@@ -64,7 +64,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir,
  * @param name      Name to be found
  * @return Error code
  */
-int ext4_dir_dx_find_entry(struct ext4_directory_search_result *result,
+int ext4_dir_dx_find_entry(struct ext4_dir_search_result *result,
 			   struct ext4_inode_ref *inode_ref, size_t name_len,
 			   const char *name);
 
