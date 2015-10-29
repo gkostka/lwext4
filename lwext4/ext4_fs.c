@@ -731,8 +731,10 @@ static bool ext4_fs_verify_inode_csum(struct ext4_inode_ref *inode_ref)
 #define ext4_fs_verify_inode_csum(...) true
 #endif
 
-int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
-			  struct ext4_inode_ref *ref)
+static int
+__ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
+			struct ext4_inode_ref *ref,
+			bool initialized)
 {
 	/* Compute number of i-nodes, that fits in one data block */
 	uint32_t inodes_per_group = ext4_get32(&fs->sb, inodes_per_group);
@@ -786,7 +788,7 @@ int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
 	ref->fs = fs;
 	ref->dirty = false;
 
-	if (!ext4_fs_verify_inode_csum(ref)) {
+	if (initialized && !ext4_fs_verify_inode_csum(ref)) {
 		ext4_dbg(DEBUG_FS,
 			DBG_WARN "Inode checksum failed."
 			"Inode: %" PRIu32"\n",
@@ -794,6 +796,12 @@ int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
 	}
 
 	return EOK;
+}
+
+int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
+			  struct ext4_inode_ref *ref)
+{
+	return __ext4_fs_get_inode_ref(fs, index, ref, true);
 }
 
 int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref)
@@ -861,7 +869,7 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 		return rc;
 
 	/* Load i-node from on-disk i-node table */
-	rc = ext4_fs_get_inode_ref(fs, index, inode_ref);
+	rc = __ext4_fs_get_inode_ref(fs, index, inode_ref, false);
 	if (rc != EOK) {
 		ext4_ialloc_free_inode(fs, index, is_dir);
 		return rc;
