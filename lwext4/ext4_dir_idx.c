@@ -278,7 +278,7 @@ ext4_dir_dx_get_countlimit(struct ext4_inode_ref *inode_ref,
  * BIG FAT NOTES:
  *       Currently we do not verify the checksum of HTree node.
  */
-__unused static bool
+static bool
 ext4_dir_dx_checksum_verify(struct ext4_inode_ref *inode_ref,
 				struct ext4_directory_entry_ll *dirent)
 {
@@ -630,6 +630,16 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 			return EXT4_ERR_BAD_DX_DIR;
 		}
 
+		if (!ext4_dir_dx_checksum_verify(inode_ref,
+					(struct ext4_directory_entry_ll *)tmp_block->data)) {
+			ext4_dbg(DEBUG_DIR_IDX,
+					DBG_WARN "HTree checksum failed."
+					"Inode: %" PRIu32", "
+					"Block: %" PRIu32"\n",
+					inode_ref->index,
+					next_block);
+		}
+
 		++tmp_dx_block;
 	}
 
@@ -691,6 +701,16 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 		if (rc != EOK)
 			return rc;
 
+		if (!ext4_dir_dx_checksum_verify(inode_ref,
+					(struct ext4_directory_entry_ll *)block.data)) {
+			ext4_dbg(DEBUG_DIR_IDX,
+					DBG_WARN "HTree checksum failed."
+					"Inode: %" PRIu32", "
+					"Block: %" PRIu32"\n",
+					inode_ref->index,
+					block_idx);
+		}
+
 		p++;
 
 		/* Don't forget to put old block (prevent memory leak) */
@@ -726,6 +746,16 @@ int ext4_dir_dx_find_entry(struct ext4_directory_search_result *result,
 	rc = ext4_block_get(fs->bdev, &root_block, root_block_addr);
 	if (rc != EOK)
 		return rc;
+
+	if (!ext4_dir_dx_checksum_verify(inode_ref,
+				(struct ext4_directory_entry_ll *)root_block.data)) {
+		ext4_dbg(DEBUG_DIR_IDX,
+			 DBG_WARN "HTree root checksum failed."
+			 "Inode: %" PRIu32", "
+			 "Block: %" PRIu32"\n",
+			 inode_ref->index,
+			 0);
+	}
 
 	/* Initialize hash info (compute hash value) */
 	struct ext4_hash_info hinfo;
@@ -766,6 +796,16 @@ int ext4_dir_dx_find_entry(struct ext4_directory_search_result *result,
 		rc = ext4_block_get(fs->bdev, &leaf_block, leaf_block_addr);
 		if (rc != EOK)
 			goto cleanup;
+
+		if (!ext4_dir_checksum_verify(inode_ref,
+				(struct ext4_directory_entry_ll *)leaf_block.data)) {
+			ext4_dbg(DEBUG_DIR_IDX,
+				 DBG_WARN "HTree leaf block checksum failed."
+				 "Inode: %" PRIu32", "
+				 "Block: %" PRIu32"\n",
+				 inode_ref->index,
+				 leaf_block_idx);
+		}
 
 		/* Linear search inside block */
 		struct ext4_directory_entry_ll *res_dentry;
@@ -1335,6 +1375,16 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	if (rc != EOK)
 		return rc;
 
+	if (!ext4_dir_dx_checksum_verify(parent,
+			(struct ext4_directory_entry_ll *)root_block.data)) {
+		ext4_dbg(DEBUG_DIR_IDX,
+			 DBG_WARN "HTree root checksum failed."
+			 "Inode: %" PRIu32", "
+			 "Block: %" PRIu32"\n",
+			 parent->index,
+			 0);
+	}
+
 	/* Initialize hinfo structure (mainly compute hash) */
 	uint32_t name_len = strlen(name);
 	struct ext4_hash_info hinfo;
@@ -1381,6 +1431,16 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	rc = ext4_block_get(fs->bdev, &target_block, leaf_block_addr);
 	if (rc != EOK)
 		goto release_index;
+
+	if (!ext4_dir_checksum_verify(parent,
+			(struct ext4_directory_entry_ll *)target_block.data)) {
+		ext4_dbg(DEBUG_DIR_IDX,
+				DBG_WARN "HTree leaf block checksum failed."
+				"Inode: %" PRIu32", "
+				"Block: %" PRIu32"\n",
+				parent->index,
+				leaf_block_idx);
+	}
 
 	/* Check if insert operation passed */
 	rc = ext4_dir_try_insert_entry(&fs->sb, parent, &target_block, child, name,
@@ -1451,6 +1511,16 @@ int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
 	rc = ext4_block_get(dir->fs->bdev, &block, fblock);
 	if (rc != EOK)
 		return rc;
+
+	if (!ext4_dir_dx_checksum_verify(dir,
+			(struct ext4_directory_entry_ll *)block.data)) {
+		ext4_dbg(DEBUG_DIR_IDX,
+			 DBG_WARN "HTree root checksum failed."
+			 "Inode: %" PRIu32", "
+			 "Block: %" PRIu32"\n",
+			 dir->index,
+			 0);
+	}
 
 	/* Initialize pointers to data structures */
 	struct ext4_directory_dx_root *root = (void *)block.data;
