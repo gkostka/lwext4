@@ -1,0 +1,17 @@
+language: c
+
+compiler: gcc
+
+before_install:
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq cmake
+
+before_script:
+    - make
+    - cd build_generic && make
+
+script: make
+
+notifications:
+    on_success: change
+    on_failure: always
