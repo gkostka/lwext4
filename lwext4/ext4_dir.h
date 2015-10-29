@@ -162,6 +162,15 @@ static inline void ext4_dir_entry_ll_set_inode_type(
 		de->in.inode_type = type;
 }
 
+/**@brief Verify checksum of a linear directory leaf block
+ * @param inode_ref Directory i-node
+ * @param dirent    Linear directory leaf block
+ * @return true means the block passed checksum verification
+ */
+bool
+ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
+			 struct ext4_directory_entry_ll *dirent);
+
 /**@brief Initialize directory iterator.
  * Set position to the first valid entry from the required position.
  * @param it        Pointer to iterator to be initialized
