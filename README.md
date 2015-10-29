@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/gkostka/lwext4.svg)](https://travis-ci.org/gkostka/lwext4)
 
-==About==
+About
+=====
 
 The main goal of the lwext4 project is to provide ext2/3/4 filesystem for microcontrollers. It may be an interesting alternative for traditional MCU filesystem libraries (mostly based on FAT32).
 
@@ -12,7 +13,8 @@ https://github.com/gkostka/lwext4
 Feel free to contact me:
 kostka.grzegorz@gmail.com
 
-==Credits==
+Credits
+=====
 
 The most of the source code of lwext4 was taken from HelenOS:
 * http://helenos.org/
@@ -27,7 +29,8 @@ KaHo Ng (https://github.com/ngkaho1234):
 fuse-lwext4 project:
 * https://github.com/ngkaho1234/fuse-lwext4
 
-==Features==
+Features
+=====
 
 * filetypes: regular, directories, softlinks
 * support for hardlinks
@@ -39,13 +42,16 @@ fuse-lwext4 project:
 * small memory footprint
 
 
-;Memory footprint (for cortex-m4):
+Memory footprint (for cortex-m4)
+------------
 * .text:  20KB - 40KB 
 * .data:  8KB         (minimum 8 x 1KB  block cache)
 * .stack: 2KB
 
-==Supported ext2/3/4 features==
-;Features incompatible:
+Supported ext2/3/4 features
+=====
+Features incompatible:
+------------
 *  compression: no
 *  filetype: yes
 *  recover: no
@@ -60,14 +66,18 @@ fuse-lwext4 project:
 *  bg_meta_csum: no
 *  largedir: no
 *  inline_data: no
-;Features compatible:
+
+Features compatible:
+------------
 *  dir_prealloc: no
 *  imagic_inodes: no
 *  has_journal: no
 *  ext_attr: yes
 *  resize_inode: no
 *  dir_index: yes
-;Features read-only:
+
+Features read-only:
+------------
 *  sparse_super: yes
 *  large_file: yes
 *  btree_dir: yes
@@ -80,7 +90,8 @@ fuse-lwext4 project:
 *  metadata_csum: yes
 
 
-==Project tree==
+Project tree
+=====
 *  blockdev         - block devices set, supported blockdev
 *  demos            - demo directory sources
 *  fs_test          - test suite
@@ -92,24 +103,34 @@ fuse-lwext4 project:
 *  Makefile         - helper makefile to generate cmake and run test suite
 *  readme.mediawiki - readme file
   
-==Compile==
-Windows:
+Compile
+=====
+Windows
+------------
 * CMake:  http://www.cmake.org/cmake/resources/software.html
 * MinGw:  http://www.mingw.org/
 * GnuWin: http://gnuwin32.sourceforge.net/ 
 
-Linux:
+Linux
+------------
 * CMake, make, gcc
 
-;Generate makefiles:
+Generate makefiles
+------------
+```bash
  make
+ ```
 
-;Compile
+Compile
+------------
+```bash
  cd build_generic
  make
+ ```
 
 
-==Generic demo application==
+Generic demo application
+=====
 Simple lwext4 library presentation:
 * load ext2/3/4 images
 * load linux block device with ext2/3/4 part
@@ -118,14 +139,16 @@ Simple lwext4 library presentation:
 * file write/read speed test
 
 How to use for images/blockdevices:
+```bash
  cd build_generic
  generic -i ext_images/ext2 
  generic -i ext_images/ext3 
  generic -i ext_images/ext4 
+ ```
 
 
-==Build and run automatic tests==
 Build and run automatic tests
+=====
 Build automatic test tools:
  make
  cd build_generic
@@ -139,8 +162,10 @@ Run server for one of the image file:
 Execute tests:
  make test
 
-==Cross compile standalone library==
+Cross compile standalone library
+=====
 Toolchains needed:
+------------
 * arm-none-eabi-gcc for cortex-mX
 * avr-gcc for avr
 * bfin-elf-gcc for bfin
@@ -148,27 +173,43 @@ Toolchains needed:
 
 
 Build bf518 library:
+------------
+```bash
  make bf518
  cd build_bf518
  make lwext4
+ ```
 
 Build avrxmega7 library:
+------------
+```bash
  make avrxmega7
  cd build_avrxmega7
  make lwext4
+ ```
 
 Build cortex-m0 library:
+------------
+```bash
  make cortex-m0
  cd build_cortex-m0
  make lwext4
+ ```
 
 Build cortex-m3 library:
+------------
+```bash
  make cortex-m3
  cd build_cortex-m3
  make lwext4
+ ```
 
 Build cortex-m4 library:
+------------
+```bash
  make cortex-m4
  cd build_cortex-m4
  make lwext4
+```
+
 
