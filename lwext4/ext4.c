@@ -35,6 +35,7 @@
  */
 
 #include "ext4_config.h"
+#include "ext4.h"
 #include "ext4_blockdev.h"
 #include "ext4_types.h"
 #include "ext4_debug.h"
@@ -45,7 +46,7 @@
 #include "ext4_super.h"
 #include "ext4_dir_idx.h"
 #include "ext4_xattr.h"
-#include "ext4.h"
+
 
 #include <stdlib.h>
 #include <string.h>

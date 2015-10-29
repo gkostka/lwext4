@@ -38,10 +38,6 @@
 #ifndef EXT4_H_
 #define EXT4_H_
 
-#include "ext4_config.h"
-#include "ext4_types.h"
-#include "ext4_blockdev.h"
-
 #include <stdint.h>
 #include <stddef.h>
 
@@ -95,6 +91,10 @@
  #include <unistd.h>
  #include <fcntl.h>
 #endif
+
+#include "ext4_config.h"
+#include "ext4_types.h"
+#include "ext4_blockdev.h"
 
 /********************************OS LOCK INFERFACE***************************/
 
