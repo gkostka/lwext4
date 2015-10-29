@@ -755,7 +755,7 @@ int ext4_dir_dx_find_entry(struct ext4_directory_search_result *result,
 			 "Inode: %" PRIu32", "
 			 "Block: %" PRIu32"\n",
 			 inode_ref->index,
-			 0);
+			 (uint32_t)0);
 	}
 
 	/* Initialize hash info (compute hash value) */
@@ -1383,7 +1383,7 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 			 "Inode: %" PRIu32", "
 			 "Block: %" PRIu32"\n",
 			 parent->index,
-			 0);
+			 (uint32_t)0);
 	}
 
 	/* Initialize hinfo structure (mainly compute hash) */
@@ -1520,7 +1520,7 @@ int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
 			 "Inode: %" PRIu32", "
 			 "Block: %" PRIu32"\n",
 			 dir->index,
-			 0);
+			 (uint32_t)0);
 	}
 
 	/* Initialize pointers to data structures */
