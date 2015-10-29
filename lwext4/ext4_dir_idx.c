@@ -301,8 +301,7 @@ ext4_dir_dx_checksum_verify(struct ext4_inode_ref *inode_ref,
 			/* There is no space to hold the checksum */
 			return true;
 		}
-		t = (struct ext4_dir_idx_tail *)
-			(((struct ext4_dir_idx_entry *)countlimit) + limit);
+		t = (void *)(((struct ext4_dir_idx_entry *)countlimit) + limit);
 
 		if (t->checksum != to_le32(ext4_dir_dx_checksum(inode_ref,
 								dirent,
@@ -340,8 +339,8 @@ ext4_dir_set_dx_checksum(struct ext4_inode_ref *inode_ref,
 		t = (struct ext4_dir_idx_tail *)
 			(((struct ext4_dir_idx_entry *)countlimit) + limit);
 
-		t->checksum =
-			to_le32(ext4_dir_dx_checksum(inode_ref, dirent, count_offset, count, t));
+		t->checksum = to_le32(ext4_dir_dx_checksum(inode_ref, dirent,
+					count_offset, count, t));
 	}
 }
 #else
@@ -615,16 +614,14 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 		limit = ext4_dir_dx_countlimit_get_limit(
 		    (struct ext4_dir_idx_countlimit *)entries);
 
-		uint16_t entry_space =
-		    ext4_sb_get_block_size(&inode_ref->fs->sb) -
-		    sizeof(struct ext4_fake_dir_entry);
+		struct ext4_sblock *sb = &inode_ref->fs->sb;
+		uint16_t entry_space = ext4_sb_get_block_size(sb) -
+				sizeof(struct ext4_fake_dir_entry);
 
-		if (ext4_sb_feature_ro_com(&inode_ref->fs->sb,
-				EXT4_FRO_COM_METADATA_CSUM))
+		if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 			entry_space -= sizeof(struct ext4_dir_idx_tail);
 
-		entry_space =
-		    entry_space / sizeof(struct ext4_dir_idx_entry);
+		entry_space = entry_space / sizeof(struct ext4_dir_idx_entry);
 
 		if (limit != entry_space) {
 			ext4_block_set(inode_ref->fs->bdev, tmp_block);
@@ -632,7 +629,7 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 		}
 
 		if (!ext4_dir_dx_checksum_verify(inode_ref,
-					(struct ext4_dir_entry_ll *)tmp_block->data)) {
+				(struct ext4_dir_entry_ll *)tmp_block->data)) {
 			ext4_dbg(DEBUG_DIR_IDX,
 					DBG_WARN "HTree checksum failed."
 					"Inode: %" PRIu32", "
@@ -703,7 +700,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 			return rc;
 
 		if (!ext4_dir_dx_checksum_verify(inode_ref,
-					(struct ext4_dir_entry_ll *)block.data)) {
+				(struct ext4_dir_entry_ll *)block.data)) {
 			ext4_dbg(DEBUG_DIR_IDX,
 					DBG_WARN "HTree checksum failed."
 					"Inode: %" PRIu32", "
@@ -995,8 +992,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	uint8_t *entry_buffer_ptr = entry_buffer;
 	while ((void *)dentry < (void *)(old_data_block->data + block_size)) {
 		/* Read only valid entries */
-		if (ext4_dir_entry_ll_get_inode(dentry) &&
-		    dentry->name_length) {
+		if (ext4_dir_entry_ll_get_inode(dentry) && dentry->name_length) {
 			uint8_t len = ext4_dir_entry_ll_get_name_length(
 			    &inode_ref->fs->sb, dentry);
 
@@ -1444,8 +1440,8 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	}
 
 	/* Check if insert operation passed */
-	rc = ext4_dir_try_insert_entry(&fs->sb, parent, &target_block, child, name,
-				       name_len);
+	rc = ext4_dir_try_insert_entry(&fs->sb, parent, &target_block, child,
+					name, name_len);
 	if (rc == EOK)
 		goto release_target_index;
 
@@ -1462,11 +1458,11 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	uint32_t new_block_hash =
 	    ext4_dir_dx_entry_get_hash(dx_block->position + 1);
 	if (hinfo.hash >= new_block_hash)
-		rc = ext4_dir_try_insert_entry(&fs->sb, parent, &new_block, child, name,
-					       name_len);
+		rc = ext4_dir_try_insert_entry(&fs->sb, parent, &new_block,
+				child, name, name_len);
 	else
-		rc = ext4_dir_try_insert_entry(&fs->sb, parent, &target_block, child,
-					       name, name_len);
+		rc = ext4_dir_try_insert_entry(&fs->sb, parent, &target_block,
+				child, name, name_len);
 
 	/* Cleanup */
 	rc = ext4_block_set(fs->bdev, &new_block);
