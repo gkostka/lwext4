@@ -250,18 +250,6 @@ static int ext4_dir_iterator_seek(struct ext4_directory_iterator *it,
 			it->current_block.lb_id = 0;
 			return rc;
 		}
-
-		if (!ext4_dir_checksum_verify(
-				it->inode_ref,
-				(struct ext4_directory_entry_ll *)
-					it->current_block.data)) {
-			ext4_dbg(DEBUG_DIR,
-				 DBG_WARN "Leaf block checksum failed."
-				 "Inode: %" PRIu32", "
-				 "Block: %" PRIu32"\n",
-				 it->inode_ref->index,
-				 next_block_idx);
-		}
 	}
 
 	it->current_offset = pos;
