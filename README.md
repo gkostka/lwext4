@@ -150,17 +150,25 @@ How to use for images/blockdevices:
 Build and run automatic tests
 =====
 Build automatic test tools:
+```bash
  make
  cd build_generic
  make
+  ```
 Uncompress ext/2/3/4 images:
+```bash
  make unpack_images
+   ```
 Run server for one of the image file:
+```bash
  make server_ext2
  make server_ext3
  make server_ext4
+  ```
 Execute tests:
+```bash
  make test
+   ```
 
 Cross compile standalone library
 =====
