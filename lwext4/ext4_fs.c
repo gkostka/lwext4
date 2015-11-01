@@ -700,6 +700,12 @@ static uint32_t ext4_fs_inode_checksum(struct ext4_inode_ref *inode_ref)
 				inode_size);
 		ext4_inode_set_checksum(sb, inode_ref->inode,
 				orig_checksum);
+
+		/* If inode size is not large enough to hold the
+		 * upper 16bit of the checksum */
+		if (inode_size == EXT4_GOOD_OLD_INODE_SIZE)
+			checksum &= 0xFFFF;
+
 	}
 	return checksum;
 }
