@@ -145,6 +145,12 @@ void ext4_fs_inode_blocks_init(struct ext4_fs *fs, struct ext4_inode_ref *inode_
  */
 int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref);
 
+/**@brief Convert filetype to inode mode.
+ * @param filetype
+ * @return inode mode
+ */
+uint32_t ext4_fs_correspond_inode_mode(int filetype);
+
 /**@brief Allocate new i-node in the filesystem.
  * @param fs        Filesystem to allocated i-node on
  * @param inode_ref Output pointer to return reference to allocated i-node

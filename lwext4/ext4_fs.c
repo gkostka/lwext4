@@ -837,7 +837,7 @@ void ext4_fs_inode_blocks_init(struct ext4_fs *fs, struct ext4_inode_ref *inode_
 #endif
 }
 
-static uint32_t ext4_fs_correspond_inode_mode(int filetype)
+uint32_t ext4_fs_correspond_inode_mode(int filetype)
 {
 	switch (filetype) {
 	case EXT4_DIRENTRY_DIR:

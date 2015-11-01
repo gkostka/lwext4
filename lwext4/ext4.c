@@ -583,7 +583,7 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 			      uint32_t *name_off)
 {
 	bool is_goal = false;
-	uint8_t inode_type = EXT4_DIRENTRY_UNKNOWN;
+	uint32_t inode_mode = EXT4_INODE_MODE_DIRECTORY;
 	uint32_t next_inode;
 
 	int r;
@@ -673,20 +673,37 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 			*parent_inode = ref.index;
 
 		next_inode = ext4_dir_entry_ll_get_inode(result.dentry);
-		inode_type =
-		    ext4_dir_entry_ll_get_inode_type(&mp->fs.sb, result.dentry);
+		if (ext4_sb_feature_incom(&mp->fs.sb, EXT4_FINCOM_FILETYPE)) {
+			int inode_type =
+				ext4_dir_entry_ll_get_inode_type(&mp->fs.sb,
+						result.dentry);
+			inode_mode = ext4_fs_correspond_inode_mode(inode_type);
+		} else {
+			struct ext4_inode_ref child_ref;
+			r = ext4_fs_get_inode_ref(&mp->fs, next_inode,
+					&child_ref);
+			if (r != EOK)
+				break;
+
+			inode_mode = ext4_inode_type(&mp->fs.sb,
+					child_ref.inode);
+
+			ext4_fs_put_inode_ref(&child_ref);
+		}
 
 		r = ext4_dir_destroy_result(&ref, &result);
 		if (r != EOK)
 			break;
 
 		/*If expected file error*/
-		if (inode_type != EXT4_DIRENTRY_DIR && !is_goal) {
+		if (inode_mode != EXT4_INODE_MODE_DIRECTORY &&
+		    !is_goal) {
 			r = ENOENT;
 			break;
 		}
 		if (filetype != EXT4_DIRENTRY_UNKNOWN) {
-			if ((inode_type != filetype) && is_goal) {
+			if ((inode_mode != ext4_fs_correspond_inode_mode(filetype)) &&
+			    is_goal) {
 				r = ENOENT;
 				break;
 			}
@@ -717,7 +734,7 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 	if (is_goal) {
 
 		if ((f->flags & O_TRUNC) &&
-		    (inode_type == EXT4_DIRENTRY_REG_FILE)) {
+		    (inode_mode == EXT4_INODE_MODE_FILE)) {
 
 			r = ext4_fs_truncate_inode(&ref, 0);
 			if (r != EOK) {
@@ -765,7 +782,7 @@ static int __ext4_create_hardlink(const char *path,
 		bool rename)
 {
 	bool is_goal = false;
-	uint8_t inode_type = EXT4_DIRENTRY_DIR;
+	uint32_t inode_mode = EXT4_INODE_MODE_DIRECTORY;
 	uint32_t next_inode;
 
 	int r;
@@ -820,14 +837,29 @@ static int __ext4_create_hardlink(const char *path,
 		}
 
 		next_inode = result.dentry->inode;
-		inode_type =
-			ext4_dir_entry_ll_get_inode_type(&mp->fs.sb, result.dentry);
+		if (ext4_sb_feature_incom(&mp->fs.sb, EXT4_FINCOM_FILETYPE)) {
+			int inode_type =
+				ext4_dir_entry_ll_get_inode_type(&mp->fs.sb,
+						result.dentry);
+			inode_mode = ext4_fs_correspond_inode_mode(inode_type);
+		} else {
+			struct ext4_inode_ref child_ref;
+			r = ext4_fs_get_inode_ref(&mp->fs, next_inode,
+					&child_ref);
+			if (r != EOK)
+				break;
+
+			inode_mode = ext4_inode_type(&mp->fs.sb,
+					child_ref.inode);
+
+			ext4_fs_put_inode_ref(&child_ref);
+		}
 
 		r = ext4_dir_destroy_result(&ref, &result);
 		if (r != EOK)
 			break;
 
-		if (inode_type == EXT4_DIRENTRY_REG_FILE) {
+		if (inode_mode != EXT4_INODE_MODE_DIRECTORY) {
 			if (is_goal)
 				r = EEXIST;
 			else
