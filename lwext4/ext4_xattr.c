@@ -204,6 +204,8 @@ ext4_xattr_item_alloc(uint8_t name_index, const char *name, size_t name_len)
 	    name_len == 4 &&
 	    !memcmp(name, "data", 4))
 		item->in_inode = true;
+	else
+		item->in_inode = false;
 
 	return item;
 }
