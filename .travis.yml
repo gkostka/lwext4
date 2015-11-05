@@ -1,16 +1,21 @@
-language: c
 
+language: c
 compiler: gcc
 
 before_install:
     - sudo apt-get update -qq
     - sudo apt-get install -qq cmake
+    - wget https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q3-update/+download/gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
+    - bzip2 -d gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
+    - tar xfv gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar
+    - export PATH=$PWD/gcc-arm-none-eabi-4_9-2015q3/bin:$PATH
 
-before_script:
-    - make
-    - cd build_generic && make
-
-script: make
+script:
+    - make generic
+    - cd build_generic && make -j`nproc`
+    - cd ..
+    - make cortex-m4
+    - cd build_cortex-m4 && make -j`nproc`
 
 notifications:
     on_success: change
