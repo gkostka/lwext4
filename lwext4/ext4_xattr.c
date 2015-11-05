@@ -877,9 +877,12 @@ struct xattr_prefix {
 
 static const struct xattr_prefix prefix_tbl[] = {
     {"user.", EXT4_XATTR_INDEX_USER},
-    {"system.", EXT4_XATTR_INDEX_SYSTEM},
     {"system.posix_acl_access", EXT4_XATTR_INDEX_POSIX_ACL_ACCESS},
     {"system.posix_acl_default", EXT4_XATTR_INDEX_POSIX_ACL_DEFAULT},
+    {"trusted.", EXT4_XATTR_INDEX_TRUSTED},
+    {"security.", EXT4_XATTR_INDEX_SECURITY},
+    {"system.", EXT4_XATTR_INDEX_SYSTEM},
+    {"system.richacl", EXT4_XATTR_INDEX_RICHACL},
     {NULL, 0},
 };
 
