@@ -823,6 +823,9 @@ struct ext4_xattr_entry {
 } __attribute__((packed));
 
 struct ext4_xattr_item {
+	/* This attribute should be stored in inode body */
+	bool in_inode;
+
 	uint8_t name_index;
 	char  *name;
 	size_t name_len;

@@ -163,6 +163,12 @@ static int ext4_xattr_item_cmp(struct ext4_xattr_item *a,
 			       struct ext4_xattr_item *b)
 {
 	int result;
+	if (a->in_inode && !b->in_inode)
+		return -1;
+	
+	if (!a->in_inode && b->in_inode)
+		return 1;
+
 	result = a->name_index - b->name_index;
 	if (result)
 		return result;
@@ -193,6 +199,11 @@ ext4_xattr_item_alloc(uint8_t name_index, const char *name, size_t name_len)
 
 	memset(&item->node, 0, sizeof(item->node));
 	memcpy(item->name, name, name_len);
+
+	if (name_index == EXT4_XATTR_INDEX_SYSTEM &&
+	    name_len == 4 &&
+	    !memcmp(name, "data", 4))
+		item->in_inode = true;
 
 	return item;
 }
@@ -404,6 +415,10 @@ ext4_xattr_lookup_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
 		.name = (char *)name, /*RB_FIND - won't touch this string*/
 		.name_len = name_len,
 	};
+	if (name_index == EXT4_XATTR_INDEX_SYSTEM &&
+	    name_len == 4 &&
+	    !memcmp(name, "data", 4))
+		tmp.in_inode = true;
 
 	return RB_FIND(ext4_xattr_tree, &xattr_ref->root, &tmp);
 }
