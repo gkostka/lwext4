@@ -42,10 +42,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define EXT4_BLOCK_ZERO() {.dirty = 0, .lb_id = 0, .cache_id = 0, .data = 0}
+#define EXT4_BLOCK_ZERO() {.uptodate = 0, .dirty = 0, .lb_id = 0, .cache_id = 0, .data = 0}
 
 /**@brief   Single block descriptor*/
 struct ext4_block {
+	/**@brief   Uptodate flag*/
+	bool uptodate;
+
 	/**@brief   Dirty flag*/
 	bool dirty;
 
@@ -83,8 +86,8 @@ struct ext4_bcache {
 	/**@brief   Logical block table*/
 	uint64_t lba[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
-	/**@brief   Dirty mark*/
-	bool dirty[CONFIG_BLOCK_DEV_CACHE_SIZE];
+	/**@brief   Flags*/
+	int flags[CONFIG_BLOCK_DEV_CACHE_SIZE];
 
 	/**@brief   Cache data buffers*/
 	uint8_t *data;
@@ -95,6 +98,20 @@ struct ext4_bcache {
 	/**@brief   Maximum referenced datablocks*/
 	uint32_t max_ref_blocks;
 };
+
+enum bcache_state_bits {
+	BC_UPTODATE,
+	BC_DIRTY
+};
+
+#define ext4_bcache_set_flag(bc, id, b)    \
+	(bc)->flags[id] |= 1 << (b)
+
+#define ext4_bcache_clear_flag(bc, id, b)    \
+	(bc)->flags[id] &= ~(1 << (b))
+
+#define ext4_bcache_test_flag(bc, id, b)    \
+	(((bc)->flags[id] & (1 << (b))) >> (b))
 
 /**@brief   Static initializer of block cache structure.*/
 #define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)                 \

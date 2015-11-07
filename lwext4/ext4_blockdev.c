@@ -85,11 +85,9 @@ int ext4_block_fini(struct ext4_blockdev *bdev)
 	return bdev->close(bdev);
 }
 
-int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
-		   uint64_t lba)
+int ext4_block_get_noread(struct ext4_blockdev *bdev, struct ext4_block *b,
+			  uint64_t lba)
 {
-	uint64_t pba;
-	uint32_t pb_cnt;
 	uint32_t i;
 	bool is_new;
 	int r;
@@ -149,13 +147,25 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 	if (r != EOK)
 		return r;
 
-	if (!is_new) {
+	if (!b->data)
+		return ENOMEM;
+
+	return EOK;
+}
+
+int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
+		   uint64_t lba)
+{
+	uint64_t pba;
+	uint32_t pb_cnt;
+	int r = ext4_block_get_noread(bdev, b, lba);
+	if (r != EOK)
+		return r;
+
+	if (b->uptodate) {
 		/*Block is in cache. Read from physical device is not required*/
 		return EOK;
 	}
-
-	if (!b->data)
-		return ENOMEM;
 
 	pba = (lba * bdev->lg_bsize) / bdev->ph_bsize;
 	pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
@@ -168,6 +178,8 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 		return r;
 	}
 
+	ext4_bcache_set_flag(bdev->bc, b->cache_id, BC_UPTODATE);
+	b->uptodate = true;
 	bdev->bread_ctr++;
 	return EOK;
 }
@@ -183,11 +195,17 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 	if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
 		return EIO;
 
+	/*Buffer is not marked dirty and is stale*/
+	if (!b->uptodate && !b->dirty)
+		ext4_bcache_clear_flag(bdev->bc, b->cache_id, BC_UPTODATE);
+
 	/*No need to write.*/
-	if (!b->dirty && !bdev->bc->dirty[b->cache_id]) {
+	if (!b->dirty &&
+	    !ext4_bcache_test_flag(bdev->bc, b->cache_id, BC_DIRTY)) {
 		ext4_bcache_free(bdev->bc, b, 0);
 		return EOK;
 	}
+	ext4_bcache_set_flag(bdev->bc, b->cache_id, BC_UPTODATE);
 
 	/*Free cache delay mode*/
 	if (bdev->cache_write_back) {
@@ -197,7 +215,7 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 	}
 
 	if (bdev->bc->refctr[b->cache_id] > 1) {
-		bdev->bc->dirty[b->cache_id] = true;
+		ext4_bcache_set_flag(bdev->bc, b->cache_id, BC_DIRTY);
 		return ext4_bcache_free(bdev->bc, b, 0);
 	}
 
@@ -205,9 +223,10 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 	pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
 
 	r = bdev->bwrite(bdev, b->data, pba, pb_cnt);
-	bdev->bc->dirty[b->cache_id] = false;
+	ext4_bcache_clear_flag(bdev->bc, b->cache_id, BC_DIRTY);
 	if (r != EOK) {
 		b->dirty = false;
+		ext4_bcache_clear_flag(bdev->bc, b->cache_id, BC_UPTODATE);
 		ext4_bcache_free(bdev->bc, b, 0);
 		return r;
 	}

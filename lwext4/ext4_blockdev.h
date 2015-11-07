@@ -141,6 +141,14 @@ int ext4_block_fini(struct ext4_blockdev *bdev);
  * @return  standard error code*/
 void ext4_block_set_lb_size(struct ext4_blockdev *bdev, uint64_t lb_bsize);
 
+/**@brief   Block get function (through cache, don't read).
+ * @param   bdev block device descriptor
+ * @param   b block descriptor
+ * @param   lba logical block address
+ * @return  standard error code*/
+int ext4_block_get_noread(struct ext4_blockdev *bdev, struct ext4_block *b,
+			  uint64_t lba);
+
 /**@brief   Block get function (through cache).
  * @param   bdev block device descriptor
  * @param   b block descriptor

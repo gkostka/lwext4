@@ -115,6 +115,7 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 			/*Set valid cache data and id*/
 			b->data = bc->data + i * bc->itemsize;
 			b->cache_id = i;
+			b->uptodate = ext4_bcache_test_flag(bc, i, BC_UPTODATE);
 
 			return EOK;
 		}
@@ -154,6 +155,8 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 		/*Set valid cache data and id*/
 		b->data = bc->data + cache_id * bc->itemsize;
 		b->cache_id = cache_id;
+		ext4_bcache_clear_flag(bc, cache_id, BC_UPTODATE);
+		b->uptodate = false;
 
 		/*Statistics*/
 		bc->ref_blocks++;
@@ -199,6 +202,7 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b,
 	b->lb_id = 0;
 	b->data = 0;
 	b->cache_id = 0;
+	b->uptodate = false;
 
 	return EOK;
 }
