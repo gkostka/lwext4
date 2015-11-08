@@ -115,6 +115,8 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 			/*Set valid cache data and id*/
 			b->data = bc->data + i * bc->itemsize;
 			b->cache_id = i;
+
+			/* If data in the caxhe is up-to-date */
 			b->uptodate = ext4_bcache_test_flag(bc, i, BC_UPTODATE);
 
 			return EOK;
@@ -155,6 +157,8 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 		/*Set valid cache data and id*/
 		b->data = bc->data + cache_id * bc->itemsize;
 		b->cache_id = cache_id;
+
+		/* Data in the cache is not up-to-date anymore. */
 		ext4_bcache_clear_flag(bc, cache_id, BC_UPTODATE);
 		b->uptodate = false;
 

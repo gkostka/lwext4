@@ -163,7 +163,8 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 		return r;
 
 	if (b->uptodate) {
-		/*Block is in cache. Read from physical device is not required*/
+		/* Data in the cache is up-to-date.
+		 * Reading from physical device is not required */
 		return EOK;
 	}
 
@@ -178,6 +179,8 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 		return r;
 	}
 
+	/* Mark buffer up-to-date, since
+	 * fresh data is read from physical device just now. */
 	ext4_bcache_set_flag(bdev->bc, b->cache_id, BC_UPTODATE);
 	b->uptodate = true;
 	bdev->bread_ctr++;
@@ -205,6 +208,7 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 		ext4_bcache_free(bdev->bc, b, 0);
 		return EOK;
 	}
+	/* Data is valid, so mark buffer up-to-date. */
 	ext4_bcache_set_flag(bdev->bc, b->cache_id, BC_UPTODATE);
 
 	/*Free cache delay mode*/
