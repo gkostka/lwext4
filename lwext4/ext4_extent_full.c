@@ -627,7 +627,7 @@ static int ext4_ext_split_node(struct ext4_inode_ref *inode_ref,
 		goto cleanup;
 
 	/*  For write access.# */
-	ret = ext4_block_get(inode_ref->fs->bdev, &bh, newblock);
+	ret = ext4_block_get_noread(inode_ref->fs->bdev, &bh, newblock);
 	if (ret != EOK)
 		goto cleanup;
 
@@ -1129,7 +1129,7 @@ static int ext4_ext_grow_indepth(struct ext4_inode_ref *inode_ref,
 		return err;
 
 	/* # */
-	err = ext4_block_get(inode_ref->fs->bdev, &bh, newblock);
+	err = ext4_block_get_noread(inode_ref->fs->bdev, &bh, newblock);
 	if (err != EOK) {
 		ext4_ext_free_blocks(inode_ref, newblock, 1, 0);
 		return err;
@@ -1723,7 +1723,7 @@ static int ext4_ext_zero_unwritten_range(struct ext4_inode_ref *inode_ref,
 	uint32_t block_size = ext4_sb_get_block_size(&inode_ref->fs->sb);
 	for (i = 0; i < blocks_count; i++) {
 		struct ext4_block bh = EXT4_BLOCK_ZERO();
-		err = ext4_block_get(inode_ref->fs->bdev, &bh, block + i);
+		err = ext4_block_get_noread(inode_ref->fs->bdev, &bh, block + i);
 		if (err != EOK)
 			break;
 
