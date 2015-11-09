@@ -657,14 +657,6 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 				return rc;
 			}
 
-			if (!ext4_extent_verify_block_csum(inode_ref,
-						&block)) {
-				ext4_dbg(DEBUG_EXTENT,
-					 DBG_WARN "Extent block checksum failed."
-					 "Blocknr: %" PRIu64"\n",
-					 fblock);
-			}
-
 			/* Put back not modified old block */
 			rc = ext4_block_set(inode_ref->fs->bdev,
 					    &path_ptr->block);
@@ -766,14 +758,6 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 		rc = ext4_block_get(inode_ref->fs->bdev, &block, new_fblock);
 		if (rc != EOK)
 			return rc;
-
-		if (!ext4_extent_verify_block_csum(inode_ref,
-					&block)) {
-			ext4_dbg(DEBUG_EXTENT,
-				 DBG_WARN "Extent block checksum failed."
-				 "Blocknr: %" PRIu64"\n",
-				 new_fblock);
-		}
 
 		/* Initialize newly allocated block */
 		memset(block.data, 0, block_size);
