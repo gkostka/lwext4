@@ -418,7 +418,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 	/* Load new block */
 	struct ext4_block new_block;
 
-	rc = ext4_block_get(fs->bdev, &new_block, fblock);
+	rc = ext4_block_get_noread(fs->bdev, &new_block, fblock);
 	if (rc != EOK)
 		return rc;
 

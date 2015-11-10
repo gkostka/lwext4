@@ -306,7 +306,7 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 
 	struct ext4_block block_bitmap;
 	int rc =
-	    ext4_block_get(bg_ref->fs->bdev, &block_bitmap, bitmap_block_addr);
+	    ext4_block_get_noread(bg_ref->fs->bdev, &block_bitmap, bitmap_block_addr);
 	if (rc != EOK)
 		return rc;
 
@@ -393,7 +393,8 @@ static int ext4_fs_init_inode_bitmap(struct ext4_block_group_ref *bg_ref)
 
 	struct ext4_block block_bitmap;
 	int rc =
-	    ext4_block_get(bg_ref->fs->bdev, &block_bitmap, bitmap_block_addr);
+	    ext4_block_get_noread(bg_ref->fs->bdev,
+				  &block_bitmap, bitmap_block_addr);
 	if (rc != EOK)
 		return rc;
 
@@ -453,7 +454,7 @@ static int ext4_fs_init_inode_table(struct ext4_block_group_ref *bg_ref)
 	for (fblock = first_block; fblock <= last_block; ++fblock) {
 
 		struct ext4_block block;
-		int rc = ext4_block_get(bg_ref->fs->bdev, &block, fblock);
+		int rc = ext4_block_get_noread(bg_ref->fs->bdev, &block, fblock);
 		if (rc != EOK)
 			return rc;
 
@@ -1543,7 +1544,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 		inode_ref->dirty = true;
 
 		/* Load newly allocated block */
-		rc = ext4_block_get(fs->bdev, &new_block, new_block_addr);
+		rc = ext4_block_get_noread(fs->bdev, &new_block, new_block_addr);
 		if (rc != EOK) {
 			ext4_balloc_free_block(inode_ref, new_block_addr);
 			return rc;
@@ -1590,7 +1591,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 			}
 
 			/* Load newly allocated block */
-			rc = ext4_block_get(fs->bdev, &new_block,
+			rc = ext4_block_get_noread(fs->bdev, &new_block,
 					    new_block_addr);
 
 			if (rc != EOK) {

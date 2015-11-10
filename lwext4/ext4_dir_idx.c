@@ -361,7 +361,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 		return rc;
 
 	struct ext4_block block;
-	rc = ext4_block_get(dir->fs->bdev, &block, fblock);
+	rc = ext4_block_get_noread(dir->fs->bdev, &block, fblock);
 	if (rc != EOK)
 		return rc;
 
@@ -418,7 +418,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 
 	struct ext4_block new_block;
 
-	rc = ext4_block_get(dir->fs->bdev, &new_block, fblock);
+	rc = ext4_block_get_noread(dir->fs->bdev, &new_block, fblock);
 	if (rc != EOK) {
 		ext4_block_set(dir->fs->bdev, &block);
 		return rc;
@@ -1043,8 +1043,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 
 	/* Load new block */
 	struct ext4_block new_data_block_tmp;
-	rc = ext4_block_get(inode_ref->fs->bdev, &new_data_block_tmp,
-			    new_fblock);
+	rc = ext4_block_get_noread(inode_ref->fs->bdev, &new_data_block_tmp,
+				   new_fblock);
 	if (rc != EOK) {
 		free(sort_array);
 		free(entry_buffer);
@@ -1202,7 +1202,8 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *inode_ref,
 		/* load new block */
 		struct ext4_block new_block;
 		rc =
-		    ext4_block_get(inode_ref->fs->bdev, &new_block, new_fblock);
+		    ext4_block_get_noread(inode_ref->fs->bdev,
+					  &new_block, new_fblock);
 		if (rc != EOK)
 			return rc;
 

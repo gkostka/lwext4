@@ -651,7 +651,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 
 			struct ext4_block block;
 			rc =
-			    ext4_block_get(inode_ref->fs->bdev, &block, fblock);
+			    ext4_block_get_noread(inode_ref->fs->bdev, &block, fblock);
 			if (rc != EOK) {
 				ext4_balloc_free_block(inode_ref, fblock);
 				return rc;
@@ -755,7 +755,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 			return rc;
 
 		struct ext4_block block;
-		rc = ext4_block_get(inode_ref->fs->bdev, &block, new_fblock);
+		rc = ext4_block_get_noread(inode_ref->fs->bdev, &block, new_fblock);
 		if (rc != EOK)
 			return rc;
 
