@@ -16,3 +16,6 @@ add_executable(lwext4_generic lwext4_generic.c ${COMMON_SRC})
 target_link_libraries(lwext4_generic blockdev)
 target_link_libraries(lwext4_generic lwext4)
 
+add_executable(lwext4_mkfs lwext4_mkfs.c)
+target_link_libraries(lwext4_mkfs blockdev)
+target_link_libraries(lwext4_mkfs lwext4)
