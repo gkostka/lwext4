@@ -55,6 +55,8 @@ extern "C" {
 
 #define EXT4_CHECKSUM_CRC32C 1
 
+#define UUID_SIZE 16
+
 /*
  * Structure of the super block
  */
@@ -92,7 +94,7 @@ struct ext4_sblock {
 	uint32_t features_compatible; /* Compatible feature set */
 	uint32_t features_incompatible;  /* Incompatible feature set */
 	uint32_t features_read_only;     /* Readonly-compatible feature set */
-	uint8_t uuid[16];		 /* 128-bit uuid for volume */
+	uint8_t uuid[UUID_SIZE];		 /* 128-bit uuid for volume */
 	char volume_name[16];		 /* Volume name */
 	char last_mounted[64];		 /* Directory where last mounted */
 	uint32_t algorithm_usage_bitmap; /* For compression */
@@ -108,7 +110,7 @@ struct ext4_sblock {
 	/*
 	 * Journaling support valid if EXT4_FEATURE_COMPAT_HAS_JOURNAL set.
 	 */
-	uint8_t journal_uuid[16];      /* UUID of journal superblock */
+	uint8_t journal_uuid[UUID_SIZE];      /* UUID of journal superblock */
 	uint32_t journal_inode_number; /* Inode number of journal file */
 	uint32_t journal_dev;	  /* Device number of journal file */
 	uint32_t last_orphan;	  /* Head of list of inodes to delete */
@@ -893,6 +895,196 @@ struct ext4_xattr_ref {
 
 /*****************************************************************************/
 
+/*
+ * JBD stores integers in big endian.
+ */
+
+#define JBD_MAGIC_NUMBER 0xc03b3998U /* The first 4 bytes of /dev/random! */
+
+/*
+ * Descriptor block types:
+ */
+
+#define JBD_DESCRIPTOR_BLOCK	1
+#define JBD_COMMIT_BLOCK	2
+#define JBD_SUPERBLOCK		3
+#define JBD_SUPERBLOCK_V2	4
+#define JBD_REVOKE_BLOCK	5
+
+/*
+ * Standard header for all descriptor blocks:
+ */
+struct jbd_bhdr {
+	uint32_t		magic;
+	uint32_t		blocktype;
+	uint32_t		sequence;
+};
+
+/*
+ * Checksum types.
+ */
+#define JBD_CRC32_CHKSUM   1
+#define JBD_MD5_CHKSUM     2
+#define JBD_SHA1_CHKSUM    3
+#define JBD_CRC32C_CHKSUM  4
+
+#define JBD_CRC32_CHKSUM_SIZE 4
+
+#define JBD_CHECKSUM_BYTES (32 / sizeof(uint32_t))
+/*
+ * Commit block header for storing transactional checksums:
+ *
+ * NOTE: If FEATURE_COMPAT_CHECKSUM (checksum v1) is set, the h_chksum*
+ * fields are used to store a checksum of the descriptor and data blocks.
+ *
+ * If FEATURE_INCOMPAT_CSUM_V2 (checksum v2) is set, then the h_chksum
+ * field is used to store crc32c(uuid+commit_block).  Each journal metadata
+ * block gets its own checksum, and data block checksums are stored in
+ * journal_block_tag (in the descriptor).  The other h_chksum* fields are
+ * not used.
+ *
+ * If FEATURE_INCOMPAT_CSUM_V3 is set, the descriptor block uses
+ * journal_block_tag3_t to store a full 32-bit checksum.  Everything else
+ * is the same as v2.
+ *
+ * Checksum v1, v2, and v3 are mutually exclusive features.
+ */
+struct jbd_commit_header {
+	struct jbd_bhdr header;
+	uint8_t chksum_type;
+	uint8_t chksum_size;
+	uint8_t padding[2];
+	uint32_t		chksum[JBD_CHECKSUM_BYTES];
+	uint64_t		commit_sec;
+	uint32_t		commit_nsec;
+};
+
+/*
+ * The block tag: used to describe a single buffer in the journal
+ */
+struct jbd_block_tag3 {
+	uint32_t		blocknr;	/* The on-disk block number */
+	uint32_t		flags;	/* See below */
+	uint32_t		blocknr_high; /* most-significant high 32bits. */
+	uint32_t		checksum;	/* crc32c(uuid+seq+block) */
+};
+
+struct jbd_block_tag {
+	uint32_t		blocknr;	/* The on-disk block number */
+	uint16_t		checksum;	/* truncated crc32c(uuid+seq+block) */
+	uint16_t		flags;	/* See below */
+	uint32_t		blocknr_high; /* most-significant high 32bits. */
+};
+
+/* Tail of descriptor block, for checksumming */
+struct jbd_block_tail {
+	uint32_t	checksum;
+};
+
+/*
+ * The revoke descriptor: used on disk to describe a series of blocks to
+ * be revoked from the log
+ */
+struct jbd_revoke_header {
+	struct jbd_bhdr  header;
+	uint32_t	 count;	/* Count of bytes used in the block */
+};
+
+/* Tail of revoke block, for checksumming */
+struct jbd_revoke_tail {
+	uint32_t		checksum;
+};
+
+#define JBD_USERS_MAX 48
+#define JBD_USERS_SIZE (UUID_SIZE * JBD_USERS_MAX)
+
+/*
+ * The journal superblock.  All fields are in big-endian byte order.
+ */
+struct jbd_sb {
+/* 0x0000 */
+	struct jbd_bhdr header;
+
+/* 0x000C */
+	/* Static information describing the journal */
+	uint32_t	blocksize;		/* journal device blocksize */
+	uint32_t	maxlen;		/* total blocks in journal file */
+	uint32_t	first;		/* first block of log information */
+
+/* 0x0018 */
+	/* Dynamic information describing the current state of the log */
+	uint32_t	sequence;		/* first commit ID expected in log */
+	uint32_t	start;		/* blocknr of start of log */
+
+/* 0x0020 */
+	/* Error value, as set by journal_abort(). */
+	int32_t 	error_val;
+
+/* 0x0024 */
+	/* Remaining fields are only valid in a version-2 superblock */
+	uint32_t	feature_compat; 	/* compatible feature set */
+	uint32_t	feature_incompat; 	/* incompatible feature set */
+	uint32_t	feature_ro_compat; 	/* readonly-compatible feature set */
+/* 0x0030 */
+	uint8_t 	uuid[UUID_SIZE];		/* 128-bit uuid for journal */
+
+/* 0x0040 */
+	uint32_t	nr_users;		/* Nr of filesystems sharing log */
+
+	uint32_t	dynsuper;		/* Blocknr of dynamic superblock copy*/
+
+/* 0x0048 */
+	uint32_t	max_transaction;	/* Limit of journal blocks per trans.*/
+	uint32_t	max_trandata;	/* Limit of data blocks per trans. */
+
+/* 0x0050 */
+	uint8_t 	checksum_type;	/* checksum type */
+	uint8_t 	padding2[3];
+	uint32_t	padding[42];
+	uint32_t	checksum;		/* crc32c(superblock) */
+
+/* 0x0100 */
+	uint8_t 	users[JBD_USERS_SIZE];		/* ids of all fs'es sharing the log */
+
+/* 0x0400 */
+};
+
+#define JBD_HAS_COMPAT_FEATURE(jsb,mask)					\
+	((jsb)->header.blocktype >= to_be32(2) &&				\
+	 ((jsb)->feature_compat & to_be32((mask))))
+#define JBD_HAS_RO_COMPAT_FEATURE(jsb,mask)				\
+	((jsb)->header.blocktype >= to_be32(2) &&				\
+	 ((jsb)->feature_ro_compat & to_be32((mask))))
+#define JBD_HAS_INCOMPAT_FEATURE(jsb,mask)				\
+	((jsb)->header.blocktype >= to_be32(2) &&				\
+	 ((jsb)->feature_incompat & to_be32((mask))))
+
+#define JBD_FEATURE_COMPAT_CHECKSUM	0x00000001
+
+#define JBD_FEATURE_INCOMPAT_REVOKE		0x00000001
+#define JBD_FEATURE_INCOMPAT_64BIT		0x00000002
+#define JBD_FEATURE_INCOMPAT_ASYNC_COMMIT	0x00000004
+#define JBD_FEATURE_INCOMPAT_CSUM_V2		0x00000008
+#define JBD_FEATURE_INCOMPAT_CSUM_V3		0x00000010
+
+/* Features known to this kernel version: */
+#define JBD_KNOWN_COMPAT_FEATURES	0
+#define JBD_KNOWN_ROCOMPAT_FEATURES	0
+#define JBD_KNOWN_INCOMPAT_FEATURES	(JBD_FEATURE_INCOMPAT_REVOKE|\
+					 JBD_FEATURE_INCOMPAT_ASYNC_COMMIT|\
+					 JBD_FEATURE_INCOMPAT_64BIT|\
+					 JBD_FEATURE_INCOMPAT_CSUM_V2|\
+					 JBD_FEATURE_INCOMPAT_CSUM_V3)
+
+struct jbd_fs {
+	/* If journal block device is used, bdev will be non-null */
+	struct ext4_blockdev *bdev;
+	struct ext4_inode_ref inode_ref;
+	struct jbd_sb sb;
+};
+
+/*****************************************************************************/
+
 #define EXT4_CRC32_INIT (0xFFFFFFFFUL)
 
 /*****************************************************************************/
@@ -917,10 +1109,35 @@ static inline uint16_t to_le16(uint16_t n)
 	return ((n & 0xff) << 8) | ((n & 0xff00) >> 8);
 }
 
+#define to_be64(_n) _n
+#define to_be32(_n) _n
+#define to_be16(_n) _n
+
 #else
 #define to_le64(_n) _n
 #define to_le32(_n) _n
 #define to_le16(_n) _n
+
+static inline uint64_t to_be64(uint64_t n)
+{
+	return ((n & 0xff) << 56) | ((n & 0xff00) << 40) |
+		((n & 0xff0000) << 24) | ((n & 0xff000000LL) << 8) |
+		((n & 0xff00000000LL) >> 8) | ((n & 0xff0000000000LL) >> 24) |
+		((n & 0xff000000000000LL) >> 40) |
+		((n & 0xff00000000000000LL) >> 56);
+}
+
+static inline uint32_t to_be32(uint32_t n)
+{
+	return ((n & 0xff) << 24) | ((n & 0xff00) << 8) |
+		((n & 0xff0000) >> 8) | ((n & 0xff000000) >> 24);
+}
+
+static inline uint16_t to_be16(uint16_t n)
+{
+	return ((n & 0xff) << 8) | ((n & 0xff00) >> 8);
+}
+
 #endif
 
 /****************************Access macros to ext4 structures*****************/
