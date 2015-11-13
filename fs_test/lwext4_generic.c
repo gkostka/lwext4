@@ -38,9 +38,9 @@
 #include <sys/time.h>
 
 #include <ext4.h>
-#include "../../blockdev/linux/ext4_filedev.h"
-#include "../../blockdev/windows/io_raw.h"
-#include "../../blockdev/test_lwext4.h"
+#include "../blockdev/linux/ext4_filedev.h"
+#include "../blockdev/windows/io_raw.h"
+#include "common/test_lwext4.h"
 
 #ifdef WIN32
 #include <windows.h>

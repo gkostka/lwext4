@@ -141,9 +141,9 @@ Simple lwext4 library presentation:
 How to use for images/blockdevices:
 ```bash
  cd build_generic
- generic -i ext_images/ext2 
- generic -i ext_images/ext3 
- generic -i ext_images/ext4 
+ lwext4_generic -i ext_images/ext2 
+ lwext4_generic -i ext_images/ext3 
+ lwext4_generic -i ext_images/ext4 
  ```
 
 

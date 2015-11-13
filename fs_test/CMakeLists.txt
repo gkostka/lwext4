@@ -10,3 +10,9 @@ target_link_libraries(lwext4_client lwext4)
 if(WIN32)
 target_link_libraries(lwext4_client ws2_32)
 endif(WIN32)
+
+aux_source_directory(common COMMON_SRC)
+add_executable(lwext4_generic lwext4_generic.c ${COMMON_SRC})
+target_link_libraries(lwext4_generic blockdev)
+target_link_libraries(lwext4_generic lwext4)
+

@@ -26,13 +26,14 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../common/test_lwext4.h"
+
 #include <ext4.h>
 
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
 
-#include "test_lwext4.h"
 
 /**@brief   Block device handle.*/
 static struct ext4_blockdev *bd;

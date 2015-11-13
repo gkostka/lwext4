@@ -31,6 +31,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <ext4.h>
 
 void test_lwext4_dir_ls(const char *path);
 void test_lwext4_mp_stats(void);

@@ -14,8 +14,7 @@ if    (CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m0)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m3)
     #...
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  arm-sim)
-    add_subdirectory(blockdev)
-    add_subdirectory(demos/generic)
+    #...
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m4)
     #...
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  bf518)
@@ -38,7 +37,6 @@ else()
     add_definitions(-DCONFIG_HAVE_OWN_ASSERT=0)
     add_definitions(-DCONFIG_BLOCK_DEV_CACHE_SIZE=16)
     add_subdirectory(fs_test)
-    add_subdirectory(demos/generic)
 endif()
 
 add_subdirectory(blockdev)
