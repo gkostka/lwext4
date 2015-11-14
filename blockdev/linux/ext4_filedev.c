@@ -26,6 +26,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
 
 #include <ext4_config.h>
@@ -70,7 +71,7 @@ static int filedev_open(struct ext4_blockdev *bdev)
 	/*No buffering at file.*/
 	setbuf(dev_file, 0);
 
-	if (fseek(dev_file, 0, SEEK_END))
+	if (fseeko(dev_file, 0, SEEK_END))
 		return EFAULT;
 
 	_filedev.ph_bcnt = ftell(dev_file) / _filedev.ph_bsize;
@@ -83,7 +84,7 @@ static int filedev_open(struct ext4_blockdev *bdev)
 static int filedev_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 			 uint32_t blk_cnt)
 {
-	if (fseek(dev_file, blk_id * bdev->ph_bsize, SEEK_SET))
+	if (fseeko(dev_file, blk_id * bdev->ph_bsize, SEEK_SET))
 		return EIO;
 
 	if (!fread(buf, bdev->ph_bsize * blk_cnt, 1, dev_file))
@@ -109,7 +110,7 @@ static void drop_cache(void)
 static int filedev_bwrite(struct ext4_blockdev *bdev, const void *buf,
 			  uint64_t blk_id, uint32_t blk_cnt)
 {
-	if (fseek(dev_file, blk_id * bdev->ph_bsize, SEEK_SET))
+	if (fseeko(dev_file, blk_id * bdev->ph_bsize, SEEK_SET))
 		return EIO;
 
 	if (!fwrite(buf, bdev->ph_bsize * blk_cnt, 1, dev_file))
