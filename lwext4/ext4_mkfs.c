@@ -184,8 +184,8 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info, struct ext4_mkfs_inf
 	if (!aux_info->sb)
 		return ENOMEM;
 
-	aux_info->bg_desc = calloc(sizeof(struct ext4_bgroup),
-			aux_info->bg_desc_blocks);
+	aux_info->bg_desc = calloc(aux_info->groups,
+				   sizeof(struct ext4_bgroup));
 	if (!aux_info->bg_desc)
 		return ENOMEM;
 
@@ -197,7 +197,7 @@ static void release_fs_aux_info(struct fs_aux_info *aux_info)
 {
 	if (aux_info->sb)
 		free(aux_info->sb);
-	if (aux_info->sb)
+	if (aux_info->bg_desc)
 		free(aux_info->bg_desc);
 }
 
@@ -317,7 +317,8 @@ static int bdev_write_sb(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 				+ i * info->blocks_per_group);
 
 			aux_info->sb->block_group_index = i;
-			r = ext4_block_writebytes(bd, offset, aux_info->sb, 1024);
+			r = ext4_block_writebytes(bd, offset, aux_info->sb,
+						  sizeof(struct ext4_sblock));
 			if (r != EOK)
 				return r;
 		}
@@ -325,7 +326,8 @@ static int bdev_write_sb(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 
 	/* write out the primary superblock */
 	aux_info->sb->block_group_index = 0;
-	return ext4_block_writebytes(bd, 1024, aux_info->sb, 1024);
+	return ext4_block_writebytes(bd, 1024, aux_info->sb,
+				     sizeof(struct ext4_sblock));
 }
 
 
@@ -358,6 +360,7 @@ Finish:
 int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 {
 	int r;
+	struct fs_aux_info aux_info;
 	r = ext4_block_init(bd);
 	if (r != EOK)
 		return r;
@@ -421,7 +424,6 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 			!info->no_journal ? "yes" : "no");
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Label: %s\n", info->label);
 
-	struct fs_aux_info aux_info;
 	memset(&aux_info, 0, sizeof(struct fs_aux_info));
 
 	r = create_fs_aux_info(&aux_info, info);
