@@ -243,7 +243,7 @@ struct ext4_sblock {
 
 #define EXT2_SUPPORTED_FRO_COM                                  \
 	(EXT4_FRO_COM_SPARSE_SUPER |                            \
-	 EXT4_FRO_COM_LARGE_FILE | EXT4_FRO_COM_BTREE_DIR)
+	 EXT4_FRO_COM_LARGE_FILE)
 
 /*
  * EXT3 supported feature set
@@ -254,8 +254,7 @@ struct ext4_sblock {
 	(EXT4_FINCOM_FILETYPE | EXT4_FINCOM_META_BG)
 
 #define EXT3_SUPPORTED_FRO_COM                                \
-	(EXT4_FRO_COM_SPARSE_SUPER |                          \
-	 EXT4_FRO_COM_LARGE_FILE | EXT4_FRO_COM_BTREE_DIR)
+	(EXT4_FRO_COM_SPARSE_SUPER | EXT4_FRO_COM_LARGE_FILE)
 
 /*
  * EXT4 supported feature set
@@ -272,8 +271,7 @@ struct ext4_sblock {
 	 EXT4_FRO_COM_METADATA_CSUM |                      \
 	 EXT4_FRO_COM_LARGE_FILE | EXT4_FRO_COM_GDT_CSUM | \
 	 EXT4_FRO_COM_DIR_NLINK |                          \
-	 EXT4_FRO_COM_EXTRA_ISIZE |                        \
-	 EXT4_FRO_COM_BTREE_DIR | EXT4_FRO_COM_HUGE_FILE)
+	 EXT4_FRO_COM_EXTRA_ISIZE | EXT4_FRO_COM_HUGE_FILE)
 
 /*Ignored features:
  * RECOVER - journaling in lwext4 is not supported
