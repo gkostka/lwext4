@@ -391,12 +391,12 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 
 	info->inodes_per_group = compute_inodes_per_group(info);
 
-	info->feat_compat = CONFIG_SUPPORTED_FCOM;
-	info->feat_ro_compat = CONFIG_SUPPORTED_FRO_COM;
-	info->feat_incompat = CONFIG_SUPPORTED_FINCOM;
+	info->feat_compat = EXT2_SUPPORTED_FCOM;
+	info->feat_ro_compat = EXT2_SUPPORTED_FRO_COM;
+	info->feat_incompat = EXT2_SUPPORTED_FINCOM;
 
 	if (info->no_journal == 0)
-		info->feat_compat |= EXT4_FCOM_HAS_JOURNAL;
+		info->feat_compat |= 0;
 
 	info->bg_desc_reserve_blocks = compute_bg_desc_reserve_blocks(info);
 
