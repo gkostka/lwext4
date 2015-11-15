@@ -138,6 +138,8 @@ int main(int argc, char **argv)
 	if (!open_filedev())
 		return EXIT_FAILURE;
 
+	ext4_dmask_set(DEBUG_ALL);
+
 	static struct ext4_mkfs_info info;
 	int r = ext4_mkfs(bd, &info);
 	if (r != EOK)
