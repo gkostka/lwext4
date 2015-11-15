@@ -65,6 +65,22 @@ static inline uint64_t ext4_bg_get_block_bitmap(struct ext4_bgroup *bg,
 	return v;
 }
 
+/**@brief Set address of block with data block bitmap.
+ * @param bg pointer to block group
+ * @param s pointer to superblock
+ * @param blk block to set
+ * @return Address of block with block bitmap
+ */
+static inline void ext4_bg_set_block_bitmap(struct ext4_bgroup *bg,
+					    struct ext4_sblock *s, uint64_t blk)
+{
+
+	bg->block_bitmap_lo = to_le32(blk);
+	if (ext4_sb_get_desc_size(s) > EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE)
+		bg->block_bitmap_hi = to_le32(blk >> 32);
+
+}
+
 /**@brief Get address of block with i-node bitmap.
  * @param bg Pointer to block group
  * @param s Pointer to superblock
@@ -82,6 +98,22 @@ static inline uint64_t ext4_bg_get_inode_bitmap(struct ext4_bgroup *bg,
 	return v;
 }
 
+/**@brief Set address of block with i-node bitmap.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @param blk block to set
+ * @return Address of block with i-node bitmap
+ */
+static inline void ext4_bg_set_inode_bitmap(struct ext4_bgroup *bg,
+					    struct ext4_sblock *s, uint64_t blk)
+{
+	bg->inode_bitmap_lo = to_le32(blk);
+	if (ext4_sb_get_desc_size(s) > EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE)
+		bg->inode_bitmap_hi = to_le32(blk >> 32);
+
+}
+
+
 /**@brief Get address of the first block of the i-node table.
  * @param bg Pointer to block group
  * @param s Pointer to superblock
@@ -97,6 +129,21 @@ ext4_bg_get_inode_table_first_block(struct ext4_bgroup *bg,
 		v |= (uint64_t)to_le32(bg->inode_table_first_block_hi) << 32;
 
 	return v;
+}
+
+/**@brief Set address of the first block of the i-node table.
+ * @param bg Pointer to block group
+ * @param s Pointer to superblock
+ * @param blk block to set
+ * @return Address of first block of i-node table
+ */
+static inline void
+ext4_bg_set_inode_table_first_block(struct ext4_bgroup *bg,
+				    struct ext4_sblock *s, uint64_t blk)
+{
+	bg->inode_table_first_block_lo = to_le32(blk);
+	if (ext4_sb_get_desc_size(s) > EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE)
+		bg->inode_table_first_block_hi = to_le32(blk >> 32);
 }
 
 /**@brief Get number of free blocks in block group.
