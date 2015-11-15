@@ -1049,6 +1049,8 @@ struct jbd_sb {
 /* 0x0400 */
 };
 
+#define JBD_SUPERBLOCK_SIZE sizeof(struct jbd_sb)
+
 #define JBD_HAS_COMPAT_FEATURE(jsb,mask)					\
 	((jsb)->header.blocktype >= to_be32(2) &&				\
 	 ((jsb)->feature_compat & to_be32((mask))))
