@@ -86,7 +86,8 @@ static int filedev_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 {
 	if (fseeko(dev_file, blk_id * bdev->ph_bsize, SEEK_SET))
 		return EIO;
-
+	if (!blk_cnt)
+		return EOK;
 	if (!fread(buf, bdev->ph_bsize * blk_cnt, 1, dev_file))
 		return EIO;
 
@@ -112,7 +113,8 @@ static int filedev_bwrite(struct ext4_blockdev *bdev, const void *buf,
 {
 	if (fseeko(dev_file, blk_id * bdev->ph_bsize, SEEK_SET))
 		return EIO;
-
+	if (!blk_cnt)
+		return EOK;
 	if (!fwrite(buf, bdev->ph_bsize * blk_cnt, 1, dev_file))
 		return EIO;
 
