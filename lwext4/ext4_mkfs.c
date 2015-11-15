@@ -180,7 +180,7 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info, struct ext4_mkfs_inf
 		aux_info->len_blocks -= last_group_size;
 	}
 
-	aux_info->sb = calloc(1, sizeof(struct ext4_sblock));
+	aux_info->sb = calloc(1, EXT4_SUPERBLOCK_SIZE);
 	if (!aux_info->sb)
 		return ENOMEM;
 
@@ -318,7 +318,7 @@ static int bdev_write_sb(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 
 			aux_info->sb->block_group_index = i;
 			r = ext4_block_writebytes(bd, offset, aux_info->sb,
-						  sizeof(struct ext4_sblock));
+						  EXT4_SUPERBLOCK_SIZE);
 			if (r != EOK)
 				return r;
 		}
@@ -327,7 +327,7 @@ static int bdev_write_sb(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 	/* write out the primary superblock */
 	aux_info->sb->block_group_index = 0;
 	return ext4_block_writebytes(bd, 1024, aux_info->sb,
-				     sizeof(struct ext4_sblock));
+				     EXT4_SUPERBLOCK_SIZE);
 }
 
 
@@ -339,7 +339,7 @@ int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	if (r != EOK)
 		return r;
 
-	sb = malloc(sizeof(struct ext4_sblock));
+	sb = malloc(EXT4_SUPERBLOCK_SIZE);
 	if (!sb)
 		goto Finish;
 
