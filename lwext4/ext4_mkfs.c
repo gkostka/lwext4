@@ -37,6 +37,7 @@
 #include "ext4_config.h"
 #include "ext4_super.h"
 #include "ext4_block_group.h"
+#include "ext4_fs.h"
 #include "ext4_debug.h"
 #include "ext4_mkfs.h"
 
@@ -443,12 +444,63 @@ Finish:
 	return r;
 }
 
-int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
+static int mkfs_initial(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 {
 	int r;
 	struct fs_aux_info aux_info;
-	struct ext4_bcache bc;
-	memset(&bc, 0, sizeof(struct ext4_bcache));
+	memset(&aux_info, 0, sizeof(struct fs_aux_info));
+
+	r = create_fs_aux_info(&aux_info, info);
+	if (r != EOK)
+		goto Finish;
+
+	fill_in_sb(&aux_info, info);
+	fill_bgroups(&aux_info, info);
+
+
+	r = write_bgroups(bd, &aux_info, info);
+	if (r != EOK)
+		goto Finish;
+
+	r = write_sblocks(bd, &aux_info, info);
+	if (r != EOK)
+		goto Finish;
+
+	Finish:
+	release_fs_aux_info(&aux_info);
+	return r;
+}
+
+static int alloc_inodes(struct ext4_fs *fs)
+{
+	int r = EOK;
+	int i;
+	struct ext4_inode_ref inode_ref;
+
+	int filetype = EXT4_DIRENTRY_REG_FILE;
+	for (i = 1; i < 12; ++i) {
+		switch (i) {
+		case EXT4_ROOT_INO:
+		case EXT4_UNDEL_DIR_INO:
+		case EXT4_GOOD_OLD_FIRST_INO:
+			 filetype = EXT4_DIRENTRY_DIR;
+			break;
+		}
+
+		r = ext4_fs_alloc_inode(fs, &inode_ref, filetype);
+		if (r != EOK)
+			return r;
+
+		ext4_fs_put_inode_ref(&inode_ref);
+	}
+
+	return r;
+}
+
+int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
+	      struct ext4_mkfs_info *info)
+{
+	int r;
 
 	r = ext4_block_init(bd);
 	if (r != EOK)
@@ -514,43 +566,44 @@ int ext4_mkfs(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 			!info->no_journal ? "yes" : "no");
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Label: %s\n", info->label);
 
-	memset(&aux_info, 0, sizeof(struct fs_aux_info));
-
-	r = create_fs_aux_info(&aux_info, info);
-	if (r != EOK)
-		goto Finish;
-
-	fill_in_sb(&aux_info, info);
-	fill_bgroups(&aux_info, info);
-
-	uint32_t bsize = ext4_sb_get_block_size(aux_info.sb);
-	ext4_block_set_lb_size(bd, bsize);
+	struct ext4_bcache bc;
+	memset(&bc, 0, sizeof(struct ext4_bcache));
+	ext4_block_set_lb_size(bd, info->block_size);
 	r = ext4_bcache_init_dynamic(&bc, CONFIG_BLOCK_DEV_CACHE_SIZE,
-				     bsize);
+				      info->block_size);
 	if (r != EOK)
-		goto Finish;
+		goto block_fini;
 
 	/*Bind block cache to block device*/
 	r = ext4_block_bind_bcache(bd, &bc);
 	if (r != EOK)
-		goto Finish;
+		goto cache_fini;
 
 	r = ext4_block_cache_write_back(bd, 0);
 	if (r != EOK)
-		goto Finish;
+		goto cache_fini;
 
-	r = write_bgroups(bd, &aux_info, info);
+	r = mkfs_initial(bd, info);
 	if (r != EOK)
-		goto Finish;
+		goto cache_fini;
 
-	r = write_sblocks(bd, &aux_info, info);
+	r = ext4_fs_init(fs, bd);
 	if (r != EOK)
-		goto Finish;
+		goto cache_fini;
 
-	Finish:
-	release_fs_aux_info(&aux_info);
-	ext4_block_fini(bd);
+	r = alloc_inodes(fs);
+	if (r != EOK)
+		goto fs_fini;
+
+	fs_fini:
+	ext4_fs_fini(fs);
+
+	cache_fini:
 	ext4_bcache_fini_dynamic(&bc);
+
+	block_fini:
+	ext4_block_fini(bd);
+
 	return r;
 }
 

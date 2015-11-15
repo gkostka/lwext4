@@ -140,8 +140,9 @@ int main(int argc, char **argv)
 
 	ext4_dmask_set(DEBUG_ALL);
 
+	static struct ext4_fs fs;
 	static struct ext4_mkfs_info info;
-	int r = ext4_mkfs(bd, &info);
+	int r = ext4_mkfs(&fs, bd, &info);
 	if (r != EOK)
 		return EXIT_FAILURE;
 
