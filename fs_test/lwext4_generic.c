@@ -47,7 +47,7 @@
 #endif
 
 /**@brief   Input stream name.*/
-char input_name[128] = "ext2";
+char input_name[128] = "ext_images/ext2";
 
 /**@brief   Read-write size*/
 static int rw_szie = 1024 * 1024;
@@ -224,6 +224,9 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 	}
 
+
+	if (cache_mode)
+		bc = NULL;
 
 	if (!test_lwext4_mount(bd, bc))
 		return EXIT_FAILURE;
