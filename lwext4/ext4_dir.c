@@ -452,6 +452,10 @@ int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 {
 	struct ext4_sblock *sb = &parent->fs->sb;
 
+	/* Entry clear */
+	result->block.lb_id = 0;
+	result->dentry = NULL;
+
 #if CONFIG_DIR_INDEX_ENABLE
 	/* Index search */
 	if ((ext4_sb_feature_com(sb, EXT4_FCOM_DIR_INDEX)) &&
@@ -524,11 +528,6 @@ int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 		if (rc != EOK)
 			return rc;
 	}
-
-	/* Entry was not found */
-
-	result->block.lb_id = 0;
-	result->dentry = NULL;
 
 	return ENOENT;
 }
