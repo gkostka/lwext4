@@ -38,6 +38,7 @@
 #include "ext4_super.h"
 #include "ext4_block_group.h"
 #include "ext4_dir.h"
+#include "ext4_dir_idx.h"
 #include "ext4_fs.h"
 #include "ext4_inode.h"
 #include "ext4_debug.h"
@@ -534,21 +535,38 @@ static int create_dirs(struct ext4_fs *fs)
 	ext4_inode_set_mode(&fs->sb, root.inode,
 			EXT4_INODE_MODE_DIRECTORY | 0777);
 
-	r = ext4_dir_add_entry(&root, ".", strlen("."), &root);
-	if (r != EOK)
-		return r;
+#if CONFIG_DIR_INDEX_ENABLE
+	/* Initialize directory index if supported */
+	if (ext4_sb_feature_com(&fs->sb, EXT4_FCOM_DIR_INDEX)) {
+		r = ext4_dir_dx_init(&root, &root);
+		if (r != EOK)
+			return r;
 
-	r = ext4_dir_add_entry(&root, "..", strlen(".."), &root);
-	if (r != EOK)
-		return r;
+		r = ext4_dir_dx_init(&child, &root);
+		if (r != EOK)
+			return r;
 
-	r = ext4_dir_add_entry(&child, ".", strlen("."), &child);
-	if (r != EOK)
-		return r;
+		ext4_inode_set_flag(root.inode,	EXT4_INODE_FLAG_INDEX);
+		ext4_inode_set_flag(child.inode, EXT4_INODE_FLAG_INDEX);
+	} else
+#endif
+	{
+		r = ext4_dir_add_entry(&root, ".", strlen("."), &root);
+		if (r != EOK)
+			return r;
 
-	r = ext4_dir_add_entry(&child, "..", strlen(".."), &root);
-	if (r != EOK)
-		return r;
+		r = ext4_dir_add_entry(&root, "..", strlen(".."), &root);
+		if (r != EOK)
+			return r;
+
+		r = ext4_dir_add_entry(&child, ".", strlen("."), &child);
+		if (r != EOK)
+			return r;
+
+		r = ext4_dir_add_entry(&child, "..", strlen(".."), &root);
+		if (r != EOK)
+			return r;
+	}
 
 	r = ext4_dir_add_entry(&root, "lost+found", strlen("lost+found"), &child);
 	if (r != EOK)
@@ -557,6 +575,8 @@ static int create_dirs(struct ext4_fs *fs)
 	ext4_inode_set_links_count(root.inode, 3);
 	ext4_inode_set_links_count(child.inode, 2);
 
+	child.dirty = true;
+	root.dirty = true;
 	ext4_fs_put_inode_ref(&child);
 	ext4_fs_put_inode_ref(&root);
 	return r;
