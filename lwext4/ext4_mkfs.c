@@ -37,6 +37,7 @@
 #include "ext4_config.h"
 #include "ext4_super.h"
 #include "ext4_block_group.h"
+#include "ext4_dir.h"
 #include "ext4_fs.h"
 #include "ext4_inode.h"
 #include "ext4_debug.h"
@@ -281,6 +282,7 @@ static void fill_bgroups(struct fs_aux_info *aux_info,
 		bg_free_blk = info->blocks_per_group -
 			(aux_info->inode_table_blocks + aux_info->bg_desc_blocks);
 
+		bg_free_blk -= 2;
 		blk_off += aux_info->bg_desc_blocks;
 
 		if (has_superblock(info, i)) {
@@ -465,24 +467,73 @@ static int alloc_inodes(struct ext4_fs *fs)
 {
 	int r = EOK;
 	int i;
-
+	struct ext4_inode_ref inode_ref;
 	for (i = 1; i < 12; ++i) {
-
-		bool dir = false;
+		int filetype = EXT4_DIRENTRY_REG_FILE;
 
 		switch (i) {
 		case EXT4_ROOT_INO:
 		case EXT4_GOOD_OLD_FIRST_INO:
-			dir = true;
+			filetype = EXT4_DIRENTRY_DIR;
 			break;
 		}
 
-		uint32_t index = 0;
-		r = ext4_ialloc_alloc_inode(fs, &index, dir);
+		r = ext4_fs_alloc_inode(fs, &inode_ref, filetype);
 		if (r != EOK)
 			return r;
+
+		ext4_inode_set_mode(&fs->sb, inode_ref.inode, 0);
+		ext4_fs_put_inode_ref(&inode_ref);
 	}
 
+	return r;
+}
+
+static int create_dirs(struct ext4_fs *fs)
+{
+	int r = EOK;
+	struct ext4_inode_ref root;
+	struct ext4_inode_ref child;
+
+	r = ext4_fs_get_inode_ref(fs, EXT4_ROOT_INO, &root);
+	if (r != EOK)
+		return r;
+
+	r = ext4_fs_get_inode_ref(fs, EXT4_GOOD_OLD_FIRST_INO, &child);
+	if (r != EOK)
+		return r;
+
+	ext4_inode_set_mode(&fs->sb, child.inode,
+			EXT4_INODE_MODE_DIRECTORY | 0777);
+
+	ext4_inode_set_mode(&fs->sb, root.inode,
+			EXT4_INODE_MODE_DIRECTORY | 0777);
+
+	r = ext4_dir_add_entry(&root, ".", strlen("."), &root);
+	if (r != EOK)
+		return r;
+
+	r = ext4_dir_add_entry(&root, "..", strlen(".."), &root);
+	if (r != EOK)
+		return r;
+
+	r = ext4_dir_add_entry(&child, ".", strlen("."), &child);
+	if (r != EOK)
+		return r;
+
+	r = ext4_dir_add_entry(&child, "..", strlen(".."), &root);
+	if (r != EOK)
+		return r;
+
+	r = ext4_dir_add_entry(&root, "lost+found", strlen("lost+found"), &child);
+	if (r != EOK)
+		return r;
+
+	ext4_inode_set_links_count(root.inode, 3);
+	ext4_inode_set_links_count(child.inode, 2);
+
+	ext4_fs_put_inode_ref(&child);
+	ext4_fs_put_inode_ref(&root);
 	return r;
 }
 
@@ -581,6 +632,10 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 		goto cache_fini;
 
 	r = alloc_inodes(fs);
+	if (r != EOK)
+		goto fs_fini;
+
+	r = create_dirs(fs);
 	if (r != EOK)
 		goto fs_fini;
 
