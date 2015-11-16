@@ -289,6 +289,8 @@ static void fill_bgroups(struct fs_aux_info *aux_info,
 			bg_start_block++;
 			blk_off += info->bg_desc_reserve_blocks;
 			bg_free_blk -= info->bg_desc_reserve_blocks + 1;
+		} else {
+			bg_free_blk++;
 		}
 
 		ext4_bg_set_block_bitmap(&aux_info->bg_desc[i], aux_info->sb,
@@ -600,6 +602,7 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	info->feat_incompat = EXT3_SUPPORTED_FINCOM;
 
 	info->feat_incompat &= ~EXT4_FINCOM_META_BG;
+	info->feat_ro_compat &= ~EXT4_FRO_COM_METADATA_CSUM;
 
 	if (info->no_journal == 0)
 		info->feat_compat |= 0;
