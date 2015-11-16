@@ -197,8 +197,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 	 * Also newly allocated inode should have 0 link count.
 	 */
 	if (ext4_inode_is_type(&mp->fs.sb, child->inode,
-			       EXT4_INODE_MODE_DIRECTORY) &&
-	    !rename) {
+			       EXT4_INODE_MODE_DIRECTORY) && !rename) {
 
 #if CONFIG_DIR_INDEX_ENABLE
 		/* Initialize directory index if supported */
@@ -644,10 +643,8 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 
 			/*O_CREAT allows create new entry*/
 			struct ext4_inode_ref child_ref;
-			r = ext4_fs_alloc_inode(
-			    &mp->fs, &child_ref,
-			    is_goal ? filetype
-				    : EXT4_DIRENTRY_DIR);
+			r = ext4_fs_alloc_inode(&mp->fs, &child_ref,
+					is_goal ? filetype : EXT4_DIRENTRY_DIR);
 			if (r != EOK)
 				break;
 
