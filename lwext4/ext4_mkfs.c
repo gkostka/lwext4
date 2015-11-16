@@ -310,6 +310,10 @@ static void fill_bgroups(struct fs_aux_info *aux_info,
 		ext4_bg_set_used_dirs_count(&aux_info->bg_desc[i], aux_info->sb,
 					    0);
 
+		ext4_bg_set_flag(&aux_info->bg_desc[i],
+				EXT4_BLOCK_GROUP_BLOCK_UNINIT |
+				EXT4_BLOCK_GROUP_INODE_UNINIT);
+
 		sb_free_blk += bg_free_blk;
 	}
 
@@ -328,10 +332,10 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 			aux_info->first_data_block + i * info->blocks_per_group;
 		uint32_t blk_off = 0;
 
+		blk_off += aux_info->bg_desc_blocks;
 		if (has_superblock(info, i)) {
 			bg_start_block++;
-			blk_off = info->bg_desc_reserve_blocks +
-				  aux_info->bg_desc_blocks;
+			blk_off += info->bg_desc_reserve_blocks;
 		}
 
 		uint32_t block_size = ext4_sb_get_block_size(aux_info->sb);
@@ -378,6 +382,7 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 		if (r != EOK)
 			return r;
 	}
+
 
 	return r;
 }
@@ -460,6 +465,24 @@ static int mkfs_initial(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 
 	Finish:
 	release_fs_aux_info(&aux_info);
+	return r;
+}
+
+static int init_bgs(struct ext4_fs *fs)
+{
+	int r = EOK;
+	struct ext4_block_group_ref ref;
+	uint32_t i;
+	uint32_t bg_count = ext4_block_group_cnt(&fs->sb);
+	for (i = 0; i < bg_count; ++i) {
+		r = ext4_fs_get_block_group_ref(fs, i, &ref);
+		if (r != EOK)
+			break;
+
+		r = ext4_fs_put_block_group_ref(&ref);
+		if (r != EOK)
+			break;
+	}
 	return r;
 }
 
@@ -572,9 +595,11 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 
 	info->inodes_per_group = compute_inodes_per_group(info);
 
-	info->feat_compat = EXT2_SUPPORTED_FCOM;
-	info->feat_ro_compat = EXT2_SUPPORTED_FRO_COM;
-	info->feat_incompat = EXT2_SUPPORTED_FINCOM;
+	info->feat_compat = EXT3_SUPPORTED_FCOM;
+	info->feat_ro_compat = EXT3_SUPPORTED_FRO_COM;
+	info->feat_incompat = EXT3_SUPPORTED_FINCOM;
+
+	info->feat_incompat &= ~EXT4_FINCOM_META_BG;
 
 	if (info->no_journal == 0)
 		info->feat_compat |= 0;
@@ -630,6 +655,10 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	r = ext4_fs_init(fs, bd);
 	if (r != EOK)
 		goto cache_fini;
+
+	r = init_bgs(fs);
+	if (r != EOK)
+		goto fs_fini;
 
 	r = alloc_inodes(fs);
 	if (r != EOK)
