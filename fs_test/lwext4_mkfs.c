@@ -52,8 +52,9 @@ static struct ext4_blockdev *bd;
 static bool winpart = false;
 
 static struct ext4_fs fs;
-
-static struct ext4_mkfs_info info;
+static struct ext4_mkfs_info info = {
+	.block_size = 4096,
+};
 
 static bool verbose = false;
 
@@ -64,6 +65,7 @@ Usage:                                                          \n\
 [-i] --input   - input file name (or blockdevice)               \n\
 [-w] --wpart   - windows partition mode                         \n\
 [-v] --verbose - verbose mode		                        \n\
+[-b] --block   - block size: 1024, 2048 ... 65536 (default 4096)\n\
 \n";
 
 
@@ -115,16 +117,20 @@ static bool parse_opt(int argc, char **argv)
 
 	static struct option long_options[] = {
 	    {"input", required_argument, 0, 'i'},
+	    {"block", required_argument, 0, 'b'},
 	    {"wpart", no_argument, 0, 'w'},
 	    {"verbose", no_argument, 0, 'v'},
 	    {0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "i:wv",
+	while (-1 != (c = getopt_long(argc, argv, "i:b:wv",
 				      long_options, &option_index))) {
 
 		switch (c) {
 		case 'i':
 			input_name = optarg;
+			break;
+		case 'b':
+			info.block_size = atoi(optarg);
 			break;
 		case 'w':
 			winpart = true;
