@@ -84,15 +84,13 @@ static uint32_t ext4_balloc_bitmap_csum(struct ext4_sblock *sb,
 {
 	uint32_t checksum = 0;
 	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
-		uint32_t blocks_per_group =
-			ext4_get32(sb, blocks_per_group);
+		uint32_t blocks_per_group = ext4_get32(sb, blocks_per_group);
 
 		/* First calculate crc32 checksum against fs uuid */
 		checksum = ext4_crc32c(EXT4_CRC32_INIT, sb->uuid,
 				sizeof(sb->uuid));
 		/* Then calculate crc32 checksum against block_group_desc */
-		checksum = ext4_crc32c(checksum, bitmap,
-				     blocks_per_group / 8);
+		checksum = ext4_crc32c(checksum, bitmap, blocks_per_group / 8);
 	}
 	return checksum;
 }
@@ -152,7 +150,7 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 	struct ext4_sblock *sb = &fs->sb;
 
 	uint32_t block_group = ext4_balloc_get_bgid_of_block(sb, baddr);
-	uint32_t index_in_group = ext4_fs_baddr2_index_in_group(sb, baddr);
+	uint32_t index_in_group = ext4_fs_addr_to_idx_bg(sb, baddr);
 
 	/* Load block group reference */
 	struct ext4_block_group_ref bg_ref;
@@ -160,9 +158,11 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 	if (rc != EOK)
 		return rc;
 
+	struct ext4_bgroup *bg = bg_ref.block_group;
+
 	/* Load block with bitmap */
 	ext4_fsblk_t bitmap_block_addr =
-	    ext4_bg_get_block_bitmap(bg_ref.block_group, sb);
+	    ext4_bg_get_block_bitmap(bg, sb);
 
 	struct ext4_block bitmap_block;
 
@@ -172,9 +172,7 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 		return rc;
 	}
 
-	if (!ext4_balloc_verify_bitmap_csum(sb,
-			       bg_ref.block_group,
-			       bitmap_block.data)) {
+	if (!ext4_balloc_verify_bitmap_csum(sb, bg, bitmap_block.data)) {
 		ext4_dbg(DEBUG_BALLOC,
 			DBG_WARN "Bitmap checksum failed."
 			"Group: %" PRIu32"\n",
@@ -183,8 +181,7 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 
 	/* Modify bitmap */
 	ext4_bmap_bit_clr(bitmap_block.data, index_in_group);
-	ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
-				    bitmap_block.data);
+	ext4_balloc_set_bitmap_csum(sb, bg, bitmap_block.data);
 	bitmap_block.dirty = true;
 
 	/* Release block with bitmap */
@@ -209,10 +206,9 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 	inode_ref->dirty = true;
 
 	/* Update block group free blocks count */
-	uint32_t free_blocks =
-	    ext4_bg_get_free_blocks_count(bg_ref.block_group, sb);
+	uint32_t free_blocks = ext4_bg_get_free_blocks_count(bg, sb);
 	free_blocks++;
-	ext4_bg_set_free_blocks_count(bg_ref.block_group, sb, free_blocks);
+	ext4_bg_set_free_blocks_count(bg, sb, free_blocks);
 
 	bg_ref.dirty = true;
 
@@ -228,7 +224,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t first
 	struct ext4_sblock *sb = &fs->sb;
 
 	/* Compute indexes */
-	uint32_t block_group_first = ext4_balloc_get_bgid_of_block(sb, first);
+	uint32_t bg_first = ext4_balloc_get_bgid_of_block(sb, first);
 
 	/* Compute indexes */
 	uint32_t block_group_last =
@@ -237,61 +233,55 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t first
 	if (!ext4_sb_feature_incom(sb, EXT4_FINCOM_FLEX_BG)) {
 		/*It is not possible without flex_bg that blocks are continuous
 		 * and and last block belongs to other bg.*/
-		ext4_assert(block_group_first == ext4_balloc_get_bgid_of_block(
-						     sb, first + count - 1));
+		ext4_assert(ext4_balloc_get_bgid_of_block(sb, first + count - 1)
+			== bg_first);
 	}
 
 	/* Load block group reference */
 	struct ext4_block_group_ref bg_ref;
-	while (block_group_first <= block_group_last) {
+	while (bg_first <= block_group_last) {
 
-		rc =
-		    ext4_fs_get_block_group_ref(fs, block_group_first, &bg_ref);
+		rc = ext4_fs_get_block_group_ref(fs, bg_first, &bg_ref);
 		if (rc != EOK)
 			return rc;
 
-		uint32_t index_in_group_first =
-		    ext4_fs_baddr2_index_in_group(sb, first);
+		struct ext4_bgroup *bg = bg_ref.block_group;
+
+		uint32_t idx_in_bg_first;
+		idx_in_bg_first = ext4_fs_addr_to_idx_bg(sb, first);
 
 		/* Load block with bitmap */
-		ext4_fsblk_t bitmap_block_addr =
-		    ext4_bg_get_block_bitmap(bg_ref.block_group, sb);
+		ext4_fsblk_t bitmap_blk = ext4_bg_get_block_bitmap(bg, sb);
 
-		struct ext4_block bitmap_block;
-
-		rc = ext4_block_get(fs->bdev, &bitmap_block, bitmap_block_addr);
+		struct ext4_block blk;
+		rc = ext4_block_get(fs->bdev, &blk, bitmap_blk);
 		if (rc != EOK) {
 			ext4_fs_put_block_group_ref(&bg_ref);
 			return rc;
 		}
 
-		if (!ext4_balloc_verify_bitmap_csum(sb,
-				       bg_ref.block_group,
-				       bitmap_block.data)) {
+		if (!ext4_balloc_verify_bitmap_csum(sb, bg, blk.data)) {
 			ext4_dbg(DEBUG_BALLOC,
 				DBG_WARN "Bitmap checksum failed."
 				"Group: %" PRIu32"\n",
 				bg_ref.index);
 		}
-
-		uint32_t free_cnt =
-		    ext4_sb_get_block_size(sb) * 8 - index_in_group_first;
+		uint32_t free_cnt;
+		free_cnt = ext4_sb_get_block_size(sb) * 8 - idx_in_bg_first;
 
 		/*If last block, free only count blocks*/
 		free_cnt = count > free_cnt ? free_cnt : count;
 
 		/* Modify bitmap */
-		ext4_bmap_bits_free(bitmap_block.data, index_in_group_first,
-				    free_cnt);
-		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
-					    bitmap_block.data);
-		bitmap_block.dirty = true;
+		ext4_bmap_bits_free(blk.data, idx_in_bg_first, free_cnt);
+		ext4_balloc_set_bitmap_csum(sb, bg, blk.data);
+		blk.dirty = true;
 
 		count -= free_cnt;
 		first += free_cnt;
 
 		/* Release block with bitmap */
-		rc = ext4_block_set(fs->bdev, &bitmap_block);
+		rc = ext4_block_set(fs->bdev, &blk);
 		if (rc != EOK) {
 			ext4_fs_put_block_group_ref(&bg_ref);
 			return rc;
@@ -305,18 +295,17 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t first
 		ext4_sb_set_free_blocks_cnt(sb, sb_free_blocks);
 
 		/* Update inode blocks count */
-		uint64_t ino_blocks =
-		    ext4_inode_get_blocks_count(sb, inode_ref->inode);
+		uint64_t ino_blocks;
+		ino_blocks = ext4_inode_get_blocks_count(sb, inode_ref->inode);
 		ino_blocks -= free_cnt * (block_size / EXT4_INODE_BLOCK_SIZE);
 		ext4_inode_set_blocks_count(sb, inode_ref->inode, ino_blocks);
 		inode_ref->dirty = true;
 
 		/* Update block group free blocks count */
-		uint32_t free_blocks =
-		    ext4_bg_get_free_blocks_count(bg_ref.block_group, sb);
+		uint32_t free_blocks;
+		free_blocks = ext4_bg_get_free_blocks_count(bg, sb);
 		free_blocks += free_cnt;
-		ext4_bg_set_free_blocks_count(bg_ref.block_group, sb,
-					      free_blocks);
+		ext4_bg_set_free_blocks_count(bg, sb, free_blocks);
 		bg_ref.dirty = true;
 
 		/* Release block group reference */
@@ -324,7 +313,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t first
 		if (rc != EOK)
 			break;
 
-		block_group_first++;
+		bg_first++;
 	}
 
 	/*All blocks should be released*/
@@ -336,24 +325,26 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 			    ext4_fsblk_t goal,
 			    ext4_fsblk_t *fblock)
 {
-	ext4_fsblk_t allocated_block = 0;
-	ext4_fsblk_t bitmap_block_addr;
-	uint32_t rel_block_idx = 0;
+	ext4_fsblk_t alloc = 0;
+	ext4_fsblk_t bmp_blk_adr;
+	uint32_t rel_blk_idx = 0;
 	uint64_t free_blocks;
-	struct ext4_block bitmap_block;
-	int rc;
-
+	int r;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
 	/* Load block group number for goal and relative index */
 	uint32_t block_group = ext4_balloc_get_bgid_of_block(sb, goal);
-	uint32_t index_in_group = ext4_fs_baddr2_index_in_group(sb, goal);
+	uint32_t idx_in_bg = ext4_fs_addr_to_idx_bg(sb, goal);
+
+	struct ext4_block b;
+	struct ext4_block_group_ref bg_ref;
 
 	/* Load block group reference */
-	struct ext4_block_group_ref bg_ref;
-	rc = ext4_fs_get_block_group_ref(inode_ref->fs, block_group, &bg_ref);
-	if (rc != EOK)
-		return rc;
+	r = ext4_fs_get_block_group_ref(inode_ref->fs, block_group, &bg_ref);
+	if (r != EOK)
+		return r;
+
+	struct ext4_bgroup *bg = bg_ref.block_group;
 
 	free_blocks = ext4_bg_get_free_blocks_count(bg_ref.block_group, sb);
 	if (free_blocks == 0) {
@@ -362,27 +353,25 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 	}
 
 	/* Compute indexes */
-	ext4_fsblk_t first_in_group = ext4_balloc_get_block_of_bgid(sb, bg_ref.index);
+	ext4_fsblk_t first_in_bg;
+	first_in_bg = ext4_balloc_get_block_of_bgid(sb, bg_ref.index);
 
-	uint32_t first_in_group_index =
-	    ext4_fs_baddr2_index_in_group(sb, first_in_group);
+	uint32_t first_in_bg_index;
+	first_in_bg_index = ext4_fs_addr_to_idx_bg(sb, first_in_bg);
 
-	if (index_in_group < first_in_group_index)
-		index_in_group = first_in_group_index;
+	if (idx_in_bg < first_in_bg_index)
+		idx_in_bg = first_in_bg_index;
 
 	/* Load block with bitmap */
-	bitmap_block_addr = ext4_bg_get_block_bitmap(bg_ref.block_group, sb);
+	bmp_blk_adr = ext4_bg_get_block_bitmap(bg_ref.block_group, sb);
 
-	rc = ext4_block_get(inode_ref->fs->bdev, &bitmap_block,
-			    bitmap_block_addr);
-	if (rc != EOK) {
+	r = ext4_block_get(inode_ref->fs->bdev, &b, bmp_blk_adr);
+	if (r != EOK) {
 		ext4_fs_put_block_group_ref(&bg_ref);
-		return rc;
+		return r;
 	}
 
-	if (!ext4_balloc_verify_bitmap_csum(sb,
-			       bg_ref.block_group,
-			       bitmap_block.data)) {
+	if (!ext4_balloc_verify_bitmap_csum(sb, bg, b.data)) {
 		ext4_dbg(DEBUG_BALLOC,
 			DBG_WARN "Bitmap checksum failed."
 			"Group: %" PRIu32"\n",
@@ -390,113 +379,97 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 	}
 
 	/* Check if goal is free */
-	if (ext4_bmap_is_bit_clr(bitmap_block.data, index_in_group)) {
-		ext4_bmap_bit_set(bitmap_block.data, index_in_group);
+	if (ext4_bmap_is_bit_clr(b.data, idx_in_bg)) {
+		ext4_bmap_bit_set(b.data, idx_in_bg);
 		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
-					    bitmap_block.data);
-		bitmap_block.dirty = true;
-		rc = ext4_block_set(inode_ref->fs->bdev, &bitmap_block);
-		if (rc != EOK) {
+					    b.data);
+		b.dirty = true;
+		r = ext4_block_set(inode_ref->fs->bdev, &b);
+		if (r != EOK) {
 			ext4_fs_put_block_group_ref(&bg_ref);
-			return rc;
+			return r;
 		}
 
-		allocated_block = ext4_fs_index_in_group2_baddr(
-		    sb, index_in_group, block_group);
-
+		alloc = ext4_fs_bg_idx_to_addr(sb, idx_in_bg, block_group);
 		goto success;
 	}
 
-	uint32_t blocks_in_group = ext4_blocks_in_group_cnt(sb, block_group);
+	uint32_t blk_in_bg = ext4_blocks_in_group_cnt(sb, block_group);
 
-	uint32_t end_idx = (index_in_group + 63) & ~63;
-	if (end_idx > blocks_in_group)
-		end_idx = blocks_in_group;
+	uint32_t end_idx = (idx_in_bg + 63) & ~63;
+	if (end_idx > blk_in_bg)
+		end_idx = blk_in_bg;
 
 	/* Try to find free block near to goal */
 	uint32_t tmp_idx;
-	for (tmp_idx = index_in_group + 1; tmp_idx < end_idx; ++tmp_idx) {
-		if (ext4_bmap_is_bit_clr(bitmap_block.data, tmp_idx)) {
-			ext4_bmap_bit_set(bitmap_block.data, tmp_idx);
+	for (tmp_idx = idx_in_bg + 1; tmp_idx < end_idx; ++tmp_idx) {
+		if (ext4_bmap_is_bit_clr(b.data, tmp_idx)) {
+			ext4_bmap_bit_set(b.data, tmp_idx);
 
-			ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
-						    bitmap_block.data);
-			bitmap_block.dirty = true;
-			rc = ext4_block_set(inode_ref->fs->bdev, &bitmap_block);
-			if (rc != EOK)
-				return rc;
+			ext4_balloc_set_bitmap_csum(sb, bg, b.data);
+			b.dirty = true;
+			r = ext4_block_set(inode_ref->fs->bdev, &b);
+			if (r != EOK)
+				return r;
 
-			allocated_block = ext4_fs_index_in_group2_baddr(
-			    sb, tmp_idx, block_group);
-
+			alloc = ext4_fs_bg_idx_to_addr(sb, tmp_idx, block_group);
 			goto success;
 		}
 	}
 
 	/* Find free bit in bitmap */
-	rc = ext4_bmap_bit_find_clr(bitmap_block.data, index_in_group,
-				    blocks_in_group, &rel_block_idx);
-	if (rc == EOK) {
-		ext4_bmap_bit_set(bitmap_block.data, rel_block_idx);
-		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
-					    bitmap_block.data);
-		bitmap_block.dirty = true;
-		rc = ext4_block_set(inode_ref->fs->bdev, &bitmap_block);
-		if (rc != EOK)
-			return rc;
+	r = ext4_bmap_bit_find_clr(b.data, idx_in_bg, blk_in_bg, &rel_blk_idx);
+	if (r == EOK) {
+		ext4_bmap_bit_set(b.data, rel_blk_idx);
+		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group, b.data);
+		b.dirty = true;
+		r = ext4_block_set(inode_ref->fs->bdev, &b);
+		if (r != EOK)
+			return r;
 
-		allocated_block = ext4_fs_index_in_group2_baddr(
-		    sb, rel_block_idx, block_group);
-
+		alloc = ext4_fs_bg_idx_to_addr(sb, rel_blk_idx, block_group);
 		goto success;
 	}
 
 	/* No free block found yet */
-	rc = ext4_block_set(inode_ref->fs->bdev, &bitmap_block);
-	if (rc != EOK) {
+	r = ext4_block_set(inode_ref->fs->bdev, &b);
+	if (r != EOK) {
 		ext4_fs_put_block_group_ref(&bg_ref);
-		return rc;
+		return r;
 	}
 
 goal_failed:
 
-	rc = ext4_fs_put_block_group_ref(&bg_ref);
-	if (rc != EOK)
-		return rc;
+	r = ext4_fs_put_block_group_ref(&bg_ref);
+	if (r != EOK)
+		return r;
 
 	/* Try other block groups */
 	uint32_t block_group_count = ext4_block_group_cnt(sb);
-
 	uint32_t bgid = (block_group + 1) % block_group_count;
 	uint32_t count = block_group_count;
 
 	while (count > 0) {
-		rc = ext4_fs_get_block_group_ref(inode_ref->fs, bgid, &bg_ref);
-		if (rc != EOK)
-			return rc;
+		r = ext4_fs_get_block_group_ref(inode_ref->fs, bgid, &bg_ref);
+		if (r != EOK)
+			return r;
 
-		free_blocks =
-		    ext4_bg_get_free_blocks_count(bg_ref.block_group, sb);
+		struct ext4_bgroup *bg = bg_ref.block_group;
+		free_blocks = ext4_bg_get_free_blocks_count(bg, sb);
 		if (free_blocks == 0) {
 			/* This group has no free blocks */
 			goto next_group;
 		}
 
 		/* Load block with bitmap */
-		bitmap_block_addr =
-		    ext4_bg_get_block_bitmap(bg_ref.block_group, sb);
-
-		rc = ext4_block_get(inode_ref->fs->bdev, &bitmap_block,
-				    bitmap_block_addr);
-
-		if (rc != EOK) {
+		bmp_blk_adr = ext4_bg_get_block_bitmap(bg, sb);
+		r = ext4_block_get(inode_ref->fs->bdev, &b, bmp_blk_adr);
+		if (r != EOK) {
 			ext4_fs_put_block_group_ref(&bg_ref);
-			return rc;
+			return r;
 		}
 
-		if (!ext4_balloc_verify_bitmap_csum(sb,
-				       bg_ref.block_group,
-				       bitmap_block.data)) {
+		if (!ext4_balloc_verify_bitmap_csum(sb, bg, b.data)) {
 			ext4_dbg(DEBUG_BALLOC,
 				DBG_WARN "Bitmap checksum failed."
 				"Group: %" PRIu32"\n",
@@ -504,49 +477,40 @@ goal_failed:
 		}
 
 		/* Compute indexes */
-		first_in_group = ext4_balloc_get_block_of_bgid(sb, bgid);
-		index_in_group =
-		    ext4_fs_baddr2_index_in_group(sb, first_in_group);
-		blocks_in_group = ext4_blocks_in_group_cnt(sb, bgid);
+		first_in_bg = ext4_balloc_get_block_of_bgid(sb, bgid);
+		idx_in_bg = ext4_fs_addr_to_idx_bg(sb, first_in_bg);
+		blk_in_bg = ext4_blocks_in_group_cnt(sb, bgid);
+		first_in_bg_index = ext4_fs_addr_to_idx_bg(sb, first_in_bg);
 
-		first_in_group_index =
-		    ext4_fs_baddr2_index_in_group(sb, first_in_group);
+		if (idx_in_bg < first_in_bg_index)
+			idx_in_bg = first_in_bg_index;
 
-		if (index_in_group < first_in_group_index)
-			index_in_group = first_in_group_index;
-
-		rc = ext4_bmap_bit_find_clr(bitmap_block.data, index_in_group,
-					    blocks_in_group, &rel_block_idx);
-
-		if (rc == EOK) {
-
-			ext4_bmap_bit_set(bitmap_block.data, rel_block_idx);
-
-			ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
-						    bitmap_block.data);
-			bitmap_block.dirty = true;
-			rc = ext4_block_set(inode_ref->fs->bdev, &bitmap_block);
-			if (rc != EOK) {
+		r = ext4_bmap_bit_find_clr(b.data, idx_in_bg, blk_in_bg,
+				&rel_blk_idx);
+		if (r == EOK) {
+			ext4_bmap_bit_set(b.data, rel_blk_idx);
+			ext4_balloc_set_bitmap_csum(sb, bg, b.data);
+			b.dirty = true;
+			r = ext4_block_set(inode_ref->fs->bdev, &b);
+			if (r != EOK) {
 				ext4_fs_put_block_group_ref(&bg_ref);
-				return rc;
+				return r;
 			}
 
-			allocated_block = ext4_fs_index_in_group2_baddr(
-			    sb, rel_block_idx, bgid);
-
+			alloc = ext4_fs_bg_idx_to_addr(sb, rel_blk_idx, bgid);
 			goto success;
 		}
 
-		rc = ext4_block_set(inode_ref->fs->bdev, &bitmap_block);
-		if (rc != EOK) {
+		r = ext4_block_set(inode_ref->fs->bdev, &b);
+		if (r != EOK) {
 			ext4_fs_put_block_group_ref(&bg_ref);
-			return rc;
+			return r;
 		}
 
 	next_group:
-		rc = ext4_fs_put_block_group_ref(&bg_ref);
-		if (rc != EOK) {
-			return rc;
+		r = ext4_fs_put_block_group_ref(&bg_ref);
+		if (r != EOK) {
+			return r;
 		}
 
 		/* Goto next group */
@@ -574,17 +538,16 @@ success:
 	inode_ref->dirty = true;
 
 	/* Update block group free blocks count */
-	uint64_t bg_free_blocks =
-	    ext4_bg_get_free_blocks_count(bg_ref.block_group, sb);
-	bg_free_blocks--;
-	ext4_bg_set_free_blocks_count(bg_ref.block_group, sb, bg_free_blocks);
+
+	uint32_t fb_cnt = ext4_bg_get_free_blocks_count(bg_ref.block_group, sb);
+	fb_cnt--;
+	ext4_bg_set_free_blocks_count(bg_ref.block_group, sb, fb_cnt);
 
 	bg_ref.dirty = true;
+	r = ext4_fs_put_block_group_ref(&bg_ref);
 
-	rc = ext4_fs_put_block_group_ref(&bg_ref);
-
-	*fblock = allocated_block;
-	return rc;
+	*fblock = alloc;
+	return r;
 }
 
 int ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
@@ -597,7 +560,7 @@ int ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
 
 	/* Compute indexes */
 	uint32_t block_group = ext4_balloc_get_bgid_of_block(sb, baddr);
-	uint32_t index_in_group = ext4_fs_baddr2_index_in_group(sb, baddr);
+	uint32_t index_in_group = ext4_fs_addr_to_idx_bg(sb, baddr);
 
 	/* Load block group reference */
 	struct ext4_block_group_ref bg_ref;
@@ -606,20 +569,17 @@ int ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
 		return rc;
 
 	/* Load block with bitmap */
-	ext4_fsblk_t bitmap_block_addr =
-	    ext4_bg_get_block_bitmap(bg_ref.block_group, sb);
+	ext4_fsblk_t bmp_blk_addr;
+	bmp_blk_addr = ext4_bg_get_block_bitmap(bg_ref.block_group, sb);
 
-	struct ext4_block bitmap_block;
-
-	rc = ext4_block_get(fs->bdev, &bitmap_block, bitmap_block_addr);
+	struct ext4_block b;
+	rc = ext4_block_get(fs->bdev, &b, bmp_blk_addr);
 	if (rc != EOK) {
 		ext4_fs_put_block_group_ref(&bg_ref);
 		return rc;
 	}
 
-	if (!ext4_balloc_verify_bitmap_csum(sb,
-			       bg_ref.block_group,
-			       bitmap_block.data)) {
+	if (!ext4_balloc_verify_bitmap_csum(sb, bg_ref.block_group, b.data)) {
 		ext4_dbg(DEBUG_BALLOC,
 			DBG_WARN "Bitmap checksum failed."
 			"Group: %" PRIu32"\n",
@@ -627,18 +587,17 @@ int ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
 	}
 
 	/* Check if block is free */
-	*free = ext4_bmap_is_bit_clr(bitmap_block.data, index_in_group);
+	*free = ext4_bmap_is_bit_clr(b.data, index_in_group);
 
 	/* Allocate block if possible */
 	if (*free) {
-		ext4_bmap_bit_set(bitmap_block.data, index_in_group);
-		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
-					    bitmap_block.data);
-		bitmap_block.dirty = true;
+		ext4_bmap_bit_set(b.data, index_in_group);
+		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group, b.data);
+		b.dirty = true;
 	}
 
 	/* Release block with bitmap */
-	rc = ext4_block_set(fs->bdev, &bitmap_block);
+	rc = ext4_block_set(fs->bdev, &b);
 	if (rc != EOK) {
 		/* Error in saving bitmap */
 		ext4_fs_put_block_group_ref(&bg_ref);
@@ -663,10 +622,9 @@ int ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
 	inode_ref->dirty = true;
 
 	/* Update block group free blocks count */
-	uint32_t free_blocks =
-	    ext4_bg_get_free_blocks_count(bg_ref.block_group, sb);
-	free_blocks--;
-	ext4_bg_set_free_blocks_count(bg_ref.block_group, sb, free_blocks);
+	uint32_t fb_cnt = ext4_bg_get_free_blocks_count(bg_ref.block_group, sb);
+	fb_cnt--;
+	ext4_bg_set_free_blocks_count(bg_ref.block_group, sb, fb_cnt);
 
 	bg_ref.dirty = true;
 

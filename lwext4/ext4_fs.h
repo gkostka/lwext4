@@ -53,7 +53,7 @@
  * @param baddr Block number to convert
  * @return Relative number of block
  */
-static inline uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s,
+static inline uint32_t ext4_fs_addr_to_idx_bg(struct ext4_sblock *s,
 						     ext4_fsblk_t baddr)
 {
 	if (ext4_get32(s, first_data_block))
@@ -68,7 +68,7 @@ static inline uint32_t ext4_fs_baddr2_index_in_group(struct ext4_sblock *s,
  * @param bgid Block group
  * @return Absolute block address
  */
-static inline ext4_fsblk_t ext4_fs_index_in_group2_baddr(struct ext4_sblock *s,
+static inline ext4_fsblk_t ext4_fs_bg_idx_to_addr(struct ext4_sblock *s,
 						     uint32_t index,
 						     uint32_t bgid)
 {
