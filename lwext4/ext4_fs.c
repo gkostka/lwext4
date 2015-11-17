@@ -226,11 +226,11 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
 	}
 
 	/*Check features_read_only*/
-	v = (ext4_get32(&fs->sb, features_read_only) &
-	     (~CONFIG_SUPPORTED_FRO_COM));
+	v = ext4_get32(&fs->sb, features_read_only);
+	v &= ~CONFIG_SUPPORTED_FRO_COM;
 	if (v) {
 		ext4_dbg(DEBUG_FS, DBG_WARN
-				"sblock has unsupported features read only:\n");
+			"sblock has unsupported features read only:\n");
 		ext4_fs_debug_features_ro(v);
 		*read_only = true;
 		return EOK;
@@ -245,9 +245,8 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
  * @param bgid    block group id
  * @return Error code
  */
-static bool ext4_block_in_group(struct ext4_sblock *s,
-			       ext4_fsblk_t baddr,
-			       uint32_t bgid)
+static bool ext4_block_in_group(struct ext4_sblock *s, ext4_fsblk_t baddr,
+			        uint32_t bgid)
 {
 	uint32_t actual_bgid;
 	actual_bgid = ext4_balloc_get_bgid_of_block(s, baddr);
@@ -456,14 +455,13 @@ static ext4_fsblk_t ext4_fs_get_descriptor_block(struct ext4_sblock *s,
 					     uint32_t dsc_per_block)
 {
 	uint32_t first_meta_bg, dsc_id;
-
 	int has_super = 0;
-
 	dsc_id = bgid / dsc_per_block;
 	first_meta_bg = ext4_sb_first_meta_bg(s);
 
-	if (!ext4_sb_feature_incom(s, EXT4_FINCOM_META_BG) ||
-	    dsc_id < first_meta_bg)
+	bool meta_bg = ext4_sb_feature_incom(s, EXT4_FINCOM_META_BG);
+
+	if (!meta_bg || dsc_id < first_meta_bg)
 		return ext4_get32(s, first_data_block) + dsc_id + 1;
 
 	if (ext4_sb_is_super_in_bg(s, bgid))
@@ -498,11 +496,9 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
 		checksum = ext4_crc32c(EXT4_CRC32_INIT, sb->uuid,
 				sizeof(sb->uuid));
 		/* Then calculate crc32 checksum against bgid */
-		checksum = ext4_crc32c(checksum, &le32_bgid,
-				     sizeof(bgid));
+		checksum = ext4_crc32c(checksum, &le32_bgid, sizeof(bgid));
 		/* Finally calculate crc32 checksum against block_group_desc */
-		checksum = ext4_crc32c(checksum, bg,
-				     ext4_sb_get_desc_size(sb));
+		checksum = ext4_crc32c(checksum, bg, ext4_sb_get_desc_size(sb));
 		bg->checksum = orig_checksum;
 
 		crc = checksum & 0xFFFF;
@@ -534,10 +530,12 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
 
 		/* Checksum of the rest of block group descriptor */
 		if ((ext4_sb_feature_incom(sb, EXT4_FINCOM_64BIT)) &&
-		    (offset < ext4_sb_get_desc_size(sb)))
+		    (offset < ext4_sb_get_desc_size(sb))) {
 
-			crc = ext4_bg_crc16(crc, ((uint8_t *)bg) + offset,
-					    ext4_sb_get_desc_size(sb) - offset);
+			const uint8_t *start = ((uint8_t *)bg) + offset;
+			size_t len = ext4_sb_get_desc_size(sb) - offset;
+			crc = ext4_bg_crc16(crc, start, len);
+		}
 	}
 	return crc;
 }
@@ -550,10 +548,7 @@ static bool ext4_fs_verify_bg_csum(struct ext4_sblock *sb,
 	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 		return true;
 
-	return ext4_fs_bg_checksum(sb,
-				   bgid,
-				   bg) ==
-		to_le16(bg->checksum);
+	return ext4_fs_bg_checksum(sb, bgid, bg) == to_le16(bg->checksum);
 }
 #else
 #define ext4_fs_verify_bg_csum(...) true
@@ -563,16 +558,14 @@ int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid,
 				struct ext4_block_group_ref *ref)
 {
 	/* Compute number of descriptors, that fits in one data block */
-	uint32_t dsc_per_block =
-	    ext4_sb_get_block_size(&fs->sb) / ext4_sb_get_desc_size(&fs->sb);
+	uint32_t block_size = ext4_sb_get_block_size(&fs->sb);
+	uint32_t dsc_cnt = block_size / ext4_sb_get_desc_size(&fs->sb);
 
 	/* Block group descriptor table starts at the next block after
 	 * superblock */
-	uint64_t block_id =
-	    ext4_fs_get_descriptor_block(&fs->sb, bgid, dsc_per_block);
+	uint64_t block_id = ext4_fs_get_descriptor_block(&fs->sb, bgid, dsc_cnt);
 
-	uint32_t offset =
-	    (bgid % dsc_per_block) * ext4_sb_get_desc_size(&fs->sb);
+	uint32_t offset = (bgid % dsc_cnt) * ext4_sb_get_desc_size(&fs->sb);
 
 	int rc = ext4_block_get(fs->bdev, &ref->block, block_id);
 	if (rc != EOK)
@@ -582,48 +575,42 @@ int ext4_fs_get_block_group_ref(struct ext4_fs *fs, uint32_t bgid,
 	ref->fs = fs;
 	ref->index = bgid;
 	ref->dirty = false;
+	struct ext4_bgroup *bg = ref->block_group;
 
-	if (!ext4_fs_verify_bg_csum(&fs->sb,
-				    bgid,
-				    ref->block_group)) {
+	if (!ext4_fs_verify_bg_csum(&fs->sb, bgid, bg)) {
 		ext4_dbg(DEBUG_FS,
 			 DBG_WARN "Block group descriptor checksum failed."
 			 "Block group index: %" PRIu32"\n",
 			 bgid);
 	}
 
-	if (ext4_bg_has_flag(ref->block_group, EXT4_BLOCK_GROUP_BLOCK_UNINIT)) {
+	if (ext4_bg_has_flag(bg, EXT4_BLOCK_GROUP_BLOCK_UNINIT)) {
 		rc = ext4_fs_init_block_bitmap(ref);
 		if (rc != EOK) {
 			ext4_block_set(fs->bdev, &ref->block);
 			return rc;
 		}
-		ext4_bg_clear_flag(ref->block_group,
-				   EXT4_BLOCK_GROUP_BLOCK_UNINIT);
-
+		ext4_bg_clear_flag(bg, EXT4_BLOCK_GROUP_BLOCK_UNINIT);
 		ref->dirty = true;
 	}
 
-	if (ext4_bg_has_flag(ref->block_group, EXT4_BLOCK_GROUP_INODE_UNINIT)) {
+	if (ext4_bg_has_flag(bg, EXT4_BLOCK_GROUP_INODE_UNINIT)) {
 		rc = ext4_fs_init_inode_bitmap(ref);
 		if (rc != EOK) {
 			ext4_block_set(ref->fs->bdev, &ref->block);
 			return rc;
 		}
 
-		ext4_bg_clear_flag(ref->block_group,
-				   EXT4_BLOCK_GROUP_INODE_UNINIT);
+		ext4_bg_clear_flag(bg, EXT4_BLOCK_GROUP_INODE_UNINIT);
 
-		if (!ext4_bg_has_flag(ref->block_group,
-				      EXT4_BLOCK_GROUP_ITABLE_ZEROED)) {
+		if (!ext4_bg_has_flag(bg, EXT4_BLOCK_GROUP_ITABLE_ZEROED)) {
 			rc = ext4_fs_init_inode_table(ref);
 			if (rc != EOK) {
 				ext4_block_set(fs->bdev, &ref->block);
 				return rc;
 			}
 
-			ext4_bg_set_flag(ref->block_group,
-					 EXT4_BLOCK_GROUP_ITABLE_ZEROED);
+			ext4_bg_set_flag(bg, EXT4_BLOCK_GROUP_ITABLE_ZEROED);
 		}
 
 		ref->dirty = true;
@@ -637,10 +624,10 @@ int ext4_fs_put_block_group_ref(struct ext4_block_group_ref *ref)
 	/* Check if reference modified */
 	if (ref->dirty) {
 		/* Compute new checksum of block group */
-		uint16_t checksum = ext4_fs_bg_checksum(
-		    &ref->fs->sb, ref->index, ref->block_group);
-
-		ref->block_group->checksum = to_le16(checksum);
+		uint16_t cs;
+		cs = ext4_fs_bg_checksum(&ref->fs->sb, ref->index,
+					 ref->block_group);
+		ref->block_group->checksum = to_le16(cs);
 
 		/* Mark block dirty for writing changes to physical device */
 		ref->block.dirty = true;
@@ -670,19 +657,15 @@ static uint32_t ext4_fs_inode_checksum(struct ext4_inode_ref *inode_ref)
 
 		/* First calculate crc32 checksum against fs uuid */
 		checksum = ext4_crc32c(EXT4_CRC32_INIT, sb->uuid,
-				sizeof(sb->uuid));
+				       sizeof(sb->uuid));
 		/* Then calculate crc32 checksum against inode number
 		 * and inode generation */
-		checksum = ext4_crc32c(checksum, &ino_index,
-				     sizeof(ino_index));
-		checksum = ext4_crc32c(checksum, &ino_gen,
-				     sizeof(ino_gen));
+		checksum = ext4_crc32c(checksum, &ino_index, sizeof(ino_index));
+		checksum = ext4_crc32c(checksum, &ino_gen, sizeof(ino_gen));
 		/* Finally calculate crc32 checksum against 
 		 * the entire inode */
-		checksum = ext4_crc32c(checksum, inode_ref->inode,
-				inode_size);
-		ext4_inode_set_checksum(sb, inode_ref->inode,
-				orig_checksum);
+		checksum = ext4_crc32c(checksum, inode_ref->inode, inode_size);
+		ext4_inode_set_checksum(sb, inode_ref->inode, orig_checksum);
 
 		/* If inode size is not large enough to hold the
 		 * upper 16bit of the checksum */
@@ -702,8 +685,8 @@ static void ext4_fs_set_inode_checksum(struct ext4_inode_ref *inode_ref)
 	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 		return;
 
-	ext4_inode_set_checksum(sb, inode_ref->inode,
-				ext4_fs_inode_checksum(inode_ref));
+	uint32_t csum = ext4_fs_inode_checksum(inode_ref);
+	ext4_inode_set_checksum(sb, inode_ref->inode, csum);
 }
 
 #if CONFIG_META_CSUM_ENABLE
@@ -806,7 +789,8 @@ int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref)
 	return ext4_block_set(ref->fs->bdev, &ref->block);
 }
 
-void ext4_fs_inode_blocks_init(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref)
+void ext4_fs_inode_blocks_init(struct ext4_fs *fs,
+			       struct ext4_inode_ref *inode_ref)
 {
 	int i;
 	struct ext4_inode *inode = inode_ref->inode;
@@ -899,11 +883,11 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	ext4_inode_set_blocks_count(&fs->sb, inode, 0);
 	ext4_inode_set_flags(inode, 0);
 	ext4_inode_set_generation(inode, 0);
-	if (inode_size > EXT4_GOOD_OLD_INODE_SIZE)
-		ext4_inode_set_extra_isize(inode,
-				sizeof(struct ext4_inode) -
-				offsetof(struct ext4_inode,
-					extra_isize));
+	if (inode_size > EXT4_GOOD_OLD_INODE_SIZE) {
+		uint16_t off = offsetof(struct ext4_inode, extra_isize);
+		uint16_t size = sizeof(struct ext4_inode) - off;
+		ext4_inode_set_extra_isize(inode, size);
+	}
 
 	/* Reset blocks array. For symbolic link inode, just
 	 * fill in blocks with 0 */
@@ -911,8 +895,9 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 		for (int i = 0; i < EXT4_INODE_BLOCKS; i++)
 			inode->blocks[i] = 0;
 
-	} else
+	} else {
 		ext4_fs_inode_blocks_init(fs, inode_ref);
+	}
 
 	inode_ref->dirty = true;
 
@@ -1168,6 +1153,7 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 {
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 	uint32_t i;
+	int r;
 
 	/* Check flags, if i-node can be truncated */
 	if (!ext4_inode_can_truncate(sb, inode_ref->inode))
@@ -1182,12 +1168,12 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 	if (old_size < new_size)
 		return EINVAL;
 
-	if (ext4_inode_is_type(sb, inode_ref->inode, EXT4_INODE_MODE_SOFTLINK)
-			&& old_size < sizeof(inode_ref->inode->blocks)
-			&& !ext4_inode_get_blocks_count(sb, inode_ref->inode)) {
-		char *content = (char *)inode_ref->inode->blocks;
-		memset(content + new_size, 0,
-			sizeof(inode_ref->inode->blocks) - new_size);
+	bool v;
+	v = ext4_inode_is_type(sb, inode_ref->inode, EXT4_INODE_MODE_SOFTLINK);
+	if (v && old_size < sizeof(inode_ref->inode->blocks) &&
+	    !ext4_inode_get_blocks_count(sb, inode_ref->inode)) {
+		char *content = (char *)inode_ref->inode->blocks + new_size;
+		memset(content , 0, sizeof(inode_ref->inode->blocks) - new_size);
 		ext4_inode_set_size(inode_ref->inode, new_size);
 		inode_ref->dirty = true;
 
@@ -1196,21 +1182,19 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 
 	/* Compute how many blocks will be released */
 	uint32_t block_size = ext4_sb_get_block_size(sb);
-	uint32_t new_blocks_count = (new_size + block_size - 1) /
-				    block_size;
-	uint32_t old_blocks_count = (old_size + block_size - 1) /
-				    block_size;
-	uint32_t diff_blocks_count = old_blocks_count - new_blocks_count;
+	uint32_t new_blocks_cnt = (new_size + block_size - 1) / block_size;
+	uint32_t old_blocks_cnt = (old_size + block_size - 1) / block_size;
+	uint32_t diff_blocks_cnt = old_blocks_cnt - new_blocks_cnt;
 #if CONFIG_EXTENT_ENABLE
 	if ((ext4_sb_feature_incom(sb, EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 
 		/* Extents require special operation */
-		if (diff_blocks_count) {
-			int rc = ext4_extent_remove_space(inode_ref,
-					new_blocks_count, EXT_MAX_BLOCKS);
-			if (rc != EOK)
-				return rc;
+		if (diff_blocks_cnt) {
+			r = ext4_extent_remove_space(inode_ref, new_blocks_cnt,
+						     EXT_MAX_BLOCKS);
+			if (r != EOK)
+				return r;
 
 		}
 	} else
@@ -1220,11 +1204,11 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 
 		/* Starting from 1 because of logical blocks are numbered from 0
 		 */
-		for (i = 0; i < diff_blocks_count; ++i) {
-			int rc = ext4_fs_release_inode_block(
-			    inode_ref, new_blocks_count + i);
-			if (rc != EOK)
-				return rc;
+		for (i = 0; i < diff_blocks_cnt; ++i) {
+			r = ext4_fs_release_inode_block(inode_ref,
+							new_blocks_cnt + i);
+			if (r != EOK)
+				return r;
 		}
 	}
 
@@ -1241,9 +1225,8 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
  */
 ext4_fsblk_t ext4_fs_inode_to_goal_block(struct ext4_inode_ref *inode_ref)
 {
-	uint32_t group_inodes =
-		ext4_get32(&inode_ref->fs->sb, inodes_per_group);
-	return (inode_ref->index - 1) / group_inodes;
+	uint32_t grp_inodes = ext4_get32(&inode_ref->fs->sb, inodes_per_group);
+	return (inode_ref->index - 1) / grp_inodes;
 }
 
 /**@brief Compute 'goal' for allocation algorithm (For blockmap).
@@ -1252,28 +1235,29 @@ ext4_fsblk_t ext4_fs_inode_to_goal_block(struct ext4_inode_ref *inode_ref)
  * @return error code
  */
 int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
-				ext4_fsblk_t *goal)
+			       ext4_fsblk_t *goal)
 {
+	int r;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 	*goal = 0;
 
 	uint64_t inode_size = ext4_inode_get_size(sb, inode_ref->inode);
 	uint32_t block_size = ext4_sb_get_block_size(sb);
-	uint32_t inode_block_count = inode_size / block_size;
+	uint32_t iblock_cnt = inode_size / block_size;
 
 	if (inode_size % block_size != 0)
-		inode_block_count++;
+		iblock_cnt++;
 
 	/* If inode has some blocks, get last block address + 1 */
-	if (inode_block_count > 0) {
-		int rc = ext4_fs_get_inode_data_block_index(
-		    inode_ref, inode_block_count - 1, goal, false);
-		if (rc != EOK)
-			return rc;
+	if (iblock_cnt > 0) {
+		r = ext4_fs_get_inode_data_block_index(inode_ref, iblock_cnt - 1,
+						       goal, false);
+		if (r != EOK)
+			return r;
 
 		if (*goal != 0) {
 			(*goal)++;
-			return rc;
+			return r;
 		}
 
 		/* If goal == 0, sparse file -> continue */
@@ -1281,43 +1265,41 @@ int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
 
 	/* Identify block group of inode */
 
-	uint32_t inodes_per_group = ext4_get32(sb, inodes_per_group);
-	uint32_t block_group = (inode_ref->index - 1) / inodes_per_group;
+	uint32_t inodes_per_bg = ext4_get32(sb, inodes_per_group);
+	uint32_t block_group = (inode_ref->index - 1) / inodes_per_bg;
 	block_size = ext4_sb_get_block_size(sb);
 
 	/* Load block group reference */
 	struct ext4_block_group_ref bg_ref;
-	int rc =
-	    ext4_fs_get_block_group_ref(inode_ref->fs, block_group, &bg_ref);
-	if (rc != EOK)
-		return rc;
+	r = ext4_fs_get_block_group_ref(inode_ref->fs, block_group, &bg_ref);
+	if (r != EOK)
+		return r;
+
+	struct ext4_bgroup *bg = bg_ref.block_group;
 
 	/* Compute indexes */
-	uint32_t block_group_count = ext4_block_group_cnt(sb);
-	ext4_fsblk_t inode_table_first_block =
-	    ext4_bg_get_inode_table_first_block(bg_ref.block_group, sb);
-	uint16_t inode_table_item_size = ext4_get16(sb, inode_size);
-	uint32_t inode_table_bytes;
+	uint32_t bg_count = ext4_block_group_cnt(sb);
+	ext4_fsblk_t itab_first_block = ext4_bg_get_inode_table_first_block(bg, sb);
+	uint16_t itab_item_size = ext4_get16(sb, inode_size);
+	uint32_t itab_bytes;
 
 	/* Check for last block group */
-	if (block_group < block_group_count - 1) {
-		inode_table_bytes = inodes_per_group * inode_table_item_size;
+	if (block_group < bg_count - 1) {
+		itab_bytes = inodes_per_bg * itab_item_size;
 	} else {
 		/* Last block group could be smaller */
-		uint32_t inodes_count_total = ext4_get32(sb, inodes_count);
+		uint32_t inodes_cnt = ext4_get32(sb, inodes_count);
 
-		inode_table_bytes =
-		    (inodes_count_total -
-		     ((block_group_count - 1) * inodes_per_group)) *
-		    inode_table_item_size;
+		itab_bytes = (inodes_cnt - ((bg_count - 1) * inodes_per_bg));
+		itab_bytes *= itab_item_size;
 	}
 
-	ext4_fsblk_t inode_table_blocks = inode_table_bytes / block_size;
+	ext4_fsblk_t inode_table_blocks = itab_bytes / block_size;
 
-	if (inode_table_bytes % block_size)
+	if (itab_bytes % block_size)
 		inode_table_blocks++;
 
-	*goal = inode_table_first_block + inode_table_blocks;
+	*goal = itab_first_block + inode_table_blocks;
 
 	return ext4_fs_put_block_group_ref(&bg_ref);
 }
@@ -1368,24 +1350,22 @@ static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 	}
 
 	/* Determine indirection level of the target block */
-	unsigned int level = 0;
+	unsigned int l = 0;
 	unsigned int i;
 	for (i = 1; i < 4; i++) {
 		if (iblock < fs->inode_block_limits[i]) {
-			level = i;
+			l = i;
 			break;
 		}
 	}
 
-	if (level == 0)
+	if (l == 0)
 		return EIO;
 
 	/* Compute offsets for the topmost level */
-	uint64_t block_offset_in_level =
-	    iblock - fs->inode_block_limits[level - 1];
-	current_block = ext4_inode_get_indirect_block(inode, level - 1);
-	uint32_t offset_in_block =
-	    block_offset_in_level / fs->inode_blocks_per_level[level - 1];
+	uint64_t blk_off_in_lvl =  iblock - fs->inode_block_limits[l - 1];
+	current_block = ext4_inode_get_indirect_block(inode, l - 1);
+	uint32_t off_in_blk = blk_off_in_lvl / fs->inode_blocks_per_level[l - 1];
 
 	/* Sparse file */
 	if (current_block == 0) {
@@ -1399,7 +1379,7 @@ static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 	 * Navigate through other levels, until we find the block number
 	 * or find null reference meaning we are dealing with sparse file
 	 */
-	while (level > 0) {
+	while (l > 0) {
 		/* Load indirect block */
 		int rc = ext4_block_get(fs->bdev, &block, current_block);
 		if (rc != EOK)
@@ -1407,7 +1387,7 @@ static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 
 		/* Read block address from indirect block */
 		current_block =
-		    to_le32(((uint32_t *)block.data)[offset_in_block]);
+		    to_le32(((uint32_t *)block.data)[off_in_blk]);
 
 		/* Put back indirect block untouched */
 		rc = ext4_block_set(fs->bdev, &block);
@@ -1421,17 +1401,16 @@ static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 		}
 
 		/* Jump to the next level */
-		level--;
+		l--;
 
 		/* Termination condition - we have address of data block loaded
 		 */
-		if (level == 0)
+		if (l == 0)
 			break;
 
 		/* Visit the next level */
-		block_offset_in_level %= fs->inode_blocks_per_level[level];
-		offset_in_block = block_offset_in_level /
-				  fs->inode_blocks_per_level[level - 1];
+		blk_off_in_lvl %= fs->inode_blocks_per_level[l];
+		off_in_blk = blk_off_in_lvl / fs->inode_blocks_per_level[l - 1];
 	}
 
 	*fblock = current_block;
@@ -1479,29 +1458,27 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 	}
 
 	/* Determine the indirection level needed to get the desired block */
-	unsigned int level = 0;
+	unsigned int l = 0;
 	unsigned int i;
 	for (i = 1; i < 4; i++) {
 		if (iblock < fs->inode_block_limits[i]) {
-			level = i;
+			l = i;
 			break;
 		}
 	}
 
-	if (level == 0)
+	if (l == 0)
 		return EIO;
 
 	uint32_t block_size = ext4_sb_get_block_size(&fs->sb);
 
 	/* Compute offsets for the topmost level */
-	uint64_t block_offset_in_level =
-	    iblock - fs->inode_block_limits[level - 1];
+	uint64_t blk_off_in_lvl =  iblock - fs->inode_block_limits[l - 1];
 	ext4_fsblk_t current_block =
-	    ext4_inode_get_indirect_block(inode_ref->inode, level - 1);
-	uint32_t offset_in_block =
-	    block_offset_in_level / fs->inode_blocks_per_level[level - 1];
+			ext4_inode_get_indirect_block(inode_ref->inode, l - 1);
+	uint32_t off_in_blk = blk_off_in_lvl / fs->inode_blocks_per_level[l - 1];
 
-	ext4_fsblk_t new_block_addr;
+	ext4_fsblk_t new_blk;
 
 	struct ext4_block block;
 	struct ext4_block new_block;
@@ -1514,21 +1491,18 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 		if (rc != EOK)
 			return rc;
 
-		rc = ext4_balloc_alloc_block(inode_ref,
-					     goal,
-					     &new_block_addr);
+		rc = ext4_balloc_alloc_block(inode_ref, goal, &new_blk);
 		if (rc != EOK)
 			return rc;
 
 		/* Update i-node */
-		ext4_inode_set_indirect_block(inode_ref->inode, level - 1,
-					      (uint32_t)new_block_addr);
+		ext4_inode_set_indirect_block(inode_ref->inode, l - 1, new_blk);
 		inode_ref->dirty = true;
 
 		/* Load newly allocated block */
-		rc = ext4_block_get_noread(fs->bdev, &new_block, new_block_addr);
+		rc = ext4_block_get_noread(fs->bdev, &new_block, new_blk);
 		if (rc != EOK) {
-			ext4_balloc_free_block(inode_ref, new_block_addr);
+			ext4_balloc_free_block(inode_ref, new_blk);
 			return rc;
 		}
 
@@ -1541,22 +1515,20 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 		if (rc != EOK)
 			return rc;
 
-		current_block = new_block_addr;
+		current_block = new_blk;
 	}
 
 	/*
 	 * Navigate through other levels, until we find the block number
 	 * or find null reference meaning we are dealing with sparse file
 	 */
-	while (level > 0) {
+	while (l > 0) {
 		int rc = ext4_block_get(fs->bdev, &block, current_block);
 		if (rc != EOK)
 			return rc;
 
-		current_block =
-		    to_le32(((uint32_t *)block.data)[offset_in_block]);
-
-		if ((level > 1) && (current_block == 0)) {
+		current_block = to_le32(((uint32_t *)block.data)[off_in_blk]);
+		if ((l > 1) && (current_block == 0)) {
 			ext4_fsblk_t goal;
 			rc = ext4_fs_indirect_find_goal(inode_ref, &goal);
 			if (rc != EOK) {
@@ -1566,7 +1538,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 
 			/* Allocate new block */
 			rc =
-			    ext4_balloc_alloc_block(inode_ref, goal, &new_block_addr);
+			    ext4_balloc_alloc_block(inode_ref, goal, &new_blk);
 			if (rc != EOK) {
 				ext4_block_set(fs->bdev, &block);
 				return rc;
@@ -1574,7 +1546,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 
 			/* Load newly allocated block */
 			rc = ext4_block_get_noread(fs->bdev, &new_block,
-					    new_block_addr);
+					    new_blk);
 
 			if (rc != EOK) {
 				ext4_block_set(fs->bdev, &block);
@@ -1592,16 +1564,16 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 			}
 
 			/* Write block address to the parent */
-			((uint32_t *)block.data)[offset_in_block] =
-			    to_le32((uint32_t)new_block_addr);
+			uint32_t * p = (uint32_t * )block.data;
+			p[off_in_blk] = to_le32((uint32_t)new_blk);
 			block.dirty = true;
-			current_block = new_block_addr;
+			current_block = new_blk;
 		}
 
 		/* Will be finished, write the fblock address */
-		if (level == 1) {
-			((uint32_t *)block.data)[offset_in_block] =
-			    to_le32((uint32_t)fblock);
+		if (l == 1) {
+			uint32_t * p = (uint32_t * )block.data;
+			p[off_in_blk] = to_le32((uint32_t)fblock);
 			block.dirty = true;
 		}
 
@@ -1609,19 +1581,18 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 		if (rc != EOK)
 			return rc;
 
-		level--;
+		l--;
 
 		/*
 		 * If we are on the last level, break here as
 		 * there is no next level to visit
 		 */
-		if (level == 0)
+		if (l == 0)
 			break;
 
 		/* Visit the next level */
-		block_offset_in_level %= fs->inode_blocks_per_level[level];
-		offset_in_block = block_offset_in_level /
-				  fs->inode_blocks_per_level[level - 1];
+		blk_off_in_lvl %= fs->inode_blocks_per_level[l];
+		off_in_blk = blk_off_in_lvl / fs->inode_blocks_per_level[l - 1];
 	}
 
 	return EOK;
@@ -1640,18 +1611,16 @@ int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
 		struct ext4_sblock *sb = &inode_ref->fs->sb;
 		uint64_t inode_size = ext4_inode_get_size(sb, inode_ref->inode);
 		uint32_t block_size = ext4_sb_get_block_size(sb);
-		*iblock = (inode_size + block_size - 1) /
-				    block_size;
+		*iblock = (inode_size + block_size - 1) / block_size;
 
 		rc = ext4_extent_get_blocks(inode_ref, *iblock, 1,
-				&current_fsblk, true, NULL);
+						&current_fsblk, true, NULL);
 
 
 		*fblock = current_fsblk;
 		ext4_assert(*fblock);
 
-		ext4_inode_set_size(inode_ref->inode,
-				    inode_size + block_size);
+		ext4_inode_set_size(inode_ref->inode, inode_size + block_size);
 		inode_ref->dirty = true;
 
 
@@ -1702,21 +1671,20 @@ int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
 void ext4_fs_inode_links_count_inc(struct ext4_inode_ref *inode_ref)
 {
 	uint16_t link;
-
+	bool is_dx;
 	link = ext4_inode_get_links_count(inode_ref->inode);
 	link++;
 	ext4_inode_set_links_count(inode_ref->inode, link);
 
-	bool is_dx =
-	    ext4_sb_feature_com(&inode_ref->fs->sb, EXT4_FCOM_DIR_INDEX) &&
-	    ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_INDEX);
+	is_dx = ext4_sb_feature_com(&inode_ref->fs->sb, EXT4_FCOM_DIR_INDEX) &&
+		ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_INDEX);
 
 	if (is_dx && link > 1) {
 		if (link >= EXT4_LINK_MAX || link == 2) {
 			ext4_inode_set_links_count(inode_ref->inode, 1);
 
-			uint32_t v =
-			    ext4_get32(&inode_ref->fs->sb, features_read_only);
+			uint32_t v;
+			v = ext4_get32(&inode_ref->fs->sb, features_read_only);
 			v |= EXT4_FRO_COM_DIR_NLINK;
 			ext4_set32(&inode_ref->fs->sb, features_read_only, v);
 		}
