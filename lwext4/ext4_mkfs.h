@@ -58,14 +58,14 @@ struct ext4_mkfs_info {
 	uint16_t feat_incompat;
 	uint32_t bg_desc_reserve_blocks;
 	uint16_t dsc_size;
-	uint8_t no_journal;
+	uint8_t journal;
 	const char *label;
 };
 
 int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info);
 
 int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
-	      struct ext4_mkfs_info *info);
+	      struct ext4_mkfs_info *info, int fs_type);
 
 #endif /* EXT4_MKFS_H_ */
 

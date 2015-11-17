@@ -93,6 +93,7 @@ static int sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info)
 	info->bg_desc_reserve_blocks = to_le16(sb->s_reserved_gdt_blocks);
 	info->label = sb->volume_name;
 	info->len = (uint64_t)info->block_size * ext4_sb_get_blocks_cnt(sb);
+	info->dsc_size = to_le16(sb->desc_size);
 
 	return EOK;
 }
@@ -311,6 +312,9 @@ static void fill_bgroups(struct fs_aux_info *aux_info,
 		bg_free_blk -= 2;
 		blk_off += aux_info->bg_desc_blocks;
 
+		if (i == (aux_info->groups - 1))
+			bg_free_blk -= aux_info->first_data_block;
+
 		if (has_superblock(info, i)) {
 			bg_start_block++;
 			blk_off += info->bg_desc_reserve_blocks;
@@ -385,12 +389,18 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 
 				dsc_pos += dsc_size;
 				dsc_id++;
+
+				if (dsc_id == aux_info->groups)
+					break;
 			}
 
 			b.dirty = true;
 			r = ext4_block_set(bd, &b);
 			if (r != EOK)
 				return r;
+
+			if (dsc_id == aux_info->groups)
+				break;
 		}
 
 		r = ext4_block_get_noread(bd, &b, bg_start_block + blk_off + 1);
@@ -428,7 +438,7 @@ static int write_sblocks(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 			offset = info->block_size * (aux_info->first_data_block
 				+ i * info->blocks_per_group);
 
-			aux_info->sb->block_group_index = i;
+			aux_info->sb->block_group_index = to_le16(i);
 			r = ext4_block_writebytes(bd, offset, aux_info->sb,
 						  EXT4_SUPERBLOCK_SIZE);
 			if (r != EOK)
@@ -437,7 +447,7 @@ static int write_sblocks(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 	}
 
 	/* write out the primary superblock */
-	aux_info->sb->block_group_index = 0;
+	aux_info->sb->block_group_index = to_le16(0);
 	return ext4_block_writebytes(bd, 1024, aux_info->sb,
 			EXT4_SUPERBLOCK_SIZE);
 }
@@ -608,7 +618,7 @@ static int create_dirs(struct ext4_fs *fs)
 }
 
 int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
-	      struct ext4_mkfs_info *info)
+	      struct ext4_mkfs_info *info, int fs_type)
 {
 	int r;
 
@@ -642,16 +652,31 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 
 	info->inodes_per_group = compute_inodes_per_group(info);
 
-	info->feat_compat = EXT4_SUPPORTED_FCOM;
-	info->feat_ro_compat = EXT4_SUPPORTED_FRO_COM;
-	info->feat_incompat = EXT4_SUPPORTED_FINCOM;
+	switch (fs_type) {
+	case F_SET_EXT2:
+		info->feat_compat = EXT2_SUPPORTED_FCOM;
+		info->feat_ro_compat = EXT2_SUPPORTED_FRO_COM;
+		info->feat_incompat = EXT2_SUPPORTED_FINCOM;
+		break;
+	case F_SET_EXT3:
+		info->feat_compat = EXT3_SUPPORTED_FCOM;
+		info->feat_ro_compat = EXT3_SUPPORTED_FRO_COM;
+		info->feat_incompat = EXT3_SUPPORTED_FINCOM;
+		break;
+	case F_SET_EXT4:
+		info->feat_compat = EXT4_SUPPORTED_FCOM;
+		info->feat_ro_compat = EXT4_SUPPORTED_FRO_COM;
+		info->feat_incompat = EXT4_SUPPORTED_FINCOM;
+		break;
+	}
 
 	/*TODO: handle this features*/
 	info->feat_incompat &= ~EXT4_FINCOM_META_BG;
 	info->feat_incompat &= ~EXT4_FINCOM_FLEX_BG;
 	info->feat_ro_compat &= ~EXT4_FRO_COM_METADATA_CSUM;
 
-	if (info->no_journal == 0)
+	/*TODO: handle journal feature & inode*/
+	if (info->journal == 0)
 		info->feat_compat |= 0;
 
 	if (info->dsc_size == 0) {
@@ -686,9 +711,9 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "BG desc reserve: %"PRIu32"\n",
 			info->bg_desc_reserve_blocks);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Descriptor size: %"PRIu32"\n",
-				info->dsc_size);
+			info->dsc_size);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "journal: %s\n",
-			!info->no_journal ? "yes" : "no");
+			info->journal ? "yes" : "no");
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Label: %s\n", info->label);
 
 	struct ext4_bcache bc;
@@ -704,7 +729,7 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	if (r != EOK)
 		goto cache_fini;
 
-	r = ext4_block_cache_write_back(bd, 0);
+	r = ext4_block_cache_write_back(bd, 1);
 	if (r != EOK)
 		goto cache_fini;
 
@@ -732,6 +757,7 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	ext4_fs_fini(fs);
 
 	cache_fini:
+	ext4_block_cache_write_back(bd, 0);
 	ext4_bcache_fini_dynamic(&bc);
 
 	block_fini:
