@@ -142,22 +142,49 @@ static bool parse_opt(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	if (!parse_opt(argc, argv))
+	int r;
+	if (!parse_opt(argc, argv)){
+		printf("parse_opt error\n");
 		return EXIT_FAILURE;
+	}
 
-	if (!open_filedev())
+	if (!open_filedev()) {
+		printf("open_filedev error\n");
 		return EXIT_FAILURE;
+	}
 
 	if (verbose)
 		ext4_dmask_set(DEBUG_ALL);
 
 	printf("ext4_mkfs\n");
-	int r = ext4_mkfs(&fs, bd, &info);
+	r = ext4_mkfs(&fs, bd, &info);
 	if (r != EOK) {
-		printf("ERROR: %d\n", r);
+		printf("ext4_mkfs error: %d\n", r);
 		return EXIT_FAILURE;
 	}
 
-	printf("OK\n");
+	r = ext4_mkfs_read_info(bd, &info);
+	if (r != EOK) {
+		printf("ext4_mkfs_read_info error: %d\n", r);
+		return EXIT_FAILURE;
+	}
+
+	printf("Created filesystem with parameters:\n");
+	printf("Size: %"PRIu64"\n", info.len);
+	printf("Block size: %"PRIu32"\n", info.block_size);
+	printf("Blocks per group: %"PRIu32"\n", info.blocks_per_group);
+	printf("Inodes per group: %"PRIu32"\n",	info.inodes_per_group);
+	printf("Inode size: %"PRIu32"\n", info.inode_size);
+	printf("Inodes: %"PRIu32"\n", info.inodes);
+	printf("Journal blocks: %"PRIu32"\n", info.journal_blocks);
+	printf("Features ro_compat: 0x%x\n", info.feat_ro_compat);
+	printf("Features compat: 0x%x\n", info.feat_compat);
+	printf("Features incompat: 0x%x\n", info.feat_incompat);
+	printf("BG desc reserve: %"PRIu32"\n", info.bg_desc_reserve_blocks);
+	printf("Descriptor size: %"PRIu32"\n",info.dsc_size);
+	printf("journal: %s\n",	!info.no_journal ? "yes" : "no");
+	printf("Label: %s\n", info.label);
+
+	printf("\nDone ...\n");
 	return EXIT_SUCCESS;
 }
