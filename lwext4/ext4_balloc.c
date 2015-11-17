@@ -227,19 +227,21 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t first
 	uint32_t bg_first = ext4_balloc_get_bgid_of_block(sb, first);
 
 	/* Compute indexes */
-	uint32_t block_group_last =
-	    ext4_balloc_get_bgid_of_block(sb, first + count - 1);
+	uint32_t bg_last = ext4_balloc_get_bgid_of_block(sb, first + count - 1);
 
 	if (!ext4_sb_feature_incom(sb, EXT4_FINCOM_FLEX_BG)) {
 		/*It is not possible without flex_bg that blocks are continuous
 		 * and and last block belongs to other bg.*/
-		ext4_assert(ext4_balloc_get_bgid_of_block(sb, first + count - 1)
-			== bg_first);
+		if (bg_last != bg_first) {
+			ext4_dbg(DEBUG_BALLOC, DBG_WARN "FLEX_BG: disabled & "
+				"bg_last: %"PRIu32" bg_first: %"PRIu32"\n",
+				bg_last, bg_first);
+		}
 	}
 
 	/* Load block group reference */
 	struct ext4_block_group_ref bg_ref;
-	while (bg_first <= block_group_last) {
+	while (bg_first <= bg_last) {
 
 		rc = ext4_fs_get_block_group_ref(fs, bg_first, &bg_ref);
 		if (rc != EOK)
