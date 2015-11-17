@@ -369,6 +369,8 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	struct ext4_dir_idx_root *root = (void *)block.data;
 	struct ext4_dir_idx_root_info *info = &(root->info);
 
+	memset(root, 0, sizeof(struct ext4_dir_idx_root));
+
 	/* Initialize dot entries */
 	ext4_dir_write_entry(&dir->fs->sb,
 			(struct ext4_dir_entry_ll *)root->dots,
@@ -431,11 +433,8 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 		ext4_dir_entry_ll_set_entry_length(block_entry,
 				block_size -
 				sizeof(struct ext4_dir_entry_tail));
-		ext4_dir_entry_ll_set_name_length(sb,
-						  block_entry,
-						  0);
-		ext4_dir_entry_ll_set_inode_type(sb,
-						 block_entry,
+		ext4_dir_entry_ll_set_name_length(sb, block_entry, 0);
+		ext4_dir_entry_ll_set_inode_type(sb, block_entry,
 						 EXT4_DIRENTRY_UNKNOWN);
 
 		initialize_dir_tail(EXT4_DIRENT_TAIL(block_entry,
@@ -459,8 +458,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	struct ext4_dir_idx_entry *entry = root->entries;
 	ext4_dir_dx_entry_set_block(entry, iblock);
 
-	ext4_dir_set_dx_checksum(dir,
-			(struct ext4_dir_entry_ll *)block.data);
+	ext4_dir_set_dx_checksum(dir, (struct ext4_dir_entry_ll *)block.data);
 	block.dirty = true;
 
 	return ext4_block_set(dir->fs->bdev, &block);
