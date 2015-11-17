@@ -51,12 +51,19 @@ static struct ext4_blockdev *bd;
 /**@brief   Indicates that input is windows partition.*/
 static bool winpart = false;
 
+static struct ext4_fs fs;
+
+static struct ext4_mkfs_info info;
+
+static bool verbose = false;
+
 static const char *usage = "                                    \n\
 Welcome in lwext4_mkfs tool .                                   \n\
 Copyright (c) 2015 Grzegorz Kostka (kostka.grzegorz@gmail.com)  \n\
 Usage:                                                          \n\
-[-i] --input  - input file name (or blockdevice)                \n\
-[-w] --wpart  - windows partition mode                          \n\
+[-i] --input   - input file name (or blockdevice)               \n\
+[-w] --wpart   - windows partition mode                         \n\
+[-v] --verbose - verbose mode		                        \n\
 \n";
 
 
@@ -101,7 +108,6 @@ static bool open_filedev(void)
 	return true;
 }
 
-
 static bool parse_opt(int argc, char **argv)
 {
 	int option_index = 0;
@@ -110,9 +116,10 @@ static bool parse_opt(int argc, char **argv)
 	static struct option long_options[] = {
 	    {"input", required_argument, 0, 'i'},
 	    {"wpart", no_argument, 0, 'w'},
+	    {"verbose", no_argument, 0, 'v'},
 	    {0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "i:w",
+	while (-1 != (c = getopt_long(argc, argv, "i:wv",
 				      long_options, &option_index))) {
 
 		switch (c) {
@@ -121,6 +128,9 @@ static bool parse_opt(int argc, char **argv)
 			break;
 		case 'w':
 			winpart = true;
+			break;
+		case 'v':
+			verbose = true;
 			break;
 		default:
 			printf("%s", usage);
@@ -138,13 +148,16 @@ int main(int argc, char **argv)
 	if (!open_filedev())
 		return EXIT_FAILURE;
 
-	ext4_dmask_set(DEBUG_ALL);
+	if (verbose)
+		ext4_dmask_set(DEBUG_ALL);
 
-	static struct ext4_fs fs;
-	static struct ext4_mkfs_info info;
+	printf("ext4_mkfs\n");
 	int r = ext4_mkfs(&fs, bd, &info);
-	if (r != EOK)
+	if (r != EOK) {
+		printf("ERROR: %d\n", r);
 		return EXIT_FAILURE;
+	}
 
+	printf("OK\n");
 	return EXIT_SUCCESS;
 }
