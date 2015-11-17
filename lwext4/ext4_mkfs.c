@@ -182,6 +182,28 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 		return ENOMEM;
 
 	aux_info->xattrs = NULL;
+
+
+	ext4_dbg(DEBUG_MKFS, DBG_INFO "create_fs_aux_info\n");
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "first_data_block: %"PRIu32"\n",
+			aux_info->first_data_block);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "len_blocks: %"PRIu64"\n",
+			aux_info->len_blocks);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "inode_table_blocks: %"PRIu32"\n",
+			aux_info->inode_table_blocks);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "groups: %"PRIu32"\n",
+			aux_info->groups);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "bg_desc_blocks: %"PRIu32"\n",
+			aux_info->bg_desc_blocks);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "default_i_flags: %"PRIu32"\n",
+			aux_info->default_i_flags);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "blocks_per_ind: %"PRIu32"\n",
+			aux_info->blocks_per_ind);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "blocks_per_dind: %"PRIu32"\n",
+			aux_info->blocks_per_dind);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "blocks_per_tind: %"PRIu32"\n",
+			aux_info->blocks_per_tind);
+
 	return EOK;
 }
 
@@ -663,6 +685,8 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 			info->feat_incompat);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "BG desc reserve: %"PRIu32"\n",
 			info->bg_desc_reserve_blocks);
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Descriptor size: %"PRIu32"\n",
+				info->dsc_size);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "journal: %s\n",
 			!info->no_journal ? "yes" : "no");
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Label: %s\n", info->label);
