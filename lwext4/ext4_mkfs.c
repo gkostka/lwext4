@@ -157,7 +157,7 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 			aux_info->blocks_per_dind * aux_info->blocks_per_dind;
 
 	aux_info->bg_desc_blocks =
-		DIV_ROUND_UP(aux_info->groups * sizeof(struct ext4_bgroup),
+		DIV_ROUND_UP(aux_info->groups * info->dsc_size,
 			info->block_size);
 
 	aux_info->default_i_flags = EXT4_INODE_FLAG_NOATIME;
@@ -306,7 +306,7 @@ static void fill_bgroups(struct fs_aux_info *aux_info,
 		uint32_t blk_off = 0;
 
 		bg_free_blk = info->blocks_per_group -
-			(aux_info->inode_table_blocks + aux_info->bg_desc_blocks);
+				aux_info->inode_table_blocks;
 
 		bg_free_blk -= 2;
 		blk_off += aux_info->bg_desc_blocks;
@@ -315,8 +315,7 @@ static void fill_bgroups(struct fs_aux_info *aux_info,
 			bg_start_block++;
 			blk_off += info->bg_desc_reserve_blocks;
 			bg_free_blk -= info->bg_desc_reserve_blocks + 1;
-		} else {
-			bg_free_blk++;
+			bg_free_blk -= aux_info->bg_desc_blocks;
 		}
 
 		ext4_bg_set_block_bitmap(&aux_info->bg_desc[i], aux_info->sb,
@@ -357,7 +356,7 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 	struct ext4_block b;
 	for (i = 0; i < aux_info->groups; i++) {
 		uint64_t bg_start_block = aux_info->first_data_block +
-			aux_info->first_data_block + i * info->blocks_per_group;
+			+ i * info->blocks_per_group;
 		uint32_t blk_off = 0;
 
 		blk_off += aux_info->bg_desc_blocks;
@@ -378,7 +377,8 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 			if (r != EOK)
 				return r;
 
-			while (dsc_pos + dsc_size < block_size) {
+			dsc_pos = 0;
+			while (dsc_pos + dsc_size <= block_size) {
 				memcpy(b.data + dsc_pos,
 				       &aux_info->bg_desc[dsc_id],
 				       dsc_size);
