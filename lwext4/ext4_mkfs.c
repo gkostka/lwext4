@@ -250,10 +250,13 @@ static void fill_in_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info
 		sb->journal_inode_number = to_le32(EXT4_JOURNAL_INO);
 	sb->journal_dev = to_le32(0);
 	sb->last_orphan = to_le32(0);
-	memset(sb->hash_seed, 0, sizeof(sb->hash_seed));
+	sb->hash_seed[0] = to_le32(0x11111111);
+	sb->hash_seed[1] = to_le32(0x22222222);
+	sb->hash_seed[2] = to_le32(0x33333333);
+	sb->hash_seed[3] = to_le32(0x44444444);
 	sb->default_hash_version = EXT2_HTREE_HALF_MD4;
 	sb->checksum_type = 1;
-	sb->desc_size = to_le16(EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE);
+	sb->desc_size = to_le16(info->dsc_size);
 	sb->default_mount_opts = to_le32(0);
 	sb->first_meta_bg = to_le32(0);
 	sb->mkfs_time = to_le32(0);
@@ -263,7 +266,7 @@ static void fill_in_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info
 		EXT4_GOOD_OLD_INODE_SIZE);
 	sb->want_extra_isize = to_le32(sizeof(struct ext4_inode) -
 		EXT4_GOOD_OLD_INODE_SIZE);
-	sb->flags = to_le32(2);
+	sb->flags = to_le32(EXT4_SUPERBLOCK_FLAGS_SIGNED_HASH);
 }
 
 static void fill_bgroups(struct fs_aux_info *aux_info,
@@ -617,15 +620,25 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 
 	info->inodes_per_group = compute_inodes_per_group(info);
 
-	info->feat_compat = EXT3_SUPPORTED_FCOM;
-	info->feat_ro_compat = EXT3_SUPPORTED_FRO_COM;
-	info->feat_incompat = EXT3_SUPPORTED_FINCOM;
+	info->feat_compat = EXT4_SUPPORTED_FCOM;
+	info->feat_ro_compat = EXT4_SUPPORTED_FRO_COM;
+	info->feat_incompat = EXT4_SUPPORTED_FINCOM;
 
+	/*TODO: handle this features*/
 	info->feat_incompat &= ~EXT4_FINCOM_META_BG;
+	info->feat_incompat &= ~EXT4_FINCOM_FLEX_BG;
 	info->feat_ro_compat &= ~EXT4_FRO_COM_METADATA_CSUM;
 
 	if (info->no_journal == 0)
 		info->feat_compat |= 0;
+
+	if (info->dsc_size == 0) {
+
+		if (info->feat_incompat & EXT4_FINCOM_64BIT)
+			info->dsc_size = EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE;
+		else
+			info->dsc_size = EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE;
+	}
 
 	info->bg_desc_reserve_blocks = 0;
 
