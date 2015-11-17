@@ -245,15 +245,15 @@ int ext4_fs_check_features(struct ext4_fs *fs, bool *read_only)
  * @param bgid    block group id
  * @return Error code
  */
-static int ext4_block_in_group(struct ext4_sblock *s,
+static bool ext4_block_in_group(struct ext4_sblock *s,
 			       ext4_fsblk_t baddr,
 			       uint32_t bgid)
 {
 	uint32_t actual_bgid;
 	actual_bgid = ext4_balloc_get_bgid_of_block(s, baddr);
 	if (actual_bgid == bgid)
-		return 1;
-	return 0;
+		return true;
+	return false;
 }
 
 /**@brief   To avoid calling the atomic setbit hundreds or thousands of times, we only
@@ -280,89 +280,76 @@ static void ext4_fs_mark_bitmap_end(int start_bit, int end_bit, void *bitmap)
  */
 static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 {
+	struct ext4_sblock *sb = &bg_ref->fs->sb;
+	struct ext4_bgroup *bg = bg_ref->block_group;
+	int rc;
+
 	uint32_t i, bit, bit_max;
 	uint32_t group_blocks;
-	uint16_t inode_size = ext4_get16(&bg_ref->fs->sb, inode_size);
-	uint32_t block_size = ext4_sb_get_block_size(&bg_ref->fs->sb);
-	uint32_t inodes_per_group = ext4_get32(&bg_ref->fs->sb, inodes_per_group);
-	ext4_fsblk_t bitmap_block_addr =
-	    ext4_bg_get_block_bitmap(bg_ref->block_group, &bg_ref->fs->sb);
-	ext4_fsblk_t bitmap_inode_addr =
-	    ext4_bg_get_inode_bitmap(bg_ref->block_group, &bg_ref->fs->sb);
-	ext4_fsblk_t inode_table_addr =
-	    ext4_bg_get_inode_table_first_block(bg_ref->block_group,
-						&bg_ref->fs->sb);
-	ext4_fsblk_t first_group_addr =
-	    ext4_balloc_get_block_of_bgid(&bg_ref->fs->sb, bg_ref->index);
+	uint16_t inode_size = ext4_get16(sb, inode_size);
+	uint32_t block_size = ext4_sb_get_block_size(sb);
+	uint32_t inodes_per_group = ext4_get32(sb, inodes_per_group);
 
-	uint32_t dsc_per_block =
-	    ext4_sb_get_block_size(&bg_ref->fs->sb) /
-	    ext4_sb_get_desc_size(&bg_ref->fs->sb);
+	ext4_fsblk_t bmp_blk = ext4_bg_get_block_bitmap(bg, sb);
+	ext4_fsblk_t bmp_inode = ext4_bg_get_inode_bitmap(bg, sb);
+	ext4_fsblk_t inode_table = ext4_bg_get_inode_table_first_block(bg, sb);
+	ext4_fsblk_t first_bg = ext4_balloc_get_block_of_bgid(sb, bg_ref->index);
 
-	bool flex_bg =
-		ext4_sb_feature_incom(&bg_ref->fs->sb, EXT4_FINCOM_FLEX_BG);
+	uint32_t dsc_per_block =  block_size / ext4_sb_get_desc_size(sb);
+
+	bool flex_bg = ext4_sb_feature_incom(sb, EXT4_FINCOM_FLEX_BG);
+	bool meta_bg = ext4_sb_feature_incom(sb, EXT4_FINCOM_META_BG);
 
 	uint32_t inode_table_bcnt = inodes_per_group * inode_size / block_size;
 
 	struct ext4_block block_bitmap;
-	int rc =
-	    ext4_block_get_noread(bg_ref->fs->bdev, &block_bitmap, bitmap_block_addr);
+	rc = ext4_block_get_noread(bg_ref->fs->bdev, &block_bitmap, bmp_blk);
 	if (rc != EOK)
 		return rc;
 
 	memset(block_bitmap.data, 0, block_size);
+	bit_max = ext4_sb_is_super_in_bg(sb, bg_ref->index);
 
-	bit_max = ext4_sb_is_super_in_bg(&bg_ref->fs->sb, bg_ref->index);
-	if (!ext4_sb_feature_incom(&bg_ref->fs->sb, EXT4_FINCOM_META_BG) ||
-			bg_ref->index < ext4_sb_first_meta_bg(&bg_ref->fs->sb) *
-			dsc_per_block) {
+	uint32_t count = ext4_sb_first_meta_bg(sb) * dsc_per_block;
+	if (!meta_bg || bg_ref->index < count) {
 		if (bit_max) {
-			bit_max += ext4_bg_num_gdb(&bg_ref->fs->sb,
-						   bg_ref->index);
-			bit_max +=
-				ext4_get16(&bg_ref->fs->sb,
-					   s_reserved_gdt_blocks);
+			bit_max += ext4_bg_num_gdb(sb, bg_ref->index);
+			bit_max += ext4_get16(sb, s_reserved_gdt_blocks);
 		}
 	} else { /* For META_BG_BLOCK_GROUPS */
-		bit_max += ext4_bg_num_gdb(&bg_ref->fs->sb,
-					   bg_ref->index);
+		bit_max += ext4_bg_num_gdb(sb, bg_ref->index);
 	}
 	for (bit = 0; bit < bit_max; bit++)
 		ext4_bmap_bit_set(block_bitmap.data, bit);
 
-	if (bg_ref->index == ext4_block_group_cnt(&bg_ref->fs->sb) - 1) {
+	if (bg_ref->index == ext4_block_group_cnt(sb) - 1) {
 		/*
 		 * Even though mke2fs always initialize first and last group
 		 * if some other tool enabled the EXT4_BG_BLOCK_UNINIT we need
 		 * to make sure we calculate the right free blocks
 		 */
-		group_blocks = (ext4_sb_get_blocks_cnt(&bg_ref->fs->sb) -
-				ext4_get32(&bg_ref->fs->sb, first_data_block) -
-				(ext4_get32(&bg_ref->fs->sb, blocks_per_group) *
-				 (ext4_block_group_cnt(&bg_ref->fs->sb) - 1)));
+
+		group_blocks = ext4_sb_get_blocks_cnt(sb);
+		group_blocks -= ext4_get32(sb, first_data_block);
+		group_blocks -= ext4_get32(sb, blocks_per_group) *
+				(ext4_block_group_cnt(sb) - 1);
 	} else {
-		group_blocks = ext4_get32(&bg_ref->fs->sb, blocks_per_group);
+		group_blocks = ext4_get32(sb, blocks_per_group);
 	}
-	if (!flex_bg ||
-	    ext4_block_in_group(&bg_ref->fs->sb,
-				bitmap_block_addr, bg_ref->index))
-		ext4_bmap_bit_set(block_bitmap.data,
-				  bitmap_block_addr - first_group_addr);
 
-	if (!flex_bg ||
-	    ext4_block_in_group(&bg_ref->fs->sb,
-				bitmap_inode_addr, bg_ref->index))
-		ext4_bmap_bit_set(block_bitmap.data,
-				  bitmap_inode_addr - first_group_addr);
+	bool in_bg;
+	in_bg = ext4_block_in_group(sb, bmp_blk, bg_ref->index);
+	if (!flex_bg || in_bg)
+		ext4_bmap_bit_set(block_bitmap.data, bmp_blk - first_bg);
 
-        for (i = inode_table_addr;
-		i < inode_table_addr + inode_table_bcnt; i++) {
-		if (!flex_bg ||
-		    ext4_block_in_group(&bg_ref->fs->sb,
-					i,
-					bg_ref->index))
-			ext4_bmap_bit_set(block_bitmap.data,
-					i - first_group_addr);
+	in_bg = ext4_block_in_group(sb, bmp_inode, bg_ref->index);
+	if (!flex_bg || in_bg)
+		ext4_bmap_bit_set(block_bitmap.data, bmp_inode - first_bg);
+
+        for (i = inode_table; i < inode_table + inode_table_bcnt; i++) {
+		in_bg = ext4_block_in_group(sb, i, bg_ref->index);
+		if (!flex_bg || in_bg)
+			ext4_bmap_bit_set(block_bitmap.data, i - first_bg);
 	}
         /*
          * Also if the number of blocks within the group is
@@ -372,9 +359,7 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
         ext4_fs_mark_bitmap_end(group_blocks, block_size * 8, block_bitmap.data);
 	block_bitmap.dirty = true;
 
-	ext4_balloc_set_bitmap_csum(&bg_ref->fs->sb,
-				    bg_ref->block_group,
-				    block_bitmap.data);
+	ext4_balloc_set_bitmap_csum(sb, bg_ref->block_group, block_bitmap.data);
 	bg_ref->dirty = true;
 
 	/* Save bitmap */
@@ -387,43 +372,41 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
  */
 static int ext4_fs_init_inode_bitmap(struct ext4_block_group_ref *bg_ref)
 {
-	/* Load bitmap */
-	ext4_fsblk_t bitmap_block_addr =
-	    ext4_bg_get_inode_bitmap(bg_ref->block_group, &bg_ref->fs->sb);
+	int rc;
+	struct ext4_sblock *sb = &bg_ref->fs->sb;
+	struct ext4_bgroup *bg = bg_ref->block_group;
 
-	struct ext4_block block_bitmap;
-	int rc =
-	    ext4_block_get_noread(bg_ref->fs->bdev,
-				  &block_bitmap, bitmap_block_addr);
+	/* Load bitmap */
+	ext4_fsblk_t bitmap_block_addr = ext4_bg_get_inode_bitmap(bg, sb);
+
+	struct ext4_block b;
+	rc = ext4_block_get_noread(bg_ref->fs->bdev, &b, bitmap_block_addr);
 	if (rc != EOK)
 		return rc;
 
 	/* Initialize all bitmap bits to zero */
-	uint32_t block_size = ext4_sb_get_block_size(&bg_ref->fs->sb);
-	uint32_t inodes_per_group =
-	    ext4_get32(&bg_ref->fs->sb, inodes_per_group);
+	uint32_t block_size = ext4_sb_get_block_size(sb);
+	uint32_t inodes_per_group = ext4_get32(sb, inodes_per_group);
 
-	memset(block_bitmap.data, 0, (inodes_per_group + 7) / 8);
+	memset(b.data, 0, (inodes_per_group + 7) / 8);
 
 	uint32_t start_bit = inodes_per_group;
 	uint32_t end_bit = block_size * 8;
 
 	uint32_t i;
 	for (i = start_bit; i < ((start_bit + 7) & ~7UL); i++)
-		ext4_bmap_bit_set(block_bitmap.data, i);
+		ext4_bmap_bit_set(b.data, i);
 
 	if (i < end_bit)
-		memset(block_bitmap.data + (i >> 3), 0xff, (end_bit - i) >> 3);
+		memset(b.data + (i >> 3), 0xff, (end_bit - i) >> 3);
 
-	block_bitmap.dirty = true;
+	b.dirty = true;
 
-	ext4_ialloc_set_bitmap_csum(&bg_ref->fs->sb,
-				    bg_ref->block_group,
-				    block_bitmap.data);
+	ext4_ialloc_set_bitmap_csum(sb, bg, b.data);
 	bg_ref->dirty = true;
 
 	/* Save bitmap */
-	return ext4_block_set(bg_ref->fs->bdev, &block_bitmap);
+	return ext4_block_set(bg_ref->fs->bdev, &b);
 }
 
 /**@brief Initialize i-node table in block group.
@@ -433,6 +416,7 @@ static int ext4_fs_init_inode_bitmap(struct ext4_block_group_ref *bg_ref)
 static int ext4_fs_init_inode_table(struct ext4_block_group_ref *bg_ref)
 {
 	struct ext4_sblock *sb = &bg_ref->fs->sb;
+	struct ext4_bgroup *bg = bg_ref->block_group;
 
 	uint32_t inode_size = ext4_get32(sb, inode_size);
 	uint32_t block_size = ext4_sb_get_block_size(sb);
@@ -445,23 +429,21 @@ static int ext4_fs_init_inode_table(struct ext4_block_group_ref *bg_ref)
 		table_blocks++;
 
 	/* Compute initialization bounds */
-	ext4_fsblk_t first_block =
-	    ext4_bg_get_inode_table_first_block(bg_ref->block_group, sb);
+	ext4_fsblk_t first_block = ext4_bg_get_inode_table_first_block(bg, sb);
 
 	ext4_fsblk_t last_block = first_block + table_blocks - 1;
 
 	/* Initialization of all itable blocks */
 	for (fblock = first_block; fblock <= last_block; ++fblock) {
-
-		struct ext4_block block;
-		int rc = ext4_block_get_noread(bg_ref->fs->bdev, &block, fblock);
+		struct ext4_block b;
+		int rc = ext4_block_get_noread(bg_ref->fs->bdev, &b, fblock);
 		if (rc != EOK)
 			return rc;
 
-		memset(block.data, 0, block_size);
-		block.dirty = true;
+		memset(b.data, 0, block_size);
+		b.dirty = true;
 
-		ext4_block_set(bg_ref->fs->bdev, &block);
+		ext4_block_set(bg_ref->fs->bdev, &b);
 		if (rc != EOK)
 			return rc;
 	}
