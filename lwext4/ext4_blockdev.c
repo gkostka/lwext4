@@ -303,7 +303,6 @@ int ext4_block_writebytes(struct ext4_blockdev *bdev, uint64_t off,
 				    : (bdev->ph_bsize - unalg);
 
 		r = bdev->bread(bdev, bdev->ph_bbuf, block_idx, 1);
-
 		if (r != EOK)
 			return r;
 
@@ -321,7 +320,6 @@ int ext4_block_writebytes(struct ext4_blockdev *bdev, uint64_t off,
 	/*Aligned data*/
 	blen = len / bdev->ph_bsize;
 	r = bdev->bwrite(bdev, p, block_idx, blen);
-
 	if (r != EOK)
 		return r;
 
@@ -339,7 +337,6 @@ int ext4_block_writebytes(struct ext4_blockdev *bdev, uint64_t off,
 		memcpy(bdev->ph_bbuf, p, len);
 
 		r = bdev->bwrite(bdev, bdev->ph_bbuf, block_idx, 1);
-
 		if (r != EOK)
 			return r;
 	}
@@ -392,7 +389,6 @@ int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off, void *buf,
 	blen = len / bdev->ph_bsize;
 
 	r = bdev->bread(bdev, p, block_idx, blen);
-
 	if (r != EOK)
 		return r;
 
@@ -424,33 +420,35 @@ int ext4_block_cache_write_back(struct ext4_blockdev *bdev, uint8_t on_off)
 	if (!on_off && bdev->cache_write_back)
 		bdev->cache_write_back--;
 
+
+	if (bdev->cache_write_back)
+		return EOK;
+
 	/*Flush all delayed cache blocks*/
-	if (!bdev->cache_write_back) {
-		for (i = 0; i < bdev->bc->cnt; ++i) {
+	for (i = 0; i < bdev->bc->cnt; ++i) {
 
-			/*Check if buffer free was delayed.*/
-			if (!bdev->bc->free_delay[i])
-				continue;
+		/*Check if buffer free was delayed.*/
+		if (!bdev->bc->free_delay[i])
+			continue;
 
-			/*Check reference counter.*/
-			if (bdev->bc->refctr[i])
-				continue;
+		/*Check reference counter.*/
+		if (bdev->bc->refctr[i])
+			continue;
 
-			/*Buffer free was delayed and have no reference. Flush
-			 * it.*/
-			r = ext4_blocks_set_direct(
-			    bdev, bdev->bc->data + bdev->bc->itemsize * i,
-			    bdev->bc->lba[i], 1);
-			if (r != EOK)
-				return r;
+		/*Buffer free was delayed and have no reference. Flush
+		 * it.*/
+		r = ext4_blocks_set_direct(bdev, bdev->bc->data +
+				bdev->bc->itemsize * i,	bdev->bc->lba[i], 1);
+		if (r != EOK)
+			return r;
 
-			/*No delayed anymore*/
-			bdev->bc->free_delay[i] = 0;
+		/*No delayed anymore*/
+		bdev->bc->free_delay[i] = 0;
 
-			/*Reduce reference counter*/
-			bdev->bc->ref_blocks--;
-		}
+		/*Reduce reference counter*/
+		bdev->bc->ref_blocks--;
 	}
+
 	return EOK;
 }
 

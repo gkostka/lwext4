@@ -42,7 +42,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define EXT4_BLOCK_ZERO() {.uptodate = 0, .dirty = 0, .lb_id = 0, .cache_id = 0, .data = 0}
+#define EXT4_BLOCK_ZERO() 	\
+	{.uptodate = 0, .dirty = 0, .lb_id = 0, .cache_id = 0, .data = 0}
 
 /**@brief   Single block descriptor*/
 struct ext4_block {
