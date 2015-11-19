@@ -282,7 +282,6 @@ void ext4_inode_set_extra_isize(struct ext4_inode *inode, uint16_t size)
 uint64_t ext4_inode_get_file_acl(struct ext4_inode *inode,
 				 struct ext4_sblock *sb)
 {
-	/*TODO: Verify it*/
 	uint64_t v = to_le32(inode->file_acl_lo);
 
 	if (ext4_get32(sb, creator_os) == EXT4_SUPERBLOCK_OS_LINUX)
@@ -295,7 +294,6 @@ uint64_t ext4_inode_get_file_acl(struct ext4_inode *inode,
 void ext4_inode_set_file_acl(struct ext4_inode *inode, struct ext4_sblock *sb,
 			     uint64_t acl)
 {
-	/*TODO: Verify it*/
 	inode->file_acl_lo = to_le32((acl << 32) >> 32);
 
 	if (ext4_get32(sb, creator_os) == EXT4_SUPERBLOCK_OS_LINUX)
