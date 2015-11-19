@@ -132,15 +132,13 @@
 
 /**@brief   Include open flags from ext4_errno or standard library.*/
 #ifndef CONFIG_HAVE_OWN_OFLAGS
-#define CONFIG_HAVE_OWN_OFLAGS 0
+#define CONFIG_HAVE_OWN_OFLAGS 1
 #endif
 
 /**@brief   Use full extent implemrntation*/
 #ifndef CONFIG_EXTENT_FULL
 #define CONFIG_EXTENT_FULL 1
 #endif
-
-
 
 #endif /* EXT4_CONFIG_H_ */
 

@@ -18,20 +18,16 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  arm-sim)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  cortex-m4)
     #...
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  bf518)
-    add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=1)
     #...
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  avrxmega7)
-    add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=1)
     #...
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  msp430g2210)
     add_definitions(-DCONFIG_DEBUG_PRINTF=0)
     add_definitions(-DCONFIG_DEBUG_ASSERT=0)
-    add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=1)
     #...
 else()
     #Generic example target
     set(BLOCKDEV_TYPE  linux)
-    add_definitions(-DCONFIG_EXTENT_FULL=1)
     add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=0)
     add_definitions(-DCONFIG_HAVE_OWN_ERRNO=0)
     add_definitions(-DCONFIG_HAVE_OWN_ASSERT=0)
