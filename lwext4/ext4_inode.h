@@ -297,14 +297,14 @@ void ext4_inode_set_flag(struct ext4_inode *inode, uint32_t f);
  * @param inode I-node to get checksum value from
  */
 uint32_t
-ext4_inode_get_checksum(struct ext4_sblock *sb, struct ext4_inode *inode);
+ext4_inode_get_csum(struct ext4_sblock *sb, struct ext4_inode *inode);
 
 /**@brief Get inode checksum(crc32)
  * @param sb    Superblock
  * @param inode I-node to get checksum value from
  */
 void
-ext4_inode_set_checksum(struct ext4_sblock *sb, struct ext4_inode *inode,
+ext4_inode_set_csum(struct ext4_sblock *sb, struct ext4_inode *inode,
 			uint32_t checksum);
 
 /**@brief Check if i-node can be truncated.

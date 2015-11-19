@@ -652,8 +652,8 @@ static uint32_t ext4_fs_inode_checksum(struct ext4_inode_ref *inode_ref)
 			to_le32(ext4_inode_get_generation(inode_ref->inode));
 
 		/* Preparation: temporarily set bg checksum to 0 */
-		orig_checksum = ext4_inode_get_checksum(sb, inode_ref->inode);
-		ext4_inode_set_checksum(sb, inode_ref->inode, 0);
+		orig_checksum = ext4_inode_get_csum(sb, inode_ref->inode);
+		ext4_inode_set_csum(sb, inode_ref->inode, 0);
 
 		/* First calculate crc32 checksum against fs uuid */
 		checksum = ext4_crc32c(EXT4_CRC32_INIT, sb->uuid,
@@ -665,7 +665,7 @@ static uint32_t ext4_fs_inode_checksum(struct ext4_inode_ref *inode_ref)
 		/* Finally calculate crc32 checksum against 
 		 * the entire inode */
 		checksum = ext4_crc32c(checksum, inode_ref->inode, inode_size);
-		ext4_inode_set_checksum(sb, inode_ref->inode, orig_checksum);
+		ext4_inode_set_csum(sb, inode_ref->inode, orig_checksum);
 
 		/* If inode size is not large enough to hold the
 		 * upper 16bit of the checksum */
@@ -686,7 +686,7 @@ static void ext4_fs_set_inode_checksum(struct ext4_inode_ref *inode_ref)
 		return;
 
 	uint32_t csum = ext4_fs_inode_checksum(inode_ref);
-	ext4_inode_set_checksum(sb, inode_ref->inode, csum);
+	ext4_inode_set_csum(sb, inode_ref->inode, csum);
 }
 
 #if CONFIG_META_CSUM_ENABLE
@@ -696,7 +696,7 @@ static bool ext4_fs_verify_inode_csum(struct ext4_inode_ref *inode_ref)
 	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 		return true;
 
-	return ext4_inode_get_checksum(sb, inode_ref->inode) ==
+	return ext4_inode_get_csum(sb, inode_ref->inode) ==
 		ext4_fs_inode_checksum(inode_ref);
 }
 #else

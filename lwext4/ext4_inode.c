@@ -108,8 +108,7 @@ void ext4_inode_set_size(struct ext4_inode *inode, uint64_t size)
 	inode->size_hi = to_le32(size >> 32);
 }
 
-uint32_t
-ext4_inode_get_checksum(struct ext4_sblock *sb, struct ext4_inode *inode)
+uint32_t ext4_inode_get_csum(struct ext4_sblock *sb, struct ext4_inode *inode)
 {
 	uint16_t inode_size = ext4_get16(sb, inode_size);
 	uint32_t v = to_le16(inode->osd2.linux2.checksum_lo);
@@ -120,8 +119,7 @@ ext4_inode_get_checksum(struct ext4_sblock *sb, struct ext4_inode *inode)
 	return v;
 }
 
-void
-ext4_inode_set_checksum(struct ext4_sblock *sb, struct ext4_inode *inode,
+void ext4_inode_set_csum(struct ext4_sblock *sb, struct ext4_inode *inode,
 			uint32_t checksum)
 {
 	uint16_t inode_size = ext4_get16(sb, inode_size);
@@ -192,23 +190,22 @@ void ext4_inode_set_links_count(struct ext4_inode *inode, uint16_t cnt)
 uint64_t ext4_inode_get_blocks_count(struct ext4_sblock *sb,
 				     struct ext4_inode *inode)
 {
-	uint64_t count = to_le32(inode->blocks_count_lo);
+	uint64_t cnt = to_le32(inode->blocks_count_lo);
 
 	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_HUGE_FILE)) {
 
 		/* 48-bit field */
-		count |= ((uint64_t)to_le16(inode->osd2.linux2.blocks_high))
-			 << 32;
+		cnt |= (uint64_t)to_le16(inode->osd2.linux2.blocks_high) << 32;
 
 		if (ext4_inode_has_flag(inode, EXT4_INODE_FLAG_HUGE_FILE)) {
 
-			uint32_t block_bits = ext4_inode_block_bits_count(
-			    ext4_sb_get_block_size(sb));
-			return count << (block_bits - 9);
+			uint32_t block_count = ext4_sb_get_block_size(sb);
+			uint32_t b = ext4_inode_block_bits_count(block_count);
+			return cnt << (b - 9);
 		}
 	}
 
-	return count;
+	return cnt;
 }
 
 int ext4_inode_set_blocks_count(struct ext4_sblock *sb,
@@ -239,8 +236,8 @@ int ext4_inode_set_blocks_count(struct ext4_sblock *sb,
 		inode->osd2.linux2.blocks_high = to_le16(count >> 32);
 		ext4_inode_clear_flag(inode, EXT4_INODE_FLAG_HUGE_FILE);
 	} else {
-		uint32_t block_bits =
-		    ext4_inode_block_bits_count(ext4_sb_get_block_size(sb));
+		uint32_t block_count = ext4_sb_get_block_size(sb);
+		uint32_t block_bits =ext4_inode_block_bits_count(block_count);
 
 		ext4_inode_set_flag(inode, EXT4_INODE_FLAG_HUGE_FILE);
 		count = count >> (block_bits - 9);
@@ -285,8 +282,7 @@ uint64_t ext4_inode_get_file_acl(struct ext4_inode *inode,
 	uint64_t v = to_le32(inode->file_acl_lo);
 
 	if (ext4_get32(sb, creator_os) == EXT4_SUPERBLOCK_OS_LINUX)
-		v |= ((uint32_t)to_le16(inode->osd2.linux2.file_acl_high))
-		     << 16;
+		v |= (uint32_t)to_le16(inode->osd2.linux2.file_acl_high) << 16;
 
 	return v;
 }
