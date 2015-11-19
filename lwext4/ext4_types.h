@@ -513,7 +513,7 @@ struct ext4_dir_search_result {
 
 /* Structures for indexed directory */
 
-struct ext4_dir_idx_countlimit {
+struct ext4_dir_idx_climit {
 	uint16_t limit;
 	uint16_t count;
 };
@@ -526,7 +526,7 @@ struct ext4_dir_idx_dot_entry {
 	uint8_t name[4];
 };
 
-struct ext4_dir_idx_root_info {
+struct ext4_dir_idx_rinfo {
 	uint32_t reserved_zero;
 	uint8_t hash_version;
 	uint8_t info_length;
@@ -541,8 +541,8 @@ struct ext4_dir_idx_entry {
 
 struct ext4_dir_idx_root {
 	struct ext4_dir_idx_dot_entry dots[2];
-	struct ext4_dir_idx_root_info info;
-	struct ext4_dir_idx_entry entries[];
+	struct ext4_dir_idx_rinfo info;
+	struct ext4_dir_idx_entry en[];
 };
 
 struct ext4_fake_dir_entry {
@@ -558,7 +558,7 @@ struct ext4_dir_idx_node {
 };
 
 struct ext4_dir_idx_block {
-	struct ext4_block block;
+	struct ext4_block b;
 	struct ext4_dir_idx_entry *entries;
 	struct ext4_dir_idx_entry *position;
 };
