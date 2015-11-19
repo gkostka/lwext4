@@ -279,8 +279,8 @@ int ext4_dir_destroy_result(struct ext4_inode_ref *parent,
 void ext4_dir_set_checksum(struct ext4_inode_ref *inode_ref,
 			   struct ext4_dir_entry_ll *dirent);
 
-/* checksumming functions */
-void initialize_dir_tail(struct ext4_dir_entry_tail *t);
+
+void ext4_dir_init_entry_tail(struct ext4_dir_entry_tail *t);
 
 #ifdef __cplusplus
 }

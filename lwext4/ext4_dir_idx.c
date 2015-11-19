@@ -417,7 +417,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 		ext4_dir_entry_ll_set_entry_length(be, len);
 		ext4_dir_entry_ll_set_name_length(sb, be, 0);
 		ext4_dir_entry_ll_set_inode_type(sb, be, EXT4_DIRENTRY_UNKNOWN);
-		initialize_dir_tail(EXT4_DIRENT_TAIL(be, block_size));
+		ext4_dir_init_entry_tail(EXT4_DIRENT_TAIL(be, block_size));
 		ext4_dir_set_checksum(dir, be);
 	} else {
 		ext4_dir_entry_ll_set_entry_length(be, block_size);
@@ -1071,9 +1071,9 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 		struct ext4_dir_entry_tail *t;
 
 		t = EXT4_DIRENT_TAIL(old_data_block->data, block_size);
-		initialize_dir_tail(t);
+		ext4_dir_init_entry_tail(t);
 		t = EXT4_DIRENT_TAIL(new_data_block_tmp.data, block_size);
-		initialize_dir_tail(t);
+		ext4_dir_init_entry_tail(t);
 	}
 	ext4_dir_set_checksum(inode_ref, (void *)old_data_block->data);
 	ext4_dir_set_checksum(inode_ref, (void *)new_data_block_tmp.data);

@@ -120,8 +120,7 @@ ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
 	return true;
 }
 
-/* checksumming functions */
-void initialize_dir_tail(struct ext4_dir_entry_tail *t)
+void ext4_dir_init_entry_tail(struct ext4_dir_entry_tail *t)
 {
 	memset(t, 0, sizeof(struct ext4_dir_entry_tail));
 	t->rec_len = to_le16(sizeof(struct ext4_dir_entry_tail));
@@ -431,7 +430,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 				block_size - sizeof(struct ext4_dir_entry_tail),
 				child,
 				name, name_len);
-		initialize_dir_tail(EXT4_DIRENT_TAIL(new_block.data,
+		ext4_dir_init_entry_tail(EXT4_DIRENT_TAIL(new_block.data,
 					ext4_sb_get_block_size(&fs->sb)));
 	} else
 		ext4_dir_write_entry(&fs->sb, block_entry, block_size, child, name,
