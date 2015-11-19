@@ -42,6 +42,10 @@
 #ifndef EXT4_DIR_H_
 #define EXT4_DIR_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_types.h"
 #include "ext4_blockdev.h"
@@ -277,6 +281,10 @@ void ext4_dir_set_checksum(struct ext4_inode_ref *inode_ref,
 
 /* checksumming functions */
 void initialize_dir_tail(struct ext4_dir_entry_tail *t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_DIR_H_ */
 

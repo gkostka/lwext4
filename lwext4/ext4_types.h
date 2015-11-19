@@ -42,6 +42,10 @@
 #ifndef EXT4_TYPES_H_
 #define EXT4_TYPES_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_blockdev.h"
 #include "tree.h"
@@ -947,6 +951,10 @@ static inline uint16_t to_le16(uint16_t n)
 #ifndef offsetof
 #define offsetof(type, field) 		\
 	((size_t)(&(((type *)0)->field)))
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* EXT4_TYPES_H_ */

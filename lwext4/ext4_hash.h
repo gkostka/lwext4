@@ -37,6 +37,10 @@
 #ifndef EXT4_HASH_H_
 #define EXT4_HASH_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 
 #include <stdint.h>
@@ -52,6 +56,10 @@
 int ext2_htree_hash(const char *name, int len, const uint32_t *hash_seed,
 		    int hash_version, uint32_t *hash_major,
 		    uint32_t *hash_minor);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_HASH_H_ */
 

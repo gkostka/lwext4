@@ -25,9 +25,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef EXT4_BLOCKDEV_H_
-#define EXT4_BLOCKDEV_H_
-
 /** @addtogroup lwext4
  * @{
  */
@@ -35,6 +32,13 @@
  * @file  ext4_blockdev.h
  * @brief Block device module.
  */
+
+#ifndef EXT4_BLOCKDEV_H_
+#define EXT4_BLOCKDEV_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "ext4_config.h"
 #include "ext4_bcache.h"
@@ -204,6 +208,10 @@ int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off, void *buf,
  *               0 - DISABLE (all delayed cache buffers will be flushed)
  * @return  standard error code*/
 int ext4_block_cache_write_back(struct ext4_blockdev *bdev, uint8_t on_off);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_BLOCKDEV_H_ */
 

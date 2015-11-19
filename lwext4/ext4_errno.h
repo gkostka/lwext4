@@ -36,6 +36,10 @@
 #ifndef EXT4_ERRNO_H_
 #define EXT4_ERRNO_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 
 #if !CONFIG_HAVE_OWN_ERRNO
@@ -94,6 +98,10 @@
 
 #ifndef EOK
 #define EOK 0
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* EXT4_ERRNO_H_ */

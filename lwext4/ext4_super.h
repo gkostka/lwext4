@@ -42,6 +42,10 @@
 #ifndef EXT4_SUPER_H_
 #define EXT4_SUPER_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_types.h"
 
@@ -221,6 +225,10 @@ uint32_t ext4_bg_num_gdb(struct ext4_sblock *s, uint32_t group);
 /**@brief   TODO:*/
 uint32_t ext4_num_base_meta_clusters(struct ext4_sblock *s,
 				     uint32_t block_group);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_SUPER_H_ */
 

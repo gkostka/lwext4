@@ -42,6 +42,10 @@
 #ifndef EXT4_INODE_H_
 #define EXT4_INODE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 
 #include <stdint.h>
@@ -320,6 +324,10 @@ bool ext4_inode_can_truncate(struct ext4_sblock *sb, struct ext4_inode *inode);
  */
 struct ext4_extent_header *
 ext4_inode_get_extent_header(struct ext4_inode *inode);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_INODE_H_ */
 

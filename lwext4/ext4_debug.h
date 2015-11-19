@@ -37,6 +37,10 @@
 #ifndef EXT4_DEBUG_H_
 #define EXT4_DEBUG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_errno.h"
 
@@ -165,6 +169,10 @@ uint32_t ext4_dmask_get(void);
  #endif
 #else
 #define ext4_assert(_v)
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* EXT4_DEBUG_H_ */

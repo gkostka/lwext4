@@ -42,6 +42,10 @@
 #ifndef EXT4_DIR_IDX_H_
 #define EXT4_DIR_IDX_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_types.h"
 
@@ -84,6 +88,10 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
  */
 int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
                                    uint32_t parent_inode);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_DIR_IDX_H_ */
 

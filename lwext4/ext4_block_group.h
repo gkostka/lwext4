@@ -42,6 +42,10 @@
 #ifndef EXT4_BLOCK_GROUP_H_
 #define EXT4_BLOCK_GROUP_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_types.h"
 #include "ext4_super.h"

@@ -37,6 +37,10 @@
 #ifndef EXT4_CONFIG_H_
 #define EXT4_CONFIG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef CONFIG_HAVE_OWN_CFG
 #include <config.h>
 #endif
@@ -138,6 +142,10 @@
 /**@brief   Use full extent implemrntation*/
 #ifndef CONFIG_EXTENT_FULL
 #define CONFIG_EXTENT_FULL 1
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* EXT4_CONFIG_H_ */

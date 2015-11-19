@@ -42,6 +42,10 @@
 #ifndef EXT4_FS_H_
 #define EXT4_FS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_types.h"
 
@@ -227,6 +231,10 @@ void ext4_fs_inode_links_count_inc(struct ext4_inode_ref *inode_ref);
  * @param   inode none handle
  */
 void ext4_fs_inode_links_count_dec(struct ext4_inode_ref *inode_ref);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_FS_H_ */
 

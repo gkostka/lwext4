@@ -77,6 +77,7 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *index, bool is_dir);
 #ifdef __cplusplus
 }
 #endif
+
 #endif /* EXT4_IALLOC_H_ */
 
 /**

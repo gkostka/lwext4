@@ -38,6 +38,10 @@
 #ifndef EXT4_H_
 #define EXT4_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -403,6 +407,10 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d);
 /**@brief   Rewine directory entry offset.
  * @param   d directory handle*/
 void ext4_dir_entry_rewind(ext4_dir *d);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_H_ */
 

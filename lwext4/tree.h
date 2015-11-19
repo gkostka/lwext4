@@ -30,6 +30,10 @@
 #ifndef	_SYS_TREE_H_
 #define	_SYS_TREE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 
 /*
@@ -797,5 +801,9 @@ name##_RB_MINMAX(struct name *head, int val)				\
 	for ((x) = RB_MAX(name, head);					\
 	    ((x) != NULL) && ((y) = name##_RB_PREV(x), (x) != NULL);	\
 	     (x) = (y))
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _SYS_TREE_H_ */

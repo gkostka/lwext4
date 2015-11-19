@@ -41,6 +41,10 @@
 #ifndef EXT4_EXTENT_H_
 #define EXT4_EXTENT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_types.h"
 #include "ext4_inode.h"
@@ -273,6 +277,10 @@ int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock
 int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 			     ext4_lblk_t to);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_EXTENT_H_ */
 /**

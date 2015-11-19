@@ -37,6 +37,10 @@
 #ifndef EXT4_BITMAP_H_
 #define EXT4_BITMAP_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 
 #include <stdint.h>
@@ -87,6 +91,10 @@ void ext4_bmap_bits_free(uint8_t *bmap, uint32_t sbit, uint32_t bcnt);
  * @return  standard error code*/
 int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
 			   uint32_t *bit_id);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_BITMAP_H_ */
 

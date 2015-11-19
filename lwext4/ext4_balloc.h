@@ -42,6 +42,10 @@
 #ifndef EXT4_BALLOC_H_
 #define EXT4_BALLOC_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_types.h"
 
@@ -102,6 +106,10 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
  * @return  standard error code*/
 int ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
 				ext4_fsblk_t baddr, bool *free);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_BALLOC_H_ */
 

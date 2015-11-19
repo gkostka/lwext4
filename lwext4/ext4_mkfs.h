@@ -37,6 +37,10 @@
 #ifndef EXT4_MKFS_H_
 #define EXT4_MKFS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_types.h"
 #include "ext4_blockdev.h"
@@ -66,6 +70,10 @@ int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info);
 
 int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	      struct ext4_mkfs_info *info, int fs_type);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_MKFS_H_ */
 

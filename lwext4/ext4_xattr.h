@@ -37,6 +37,10 @@
 #ifndef EXT4_XATTR_H_
 #define EXT4_XATTR_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 #include "ext4_types.h"
 
@@ -67,6 +71,10 @@ const char *ext4_extract_xattr_name(const char *full_name, size_t full_name_len,
 
 const char *ext4_get_xattr_name_prefix(uint8_t name_index,
 					size_t *ret_prefix_len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /**

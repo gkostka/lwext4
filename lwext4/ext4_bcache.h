@@ -37,6 +37,10 @@
 #ifndef EXT4_BCACHE_H_
 #define EXT4_BCACHE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ext4_config.h"
 
 #include <stdint.h>
@@ -159,6 +163,10 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b,
  * @param   bc block cache descriptor
  * @return  full status*/
 bool ext4_bcache_is_full(struct ext4_bcache *bc);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EXT4_BCACHE_H_ */
 
