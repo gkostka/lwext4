@@ -710,7 +710,7 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 			info->feat_incompat);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "BG desc reserve: %"PRIu32"\n",
 			info->bg_desc_reserve_blocks);
-	ext4_dbg(DEBUG_MKFS, DBG_NONE "Descriptor size: %"PRIu32"\n",
+	ext4_dbg(DEBUG_MKFS, DBG_NONE "Descriptor size: %"PRIu16"\n",
 			info->dsc_size);
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "journal: %s\n",
 			info->journal ? "yes" : "no");
