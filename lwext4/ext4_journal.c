@@ -33,7 +33,7 @@ int jbd_sb_write(struct jbd_fs *jbd_fs, struct jbd_sb *s)
 				     EXT4_SUPERBLOCK_SIZE);
 }
 
-int jbd_sb_read(struct jbd_fs *jbd_fs, struct ext4_sblock *s)
+int jbd_sb_read(struct jbd_fs *jbd_fs, struct jbd_sb *s)
 {
 	int rc;
 	struct ext4_fs *fs = jbd_fs->inode_ref.fs;
@@ -60,6 +60,15 @@ int jbd_get_fs(struct ext4_fs *fs,
 	rc = ext4_fs_get_inode_ref(fs,
 				   journal_ino,
 				   &jbd_fs->inode_ref);
+	if (rc != EOK) {
+		memset(jbd_fs, 0, sizeof(struct jbd_fs));
+		return rc;
+	}
+	rc = jbd_sb_read(jbd_fs, &jbd_fs->sb);
+	if (rc != EOK) {
+		memset(jbd_fs, 0, sizeof(struct jbd_fs));
+		ext4_fs_put_inode_ref(&jbd_fs->inode_ref);
+	}
 	return rc;
 }
 
@@ -121,4 +130,12 @@ int jbd_block_set(struct jbd_fs *jbd_fs,
 {
 	return ext4_block_set(jbd_fs->inode_ref.fs->bdev,
 			      block);
+}
+
+int jbd_recovery(struct jbd_fs *jbd_fs)
+{
+	struct jbd_sb *sb = &jbd_fs->sb;
+	if (!sb->start)
+		return EOK;
+
 }
