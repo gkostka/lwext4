@@ -311,8 +311,7 @@ int ext4_fclose(ext4_file *f);
  * @param   ret_ino the inode id of the path
  * @param   ext4_inode buffer
  * @return  standard error code*/
-int ext4_fill_raw_inode(const char *path,
-			uint32_t *ret_ino,
+int ext4_fill_raw_inode(const char *path, uint32_t *ret_ino,
 			struct ext4_inode *inode);
 
 /**@brief   File truncate function.
