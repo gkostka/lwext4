@@ -227,7 +227,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 		}
 
 		/*New empty directory. Two links (. and ..) */
-		ext4_inode_set_links_count(child->inode, 2);
+		ext4_inode_set_links_cnt(child->inode, 2);
 		ext4_fs_inode_links_count_inc(parent);
 		child->dirty = true;
 		parent->dirty = true;
@@ -315,7 +315,7 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
 	 * ext4_inode_set_change_inode_time(child_inode_ref->inode,
 	 *     (uint32_t) now);
 	 */
-	if (ext4_inode_get_links_count(child_inode_ref->inode)) {
+	if (ext4_inode_get_links_cnt(child_inode_ref->inode)) {
 		ext4_fs_inode_links_count_dec(child_inode_ref);
 		child_inode_ref->dirty = true;
 	}
@@ -1076,8 +1076,8 @@ int ext4_fremove(const char *path)
 		goto Finish;
 
 	/*Link count is zero, the inode should be freed. */
-	if (!ext4_inode_get_links_count(child.inode)) {
-		ext4_inode_set_deletion_time(child.inode, 0xFFFFFFFF);
+	if (!ext4_inode_get_links_cnt(child.inode)) {
+		ext4_inode_set_del_time(child.inode, -1L);
 		/*Turncate*/
 		ext4_block_cache_write_back(mp->fs.bdev, 1);
 		/*Truncate may be IO heavy. Do it writeback cache mode.*/
@@ -1769,7 +1769,7 @@ int ext4_file_set_mtime(const char *path, uint32_t mtime)
 		return r;
 	}
 
-	ext4_inode_set_modification_time(inode_ref.inode, mtime);
+	ext4_inode_set_modif_time(inode_ref.inode, mtime);
 	inode_ref.dirty = true;
 
 	ext4_fs_put_inode_ref(&inode_ref);
@@ -2184,7 +2184,7 @@ int ext4_dir_rm(const char *path)
 	ext4_file f;
 
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
-	struct ext4_inode_ref current;
+	struct ext4_inode_ref act;
 	struct ext4_inode_ref child;
 	struct ext4_dir_iterator it;
 
@@ -2201,6 +2201,8 @@ int ext4_dir_rm(const char *path)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+
+	struct ext4_fs *const fs = &mp->fs;
 
 	/*Check if exist.*/
 	r = ext4_generic_open(&f, path, "r", false, &inode_up, &name_off);
@@ -2219,15 +2221,15 @@ int ext4_dir_rm(const char *path)
 
 	do {
 		/*Load directory node.*/
-		r = ext4_fs_get_inode_ref(&f.mp->fs, inode_current, &current);
+		r = ext4_fs_get_inode_ref(fs, inode_current, &act);
 		if (r != EOK) {
 			break;
 		}
 
 		/*Initialize iterator.*/
-		r = ext4_dir_iterator_init(&it, &current, 0);
+		r = ext4_dir_iterator_init(&it, &act, 0);
 		if (r != EOK) {
-			ext4_fs_put_inode_ref(&current);
+			ext4_fs_put_inode_ref(&act);
 			break;
 		}
 
@@ -2240,20 +2242,18 @@ int ext4_dir_rm(const char *path)
 
 			/*Get up directory inode when ".." entry*/
 			if ((it.curr->name_length == 2) &&
-			    ext4_is_dots(it.curr->name,
-					 it.curr->name_length)) {
+			    ext4_is_dots(it.curr->name, it.curr->name_length)) {
 				inode_up = ext4_dir_entry_ll_get_inode(it.curr);
 			}
 
 			/*If directory or file entry,  but not "." ".." entry*/
-			if (!ext4_is_dots(it.curr->name,
-					  it.curr->name_length)) {
+			if (!ext4_is_dots(it.curr->name, it.curr->name_length)) {
 
 				/*Get child inode reference do unlink
 				 * directory/file.*/
-				r = ext4_fs_get_inode_ref(&f.mp->fs,
-				        ext4_dir_entry_ll_get_inode(it.curr),
-				        &child);
+				uint32_t cinode;
+				cinode = ext4_dir_entry_ll_get_inode(it.curr);
+				r = ext4_fs_get_inode_ref(fs, cinode, &child);
 				if (r != EOK)
 					break;
 
@@ -2268,7 +2268,7 @@ int ext4_dir_rm(const char *path)
 					/*Has directory children. Go into this
 					 * directory.*/
 					inode_up = inode_current;
-					inode_current = ext4_dir_entry_ll_get_inode(it.curr);
+					inode_current = cinode;
 					depth++;
 					ext4_fs_put_inode_ref(&child);
 					break;
@@ -2276,7 +2276,7 @@ int ext4_dir_rm(const char *path)
 
 				/*No children in child directory or file. Just
 				 * unlink.*/
-				r = ext4_unlink(f.mp, &current, &child,
+				r = ext4_unlink(f.mp, &act, &child,
 						(char *)it.curr->name,
 						it.curr->name_length);
 				if (r != EOK) {
@@ -2284,9 +2284,8 @@ int ext4_dir_rm(const char *path)
 					break;
 				}
 
-				ext4_inode_set_deletion_time(child.inode,
-							     0xFFFFFFFF);
-				ext4_inode_set_links_count(child.inode, 0);
+				ext4_inode_set_del_time(child.inode, -1L);
+				ext4_inode_set_links_cnt(child.inode, 0);
 				child.dirty = true;
 				/*Turncate*/
 				r = ext4_fs_truncate_inode(&child, 0);
@@ -2311,7 +2310,7 @@ int ext4_dir_rm(const char *path)
 
 		if (dir_end) {
 			/*Directory iterator reached last entry*/
-			ext4_has_children(&has_children, &current);
+			ext4_has_children(&has_children, &act);
 			if (!has_children) {
 				inode_current = inode_up;
 				if (depth)
@@ -2329,28 +2328,25 @@ int ext4_dir_rm(const char *path)
 				/* In this place all directories should be
 				 * unlinked.
 				 * Last unlink from root of current directory*/
-				r = ext4_unlink(f.mp, &parent, &current,
+				r = ext4_unlink(f.mp, &parent, &act,
 						(char *)path, len);
 				if (r != EOK) {
 					ext4_fs_put_inode_ref(&parent);
 					goto End;
 				}
 
-				if (ext4_inode_get_links_count(current.inode) ==
-				    2) {
-					ext4_inode_set_deletion_time(
-					    current.inode, 0xFFFFFFFF);
-					ext4_inode_set_links_count(
-					    current.inode, 0);
-					current.dirty = true;
+				if (ext4_inode_get_links_cnt(act.inode) == 2) {
+					ext4_inode_set_del_time(act.inode, -1L);
+					ext4_inode_set_links_cnt(act.inode, 0);
+					act.dirty = true;
 					/*Turncate*/
-					r = ext4_fs_truncate_inode(&current, 0);
+					r = ext4_fs_truncate_inode(&act, 0);
 					if (r != EOK) {
 						ext4_fs_put_inode_ref(&parent);
 						goto End;
 					}
 
-					r = ext4_fs_free_inode(&current);
+					r = ext4_fs_free_inode(&act);
 					if (r != EOK) {
 						ext4_fs_put_inode_ref(&parent);
 						goto End;
@@ -2365,7 +2361,7 @@ int ext4_dir_rm(const char *path)
 
 	End:
 		ext4_dir_iterator_fini(&it);
-		ext4_fs_put_inode_ref(&current);
+		ext4_fs_put_inode_ref(&act);
 		dir_end = false;
 
 		/*When something goes wrong. End loop.*/
@@ -2462,8 +2458,7 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
 
 	ext4_dir_iterator_next(&it);
 
-	d->next_off =
-	    it.curr ? it.curr_off : EXT4_DIR_ENTRY_OFFSET_TERM;
+	d->next_off = it.curr ? it.curr_off : EXT4_DIR_ENTRY_OFFSET_TERM;
 
 	ext4_dir_iterator_fini(&it);
 	ext4_fs_put_inode_ref(&dir);

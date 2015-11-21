@@ -607,8 +607,8 @@ static int create_dirs(struct ext4_fs *fs)
 	if (r != EOK)
 		return r;
 
-	ext4_inode_set_links_count(root.inode, 3);
-	ext4_inode_set_links_count(child.inode, 2);
+	ext4_inode_set_links_cnt(root.inode, 3);
+	ext4_inode_set_links_cnt(child.inode, 2);
 
 	child.dirty = true;
 	root.dirty = true;

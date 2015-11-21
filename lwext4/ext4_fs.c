@@ -871,14 +871,14 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	}
 	ext4_inode_set_mode(&fs->sb, inode, mode);
 
-	ext4_inode_set_links_count(inode, 0);
+	ext4_inode_set_links_cnt(inode, 0);
 	ext4_inode_set_uid(inode, 0);
 	ext4_inode_set_gid(inode, 0);
 	ext4_inode_set_size(inode, 0);
 	ext4_inode_set_access_time(inode, 0);
 	ext4_inode_set_change_inode_time(inode, 0);
-	ext4_inode_set_modification_time(inode, 0);
-	ext4_inode_set_deletion_time(inode, 0);
+	ext4_inode_set_modif_time(inode, 0);
+	ext4_inode_set_del_time(inode, 0);
 	ext4_inode_set_blocks_count(&fs->sb, inode, 0);
 	ext4_inode_set_flags(inode, 0);
 	ext4_inode_set_generation(inode, 0);
@@ -1671,16 +1671,16 @@ void ext4_fs_inode_links_count_inc(struct ext4_inode_ref *inode_ref)
 {
 	uint16_t link;
 	bool is_dx;
-	link = ext4_inode_get_links_count(inode_ref->inode);
+	link = ext4_inode_get_links_cnt(inode_ref->inode);
 	link++;
-	ext4_inode_set_links_count(inode_ref->inode, link);
+	ext4_inode_set_links_cnt(inode_ref->inode, link);
 
 	is_dx = ext4_sb_feature_com(&inode_ref->fs->sb, EXT4_FCOM_DIR_INDEX) &&
 		ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_INDEX);
 
 	if (is_dx && link > 1) {
 		if (link >= EXT4_LINK_MAX || link == 2) {
-			ext4_inode_set_links_count(inode_ref->inode, 1);
+			ext4_inode_set_links_cnt(inode_ref->inode, 1);
 
 			uint32_t v;
 			v = ext4_get32(&inode_ref->fs->sb, features_read_only);
@@ -1692,16 +1692,16 @@ void ext4_fs_inode_links_count_inc(struct ext4_inode_ref *inode_ref)
 
 void ext4_fs_inode_links_count_dec(struct ext4_inode_ref *inode_ref)
 {
-	uint16_t links = ext4_inode_get_links_count(inode_ref->inode);
+	uint16_t links = ext4_inode_get_links_cnt(inode_ref->inode);
 	if (!ext4_inode_is_type(&inode_ref->fs->sb, inode_ref->inode,
 				EXT4_INODE_MODE_DIRECTORY)) {
 		if (links > 0)
-			ext4_inode_set_links_count(inode_ref->inode, links - 1);
+			ext4_inode_set_links_cnt(inode_ref->inode, links - 1);
 		return;
 	}
 
 	if (links > 2)
-		ext4_inode_set_links_count(inode_ref->inode, links - 1);
+		ext4_inode_set_links_cnt(inode_ref->inode, links - 1);
 }
 
 /**

@@ -118,25 +118,25 @@ void ext4_inode_set_change_inode_time(struct ext4_inode *inode, uint32_t time);
  * @param inode I-node
  * @return Time of the last content modification (POSIX)
  */
-uint32_t ext4_inode_get_modification_time(struct ext4_inode *inode);
+uint32_t ext4_inode_get_modif_time(struct ext4_inode *inode);
 
 /**@brief Set time, when i-node content was last modified.
  * @param inode I-node
  * @param time  Time of the last content modification (POSIX)
  */
-void ext4_inode_set_modification_time(struct ext4_inode *inode, uint32_t time);
+void ext4_inode_set_modif_time(struct ext4_inode *inode, uint32_t time);
 
 /**@brief Get time, when i-node was deleted.
  * @param inode I-node
  * @return Time of the delete action (POSIX)
  */
-uint32_t ext4_inode_get_deletion_time(struct ext4_inode *inode);
+uint32_t ext4_inode_get_del_time(struct ext4_inode *inode);
 
 /**@brief Set time, when i-node was deleted.
  * @param inode I-node
  * @param time  Time of the delete action (POSIX)
  */
-void ext4_inode_set_deletion_time(struct ext4_inode *inode, uint32_t time);
+void ext4_inode_set_del_time(struct ext4_inode *inode, uint32_t time);
 
 /**@brief Get ID of the i-node owner's group.
  * @param inode I-node to load gid from
@@ -154,13 +154,13 @@ void ext4_inode_set_gid(struct ext4_inode *inode, uint32_t gid);
  * @param inode I-node to load number of links from
  * @return Number of links to i-node
  */
-uint16_t ext4_inode_get_links_count(struct ext4_inode *inode);
+uint16_t ext4_inode_get_links_cnt(struct ext4_inode *inode);
 
 /**@brief Set number of links to i-node.
  * @param inode I-node to set number of links to
  * @param count Number of links to i-node
  */
-void ext4_inode_set_links_count(struct ext4_inode *inode, uint16_t cnt);
+void ext4_inode_set_links_cnt(struct ext4_inode *inode, uint16_t cnt);
 
 /**@brief Get number of 512-bytes blocks used for i-node.
  * @param sb    Superblock
