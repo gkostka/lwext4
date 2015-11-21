@@ -154,11 +154,11 @@ static int ext4_has_children(bool *has_children, struct ext4_inode_ref *enode)
 
 	/* Find a non-empty directory entry */
 	bool found = false;
-	while (it.current != NULL) {
-		if (ext4_dir_entry_ll_get_inode(it.current) != 0) {
+	while (it.curr != NULL) {
+		if (ext4_dir_entry_ll_get_inode(it.curr) != 0) {
 			uint16_t name_size = ext4_dir_entry_ll_get_name_length(
-			    &fs->sb, it.current);
-			if (!ext4_is_dots(it.current->name, name_size)) {
+			    &fs->sb, it.curr);
+			if (!ext4_is_dots(it.curr->name, name_size)) {
 				found = true;
 				break;
 			}
@@ -2272,26 +2272,26 @@ int ext4_dir_rm(const char *path)
 
 		while (r == EOK) {
 
-			if (!it.current) {
+			if (!it.curr) {
 				dir_end = true;
 				break;
 			}
 
 			/*Get up directory inode when ".." entry*/
-			if ((it.current->name_length == 2) &&
-			    ext4_is_dots(it.current->name,
-					 it.current->name_length)) {
-				inode_up = ext4_dir_entry_ll_get_inode(it.current);
+			if ((it.curr->name_length == 2) &&
+			    ext4_is_dots(it.curr->name,
+					 it.curr->name_length)) {
+				inode_up = ext4_dir_entry_ll_get_inode(it.curr);
 			}
 
 			/*If directory or file entry,  but not "." ".." entry*/
-			if (!ext4_is_dots(it.current->name,
-					  it.current->name_length)) {
+			if (!ext4_is_dots(it.curr->name,
+					  it.curr->name_length)) {
 
 				/*Get child inode reference do unlink
 				 * directory/file.*/
 				r = ext4_fs_get_inode_ref(&f.mp->fs,
-				        ext4_dir_entry_ll_get_inode(it.current),
+				        ext4_dir_entry_ll_get_inode(it.curr),
 				        &child);
 				if (r != EOK)
 					break;
@@ -2307,7 +2307,7 @@ int ext4_dir_rm(const char *path)
 					/*Has directory children. Go into this
 					 * directory.*/
 					inode_up = inode_current;
-					inode_current = ext4_dir_entry_ll_get_inode(it.current);
+					inode_current = ext4_dir_entry_ll_get_inode(it.curr);
 					depth++;
 					ext4_fs_put_inode_ref(&child);
 					break;
@@ -2316,8 +2316,8 @@ int ext4_dir_rm(const char *path)
 				/*No children in child directory or file. Just
 				 * unlink.*/
 				r = ext4_unlink(f.mp, &current, &child,
-						(char *)it.current->name,
-						it.current->name_length);
+						(char *)it.curr->name,
+						it.curr->name_length);
 				if (r != EOK) {
 					ext4_fs_put_inode_ref(&child);
 					break;
@@ -2496,13 +2496,13 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
 		goto Finish;
 	}
 
-	memcpy(&d->de, it.current, sizeof(ext4_direntry));
+	memcpy(&d->de, it.curr, sizeof(ext4_direntry));
 	de = &d->de;
 
 	ext4_dir_iterator_next(&it);
 
 	d->next_off =
-	    it.current ? it.current_offset : EXT4_DIR_ENTRY_OFFSET_TERM;
+	    it.curr ? it.curr_off : EXT4_DIR_ENTRY_OFFSET_TERM;
 
 	ext4_dir_iterator_fini(&it);
 	ext4_fs_put_inode_ref(&dir);

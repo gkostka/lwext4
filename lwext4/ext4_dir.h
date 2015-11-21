@@ -171,9 +171,8 @@ static inline void ext4_dir_entry_ll_set_inode_type(
  * @param dirent    Linear directory leaf block
  * @return true means the block passed checksum verification
  */
-bool
-ext4_dir_checksum_verify(struct ext4_inode_ref *inode_ref,
-			 struct ext4_dir_entry_ll *dirent);
+bool ext4_dir_csum_verify(struct ext4_inode_ref *inode_ref,
+			      struct ext4_dir_entry_ll *dirent);
 
 /**@brief Initialize directory iterator.
  * Set position to the first valid entry from the required position.
@@ -200,14 +199,13 @@ int ext4_dir_iterator_fini(struct ext4_dir_iterator *it);
 
 /**@brief Write directory entry to concrete data block.
  * @param sb        Superblock
- * @param entry     Pointer to entry to be written
+ * @param en     Pointer to entry to be written
  * @param entry_len Length of new entry
  * @param child     Child i-node to be written to new entry
  * @param name      Name of the new entry
  * @param name_len  Length of entry name
  */
-void ext4_dir_write_entry(struct ext4_sblock *sb,
-			  struct ext4_dir_entry_ll *entry,
+void ext4_dir_write_entry(struct ext4_sblock *sb, struct ext4_dir_entry_ll *en,
 			  uint16_t entry_len, struct ext4_inode_ref *child,
 			  const char *name, size_t name_len);
 
@@ -242,8 +240,8 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
 
 /**@brief Try to insert entry to concrete data block.
  * @param sb           Superblock
- * @param inode_ref     Directory i-node
- * @param target_block Block to try to insert entry to
+ * @param inode_ref    Directory i-node
+ * @param dst_blk      Block to try to insert entry to
  * @param child        Child i-node to be inserted by new entry
  * @param name         Name of the new entry
  * @param name_len     Length of the new entry name
@@ -251,7 +249,7 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
  */
 int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 			      struct ext4_inode_ref *inode_ref,
-			      struct ext4_block *target_block,
+			      struct ext4_block *dst_blk,
 			      struct ext4_inode_ref *child, const char *name,
 			      uint32_t name_len);
 
@@ -276,7 +274,7 @@ int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
 int ext4_dir_destroy_result(struct ext4_inode_ref *parent,
 			    struct ext4_dir_search_result *result);
 
-void ext4_dir_set_checksum(struct ext4_inode_ref *inode_ref,
+void ext4_dir_set_csum(struct ext4_inode_ref *inode_ref,
 			   struct ext4_dir_entry_ll *dirent);
 
 

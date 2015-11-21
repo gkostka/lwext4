@@ -334,8 +334,8 @@ static void ext4_dir_set_dx_csum(struct ext4_inode_ref *inode_ref,
 	}
 }
 #else
-#define ext4_dir_dx_checksum_verify(...) true
-#define ext4_dir_set_dx_checksum(...)
+#define ext4_dir_dx_csum_verify(...) true
+#define ext4_dir_set_dx_csum(...)
 #endif
 
 /****************************************************************************/
@@ -418,7 +418,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 		ext4_dir_entry_ll_set_name_length(sb, be, 0);
 		ext4_dir_entry_ll_set_inode_type(sb, be, EXT4_DIRENTRY_UNKNOWN);
 		ext4_dir_init_entry_tail(EXT4_DIRENT_TAIL(be, block_size));
-		ext4_dir_set_checksum(dir, be);
+		ext4_dir_set_csum(dir, be);
 	} else {
 		ext4_dir_entry_ll_set_entry_length(be, block_size);
 	}
@@ -761,7 +761,7 @@ int ext4_dir_dx_find_entry(struct ext4_dir_search_result *result,
 		if (rc != EOK)
 			goto cleanup;
 
-		if (!ext4_dir_checksum_verify(inode_ref, (void *)b.data)) {
+		if (!ext4_dir_csum_verify(inode_ref, (void *)b.data)) {
 			ext4_dbg(DEBUG_DIR_IDX,
 				 DBG_WARN "HTree leaf block checksum failed."
 				 "Inode: %" PRIu32", "
@@ -1075,8 +1075,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 		t = EXT4_DIRENT_TAIL(new_data_block_tmp.data, block_size);
 		ext4_dir_init_entry_tail(t);
 	}
-	ext4_dir_set_checksum(inode_ref, (void *)old_data_block->data);
-	ext4_dir_set_checksum(inode_ref, (void *)new_data_block_tmp.data);
+	ext4_dir_set_csum(inode_ref, (void *)old_data_block->data);
+	ext4_dir_set_csum(inode_ref, (void *)new_data_block_tmp.data);
 	old_data_block->dirty = true;
 	new_data_block_tmp.dirty = true;
 
@@ -1324,7 +1324,7 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	if (r != EOK)
 		goto release_index;
 
-	if (!ext4_dir_checksum_verify(parent,(void *)target_block.data)) {
+	if (!ext4_dir_csum_verify(parent,(void *)target_block.data)) {
 		ext4_dbg(DEBUG_DIR_IDX,
 				DBG_WARN "HTree leaf block checksum failed."
 				"Inode: %" PRIu32", "

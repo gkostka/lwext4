@@ -505,9 +505,9 @@ struct ext4_dir_entry_ll {
 
 struct ext4_dir_iterator {
 	struct ext4_inode_ref *inode_ref;
-	struct ext4_block current_block;
-	uint64_t current_offset;
-	struct ext4_dir_entry_ll *current;
+	struct ext4_block curr_blk;
+	uint64_t curr_off;
+	struct ext4_dir_entry_ll *curr;
 };
 
 struct ext4_dir_search_result {

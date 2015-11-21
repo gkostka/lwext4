@@ -512,14 +512,13 @@ static uint16_t ext4_fs_bg_checksum(struct ext4_sblock *sb, uint32_t bgid,
 		uint32_t offset = (uint32_t)(checksum - base);
 
 		/* Convert block group index to little endian */
-		uint32_t le_group = to_le32(bgid);
+		uint32_t group = to_le32(bgid);
 
 		/* Initialization */
 		crc = ext4_bg_crc16(~0, sb->uuid, sizeof(sb->uuid));
 
 		/* Include index of block group */
-		crc =
-		    ext4_bg_crc16(crc, (uint8_t *)&le_group, sizeof(le_group));
+		crc = ext4_bg_crc16(crc, (uint8_t *)&group, sizeof(group));
 
 		/* Compute crc from the first part (stop before checksum field)
 		 */
