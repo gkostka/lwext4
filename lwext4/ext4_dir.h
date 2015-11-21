@@ -150,7 +150,7 @@ ext4_dir_entry_ll_get_inode_type(struct ext4_sblock *sb,
 	    (ext4_get32(sb, minor_rev_level) >= 5))
 		return de->in.inode_type;
 
-	return EXT4_DIRENTRY_UNKNOWN;
+	return EXT4_DE_UNKNOWN;
 }
 /**@brief Set i-node type of directory entry.
  * @param sb   Superblock

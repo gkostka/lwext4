@@ -416,7 +416,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 		uint16_t len = block_size - sizeof(struct ext4_dir_entry_tail);
 		ext4_dir_entry_ll_set_entry_length(be, len);
 		ext4_dir_entry_ll_set_name_length(sb, be, 0);
-		ext4_dir_entry_ll_set_inode_type(sb, be, EXT4_DIRENTRY_UNKNOWN);
+		ext4_dir_entry_ll_set_inode_type(sb, be, EXT4_DE_UNKNOWN);
 		ext4_dir_init_entry_tail(EXT4_DIRENT_TAIL(be, block_size));
 		ext4_dir_set_csum(dir, be);
 	} else {

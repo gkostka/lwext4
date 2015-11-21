@@ -812,11 +812,11 @@ void ext4_fs_inode_blocks_init(struct ext4_fs *fs,
 uint32_t ext4_fs_correspond_inode_mode(int filetype)
 {
 	switch (filetype) {
-	case EXT4_DIRENTRY_DIR:
+	case EXT4_DE_DIR:
 		return EXT4_INODE_MODE_DIRECTORY;
-	case EXT4_DIRENTRY_REG_FILE:
+	case EXT4_DE_REG_FILE:
 		return EXT4_INODE_MODE_FILE;
-	case EXT4_DIRENTRY_SYMLINK:
+	case EXT4_DE_SYMLINK:
 		return EXT4_INODE_MODE_SOFTLINK;
 	default:
 		/* FIXME: right now we only support 3 file type. */
@@ -832,7 +832,7 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	bool is_dir;
 	uint16_t inode_size = ext4_get16(&fs->sb, inode_size);
 
-	is_dir = (filetype == EXT4_DIRENTRY_DIR);
+	is_dir = (filetype == EXT4_DE_DIR);
 
 	/* Allocate inode by allocation algorithm */
 	uint32_t index;

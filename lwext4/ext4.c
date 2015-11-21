@@ -613,8 +613,8 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 		if (!len) {
 			/*If root open was request.*/
 			if (is_goal &&
-			    ((ftype == EXT4_DIRENTRY_DIR) ||
-			     (ftype == EXT4_DIRENTRY_UNKNOWN)))
+			    ((ftype == EXT4_DE_DIR) ||
+			     (ftype == EXT4_DE_UNKNOWN)))
 				break;
 
 			r = ENOENT;
@@ -635,7 +635,7 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 			/*O_CREAT allows create new entry*/
 			struct ext4_inode_ref child_ref;
 			r = ext4_fs_alloc_inode(fs, &child_ref,
-					is_goal ? ftype : EXT4_DIRENTRY_DIR);
+					is_goal ? ftype : EXT4_DE_DIR);
 			if (r != EOK)
 				break;
 
@@ -683,7 +683,7 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 			r = ENOENT;
 			break;
 		}
-		if (ftype != EXT4_DIRENTRY_UNKNOWN) {
+		if (ftype != EXT4_DE_UNKNOWN) {
 			bool df = imode != ext4_fs_correspond_inode_mode(ftype);
 			if (df && is_goal) {
 				r = ENOENT;
@@ -749,9 +749,9 @@ static int ext4_generic_open(ext4_file *f, const char *path, const char *flags,
 		return EINVAL;
 
 	if (file_expect == true)
-		filetype = EXT4_DIRENTRY_REG_FILE;
+		filetype = EXT4_DE_REG_FILE;
 	else
-		filetype = EXT4_DIRENTRY_DIR;
+		filetype = EXT4_DE_DIR;
 
 	return ext4_generic_open2(f, path, iflags, filetype, parent_inode,
 				  name_off);
@@ -911,7 +911,7 @@ int ext4_flink(const char *path, const char *hardlink_path)
 
 	EXT4_MP_LOCK(mp);
 
-	r = ext4_generic_open2(&f, path, O_RDONLY, EXT4_DIRENTRY_UNKNOWN,
+	r = ext4_generic_open2(&f, path, O_RDONLY, EXT4_DE_UNKNOWN,
 			       &parent_inode, &name_off);
 	if (r != EOK)
 		goto Finish;
@@ -960,7 +960,7 @@ int ext4_frename(const char *path, const char *new_path)
 	EXT4_MP_LOCK(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDONLY,
-			EXT4_DIRENTRY_UNKNOWN,
+			EXT4_DE_UNKNOWN,
 			&parent_inode, &name_off);
 	if (r != EOK)
 		goto Finish;
@@ -1045,7 +1045,7 @@ int ext4_fremove(const char *path)
 
 	EXT4_MP_LOCK(mp);
 	r = ext4_generic_open2(&f, path, O_RDWR,
-			       EXT4_DIRENTRY_UNKNOWN,
+			       EXT4_DE_UNKNOWN,
 			       &parent_inode, &name_off);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
@@ -1117,7 +1117,7 @@ int ext4_fill_raw_inode(const char *path,
 	EXT4_MP_LOCK(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDONLY,
-			       EXT4_DIRENTRY_UNKNOWN,
+			       EXT4_DE_UNKNOWN,
 			       NULL, NULL);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
@@ -1170,7 +1170,7 @@ int ext4_fopen2(ext4_file *f, const char *path, int flags)
 	if (!mp)
 		return ENOENT;
 
-        filetype = EXT4_DIRENTRY_REG_FILE;
+        filetype = EXT4_DE_REG_FILE;
 
 	EXT4_MP_LOCK(mp);
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
@@ -1647,7 +1647,7 @@ int ext4_chmod(const char *path, uint32_t mode)
 
 	EXT4_MP_LOCK(mp);
 
-	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DIRENTRY_UNKNOWN, 0, 0);
+	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN, 0, 0);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
 		return r;
@@ -1682,7 +1682,7 @@ int ext4_chown(const char *path, uint32_t uid, uint32_t gid)
 
 	EXT4_MP_LOCK(mp);
 
-	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DIRENTRY_UNKNOWN, 0, 0);
+	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN, 0, 0);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
 		return r;
@@ -1717,7 +1717,7 @@ int ext4_file_set_atime(const char *path, uint32_t atime)
 
 	EXT4_MP_LOCK(mp);
 
-	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DIRENTRY_UNKNOWN, 0, 0);
+	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN, 0, 0);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
 		return r;
@@ -1751,7 +1751,7 @@ int ext4_file_set_mtime(const char *path, uint32_t mtime)
 
 	EXT4_MP_LOCK(mp);
 
-	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DIRENTRY_UNKNOWN, 0, 0);
+	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN, 0, 0);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
 		return r;
@@ -1785,7 +1785,7 @@ int ext4_file_set_ctime(const char *path, uint32_t ctime)
 
 	EXT4_MP_LOCK(mp);
 
-	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DIRENTRY_UNKNOWN, 0, 0);
+	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN, 0, 0);
 	if (r != EOK) {
 		EXT4_MP_UNLOCK(mp);
 		return r;
@@ -1891,7 +1891,7 @@ int ext4_fsymlink(const char *target, const char *path)
 	if (!mp)
 		return ENOENT;
 
-	filetype = EXT4_DIRENTRY_SYMLINK;
+	filetype = EXT4_DE_SYMLINK;
 
 	EXT4_MP_LOCK(mp);
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
@@ -1922,7 +1922,7 @@ int ext4_readlink(const char *path, char *buf, size_t bufsize, size_t *rcnt)
 	if (!buf)
 		return EINVAL;
 
-	filetype = EXT4_DIRENTRY_SYMLINK;
+	filetype = EXT4_DE_SYMLINK;
 
 	EXT4_MP_LOCK(mp);
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
@@ -1962,7 +1962,7 @@ int ext4_setxattr(const char *path, const char *name, size_t name_len,
 
 	EXT4_MP_LOCK(mp);
 	r = ext4_generic_open2(&f, path, O_RDWR,
-				EXT4_DIRENTRY_UNKNOWN, 0, 0);
+				EXT4_DE_UNKNOWN, 0, 0);
 	if (r != EOK)
 		goto Finish;
 	inode = f.inode;
@@ -2011,7 +2011,7 @@ int ext4_getxattr(const char *path, const char *name, size_t name_len,
 
 	EXT4_MP_LOCK(mp);
 	r = ext4_generic_open2(&f, path, O_RDWR,
-				EXT4_DIRENTRY_UNKNOWN, 0, 0);
+				EXT4_DE_UNKNOWN, 0, 0);
 	if (r != EOK)
 		goto Finish;
 	inode = f.inode;
@@ -2099,7 +2099,7 @@ int ext4_listxattr(const char *path, char *list, size_t size, size_t *ret_size)
 
 	EXT4_MP_LOCK(mp);
 	r = ext4_generic_open2(&f, path, O_RDWR,
-				EXT4_DIRENTRY_UNKNOWN, 0, 0);
+				EXT4_DE_UNKNOWN, 0, 0);
 	if (r != EOK)
 		goto Finish;
 	inode = f.inode;
@@ -2155,7 +2155,7 @@ int ext4_removexattr(const char *path, const char *name, size_t name_len)
 
 	EXT4_MP_LOCK(mp);
 	r = ext4_generic_open2(&f, path, O_RDWR,
-				EXT4_DIRENTRY_UNKNOWN, 0, 0);
+				EXT4_DE_UNKNOWN, 0, 0);
 	if (r != EOK)
 		goto Finish;
 	inode = f.inode;

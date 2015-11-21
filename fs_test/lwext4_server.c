@@ -1107,22 +1107,22 @@ int _stats_check(char *p)
 static char *entry_to_str(uint8_t type)
 {
 	switch (type) {
-	case EXT4_DIRENTRY_UNKNOWN:
-		return "[UNK] ";
-	case EXT4_DIRENTRY_REG_FILE:
-		return "[FIL] ";
-	case EXT4_DIRENTRY_DIR:
-		return "[DIR] ";
-	case EXT4_DIRENTRY_CHRDEV:
-		return "[CHA] ";
-	case EXT4_DIRENTRY_BLKDEV:
-		return "[BLK] ";
-	case EXT4_DIRENTRY_FIFO:
-		return "[FIF] ";
-	case EXT4_DIRENTRY_SOCK:
-		return "[SOC] ";
-	case EXT4_DIRENTRY_SYMLINK:
-		return "[SYM] ";
+	case EXT4_DE_UNKNOWN:
+		return "[unk] ";
+	case EXT4_DE_REG_FILE:
+		return "[fil] ";
+	case EXT4_DE_DIR:
+		return "[dir] ";
+	case EXT4_DE_CHRDEV:
+		return "[cha] ";
+	case EXT4_DE_BLKDEV:
+		return "[blk] ";
+	case EXT4_DE_FIFO:
+		return "[fif] ";
+	case EXT4_DE_SOCK:
+		return "[soc] ";
+	case EXT4_DE_SYMLINK:
+		return "[sym] ";
 	default:
 		break;
 	}

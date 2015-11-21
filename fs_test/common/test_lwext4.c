@@ -44,21 +44,21 @@ static struct ext4_bcache *bc;
 static char *entry_to_str(uint8_t type)
 {
 	switch (type) {
-	case EXT4_DIRENTRY_UNKNOWN:
+	case EXT4_DE_UNKNOWN:
 		return "[unk] ";
-	case EXT4_DIRENTRY_REG_FILE:
+	case EXT4_DE_REG_FILE:
 		return "[fil] ";
-	case EXT4_DIRENTRY_DIR:
+	case EXT4_DE_DIR:
 		return "[dir] ";
-	case EXT4_DIRENTRY_CHRDEV:
+	case EXT4_DE_CHRDEV:
 		return "[cha] ";
-	case EXT4_DIRENTRY_BLKDEV:
+	case EXT4_DE_BLKDEV:
 		return "[blk] ";
-	case EXT4_DIRENTRY_FIFO:
+	case EXT4_DE_FIFO:
 		return "[fif] ";
-	case EXT4_DIRENTRY_SOCK:
+	case EXT4_DE_SOCK:
 		return "[soc] ";
-	case EXT4_DIRENTRY_SYMLINK:
+	case EXT4_DE_SYMLINK:
 		return "[sym] ";
 	default:
 		break;

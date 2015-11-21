@@ -530,12 +530,12 @@ static int alloc_inodes(struct ext4_fs *fs)
 	int i;
 	struct ext4_inode_ref inode_ref;
 	for (i = 1; i < 12; ++i) {
-		int filetype = EXT4_DIRENTRY_REG_FILE;
+		int filetype = EXT4_DE_REG_FILE;
 
 		switch (i) {
 		case EXT4_ROOT_INO:
 		case EXT4_GOOD_OLD_FIRST_INO:
-			filetype = EXT4_DIRENTRY_DIR;
+			filetype = EXT4_DE_DIR;
 			break;
 		}
 
