@@ -58,7 +58,7 @@ extern "C" {
  * @return I-node number
  */
 static inline uint32_t
-ext4_dir_entry_ll_get_inode(struct ext4_dir_entry_ll *de)
+ext4_dir_en_get_inode(struct ext4_dir_en *de)
 {
 	return to_le32(de->inode);
 }
@@ -68,7 +68,7 @@ ext4_dir_entry_ll_get_inode(struct ext4_dir_entry_ll *de)
  * @param inode I-node number
  */
 static inline void
-ext4_dir_entry_ll_set_inode(struct ext4_dir_entry_ll *de, uint32_t inode)
+ext4_dir_en_set_inode(struct ext4_dir_en *de, uint32_t inode)
 {
 	de->inode = to_le32(inode);
 }
@@ -78,7 +78,7 @@ ext4_dir_entry_ll_set_inode(struct ext4_dir_entry_ll *de, uint32_t inode)
  * @param inode I-node number
  */
 static inline void
-ext4_dx_dot_entry_set_inode(struct ext4_dir_idx_dot_entry *de, uint32_t inode)
+ext4_dx_dot_en_set_inode(struct ext4_dir_idx_dot_en *de, uint32_t inode)
 {
 	de->inode = to_le32(inode);
 }
@@ -87,21 +87,18 @@ ext4_dx_dot_entry_set_inode(struct ext4_dir_idx_dot_entry *de, uint32_t inode)
  * @param de Directory entry
  * @return Entry length
  */
-static inline uint16_t
-ext4_dir_entry_ll_get_entry_length(struct ext4_dir_entry_ll *de)
+static inline uint16_t ext4_dir_en_get_entry_len(struct ext4_dir_en *de)
 {
-	return to_le16(de->entry_length);
+	return to_le16(de->entry_len);
 }
 
 /**@brief Set directory entry length.
  * @param de     Directory entry
  * @param length Entry length
  */
-static inline void
-ext4_dir_entry_ll_set_entry_length(struct ext4_dir_entry_ll *de,
-				   uint16_t len)
+static inline void ext4_dir_en_set_entry_len(struct ext4_dir_en *de, uint16_t l)
 {
-	de->entry_length = to_le16(len);
+	de->entry_len = to_le16(l);
 }
 
 /**@brief Get directory entry name length.
@@ -109,11 +106,10 @@ ext4_dir_entry_ll_set_entry_length(struct ext4_dir_entry_ll *de,
  * @param de Directory entry
  * @return Entry name length
  */
-static inline uint16_t
-ext4_dir_entry_ll_get_name_length(struct ext4_sblock *sb,
-				  struct ext4_dir_entry_ll *de)
+static inline uint16_t ext4_dir_en_get_name_len(struct ext4_sblock *sb,
+						struct ext4_dir_en *de)
 {
-	uint16_t v = de->name_length;
+	uint16_t v = de->name_len;
 
 	if ((ext4_get32(sb, rev_level) == 0) &&
 	    (ext4_get32(sb, minor_rev_level) < 5))
@@ -127,10 +123,11 @@ ext4_dir_entry_ll_get_name_length(struct ext4_sblock *sb,
  * @param de     Directory entry
  * @param length Entry name length
  */
-static inline void ext4_dir_entry_ll_set_name_length(
-    struct ext4_sblock *sb, struct ext4_dir_entry_ll *de, uint16_t len)
+static inline void ext4_dir_en_set_name_len(struct ext4_sblock *sb,
+					    struct ext4_dir_en *de,
+					    uint16_t len)
 {
-	de->name_length = (len << 8) >> 8;
+	de->name_len = (len << 8) >> 8;
 
 	if ((ext4_get32(sb, rev_level) == 0) &&
 	    (ext4_get32(sb, minor_rev_level) < 5))
@@ -142,9 +139,8 @@ static inline void ext4_dir_entry_ll_set_name_length(
  * @param de Directory entry
  * @return I-node type (file, dir, etc.)
  */
-static inline uint8_t
-ext4_dir_entry_ll_get_inode_type(struct ext4_sblock *sb,
-				 struct ext4_dir_entry_ll *de)
+static inline uint8_t ext4_dir_en_get_inode_type(struct ext4_sblock *sb,
+						 struct ext4_dir_en *de)
 {
 	if ((ext4_get32(sb, rev_level) > 0) ||
 	    (ext4_get32(sb, minor_rev_level) >= 5))
@@ -158,12 +154,12 @@ ext4_dir_entry_ll_get_inode_type(struct ext4_sblock *sb,
  * @param type I-node type (file, dir, etc.)
  */
 
-static inline void ext4_dir_entry_ll_set_inode_type(
-    struct ext4_sblock *sb, struct ext4_dir_entry_ll *de, uint8_t type)
+static inline void ext4_dir_en_set_inode_type(struct ext4_sblock *sb,
+					      struct ext4_dir_en *de, uint8_t t)
 {
 	if ((ext4_get32(sb, rev_level) > 0) ||
 	    (ext4_get32(sb, minor_rev_level) >= 5))
-		de->in.inode_type = type;
+		de->in.inode_type = t;
 }
 
 /**@brief Verify checksum of a linear directory leaf block
@@ -172,7 +168,7 @@ static inline void ext4_dir_entry_ll_set_inode_type(
  * @return true means the block passed checksum verification
  */
 bool ext4_dir_csum_verify(struct ext4_inode_ref *inode_ref,
-			      struct ext4_dir_entry_ll *dirent);
+			  struct ext4_dir_en *dirent);
 
 /**@brief Initialize directory iterator.
  * Set position to the first valid entry from the required position.
@@ -181,21 +177,21 @@ bool ext4_dir_csum_verify(struct ext4_inode_ref *inode_ref,
  * @param pos       Position to start reading entries from
  * @return Error code
  */
-int ext4_dir_iterator_init(struct ext4_dir_iterator *it,
+int ext4_dir_iterator_init(struct ext4_dir_iter *it,
 			   struct ext4_inode_ref *inode_ref, uint64_t pos);
 
 /**@brief Jump to the next valid entry
  * @param it Initialized iterator
  * @return Error code
  */
-int ext4_dir_iterator_next(struct ext4_dir_iterator *it);
+int ext4_dir_iterator_next(struct ext4_dir_iter *it);
 
 /**@brief Uninitialize directory iterator.
  *        Release all allocated structures.
  * @param it Iterator to be finished
  * @return Error code
  */
-int ext4_dir_iterator_fini(struct ext4_dir_iterator *it);
+int ext4_dir_iterator_fini(struct ext4_dir_iter *it);
 
 /**@brief Write directory entry to concrete data block.
  * @param sb        Superblock
@@ -205,7 +201,7 @@ int ext4_dir_iterator_fini(struct ext4_dir_iterator *it);
  * @param name      Name of the new entry
  * @param name_len  Length of entry name
  */
-void ext4_dir_write_entry(struct ext4_sblock *sb, struct ext4_dir_entry_ll *en,
+void ext4_dir_write_entry(struct ext4_sblock *sb, struct ext4_dir_en *en,
 			  uint16_t entry_len, struct ext4_inode_ref *child,
 			  const char *name, size_t name_len);
 
@@ -263,7 +259,7 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
  */
 int ext4_dir_find_in_block(struct ext4_block *block, struct ext4_sblock *sb,
 			   size_t name_len, const char *name,
-			   struct ext4_dir_entry_ll **res_entry);
+			   struct ext4_dir_en **res_entry);
 
 /**@brief Simple function to release allocated data from result.
  * @param parent Parent inode
@@ -275,7 +271,7 @@ int ext4_dir_destroy_result(struct ext4_inode_ref *parent,
 			    struct ext4_dir_search_result *result);
 
 void ext4_dir_set_csum(struct ext4_inode_ref *inode_ref,
-			   struct ext4_dir_entry_ll *dirent);
+		       struct ext4_dir_en *dirent);
 
 
 void ext4_dir_init_entry_tail(struct ext4_dir_entry_tail *t);

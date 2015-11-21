@@ -485,7 +485,7 @@ enum { EXT4_DE_UNKNOWN = 0,
 
 #define EXT4_DIRENTRY_DIR_CSUM 0xDE
 
-union ext4_dir_entry_ll_internal {
+union ext4_dir_en_internal {
 	uint8_t name_length_high; /* Higher 8 bits of name length */
 	uint8_t inode_type;       /* Type of referenced inode (in rev >= 0.5) */
 } __attribute__((packed));
@@ -493,26 +493,26 @@ union ext4_dir_entry_ll_internal {
 /**
  * Linked list directory entry structure
  */
-struct ext4_dir_entry_ll {
+struct ext4_dir_en {
 	uint32_t inode;	/* I-node for the entry */
-	uint16_t entry_length; /* Distance to the next directory entry */
-	uint8_t name_length;   /* Lower 8 bits of name length */
+	uint16_t entry_len; /* Distance to the next directory entry */
+	uint8_t name_len;   /* Lower 8 bits of name length */
 
-	union ext4_dir_entry_ll_internal in;
+	union ext4_dir_en_internal in;
 
 	uint8_t name[EXT4_DIRECTORY_FILENAME_LEN]; /* Entry name */
 } __attribute__((packed));
 
-struct ext4_dir_iterator {
+struct ext4_dir_iter {
 	struct ext4_inode_ref *inode_ref;
 	struct ext4_block curr_blk;
 	uint64_t curr_off;
-	struct ext4_dir_entry_ll *curr;
+	struct ext4_dir_en *curr;
 };
 
 struct ext4_dir_search_result {
 	struct ext4_block block;
-	struct ext4_dir_entry_ll *dentry;
+	struct ext4_dir_en *dentry;
 };
 
 /* Structures for indexed directory */
@@ -522,7 +522,7 @@ struct ext4_dir_idx_climit {
 	uint16_t count;
 };
 
-struct ext4_dir_idx_dot_entry {
+struct ext4_dir_idx_dot_en {
 	uint32_t inode;
 	uint16_t entry_length;
 	uint8_t name_length;
@@ -544,7 +544,7 @@ struct ext4_dir_idx_entry {
 };
 
 struct ext4_dir_idx_root {
-	struct ext4_dir_idx_dot_entry dots[2];
+	struct ext4_dir_idx_dot_en dots[2];
 	struct ext4_dir_idx_rinfo info;
 	struct ext4_dir_idx_entry en[];
 };

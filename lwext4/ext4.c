@@ -146,7 +146,7 @@ static int ext4_has_children(bool *has_children, struct ext4_inode_ref *enode)
 		return EOK;
 	}
 
-	struct ext4_dir_iterator it;
+	struct ext4_dir_iter it;
 	int rc = ext4_dir_iterator_init(&it, enode, 0);
 	if (rc != EOK)
 		return rc;
@@ -154,9 +154,9 @@ static int ext4_has_children(bool *has_children, struct ext4_inode_ref *enode)
 	/* Find a non-empty directory entry */
 	bool found = false;
 	while (it.curr != NULL) {
-		if (ext4_dir_entry_ll_get_inode(it.curr) != 0) {
+		if (ext4_dir_en_get_inode(it.curr) != 0) {
 			uint16_t nsize;
-			nsize = ext4_dir_entry_ll_get_name_length(sb, it.curr);
+			nsize = ext4_dir_en_get_name_len(sb, it.curr);
 			if (!ext4_is_dots(it.curr->name, nsize)) {
 				found = true;
 				break;
@@ -246,7 +246,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 			if (r != EOK)
 				return EIO;
 
-			ext4_dir_entry_ll_set_inode(res.dentry,	parent->index);
+			ext4_dir_en_set_inode(res.dentry, parent->index);
 			res.block.dirty = true;
 			r = ext4_dir_destroy_result(child, &res);
 			if (r != EOK)
@@ -659,10 +659,10 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 		if (parent_inode)
 			*parent_inode = ref.index;
 
-		next_inode = ext4_dir_entry_ll_get_inode(result.dentry);
+		next_inode = ext4_dir_en_get_inode(result.dentry);
 		if (ext4_sb_feature_incom(sb, EXT4_FINCOM_FILETYPE)) {
 			uint8_t t;
-			t = ext4_dir_entry_ll_get_inode_type(sb, result.dentry);
+			t = ext4_dir_en_get_inode_type(sb, result.dentry);
 			imode = ext4_fs_correspond_inode_mode(t);
 		} else {
 			struct ext4_inode_ref child_ref;
@@ -816,7 +816,7 @@ static int ext4_create_hardlink(const char *path,
 		next_inode = result.dentry->inode;
 		if (ext4_sb_feature_incom(sb, EXT4_FINCOM_FILETYPE)) {
 			uint8_t t;
-			t = ext4_dir_entry_ll_get_inode_type(sb, result.dentry);
+			t = ext4_dir_en_get_inode_type(sb, result.dentry);
 			inode_mode = ext4_fs_correspond_inode_mode(t);
 		} else {
 			struct ext4_inode_ref child_ref;
@@ -2186,7 +2186,7 @@ int ext4_dir_rm(const char *path)
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
 	struct ext4_inode_ref act;
 	struct ext4_inode_ref child;
-	struct ext4_dir_iterator it;
+	struct ext4_dir_iter it;
 
 	uint32_t name_off;
 	uint32_t inode_up;
@@ -2241,18 +2241,18 @@ int ext4_dir_rm(const char *path)
 			}
 
 			/*Get up directory inode when ".." entry*/
-			if ((it.curr->name_length == 2) &&
-			    ext4_is_dots(it.curr->name, it.curr->name_length)) {
-				inode_up = ext4_dir_entry_ll_get_inode(it.curr);
+			if ((it.curr->name_len == 2) &&
+			    ext4_is_dots(it.curr->name, it.curr->name_len)) {
+				inode_up = ext4_dir_en_get_inode(it.curr);
 			}
 
 			/*If directory or file entry,  but not "." ".." entry*/
-			if (!ext4_is_dots(it.curr->name, it.curr->name_length)) {
+			if (!ext4_is_dots(it.curr->name, it.curr->name_len)) {
 
 				/*Get child inode reference do unlink
 				 * directory/file.*/
 				uint32_t cinode;
-				cinode = ext4_dir_entry_ll_get_inode(it.curr);
+				cinode = ext4_dir_en_get_inode(it.curr);
 				r = ext4_fs_get_inode_ref(fs, cinode, &child);
 				if (r != EOK)
 					break;
@@ -2278,7 +2278,7 @@ int ext4_dir_rm(const char *path)
 				 * unlink.*/
 				r = ext4_unlink(f.mp, &act, &child,
 						(char *)it.curr->name,
-						it.curr->name_length);
+						it.curr->name_len);
 				if (r != EOK) {
 					ext4_fs_put_inode_ref(&child);
 					break;
@@ -2433,7 +2433,7 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
 	int r;
 	ext4_direntry *de = 0;
 	struct ext4_inode_ref dir;
-	struct ext4_dir_iterator it;
+	struct ext4_dir_iter it;
 
 	EXT4_MP_LOCK(d->f.mp);
 
