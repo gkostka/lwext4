@@ -82,6 +82,25 @@ int ext4_bcache_fini_dynamic(struct ext4_bcache *bc)
 	return EOK;
 }
 
+/**@brief:
+ *
+ *  This is ext4_bcache, the module handling basic buffer-cache stuff.
+ *
+ *  Buffers in a bcache are sorted by their LBA and stored in a
+ *  RB-Tree(lba_root).
+ *
+ *  Bcache also maintains another RB-Tree(lru_root) right now, where
+ *  buffers are sorted by their LRU id.
+ *
+ *  A singly-linked list is used to track those dirty buffers which are
+ *  ready to be flushed. (Those buffers which are dirty but also referenced
+ *  are not considered ready to be flushed.)
+ *
+ *  When a buffer is not referenced, it will be stored in both lba_root
+ *  and lru_root, while it will only be stored in lba_root when it is
+ *  referenced.
+ */
+
 static struct ext4_buf *
 ext4_buf_alloc(struct ext4_bcache *bc, uint64_t lba)
 {
@@ -151,9 +170,13 @@ void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf)
 int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 		      bool *is_new)
 {
+	/* Try to search the buffer with exaxt LBA. */
 	struct ext4_buf *buf = ext4_buf_lookup(bc, b->lb_id);
 	if (buf) {
+		/* If buffer is not referenced. */
 		if (!buf->refctr) {
+			/* Assign new value to LRU id and increment LRU counter
+			 * by 1*/
 			buf->lru_id = ++bc->lru_ctr;
 			RB_REMOVE(ext4_buf_lru, &bc->lru_root, buf);
 			if (ext4_bcache_test_flag(buf, BC_DIRTY))
@@ -165,26 +188,37 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 		}
 
 		buf->refctr++;
+
 		b->uptodate = ext4_bcache_test_flag(buf, BC_UPTODATE);
+		/* Right now we don't propagate the dirty flag from ext4_buf to
+		 * ext4_block. */
 		b->dirty = false;
 		b->buf = buf;
 		b->data = buf->data;
+
 		*is_new = false;
 		return EOK;
 	}
+
+	/* We need to allocate one buffer.*/
 	buf = ext4_buf_alloc(bc, b->lb_id);
 	if (!buf)
 		return ENOMEM;
 
 	RB_INSERT(ext4_buf_lba, &bc->lba_root, buf);
+	/* One more buffer in bcache now. :-) */
 	bc->ref_blocks++;
 
 	buf->refctr = 1;
+	/* Assign new value to LRU id and increment LRU counter
+	 * by 1*/
 	buf->lru_id = ++bc->lru_ctr;
+
 	b->uptodate = false;
 	b->dirty = false;
 	b->buf = buf;
 	b->data = buf->data;
+
 	*is_new = true;
 	return EOK;
 }
@@ -208,22 +242,28 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b,
 	/*Just decrease reference counter*/
 	buf->refctr--;
 
+	/* TODO: it looks useless... */
 	if (free_delay)
 		bc->free_delay = free_delay;
 
+	/* If buffer is modified, buf will be mark up-to-date and dirty. */
 	if (b->dirty) {
 		ext4_bcache_set_flag(buf, BC_DIRTY);
 		ext4_bcache_set_flag(buf, BC_UPTODATE);
 		b->uptodate = true;
 	}
+	/* Someone might want to drop this buffer from bcache. */
 	if (!b->uptodate)
 		ext4_bcache_clear_flag(buf, BC_UPTODATE);
 
+	/* We are the last one touching this buffer, do the cleanups. */
 	if (!buf->refctr) {
 		RB_INSERT(ext4_buf_lru, &bc->lru_root, buf);
+		/* This buffer is ready to be flushed. */
 		if (ext4_bcache_test_flag(buf, BC_DIRTY))
 			SLIST_INSERT_HEAD(&bc->dirty_list, buf, dirty_node);
 
+		/* The buffer is invalidated...drop it. */
 		if (!ext4_bcache_test_flag(buf, BC_UPTODATE))
 			ext4_bcache_drop_buf(bc, buf);
 
