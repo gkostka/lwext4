@@ -42,18 +42,22 @@
 #include <string.h>
 #include <stdlib.h>
 
-static int
-ext4_bcache_lba_compare(struct ext4_buf *a,
-			struct ext4_buf *b)
+static int ext4_bcache_lba_compare(struct ext4_buf *a, struct ext4_buf *b)
 {
-	return a->lba - b->lba;
+	 if (a->lba > b->lba)
+		 return 1;
+	 else if (a->lba < b->lba)
+		 return -1;
+	 return 0;
 }
 
-static int
-ext4_bcache_lru_compare(struct ext4_buf *a,
-			struct ext4_buf *b)
+static int ext4_bcache_lru_compare(struct ext4_buf *a, struct ext4_buf *b)
 {
-	return a->lru_id - b->lru_id;
+	if (a->lru_id > b->lru_id)
+		return 1;
+	else if (a->lru_id < b->lru_id)
+		return -1;
+	return 0;
 }
 
 RB_GENERATE_INTERNAL(ext4_buf_lba, ext4_buf, lba_node,
