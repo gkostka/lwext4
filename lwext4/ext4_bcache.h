@@ -45,9 +45,11 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "tree.h"
+#include "queue.h"
 
 #define EXT4_BLOCK_ZERO() 	\
-	{.uptodate = 0, .dirty = 0, .lb_id = 0, .cache_id = 0, .data = 0}
+	{.uptodate = 0, .dirty = 0, .lb_id = 0, .data = 0}
 
 /**@brief   Single block descriptor*/
 struct ext4_block {
@@ -60,11 +62,41 @@ struct ext4_block {
 	/**@brief   Logical block ID*/
 	uint64_t lb_id;
 
-	/**@brief   Cache id*/
-	uint32_t cache_id;
+	/**@brief   Buffer */
+	struct ext4_buf *buf;
 
 	/**@brief   Data buffer.*/
 	uint8_t *data;
+};
+
+/**@brief   Single block descriptor*/
+struct ext4_buf {
+	/**@brief   Flags*/
+	int flags;
+
+	/**@brief   Logical block address*/
+	uint64_t lba;
+
+	/**@brief   Data buffer.*/
+	uint8_t *data;
+
+	/**@brief   LRU priority. (unused) */
+	uint32_t lru_prio;
+
+	/**@brief   LRU id.*/
+	uint32_t lru_id;
+
+	/**@brief   Reference count table*/
+	uint32_t refctr;
+
+	/**@brief   LBA tree node*/
+	RB_ENTRY(ext4_buf) lba_node;
+
+	/**@brief   LRU tree node*/
+	RB_ENTRY(ext4_buf) lru_node;
+
+	/**@brief   Dirty list node*/
+	SLIST_ENTRY(ext4_buf) dirty_node;
 };
 
 /**@brief   Block cache descriptor*/
@@ -79,29 +111,23 @@ struct ext4_bcache {
 	/**@brief   Last recently used counter*/
 	uint32_t lru_ctr;
 
-	/**@brief   Reference count table*/
-	uint32_t refctr[CONFIG_BLOCK_DEV_CACHE_SIZE];
-
-	/**@brief   Last recently used ID table*/
-	uint32_t lru_id[CONFIG_BLOCK_DEV_CACHE_SIZE];
-
-	/**@brief   Writeback free delay mode table*/
-	uint8_t free_delay[CONFIG_BLOCK_DEV_CACHE_SIZE];
-
-	/**@brief   Logical block table*/
-	uint64_t lba[CONFIG_BLOCK_DEV_CACHE_SIZE];
-
-	/**@brief   Flags*/
-	int flags[CONFIG_BLOCK_DEV_CACHE_SIZE];
-
-	/**@brief   Cache data buffers*/
-	uint8_t *data;
+	/**@brief   Writeback free delay mode*/
+	uint8_t free_delay;
 
 	/**@brief   Currently referenced datablocks*/
 	uint32_t ref_blocks;
 
 	/**@brief   Maximum referenced datablocks*/
 	uint32_t max_ref_blocks;
+
+	/**@brief   A tree holding all bufs*/
+	RB_HEAD(ext4_buf_lba, ext4_buf) lba_root;
+
+	/**@brief   A tree holding unreferenced bufs*/
+	RB_HEAD(ext4_buf_lru, ext4_buf) lru_root;
+
+	/**@brief   A singly-linked list holding dirty buffers*/
+	SLIST_HEAD(ext4_buf_dirty, ext4_buf) dirty_list;
 };
 
 enum bcache_state_bits {
@@ -109,23 +135,21 @@ enum bcache_state_bits {
 	BC_DIRTY
 };
 
-#define ext4_bcache_set_flag(bc, id, b)    \
-	(bc)->flags[id] |= 1 << (b)
+#define ext4_bcache_set_flag(buf, b)    \
+	(buf)->flags |= 1 << (b)
 
-#define ext4_bcache_clear_flag(bc, id, b)    \
-	(bc)->flags[id] &= ~(1 << (b))
+#define ext4_bcache_clear_flag(buf, b)    \
+	(buf)->flags &= ~(1 << (b))
 
-#define ext4_bcache_test_flag(bc, id, b)    \
-	(((bc)->flags[id] & (1 << (b))) >> (b))
+#define ext4_bcache_test_flag(buf, b)    \
+	(((buf)->flags & (1 << (b))) >> (b))
 
 /**@brief   Static initializer of block cache structure.*/
 #define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)                 \
-	static uint8_t __name##_data[(__cnt) * (__itemsize)];                  \
 	static struct ext4_bcache __name = {                                   \
 	    .cnt = __cnt,                                                      \
 	    .itemsize = __itemsize,                                            \
 	    .lru_ctr = 0,                                                      \
-	    .data = __name##_data,                                             \
 	}
 
 /**@brief   Dynamic initialization of block cache.
@@ -140,6 +164,16 @@ int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
  * @param   bc block cache descriptor
  * @return  standard error code*/
 int ext4_bcache_fini_dynamic(struct ext4_bcache *bc);
+
+/**@brief   Get a buffer with the lowest LRU counter in bcache.
+ * @param   bc block cache descriptor
+ * @return  buffer with the lowest LRU counter*/
+struct ext4_buf *ext4_buf_lowest_lru(struct ext4_bcache *bc);
+
+/**@brief   Drop unreferenced buffer from bcache.
+ * @param   bc block cache descriptor
+ * @param   buf buffer*/
+void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf);
 
 /**@brief   Allocate block from block cache memory.
  *          Unreferenced block allocation is based on LRU

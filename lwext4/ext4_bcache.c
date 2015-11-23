@@ -42,6 +42,25 @@
 #include <string.h>
 #include <stdlib.h>
 
+static int
+ext4_bcache_lba_compare(struct ext4_buf *a,
+			struct ext4_buf *b)
+{
+	return a->lba - b->lba;
+}
+
+static int
+ext4_bcache_lru_compare(struct ext4_buf *a,
+			struct ext4_buf *b)
+{
+	return a->lru_id - b->lru_id;
+}
+
+RB_GENERATE_INTERNAL(ext4_buf_lba, ext4_buf, lba_node,
+		     ext4_bcache_lba_compare, static inline)
+RB_GENERATE_INTERNAL(ext4_buf_lru, ext4_buf, lru_node,
+		     ext4_bcache_lru_compare, static inline)
+
 int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
 			     uint32_t itemsize)
 {
@@ -49,171 +68,178 @@ int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
 
 	memset(bc, 0, sizeof(struct ext4_bcache));
 
-	bc->data = malloc(cnt * itemsize);
-	if (!bc->data)
-		goto error;
-
 	bc->cnt = cnt;
 	bc->itemsize = itemsize;
 	bc->ref_blocks = 0;
 	bc->max_ref_blocks = 0;
 
 	return EOK;
-
-error:
-
-	if (bc->data)
-		free(bc->data);
-
-	memset(bc, 0, sizeof(struct ext4_bcache));
-
-	return ENOMEM;
 }
 
 int ext4_bcache_fini_dynamic(struct ext4_bcache *bc)
 {
-	if (bc->data)
-		free(bc->data);
-
 	memset(bc, 0, sizeof(struct ext4_bcache));
-
 	return EOK;
+}
+
+static struct ext4_buf *
+ext4_buf_alloc(struct ext4_bcache *bc, uint64_t lba)
+{
+	void *data;
+	struct ext4_buf *buf;
+	data = malloc(bc->itemsize);
+	if (!data)
+		return NULL;
+
+	buf = malloc(sizeof(struct ext4_buf));
+	if (!buf) {
+		free(data);
+		return NULL;
+	}
+
+	buf->flags = 0;
+	buf->lba = lba;
+	buf->data = data;
+	buf->lru_id = 0;
+	buf->refctr = 0;
+	memset(&buf->lba_node, 0, sizeof(buf->lba_node));
+	memset(&buf->lru_node, 0, sizeof(buf->lru_node));
+	memset(&buf->dirty_node, 0, sizeof(buf->dirty_node));
+	return buf;
+}
+
+static void ext4_buf_free(struct ext4_buf *buf)
+{
+	free(buf->data);
+	free(buf);
+}
+
+static struct ext4_buf *
+ext4_buf_lookup(struct ext4_bcache *bc, uint64_t lba)
+{
+	struct ext4_buf tmp = {
+		.lba = lba
+	};
+
+	return RB_FIND(ext4_buf_lba, &bc->lba_root, &tmp);
+}
+
+struct ext4_buf *ext4_buf_lowest_lru(struct ext4_bcache *bc)
+{
+	return RB_MIN(ext4_buf_lba, &bc->lba_root);
+}
+
+void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf)
+{
+	/*Cannot drop any referenced buffers.*/
+	ext4_assert(!buf->refctr);
+
+	RB_REMOVE(ext4_buf_lba, &bc->lba_root, buf);
+	RB_REMOVE(ext4_buf_lru, &bc->lru_root, buf);
+
+	/*Forcibly drop dirty buffer.*/
+	if (ext4_bcache_test_flag(buf, BC_DIRTY))
+		SLIST_REMOVE(&bc->dirty_list,
+			     buf,
+			     ext4_buf,
+			     dirty_node);
+
+	ext4_buf_free(buf);
+	bc->ref_blocks--;
 }
 
 int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 		      bool *is_new)
 {
-	uint32_t i;
-	ext4_assert(bc && b && is_new);
+	struct ext4_buf *buf = ext4_buf_lookup(bc, b->lb_id);
+	if (buf) {
+		if (!buf->refctr) {
+			buf->lru_id = ++bc->lru_ctr;
+			RB_REMOVE(ext4_buf_lru, &bc->lru_root, buf);
+			if (ext4_bcache_test_flag(buf, BC_DIRTY))
+				SLIST_REMOVE(&bc->dirty_list,
+					     buf,
+					     ext4_buf,
+					     dirty_node);
 
-	/*Check if valid.*/
-	ext4_assert(b->lb_id);
-	if (!b->lb_id) {
-		ext4_assert(b->lb_id);
-	}
-
-	uint32_t cache_id = bc->cnt;
-	uint32_t alloc_id = 0;
-
-	*is_new = false;
-
-	/*Find in free blocks (Last Recently Used).*/
-	for (i = 0; i < bc->cnt; ++i) {
-
-		/*Check if block is already in cache*/
-		if (b->lb_id == bc->lba[i]) {
-
-			if (!bc->refctr[i] && !bc->free_delay[i])
-				bc->ref_blocks++;
-
-			/*Update reference counter*/
-			bc->refctr[i]++;
-
-			/*Update usage marker*/
-			bc->lru_id[i] = ++bc->lru_ctr;
-
-			/*Set valid cache data and id*/
-			b->data = bc->data + i * bc->itemsize;
-			b->cache_id = i;
-
-			/* If data in the caxhe is up-to-date */
-			b->uptodate = ext4_bcache_test_flag(bc, i, BC_UPTODATE);
-
-			return EOK;
 		}
 
-		/*Best fit calculations.*/
-		if (bc->refctr[i])
-			continue;
-
-		if (bc->free_delay[i])
-			continue;
-
-		/*Block is unreferenced, but it may exist block with
-		 * lower usage marker*/
-
-		/*First find.*/
-		if (cache_id == bc->cnt) {
-			cache_id = i;
-			alloc_id = bc->lru_id[i];
-			continue;
-		}
-
-		/*Next find*/
-		if (alloc_id <= bc->lru_id[i])
-			continue;
-
-		/*This block has lower alloc id marker*/
-		cache_id = i;
-		alloc_id = bc->lru_id[i];
-	}
-
-	if (cache_id != bc->cnt) {
-		/*There was unreferenced block*/
-		bc->lba[cache_id] = b->lb_id;
-		bc->refctr[cache_id] = 1;
-		bc->lru_id[cache_id] = ++bc->lru_ctr;
-
-		/*Set valid cache data and id*/
-		b->data = bc->data + cache_id * bc->itemsize;
-		b->cache_id = cache_id;
-
-		/* Data in the cache is not up-to-date anymore. */
-		ext4_bcache_clear_flag(bc, cache_id, BC_UPTODATE);
-		b->uptodate = false;
-
-		/*Statistics*/
-		bc->ref_blocks++;
-		if (bc->ref_blocks > bc->max_ref_blocks)
-			bc->max_ref_blocks = bc->ref_blocks;
-
-		/*Block needs to be read.*/
-		*is_new = true;
-
+		buf->refctr++;
+		b->uptodate = ext4_bcache_test_flag(buf, BC_UPTODATE);
+		b->dirty = false;
+		b->buf = buf;
+		b->data = buf->data;
+		*is_new = false;
 		return EOK;
 	}
+	buf = ext4_buf_alloc(bc, b->lb_id);
+	if (!buf)
+		return ENOMEM;
 
-	ext4_dbg(DEBUG_BCACHE, DBG_ERROR
-		     "unable to alloc block cache!\n");
-	return ENOMEM;
+	RB_INSERT(ext4_buf_lba, &bc->lba_root, buf);
+	bc->ref_blocks++;
+
+	buf->refctr = 1;
+	buf->lru_id = ++bc->lru_ctr;
+	b->uptodate = false;
+	b->dirty = false;
+	b->buf = buf;
+	b->data = buf->data;
+	*is_new = true;
+	return EOK;
 }
 
 int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b,
 		     uint8_t free_delay)
 {
+	struct ext4_buf *buf = b->buf;
+
 	ext4_assert(bc && b);
 
 	/*Check if valid.*/
 	ext4_assert(b->lb_id);
 
-	/*Block should be in cache.*/
-	ext4_assert(b->cache_id < bc->cnt);
+	/*Block should have a valid pointer to ext4_buf.*/
+	ext4_assert(buf);
 
 	/*Check if someone don't try free unreferenced block cache.*/
-	ext4_assert(bc->refctr[b->cache_id]);
+	ext4_assert(buf->refctr);
 
 	/*Just decrease reference counter*/
-	if (bc->refctr[b->cache_id])
-		bc->refctr[b->cache_id]--;
+	buf->refctr--;
 
 	if (free_delay)
-		bc->free_delay[b->cache_id] = free_delay;
+		bc->free_delay = free_delay;
 
-	/*Update statistics*/
-	if (!bc->refctr[b->cache_id] && !bc->free_delay[b->cache_id])
-		bc->ref_blocks--;
+	if (b->dirty) {
+		ext4_bcache_set_flag(buf, BC_DIRTY);
+		ext4_bcache_set_flag(buf, BC_UPTODATE);
+		b->uptodate = true;
+	}
+	if (!b->uptodate)
+		ext4_bcache_clear_flag(buf, BC_UPTODATE);
+
+	if (!buf->refctr) {
+		RB_INSERT(ext4_buf_lru, &bc->lru_root, buf);
+		if (ext4_bcache_test_flag(buf, BC_DIRTY))
+			SLIST_INSERT_HEAD(&bc->dirty_list, buf, dirty_node);
+
+		if (!ext4_bcache_test_flag(buf, BC_UPTODATE))
+			ext4_bcache_drop_buf(bc, buf);
+
+	}
 
 	b->lb_id = 0;
 	b->data = 0;
-	b->cache_id = 0;
 	b->uptodate = false;
+	b->dirty = false;
 
 	return EOK;
 }
 
 bool ext4_bcache_is_full(struct ext4_bcache *bc)
 {
-	return (bc->cnt == bc->ref_blocks);
+	return (bc->cnt <= bc->ref_blocks);
 }
 
 /**

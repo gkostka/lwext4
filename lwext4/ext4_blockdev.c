@@ -85,10 +85,50 @@ int ext4_block_fini(struct ext4_blockdev *bdev)
 	return bdev->close(bdev);
 }
 
+static int
+ext4_block_flush_buf(struct ext4_blockdev *bdev, struct ext4_buf *buf)
+{
+	int r;
+	struct ext4_bcache *bc = bdev->bc;
+	/*Only flushing unreferenced buffer is allowed.*/
+	ext4_assert(!buf->refctr);
+	if (ext4_bcache_test_flag(buf, BC_DIRTY)) {
+		r = ext4_blocks_set_direct(bdev, buf->data, buf->lba, 1);
+		if (r)
+			return r;
+
+		SLIST_REMOVE(&bc->dirty_list,
+				buf,
+				ext4_buf,
+				dirty_node);
+		ext4_bcache_clear_flag(buf, BC_DIRTY);
+	}
+	return EOK;
+}
+
+int ext4_block_cache_shake(struct ext4_blockdev *bdev)
+{
+	struct ext4_buf *buf;
+	while (!RB_EMPTY(&bdev->bc->lru_root) &&
+		ext4_bcache_is_full(bdev->bc)) {
+		
+		buf = ext4_buf_lowest_lru(bdev->bc);
+		ext4_assert(buf);
+		if (ext4_bcache_test_flag(buf, BC_DIRTY)) {
+			int r = ext4_block_flush_buf(bdev, buf);
+			if (r != EOK)
+				return r;
+
+		}
+
+		ext4_bcache_drop_buf(bdev->bc, buf);
+	}
+	return EOK;
+}
+
 int ext4_block_get_noread(struct ext4_blockdev *bdev, struct ext4_block *b,
 			  uint64_t lba)
 {
-	uint32_t i;
 	bool is_new;
 	int r;
 
@@ -103,45 +143,10 @@ int ext4_block_get_noread(struct ext4_blockdev *bdev, struct ext4_block *b,
 	b->dirty = 0;
 	b->lb_id = lba;
 
-	/*If cache is full we have to flush it anyway :(*/
-	if (ext4_bcache_is_full(bdev->bc) && bdev->cache_write_back) {
-
-		uint32_t free_candidate = bdev->bc->cnt;
-		uint32_t min_lru = 0xFFFFFFFF;
-
-		for (i = 0; i < bdev->bc->cnt; ++i) {
-			/*Check if buffer free was delayed.*/
-			if (!bdev->bc->free_delay[i])
-				continue;
-
-			/*Check reference counter.*/
-			if (bdev->bc->refctr[i])
-				continue;
-
-			if (bdev->bc->lru_id[i] < min_lru) {
-				min_lru = bdev->bc->lru_id[i];
-				free_candidate = i;
-				continue;
-			}
-		}
-
-		if (free_candidate < bdev->bc->cnt) {
-			/*Buffer free was delayed and have no reference. Flush
-			 * it.*/
-			r = ext4_blocks_set_direct(
-			    bdev, bdev->bc->data +
-				      bdev->bc->itemsize * free_candidate,
-			    bdev->bc->lba[free_candidate], 1);
-			if (r != EOK)
-				return r;
-
-			/*No delayed anymore*/
-			bdev->bc->free_delay[free_candidate] = 0;
-
-			/*Reduce reference counter*/
-			bdev->bc->ref_blocks--;
-		}
-	}
+	/*If cache is full we have to (flush and) drop it anyway :(*/
+	r = ext4_block_cache_shake(bdev);
+	if (r != EOK)
+		return r;
 
 	r = ext4_bcache_alloc(bdev->bc, b, &is_new);
 	if (r != EOK)
@@ -181,7 +186,7 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 
 	/* Mark buffer up-to-date, since
 	 * fresh data is read from physical device just now. */
-	ext4_bcache_set_flag(bdev->bc, b->cache_id, BC_UPTODATE);
+	ext4_bcache_set_flag(b->buf, BC_UPTODATE);
 	b->uptodate = true;
 	bdev->bread_ctr++;
 	return EOK;
@@ -194,22 +199,10 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 	int r;
 
 	ext4_assert(bdev && b);
+	ext4_assert(b->buf);
 
 	if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
 		return EIO;
-
-	/*Buffer is not marked dirty and is stale*/
-	if (!b->uptodate && !b->dirty)
-		ext4_bcache_clear_flag(bdev->bc, b->cache_id, BC_UPTODATE);
-
-	/*No need to write.*/
-	if (!b->dirty &&
-	    !ext4_bcache_test_flag(bdev->bc, b->cache_id, BC_DIRTY)) {
-		ext4_bcache_free(bdev->bc, b, 0);
-		return EOK;
-	}
-	/* Data is valid, so mark buffer up-to-date. */
-	ext4_bcache_set_flag(bdev->bc, b->cache_id, BC_UPTODATE);
 
 	/*Free cache delay mode*/
 	if (bdev->cache_write_back) {
@@ -218,25 +211,28 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 		return ext4_bcache_free(bdev->bc, b, bdev->cache_write_back);
 	}
 
-	if (bdev->bc->refctr[b->cache_id] > 1) {
-		ext4_bcache_set_flag(bdev->bc, b->cache_id, BC_DIRTY);
+	if (b->buf->refctr > 1)
 		return ext4_bcache_free(bdev->bc, b, 0);
-	}
 
-	pba = (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
-	pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
+	/*We handle the dirty flag ourselves.*/
+	if (ext4_bcache_test_flag(b->buf, BC_DIRTY) || b->dirty) {
+		b->uptodate = true;
+		ext4_bcache_set_flag(b->buf, BC_UPTODATE);
 
-	r = bdev->bwrite(bdev, b->data, pba, pb_cnt);
-	ext4_bcache_clear_flag(bdev->bc, b->cache_id, BC_DIRTY);
-	if (r != EOK) {
+		pba = (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
+		pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
+
+		r = bdev->bwrite(bdev, b->data, pba, pb_cnt);
+		ext4_bcache_clear_flag(b->buf, BC_DIRTY);
+		if (r != EOK) {
+			b->dirty = true;
+			ext4_bcache_free(bdev->bc, b, 0);
+			return r;
+		}
+
 		b->dirty = false;
-		ext4_bcache_clear_flag(bdev->bc, b->cache_id, BC_UPTODATE);
-		ext4_bcache_free(bdev->bc, b, 0);
-		return r;
+		bdev->bwrite_ctr++;
 	}
-
-	bdev->bwrite_ctr++;
-	b->dirty = false;
 	ext4_bcache_free(bdev->bc, b, 0);
 	return EOK;
 }
@@ -412,7 +408,7 @@ int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off, void *buf,
 int ext4_block_cache_write_back(struct ext4_blockdev *bdev, uint8_t on_off)
 {
 	int r;
-	uint32_t i;
+	struct ext4_buf *buf;
 
 	if (on_off)
 		bdev->cache_write_back++;
@@ -420,35 +416,19 @@ int ext4_block_cache_write_back(struct ext4_blockdev *bdev, uint8_t on_off)
 	if (!on_off && bdev->cache_write_back)
 		bdev->cache_write_back--;
 
-
 	if (bdev->cache_write_back)
 		return EOK;
 
 	/*Flush all delayed cache blocks*/
-	for (i = 0; i < bdev->bc->cnt; ++i) {
-
-		/*Check if buffer free was delayed.*/
-		if (!bdev->bc->free_delay[i])
-			continue;
-
-		/*Check reference counter.*/
-		if (bdev->bc->refctr[i])
-			continue;
-
-		/*Buffer free was delayed and have no reference. Flush
-		 * it.*/
-		r = ext4_blocks_set_direct(bdev, bdev->bc->data +
-				bdev->bc->itemsize * i,	bdev->bc->lba[i], 1);
+	while (!SLIST_EMPTY(&bdev->bc->dirty_list)) {
+		
+		buf = SLIST_FIRST(&bdev->bc->dirty_list);
+		ext4_assert(buf);
+		r = ext4_block_flush_buf(bdev, buf);
 		if (r != EOK)
 			return r;
 
-		/*No delayed anymore*/
-		bdev->bc->free_delay[i] = 0;
-
-		/*Reduce reference counter*/
-		bdev->bc->ref_blocks--;
 	}
-
 	return EOK;
 }
 

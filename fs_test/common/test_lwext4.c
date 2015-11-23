@@ -136,30 +136,6 @@ void test_lwext4_block_stats(void)
 
 	printf("\n");
 
-	uint32_t i;
-	for (i = 0; i < bc->cnt; ++i) {
-		printf("bcache->refctr[%" PRIu32 "]= %" PRIu32 "\n", i,
-		       bc->refctr[i]);
-	}
-
-	printf("\n");
-	for (i = 0; i < bc->cnt; ++i) {
-		printf("bcache->lru_id[%" PRIu32 "] = %" PRIu32 "\n", i,
-		       bc->lru_id[i]);
-	}
-
-	printf("\n");
-	for (i = 0; i < bc->cnt; ++i) {
-		printf("bcache->free_delay[%" PRIu32 "] = %d\n", i,
-		       bc->free_delay[i]);
-	}
-
-	printf("\n");
-	for (i = 0; i < bc->cnt; ++i) {
-		printf("bcache->lba[%" PRIu32 "] = %" PRIu32 "\n", i,
-		       (uint32_t)bc->lba[i]);
-	}
-
 	printf("********************\n");
 }
 
