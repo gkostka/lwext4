@@ -180,7 +180,7 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 	r = bdev->bread(bdev, b->data, pba, pb_cnt);
 
 	if (r != EOK) {
-		ext4_bcache_free(bdev->bc, b, 0);
+		ext4_bcache_free(bdev->bc, b);
 		b->lb_id = 0;
 		return r;
 	}
@@ -209,11 +209,11 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 	if (bdev->cache_write_back) {
 
 		/*Free cache block and mark as free delayed*/
-		return ext4_bcache_free(bdev->bc, b, bdev->cache_write_back);
+		return ext4_bcache_free(bdev->bc, b);
 	}
 
 	if (b->buf->refctr > 1)
-		return ext4_bcache_free(bdev->bc, b, 0);
+		return ext4_bcache_free(bdev->bc, b);
 
 	/*We handle the dirty flag ourselves.*/
 	if (ext4_bcache_test_flag(b->buf, BC_DIRTY) || b->dirty) {
@@ -227,14 +227,14 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 		ext4_bcache_clear_flag(b->buf, BC_DIRTY);
 		if (r != EOK) {
 			b->dirty = true;
-			ext4_bcache_free(bdev->bc, b, 0);
+			ext4_bcache_free(bdev->bc, b);
 			return r;
 		}
 
 		b->dirty = false;
 		bdev->bwrite_ctr++;
 	}
-	ext4_bcache_free(bdev->bc, b, 0);
+	ext4_bcache_free(bdev->bc, b);
 	return EOK;
 }
 

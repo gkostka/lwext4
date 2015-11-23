@@ -111,9 +111,6 @@ struct ext4_bcache {
 	/**@brief   Last recently used counter*/
 	uint32_t lru_ctr;
 
-	/**@brief   Writeback free delay mode*/
-	uint8_t free_delay;
-
 	/**@brief   Currently referenced datablocks*/
 	uint32_t ref_blocks;
 
@@ -188,10 +185,8 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 /**@brief   Free block from cache memory (decrement reference counter).
  * @param   bc block cache descriptor
  * @param   b block to free
- * @param   cache writeback mode
  * @return  standard error code*/
-int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b,
-		     uint8_t free_delay);
+int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b);
 
 /**@brief   Return a full status of block cache.
  * @param   bc block cache descriptor

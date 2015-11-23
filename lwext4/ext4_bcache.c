@@ -110,20 +110,14 @@ ext4_buf_alloc(struct ext4_bcache *bc, uint64_t lba)
 	if (!data)
 		return NULL;
 
-	buf = malloc(sizeof(struct ext4_buf));
+	buf = calloc(1, sizeof(struct ext4_buf));
 	if (!buf) {
 		free(data);
 		return NULL;
 	}
 
-	buf->flags = 0;
 	buf->lba = lba;
 	buf->data = data;
-	buf->lru_id = 0;
-	buf->refctr = 0;
-	memset(&buf->lba_node, 0, sizeof(buf->lba_node));
-	memset(&buf->lru_node, 0, sizeof(buf->lru_node));
-	memset(&buf->dirty_node, 0, sizeof(buf->dirty_node));
 	return buf;
 }
 
@@ -223,8 +217,7 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 	return EOK;
 }
 
-int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b,
-		     uint8_t free_delay)
+int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b)
 {
 	struct ext4_buf *buf = b->buf;
 
@@ -241,10 +234,6 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b,
 
 	/*Just decrease reference counter*/
 	buf->refctr--;
-
-	/* TODO: it looks useless... */
-	if (free_delay)
-		bc->free_delay = free_delay;
 
 	/* If buffer is modified, buf will be mark up-to-date and dirty. */
 	if (b->dirty) {
