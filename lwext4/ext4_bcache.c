@@ -126,7 +126,7 @@ ext4_buf_lookup(struct ext4_bcache *bc, uint64_t lba)
 
 struct ext4_buf *ext4_buf_lowest_lru(struct ext4_bcache *bc)
 {
-	return RB_MIN(ext4_buf_lba, &bc->lba_root);
+	return RB_MIN(ext4_buf_lru, &bc->lru_root);
 }
 
 void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf)
