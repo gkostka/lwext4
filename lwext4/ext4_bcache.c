@@ -246,8 +246,10 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b)
 		b->uptodate = true;
 	}
 	/* Someone might want to drop this buffer from bcache. */
-	if (!b->uptodate)
+	if (!b->uptodate) {
+		ext4_bcache_clear_flag(buf, BC_DIRTY);
 		ext4_bcache_clear_flag(buf, BC_UPTODATE);
+	}
 
 	/* We are the last one touching this buffer, do the cleanups. */
 	if (!buf->refctr) {
