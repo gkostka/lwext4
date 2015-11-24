@@ -1090,26 +1090,37 @@ struct jbd_fs {
 #define EXT4_CRC32_INIT (0xFFFFFFFFUL)
 
 /*****************************************************************************/
-#ifdef CONFIG_BIG_ENDIAN
-static inline uint64_t to_le64(uint64_t n)
+
+static inline uint64_t reorder64(uint64_t n)
 {
-	return ((n & 0xff) << 56) | ((n & 0xff00) << 40) |
-		((n & 0xff0000) << 24) | ((n & 0xff000000LL) << 8) |
-		((n & 0xff00000000LL) >> 8) | ((n & 0xff0000000000LL) >> 24) |
+	return  ((n & 0xff) << 56) |
+		((n & 0xff00) << 40) |
+		((n & 0xff0000) << 24) |
+		((n & 0xff000000LL) << 8) |
+		((n & 0xff00000000LL) >> 8) |
+		((n & 0xff0000000000LL) >> 24) |
 		((n & 0xff000000000000LL) >> 40) |
 		((n & 0xff00000000000000LL) >> 56);
 }
 
-static inline uint32_t to_le32(uint32_t n)
+static inline uint32_t reorder32(uint32_t n)
 {
-	return ((n & 0xff) << 24) | ((n & 0xff00) << 8) |
-		((n & 0xff0000) >> 8) | ((n & 0xff000000) >> 24);
+	return  ((n & 0xff) << 24) |
+		((n & 0xff00) << 8) |
+		((n & 0xff0000) >> 8) |
+		((n & 0xff000000) >> 24);
 }
 
-static inline uint16_t to_le16(uint16_t n)
+static inline uint16_t reorder16(uint16_t n)
 {
-	return ((n & 0xff) << 8) | ((n & 0xff00) >> 8);
+	return  ((n & 0xff) << 8) |
+		((n & 0xff00) >> 8);
 }
+
+#ifdef CONFIG_BIG_ENDIAN
+#define to_le64(_n) reorder64(_n)
+#define to_le32(_n) reorder32(_n)
+#define to_le16(_n) reorder16(_n)
 
 #define to_be64(_n) _n
 #define to_be32(_n) _n
@@ -1120,26 +1131,9 @@ static inline uint16_t to_le16(uint16_t n)
 #define to_le32(_n) _n
 #define to_le16(_n) _n
 
-static inline uint64_t to_be64(uint64_t n)
-{
-	return ((n & 0xff) << 56) | ((n & 0xff00) << 40) |
-		((n & 0xff0000) << 24) | ((n & 0xff000000LL) << 8) |
-		((n & 0xff00000000LL) >> 8) | ((n & 0xff0000000000LL) >> 24) |
-		((n & 0xff000000000000LL) >> 40) |
-		((n & 0xff00000000000000LL) >> 56);
-}
-
-static inline uint32_t to_be32(uint32_t n)
-{
-	return ((n & 0xff) << 24) | ((n & 0xff00) << 8) |
-		((n & 0xff0000) >> 8) | ((n & 0xff000000) >> 24);
-}
-
-static inline uint16_t to_be16(uint16_t n)
-{
-	return ((n & 0xff) << 8) | ((n & 0xff00) >> 8);
-}
-
+#define to_be64(_n) reorder64(_n)
+#define to_be32(_n) reorder32(_n)
+#define to_be16(_n) reorder16(_n)
 #endif
 
 /****************************Access macros to ext4 structures*****************/
