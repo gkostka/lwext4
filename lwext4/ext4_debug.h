@@ -77,6 +77,7 @@ extern "C" {
 #define DEBUG_XATTR (1 << 13)
 #define DEBUG_MKFS (1 << 14)
 #define DEBUG_EXT4 (1 << 15)
+#define DEBUG_JBD (1 << 16)
 
 #define DEBUG_ALL (0xFFFFFFFF)
 
@@ -113,6 +114,8 @@ static inline const char *ext4_dmask_id2str(uint32_t m)
 		return "ext4_xattr: ";
 	case DEBUG_MKFS:
 		return "ext4_mkfs: ";
+	case DEBUG_JBD:
+		return "ext4_jbd: ";
 	case DEBUG_EXT4:
 		return "ext4: ";
 	}

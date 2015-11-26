@@ -56,6 +56,7 @@ int jbd_put_fs(struct jbd_fs *jbd_fs);
 int jbd_inode_bmap(struct jbd_fs *jbd_fs,
 		   ext4_lblk_t iblock,
 		   ext4_fsblk_t *fblock);
+int jbd_recover(struct jbd_fs *jbd_fs);
 
 #ifdef __cplusplus
 }

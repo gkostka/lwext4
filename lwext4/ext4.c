@@ -46,6 +46,7 @@
 #include "ext4_super.h"
 #include "ext4_dir_idx.h"
 #include "ext4_xattr.h"
+#include "ext4_journal.h"
 
 
 #include <stdlib.h>
@@ -408,6 +409,17 @@ int ext4_mount(const char *dev_name, const char *mount_point)
 			free(bc);
 		}
 		return r;
+	}
+
+	/* TODO: journal mount checking. */
+	if (ext4_sb_feature_com(&mp->fs.sb, EXT4_FCOM_HAS_JOURNAL)) {
+		struct jbd_fs jbd_fs = {0};
+		r = jbd_get_fs(&mp->fs, &jbd_fs);
+		if (r != EOK)
+			return r;
+
+		r = jbd_recover(&jbd_fs);
+		jbd_put_fs(&jbd_fs);
 	}
 
 	return r;
