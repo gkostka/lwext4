@@ -193,6 +193,7 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 
 		header = (struct jbd_bhdr *)block.data;
 		if (header->magic != to_be32(JBD_MAGIC_NUMBER)) {
+			jbd_block_set(jbd_fs, &block);
 			log_end = true;
 			continue;
 		}
@@ -201,6 +202,7 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			if (this_trans_id <= info->last_trans_id)
 				r = EIO;
 
+			jbd_block_set(jbd_fs, &block);
 			log_end = true;
 			continue;
 		}
