@@ -343,6 +343,7 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 	uint32_t *this_block = arg->this_block;
 	struct revoke_entry *revoke_entry;
 	struct ext4_block journal_block, ext4_block;
+	struct ext4_fs *fs = jbd_fs->inode_ref.fs;
 	ext4_dbg(DEBUG_JBD,
 		 "Replaying block in block_tag: %" PRIu64 "\n",
 		 block);
@@ -356,18 +357,37 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 	if (r != EOK)
 		return;
 
-	r = ext4_block_get_noread(jbd_fs->bdev, &ext4_block, block);
-	if (r != EOK) {
-		jbd_block_set(jbd_fs, &journal_block);
-		return;
+	if (block) {
+		r = ext4_block_get_noread(fs->bdev, &ext4_block, block);
+		if (r != EOK) {
+			jbd_block_set(jbd_fs, &journal_block);
+			return;
+		}
+
+		memcpy(ext4_block.data,
+			journal_block.data,
+			jbd_get32(&jbd_fs->sb, blocksize));
+
+		ext4_block.dirty = true;
+		ext4_block_set(fs->bdev, &ext4_block);
+	} else {
+		uint16_t mount_count, state;
+		mount_count = ext4_get16(&fs->sb, mount_count);
+		state = ext4_get16(&fs->sb, state);
+		memcpy(&fs->sb,
+			journal_block.data,
+			EXT4_SUPERBLOCK_SIZE);
+
+		/* Mark system as mounted */
+		ext4_set16(&fs->sb, state, state);
+		r = ext4_sb_write(fs->bdev, &fs->sb);
+		if (r != EOK)
+			return;
+
+		/*Update mount count*/
+		ext4_set16(&fs->sb, mount_count, mount_count);
 	}
 
-	memcpy(ext4_block.data,
-	       journal_block.data,
-	       jbd_get32(&jbd_fs->sb, blocksize));
-
-	ext4_block.dirty = true;
-	ext4_block_set(jbd_fs->bdev, &ext4_block);
 	jbd_block_set(jbd_fs, &journal_block);
 	
 	return;
