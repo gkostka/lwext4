@@ -1089,6 +1089,8 @@ struct jbd_fs {
 	struct ext4_blockdev *bdev;
 	struct ext4_inode_ref inode_ref;
 	struct jbd_sb sb;
+
+	bool dirty;
 };
 
 /*****************************************************************************/

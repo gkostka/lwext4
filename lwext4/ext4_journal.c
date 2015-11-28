@@ -29,6 +29,11 @@ struct recover_info {
 	RB_HEAD(jbd_revoke, revoke_entry) revoke_root;
 };
 
+struct replay_arg {
+	struct recover_info *info;
+	uint32_t *this_block;
+};
+
 static int
 jbd_revoke_entry_cmp(struct revoke_entry *a, struct revoke_entry *b)
 {
@@ -120,6 +125,9 @@ int jbd_get_fs(struct ext4_fs *fs,
 int jbd_put_fs(struct jbd_fs *jbd_fs)
 {
 	int rc;
+	if (jbd_fs->dirty)
+		jbd_sb_write(jbd_fs, &jbd_fs->sb);
+
 	rc = ext4_fs_put_inode_ref(&jbd_fs->inode_ref);
 	return rc;
 }
@@ -324,6 +332,47 @@ jbd_revoke_entry_lookup(struct recover_info *info, ext4_fsblk_t block)
 	return RB_FIND(jbd_revoke, &info->revoke_root, &tmp);
 }
 
+static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
+				  ext4_fsblk_t block,
+				  uint8_t *uuid __unused,
+				  void *__arg)
+{
+	int r;
+	struct replay_arg *arg = __arg;
+	struct recover_info *info = arg->info;
+	uint32_t *this_block = arg->this_block;
+	struct revoke_entry *revoke_entry;
+	struct ext4_block journal_block, ext4_block;
+	ext4_dbg(DEBUG_JBD,
+		 "Replaying block in block_tag: %" PRIu64 "\n",
+		 block);
+	(*this_block)++;
+
+	revoke_entry = jbd_revoke_entry_lookup(info, block);
+	if (revoke_entry)
+		return;
+
+	r = jbd_block_get(jbd_fs, &journal_block, *this_block);
+	if (r != EOK)
+		return;
+
+	r = ext4_block_get_noread(jbd_fs->bdev, &ext4_block, block);
+	if (r != EOK) {
+		jbd_block_set(jbd_fs, &journal_block);
+		return;
+	}
+
+	memcpy(ext4_block.data,
+	       journal_block.data,
+	       jbd_get32(&jbd_fs->sb, blocksize));
+
+	ext4_block.dirty = true;
+	ext4_block_set(jbd_fs->bdev, &ext4_block);
+	jbd_block_set(jbd_fs, &journal_block);
+	
+	return;
+}
+
 static void jbd_add_revoke_block_tags(struct recover_info *info,
 				      ext4_fsblk_t block)
 {
@@ -412,6 +461,18 @@ static void jbd_debug_descriptor_block(struct jbd_fs *jbd_fs,
 				iblock);
 }
 
+static void jbd_replay_descriptor_block(struct jbd_fs *jbd_fs,
+					struct jbd_bhdr *header,
+					struct replay_arg *arg)
+{
+	jbd_iterate_block_table(jbd_fs,
+				header + 1,
+				jbd_get32(&jbd_fs->sb, blocksize) -
+					sizeof(struct jbd_bhdr),
+				jbd_replay_block_tags,
+				arg);
+}
+
 int jbd_iterate_log(struct jbd_fs *jbd_fs,
 		    struct recover_info *info,
 		    int action)
@@ -465,6 +526,14 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			if (action == ACTION_SCAN)
 				jbd_debug_descriptor_block(jbd_fs,
 						header, &this_block);
+			else if (action == ACTION_RECOVER) {
+				struct replay_arg replay_arg;
+				replay_arg.info = info;
+				replay_arg.this_block = &this_block;
+				jbd_replay_descriptor_block(jbd_fs,
+						header, &replay_arg);
+			}
+
 			break;
 		case JBD_COMMIT_BLOCK:
 			ext4_dbg(DEBUG_JBD, "Commit block: %u, "
@@ -520,6 +589,14 @@ int jbd_recover(struct jbd_fs *jbd_fs)
 		return r;
 
 	r = jbd_iterate_log(jbd_fs, &info, ACTION_REVOKE);
+	if (r != EOK)
+		return r;
+
+	r = jbd_iterate_log(jbd_fs, &info, ACTION_RECOVER);
+	if (r == EOK) {
+		jbd_set32(&jbd_fs->sb, start, 0);
+		jbd_fs->dirty = true;
+	}
 	jbd_destroy_revoke_tree(&info);
 	return r;
 }
