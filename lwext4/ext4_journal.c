@@ -374,9 +374,14 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 		uint16_t mount_count, state;
 		mount_count = ext4_get16(&fs->sb, mount_count);
 		state = ext4_get16(&fs->sb, state);
-		memcpy(&fs->sb,
-			journal_block.data,
-			EXT4_SUPERBLOCK_SIZE);
+		r = ext4_blocks_set_direct(fs->bdev, journal_block.data,
+			   0, 1);
+		if (r != EOK)
+			return;
+
+		r = ext4_sb_read(fs->bdev, &fs->sb);
+		if (r != EOK)
+			return;
 
 		/* Mark system as mounted */
 		ext4_set16(&fs->sb, state, state);
