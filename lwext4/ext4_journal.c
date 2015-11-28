@@ -11,8 +11,10 @@
 #include "ext4_blockdev.h"
 #include "ext4_crc32c.h"
 #include "ext4_debug.h"
+#include "tree.h"
 
 #include <string.h>
+#include <malloc.h>
 
 int jbd_inode_bmap(struct jbd_fs *jbd_fs,
 		   ext4_lblk_t iblock,
@@ -50,12 +52,12 @@ int jbd_sb_read(struct jbd_fs *jbd_fs, struct jbd_sb *s)
 
 static bool jbd_verify_sb(struct jbd_sb *sb)
 {
-	struct jbd_bhdr *bhdr = &sb->header;
-	if (bhdr->magic != to_be32(JBD_MAGIC_NUMBER))
+	struct jbd_bhdr *header = &sb->header;
+	if (jbd_get32(header, magic) != JBD_MAGIC_NUMBER)
 		return false;
 
-	if (bhdr->blocktype != to_be32(JBD_SUPERBLOCK) &&
-	    bhdr->blocktype != to_be32(JBD_SUPERBLOCK_V2))
+	if (jbd_get32(header, blocktype) != JBD_SUPERBLOCK &&
+	    jbd_get32(header, blocktype) != JBD_SUPERBLOCK_V2)
 		return false;
 
 	return true;
@@ -146,11 +148,154 @@ int jbd_block_set(struct jbd_fs *jbd_fs,
 			      block);
 }
 
+/*
+ * helper functions to deal with 32 or 64bit block numbers.
+ */
+int jbd_tag_bytes(struct jbd_fs *jbd_fs)
+{
+	int size;
+
+	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+				     JBD_FEATURE_INCOMPAT_CSUM_V3))
+		return sizeof(struct jbd_block_tag3);
+
+	size = sizeof(struct jbd_block_tag);
+
+	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+				     JBD_FEATURE_INCOMPAT_CSUM_V2))
+		size += sizeof(uint16_t);
+
+	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+				     JBD_FEATURE_INCOMPAT_64BIT))
+		return size;
+
+	return size - sizeof(uint32_t);
+}
+
+static void
+jbd_extract_block_tag(struct jbd_fs *jbd_fs,
+		      uint32_t tag_bytes,
+		      void *__tag,
+		      ext4_fsblk_t *block,
+		      bool *uuid_exist,
+		      uint8_t *uuid,
+		      bool *last_tag)
+{
+	char *uuid_start;
+	*uuid_exist = false;
+	*last_tag = false;
+	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+				     JBD_FEATURE_INCOMPAT_CSUM_V3)) {
+		struct jbd_block_tag3 *tag = __tag;
+		*block = jbd_get32(tag, blocknr);
+		if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+					     JBD_FEATURE_INCOMPAT_64BIT))
+			 *block |= (uint64_t)jbd_get32(tag, blocknr_high) << 32;
+
+		if (jbd_get32(tag, flags) & JBD_FLAG_ESCAPE)
+			*block = 0;
+
+		if (!(jbd_get32(tag, flags) & JBD_FLAG_SAME_UUID)) {
+			uuid_start = (char *)tag + tag_bytes;
+			*uuid_exist = true;
+			memcpy(uuid, uuid_start, UUID_SIZE);
+		}
+
+		if (jbd_get32(tag, flags) & JBD_FLAG_LAST_TAG)
+			*last_tag = true;
+
+	} else {
+		struct jbd_block_tag *tag = __tag;
+		*block = jbd_get32(tag, blocknr);
+		if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+					     JBD_FEATURE_INCOMPAT_64BIT))
+			 *block |= (uint64_t)jbd_get32(tag, blocknr_high) << 32;
+
+		if (jbd_get32(tag, flags) & JBD_FLAG_ESCAPE)
+			*block = 0;
+
+		if (!(jbd_get32(tag, flags) & JBD_FLAG_SAME_UUID)) {
+			uuid_start = (char *)tag + tag_bytes;
+			*uuid_exist = true;
+			memcpy(uuid, uuid_start, UUID_SIZE);
+		}
+
+		if (jbd_get32(tag, flags) & JBD_FLAG_LAST_TAG)
+			*last_tag = true;
+
+	}
+}
+
+static void
+jbd_iterate_block_table(struct jbd_fs *jbd_fs,
+			void *__tag_start,
+			uint32_t tag_tbl_size,
+			void (*func)(struct jbd_fs * jbd_fs,
+					ext4_fsblk_t block,
+					uint8_t *uuid,
+					void *arg),
+			void *arg)
+{
+	ext4_fsblk_t block = 0;
+	uint8_t uuid[UUID_SIZE];
+	char *tag_start, *tag_ptr;
+	uint32_t tag_bytes = jbd_tag_bytes(jbd_fs);
+	tag_start = __tag_start;
+	tag_ptr = tag_start;
+
+	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+				     JBD_FEATURE_INCOMPAT_CSUM_V2) ||
+	    JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+				     JBD_FEATURE_INCOMPAT_CSUM_V3))
+		tag_tbl_size -= sizeof(struct jbd_block_tail);
+
+	while (tag_ptr - tag_start + tag_bytes <= tag_tbl_size) {
+		bool uuid_exist;
+		bool last_tag;
+		jbd_extract_block_tag(jbd_fs,
+				      tag_bytes,
+				      tag_ptr,
+				      &block,
+				      &uuid_exist,
+				      uuid,
+				      &last_tag);
+		if (func)
+			func(jbd_fs, block, uuid, arg);
+
+		if (last_tag)
+			break;
+
+		tag_ptr += tag_bytes;
+		if (uuid_exist)
+			tag_ptr += UUID_SIZE;
+
+	}
+}
+
+static void jbd_display_block_tags(struct jbd_fs *jbd_fs,
+				   ext4_fsblk_t block,
+				   uint8_t *uuid,
+				   void *arg)
+{
+	uint32_t *iblock = arg;
+	ext4_dbg(DEBUG_JBD, "Block in block_tag: %" PRIu64 "\n", block);
+	(*iblock)++;
+	(void)jbd_fs;
+	(void)uuid;
+	return;
+}
+
+struct revoke_entry {
+	ext4_fsblk_t block;
+	uint32_t trans_id;
+	RB_ENTRY(revoke_entry) revoke_node;
+};
+
 /* Make sure we wrap around the log correctly! */
 #define wrap(sb, var)						\
 do {									\
-	if (var >= to_be32((sb)->maxlen))					\
-		var -= (to_be32((sb)->maxlen) - to_be32((sb)->first));	\
+	if (var >= jbd_get32((sb), maxlen))					\
+		var -= (jbd_get32((sb), maxlen) - jbd_get32((sb), first));	\
 } while (0)
 
 #define ACTION_SCAN 0
@@ -160,7 +305,37 @@ do {									\
 struct recover_info {
 	uint32_t start_trans_id;
 	uint32_t last_trans_id;
+	RB_HEAD(jbd_revoke, revoke_entry) revoke_root;
 };
+
+static void jbd_build_revoke_root(struct jbd_fs *jbd_fs,
+				  struct jbd_bhdr *header,
+				  struct recover_info *info)
+{
+	struct jbd_revoke_header *revoke_hdr =
+		(struct jbd_revoke_header *)header;
+
+	jbd_iterate_block_table(jbd_fs,
+				revoke_hdr + 1,
+				jbd_get32(&jbd_fs->sb, blocksize) -
+					sizeof(struct jbd_revoke_header),
+				jbd_display_block_tags,
+				NULL);
+
+	(void)info;
+}
+
+static void jbd_debug_descriptor_block(struct jbd_fs *jbd_fs,
+				       struct jbd_bhdr *header,
+				       uint32_t *iblock)
+{
+	jbd_iterate_block_table(jbd_fs,
+				header,
+				jbd_get32(&jbd_fs->sb, blocksize) -
+					sizeof(struct jbd_bhdr),
+				jbd_display_block_tags,
+				iblock);
+}
 
 int jbd_iterate_log(struct jbd_fs *jbd_fs,
 		    struct recover_info *info,
@@ -172,8 +347,8 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 	uint32_t start_trans_id, this_trans_id;
 	uint32_t start_block, this_block;
 
-	start_trans_id = this_trans_id = to_be32(sb->sequence);
-	start_block = this_block = to_be32(sb->start);
+	start_trans_id = this_trans_id = jbd_get32(sb, sequence);
+	start_block = this_block = jbd_get32(sb, start);
 
 	ext4_dbg(DEBUG_JBD, "Start of journal at trans id: %" PRIu32 "\n",
 			    start_trans_id);
@@ -192,14 +367,14 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			break;
 
 		header = (struct jbd_bhdr *)block.data;
-		if (header->magic != to_be32(JBD_MAGIC_NUMBER)) {
+		if (jbd_get32(header, magic) != JBD_MAGIC_NUMBER) {
 			jbd_block_set(jbd_fs, &block);
 			log_end = true;
 			continue;
 		}
 
-		if (header->sequence != to_be32(this_trans_id)) {
-			if (this_trans_id <= info->last_trans_id)
+		if (jbd_get32(header, sequence) != this_trans_id) {
+			if (action != ACTION_SCAN)
 				r = EIO;
 
 			jbd_block_set(jbd_fs, &block);
@@ -207,11 +382,12 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			continue;
 		}
 
-		switch (header->blocktype) {
+		switch (jbd_get32(header, blocktype)) {
 		case JBD_DESCRIPTOR_BLOCK:
 			ext4_dbg(DEBUG_JBD, "Descriptor block: %u, "
 					    "trans_id: %u\n",
 					    this_block, this_trans_id);
+			jbd_debug_descriptor_block(jbd_fs, header, &this_block);
 			break;
 		case JBD_COMMIT_BLOCK:
 			ext4_dbg(DEBUG_JBD, "Commit block: %u, "
@@ -223,6 +399,7 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			ext4_dbg(DEBUG_JBD, "Revoke block: %u, "
 					    "trans_id: %u\n",
 					    this_block, this_trans_id);
+			jbd_build_revoke_root(jbd_fs, header, info);
 			break;
 		default:
 			log_end = true;

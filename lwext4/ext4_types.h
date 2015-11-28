@@ -976,6 +976,12 @@ struct jbd_block_tag {
 	uint32_t		blocknr_high; /* most-significant high 32bits. */
 };
 
+/* Definitions for the journal tag flags word: */
+#define JBD_FLAG_ESCAPE		1	/* on-disk block is escaped */
+#define JBD_FLAG_SAME_UUID	2	/* block has same uuid as previous */
+#define JBD_FLAG_DELETED	4	/* block deleted by this transaction */
+#define JBD_FLAG_LAST_TAG	8	/* last tag in this descriptor block */
+
 /* Tail of descriptor block, for checksumming */
 struct jbd_block_tail {
 	uint32_t	checksum;
@@ -1154,6 +1160,23 @@ static inline uint16_t reorder16(uint16_t n)
 	(s, f, v) do { (s)->f = (v); }                                         \
 	while (0)
 
+/****************************Access macros to jbd2 structures*****************/
+
+#define jbd_get32(s, f) to_be32((s)->f)
+#define jbd_get16(s, f) to_be16((s)->f)
+#define jbd_get8(s, f) (s)->f
+
+#define jbd_set32(s, f, v)                                                    \
+	do {                                                                   \
+		(s)->f = to_be32(v);                                           \
+	} while (0)
+#define jbd_set16(s, f, v)                                                    \
+	do {                                                                   \
+		(s)->f = to_be16(v);                                           \
+	} while (0)
+#define jbd_set8                                                              \
+	(s, f, v) do { (s)->f = (v); }                                         \
+	while (0)
 
 #ifdef __GNUC__
 #ifndef __unused
