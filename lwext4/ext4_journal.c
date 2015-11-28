@@ -324,12 +324,9 @@ jbd_revoke_entry_lookup(struct recover_info *info, ext4_fsblk_t block)
 	return RB_FIND(jbd_revoke, &info->revoke_root, &tmp);
 }
 
-static void jbd_add_revoke_block_tags(struct jbd_fs *jbd_fs __unused,
-				      ext4_fsblk_t block,
-				      uint8_t *uuid __unused,
-				      void *arg)
+static void jbd_add_revoke_block_tags(struct recover_info *info,
+				      ext4_fsblk_t block)
 {
-	struct recover_info *info = arg;
 	struct revoke_entry *revoke_entry;
 
 	ext4_dbg(DEBUG_JBD, "Add block %" PRIu64 " to revoke tree\n", block);
@@ -371,19 +368,36 @@ do {									\
 #define ACTION_RECOVER 2
 
 
-static void jbd_build_revoke_root(struct jbd_fs *jbd_fs,
+static void jbd_build_revoke_tree(struct jbd_fs *jbd_fs,
 				  struct jbd_bhdr *header,
 				  struct recover_info *info)
 {
+	char *blocks_entry;
 	struct jbd_revoke_header *revoke_hdr =
 		(struct jbd_revoke_header *)header;
+	uint32_t i, nr_entries, record_len = 4;
+	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+				     JBD_FEATURE_INCOMPAT_64BIT))
+		record_len = 8;
 
-	jbd_iterate_block_table(jbd_fs,
-				revoke_hdr + 1,
-				jbd_get32(&jbd_fs->sb, blocksize) -
-					sizeof(struct jbd_revoke_header),
-				jbd_add_revoke_block_tags,
-				info);
+	nr_entries = (revoke_hdr->count -
+			sizeof(struct jbd_revoke_header)) /
+			record_len;
+
+	blocks_entry = (char *)(revoke_hdr + 1);
+
+	for (i = 0;i < nr_entries;i++) {
+		if (record_len == 8) {
+			uint64_t *blocks =
+				(uint64_t *)blocks_entry;
+			jbd_add_revoke_block_tags(info, *blocks);
+		} else {
+			uint32_t *blocks =
+				(uint32_t *)blocks_entry;
+			jbd_add_revoke_block_tags(info, *blocks);
+		}
+		blocks_entry += record_len;
+	}
 }
 
 static void jbd_debug_descriptor_block(struct jbd_fs *jbd_fs,
@@ -464,7 +478,8 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 					    this_block, this_trans_id);
 			if (action == ACTION_REVOKE) {
 				info->this_trans_id = this_trans_id;
-				jbd_build_revoke_root(jbd_fs, header, info);
+				jbd_build_revoke_tree(jbd_fs,
+						header, info);
 			}
 			break;
 		default:
