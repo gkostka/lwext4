@@ -211,16 +211,16 @@ jbd_extract_block_tag(struct jbd_fs *jbd_fs,
 					     JBD_FEATURE_INCOMPAT_64BIT))
 			 *block |= (uint64_t)jbd_get32(tag, blocknr_high) << 32;
 
-		if (jbd_get32(tag, flags) & JBD_FLAG_ESCAPE)
+		if (jbd_get16(tag, flags) & JBD_FLAG_ESCAPE)
 			*block = 0;
 
-		if (!(jbd_get32(tag, flags) & JBD_FLAG_SAME_UUID)) {
+		if (!(jbd_get16(tag, flags) & JBD_FLAG_SAME_UUID)) {
 			uuid_start = (char *)tag + tag_bytes;
 			*uuid_exist = true;
 			memcpy(uuid, uuid_start, UUID_SIZE);
 		}
 
-		if (jbd_get32(tag, flags) & JBD_FLAG_LAST_TAG)
+		if (jbd_get16(tag, flags) & JBD_FLAG_LAST_TAG)
 			*last_tag = true;
 
 	}
@@ -330,7 +330,7 @@ static void jbd_debug_descriptor_block(struct jbd_fs *jbd_fs,
 				       uint32_t *iblock)
 {
 	jbd_iterate_block_table(jbd_fs,
-				header,
+				header + 1,
 				jbd_get32(&jbd_fs->sb, blocksize) -
 					sizeof(struct jbd_bhdr),
 				jbd_display_block_tags,
