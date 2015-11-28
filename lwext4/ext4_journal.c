@@ -16,6 +16,35 @@
 #include <string.h>
 #include <malloc.h>
 
+struct revoke_entry {
+	ext4_fsblk_t block;
+	uint32_t trans_id;
+	RB_ENTRY(revoke_entry) revoke_node;
+};
+
+struct recover_info {
+	uint32_t start_trans_id;
+	uint32_t last_trans_id;
+	uint32_t this_trans_id;
+	RB_HEAD(jbd_revoke, revoke_entry) revoke_root;
+};
+
+static int
+jbd_revoke_entry_cmp(struct revoke_entry *a, struct revoke_entry *b)
+{
+	if (a->block > b->block)
+		return 1;
+	else if (a->block < b->block)
+		return -1;
+	return 0;
+}
+
+RB_GENERATE_INTERNAL(jbd_revoke, revoke_entry, revoke_node,
+		     jbd_revoke_entry_cmp, static inline)
+
+#define jbd_alloc_revoke_entry() calloc(1, sizeof(struct revoke_entry))
+#define jbd_free_revoke_entry(addr) free(addr)
+
 int jbd_inode_bmap(struct jbd_fs *jbd_fs,
 		   ext4_lblk_t iblock,
 		   ext4_fsblk_t *fblock);
@@ -285,11 +314,50 @@ static void jbd_display_block_tags(struct jbd_fs *jbd_fs,
 	return;
 }
 
-struct revoke_entry {
-	ext4_fsblk_t block;
-	uint32_t trans_id;
-	RB_ENTRY(revoke_entry) revoke_node;
-};
+static struct revoke_entry *
+jbd_revoke_entry_lookup(struct recover_info *info, ext4_fsblk_t block)
+{
+	struct revoke_entry tmp = {
+		.block = block
+	};
+
+	return RB_FIND(jbd_revoke, &info->revoke_root, &tmp);
+}
+
+static void jbd_add_revoke_block_tags(struct jbd_fs *jbd_fs __unused,
+				      ext4_fsblk_t block,
+				      uint8_t *uuid __unused,
+				      void *arg)
+{
+	struct recover_info *info = arg;
+	struct revoke_entry *revoke_entry;
+
+	ext4_dbg(DEBUG_JBD, "Add block %" PRIu64 " to revoke tree\n", block);
+	revoke_entry = jbd_revoke_entry_lookup(info, block);
+	if (revoke_entry) {
+		revoke_entry->trans_id = info->this_trans_id;
+		return;
+	}
+
+	revoke_entry = jbd_alloc_revoke_entry();
+	ext4_assert(revoke_entry);
+	revoke_entry->block = block;
+	revoke_entry->trans_id = info->this_trans_id;
+	RB_INSERT(jbd_revoke, &info->revoke_root, revoke_entry);
+
+	return;
+}
+
+static void jbd_destroy_revoke_tree(struct recover_info *info)
+{
+	while (!RB_EMPTY(&info->revoke_root)) {
+		struct revoke_entry *revoke_entry =
+			RB_MIN(jbd_revoke, &info->revoke_root);
+		ext4_assert(revoke_entry);
+		RB_REMOVE(jbd_revoke, &info->revoke_root, revoke_entry);
+		jbd_free_revoke_entry(revoke_entry);
+	}
+}
 
 /* Make sure we wrap around the log correctly! */
 #define wrap(sb, var)						\
@@ -302,11 +370,6 @@ do {									\
 #define ACTION_REVOKE 1
 #define ACTION_RECOVER 2
 
-struct recover_info {
-	uint32_t start_trans_id;
-	uint32_t last_trans_id;
-	RB_HEAD(jbd_revoke, revoke_entry) revoke_root;
-};
 
 static void jbd_build_revoke_root(struct jbd_fs *jbd_fs,
 				  struct jbd_bhdr *header,
@@ -319,10 +382,8 @@ static void jbd_build_revoke_root(struct jbd_fs *jbd_fs,
 				revoke_hdr + 1,
 				jbd_get32(&jbd_fs->sb, blocksize) -
 					sizeof(struct jbd_revoke_header),
-				jbd_display_block_tags,
-				NULL);
-
-	(void)info;
+				jbd_add_revoke_block_tags,
+				info);
 }
 
 static void jbd_debug_descriptor_block(struct jbd_fs *jbd_fs,
@@ -387,7 +448,9 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			ext4_dbg(DEBUG_JBD, "Descriptor block: %u, "
 					    "trans_id: %u\n",
 					    this_block, this_trans_id);
-			jbd_debug_descriptor_block(jbd_fs, header, &this_block);
+			if (action == ACTION_SCAN)
+				jbd_debug_descriptor_block(jbd_fs,
+						header, &this_block);
 			break;
 		case JBD_COMMIT_BLOCK:
 			ext4_dbg(DEBUG_JBD, "Commit block: %u, "
@@ -399,7 +462,10 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			ext4_dbg(DEBUG_JBD, "Revoke block: %u, "
 					    "trans_id: %u\n",
 					    this_block, this_trans_id);
-			jbd_build_revoke_root(jbd_fs, header, info);
+			if (action == ACTION_REVOKE) {
+				info->this_trans_id = this_trans_id;
+				jbd_build_revoke_root(jbd_fs, header, info);
+			}
 			break;
 		default:
 			log_end = true;
@@ -432,6 +498,13 @@ int jbd_recover(struct jbd_fs *jbd_fs)
 	if (!sb->start)
 		return EOK;
 
+	RB_INIT(&info.revoke_root);
+
 	r = jbd_iterate_log(jbd_fs, &info, ACTION_SCAN);
+	if (r != EOK)
+		return r;
+
+	r = jbd_iterate_log(jbd_fs, &info, ACTION_REVOKE);
+	jbd_destroy_revoke_tree(&info);
 	return r;
 }
