@@ -14,7 +14,7 @@
 #include "tree.h"
 
 #include <string.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 struct revoke_entry {
 	ext4_fsblk_t block;
