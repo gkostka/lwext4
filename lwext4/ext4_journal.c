@@ -378,15 +378,16 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 	struct ext4_block journal_block, ext4_block;
 	struct ext4_fs *fs = jbd_fs->inode_ref.fs;
 
-	ext4_dbg(DEBUG_JBD,
-		 "Replaying block in block_tag: %" PRIu64 "\n",
-		 block);
 	(*this_block)++;
 
 	revoke_entry = jbd_revoke_entry_lookup(info, block);
 	if (revoke_entry &&
 	    arg->this_trans_id < revoke_entry->trans_id)
 		return;
+
+	ext4_dbg(DEBUG_JBD,
+		 "Replaying block in block_tag: %" PRIu64 "\n",
+		 block);
 
 	r = jbd_block_get(jbd_fs, &journal_block, *this_block);
 	if (r != EOK)
@@ -485,7 +486,7 @@ static void jbd_build_revoke_tree(struct jbd_fs *jbd_fs,
 				     JBD_FEATURE_INCOMPAT_64BIT))
 		record_len = 8;
 
-	nr_entries = (revoke_hdr->count -
+	nr_entries = (jbd_get32(revoke_hdr, count) -
 			sizeof(struct jbd_revoke_header)) /
 			record_len;
 
@@ -495,11 +496,11 @@ static void jbd_build_revoke_tree(struct jbd_fs *jbd_fs,
 		if (record_len == 8) {
 			uint64_t *blocks =
 				(uint64_t *)blocks_entry;
-			jbd_add_revoke_block_tags(info, *blocks);
+			jbd_add_revoke_block_tags(info, to_be64(*blocks));
 		} else {
 			uint32_t *blocks =
 				(uint32_t *)blocks_entry;
-			jbd_add_revoke_block_tags(info, *blocks);
+			jbd_add_revoke_block_tags(info, to_be32(*blocks));
 		}
 		blocks_entry += record_len;
 	}
@@ -579,10 +580,7 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			ext4_dbg(DEBUG_JBD, "Descriptor block: %" PRIu32", "
 					    "trans_id: %" PRIu32"\n",
 					    this_block, this_trans_id);
-			if (action == ACTION_SCAN)
-				jbd_debug_descriptor_block(jbd_fs,
-						header, &this_block);
-			else if (action == ACTION_RECOVER) {
+			if (action == ACTION_RECOVER) {
 				struct replay_arg replay_arg;
 				replay_arg.info = info;
 				replay_arg.this_block = &this_block;
@@ -590,7 +588,9 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 
 				jbd_replay_descriptor_block(jbd_fs,
 						header, &replay_arg);
-			}
+			} else
+				jbd_debug_descriptor_block(jbd_fs,
+						header, &this_block);
 
 			break;
 		case JBD_COMMIT_BLOCK:
