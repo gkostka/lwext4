@@ -544,8 +544,8 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 
 		switch (jbd_get32(header, blocktype)) {
 		case JBD_DESCRIPTOR_BLOCK:
-			ext4_dbg(DEBUG_JBD, "Descriptor block: %u, "
-					    "trans_id: %u\n",
+			ext4_dbg(DEBUG_JBD, "Descriptor block: %" PRIu32", "
+					    "trans_id: %" PRIu32"\n",
 					    this_block, this_trans_id);
 			if (action == ACTION_SCAN)
 				jbd_debug_descriptor_block(jbd_fs,
@@ -562,14 +562,14 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 
 			break;
 		case JBD_COMMIT_BLOCK:
-			ext4_dbg(DEBUG_JBD, "Commit block: %u, "
-					    "trans_id: %u\n",
+			ext4_dbg(DEBUG_JBD, "Commit block: %" PRIu32", "
+					    "trans_id: %" PRIu32"\n",
 					    this_block, this_trans_id);
 			this_trans_id++;
 			break;
 		case JBD_REVOKE_BLOCK:
-			ext4_dbg(DEBUG_JBD, "Revoke block: %u, "
-					    "trans_id: %u\n",
+			ext4_dbg(DEBUG_JBD, "Revoke block: %" PRIu32", "
+					    "trans_id: %" PRIu32"\n",
 					    this_block, this_trans_id);
 			if (action == ACTION_REVOKE) {
 				info->this_trans_id = this_trans_id;
