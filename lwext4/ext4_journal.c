@@ -32,6 +32,7 @@ struct recover_info {
 struct replay_arg {
 	struct recover_info *info;
 	uint32_t *this_block;
+	uint32_t this_trans_id;
 };
 
 static int
@@ -344,13 +345,15 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 	struct revoke_entry *revoke_entry;
 	struct ext4_block journal_block, ext4_block;
 	struct ext4_fs *fs = jbd_fs->inode_ref.fs;
+
 	ext4_dbg(DEBUG_JBD,
 		 "Replaying block in block_tag: %" PRIu64 "\n",
 		 block);
 	(*this_block)++;
 
 	revoke_entry = jbd_revoke_entry_lookup(info, block);
-	if (revoke_entry)
+	if (revoke_entry &&
+	    arg->this_trans_id < revoke_entry->trans_id)
 		return;
 
 	r = jbd_block_get(jbd_fs, &journal_block, *this_block);
@@ -551,6 +554,8 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 				struct replay_arg replay_arg;
 				replay_arg.info = info;
 				replay_arg.this_block = &this_block;
+				replay_arg.this_trans_id = this_trans_id;
+
 				jbd_replay_descriptor_block(jbd_fs,
 						header, &replay_arg);
 			}
