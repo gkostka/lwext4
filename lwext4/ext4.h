@@ -182,6 +182,13 @@ int ext4_mount(const char *dev_name, const char *mount_point);
  * @return  standard error code */
 int ext4_umount(const char *mount_point);
 
+
+/**@brief   Journal recovery.
+ * @param   mount_point mount point
+ * @warning Must be called after @ref ext4_mount
+ * @return standard error code */
+int ext4_recover(const char *mount_point);
+
 /**@brief   Some of the filesystem stats.*/
 struct ext4_mount_stats {
 	uint32_t inodes_count;

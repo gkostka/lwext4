@@ -411,19 +411,9 @@ int ext4_mount(const char *dev_name, const char *mount_point)
 		return r;
 	}
 
-	/* TODO: journal mount checking. */
-	if (ext4_sb_feature_com(&mp->fs.sb, EXT4_FCOM_HAS_JOURNAL)) {
-		struct jbd_fs jbd_fs = {0};
-		r = jbd_get_fs(&mp->fs, &jbd_fs);
-		if (r != EOK)
-			return r;
-
-		r = jbd_recover(&jbd_fs);
-		jbd_put_fs(&jbd_fs);
-	}
-
 	return r;
 }
+
 
 int ext4_umount(const char *mount_point)
 {
@@ -468,6 +458,34 @@ static struct ext4_mountpoint *ext4_get_mount(const char *path)
 	}
 	return 0;
 }
+
+int ext4_recover(const char *mount_point)
+{
+	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
+	if (!mp)
+		return ENOENT;
+
+	int r = ENOTSUP;
+	if (ext4_sb_feature_com(&mp->fs.sb, EXT4_FCOM_HAS_JOURNAL)) {
+		struct jbd_fs *jbd_fs = calloc(1, sizeof(struct jbd_fs));
+		if (!jbd_fs)
+			return ENOMEM;
+
+
+		r = jbd_get_fs(&mp->fs, jbd_fs);
+		if (r != EOK) {
+			free(jbd_fs);
+			return r;
+		}
+
+		r = jbd_recover(jbd_fs);
+		jbd_put_fs(jbd_fs);
+		free(jbd_fs);
+	}
+
+	return r;
+}
+
 
 int ext4_mount_point_stats(const char *mount_point,
 			   struct ext4_mount_stats *stats)
