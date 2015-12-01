@@ -150,6 +150,12 @@ int jbd_get_fs(struct ext4_fs *fs,
 	if (rc != EOK) {
 		memset(jbd_fs, 0, sizeof(struct jbd_fs));
 		ext4_fs_put_inode_ref(&jbd_fs->inode_ref);
+		return rc;
+	}
+	if (!jbd_verify_sb(&jbd_fs->sb)) {
+		memset(jbd_fs, 0, sizeof(struct jbd_fs));
+		ext4_fs_put_inode_ref(&jbd_fs->inode_ref);
+		rc = EIO;
 	}
 
 	return rc;
