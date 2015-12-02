@@ -89,6 +89,9 @@ struct ext4_buf {
 	/**@brief   Reference count table*/
 	uint32_t refctr;
 
+	/**@brief   Whether or not buffer is on dirty list.*/
+	bool on_dirty_list;
+
 	/**@brief   LBA tree node*/
 	RB_ENTRY(ext4_buf) lba_node;
 
@@ -98,6 +101,27 @@ struct ext4_buf {
 	/**@brief   Dirty list node*/
 	SLIST_ENTRY(ext4_buf) dirty_node;
 };
+
+#define ext4_bcache_insert_dirty_node(bc, buf) \
+do { \
+	if (!(buf)->on_dirty_list) {             \
+		SLIST_INSERT_HEAD(&(bc)->dirty_list, \
+				  (buf),            \
+				  dirty_node); \
+		(buf)->on_dirty_list = true;  \
+	} \
+} while (0)
+
+#define ext4_bcache_remove_dirty_node(bc, buf) \
+do { \
+	if ((buf)->on_dirty_list) {             \
+		SLIST_REMOVE(&(bc)->dirty_list,  \
+				(buf),           \
+				ext4_buf,      \
+				dirty_node);   \
+		(buf)->on_dirty_list = false;  \
+	} \
+} while (0)
 
 /**@brief   Block cache descriptor*/
 struct ext4_bcache {
@@ -116,6 +140,9 @@ struct ext4_bcache {
 
 	/**@brief   Maximum referenced datablocks*/
 	uint32_t max_ref_blocks;
+
+	/**@brief   The blockdev binded to this block cache*/
+	struct ext4_blockdev *bdev;
 
 	/**@brief   A tree holding all bufs*/
 	RB_HEAD(ext4_buf_lba, ext4_buf) lba_root;

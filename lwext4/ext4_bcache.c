@@ -36,6 +36,7 @@
 
 #include "ext4_config.h"
 #include "ext4_bcache.h"
+#include "ext4_blockdev.h"
 #include "ext4_debug.h"
 #include "ext4_errno.h"
 
@@ -156,10 +157,7 @@ void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf)
 
 	/*Forcibly drop dirty buffer.*/
 	if (ext4_bcache_test_flag(buf, BC_DIRTY))
-		SLIST_REMOVE(&bc->dirty_list,
-			     buf,
-			     ext4_buf,
-			     dirty_node);
+		ext4_bcache_remove_dirty_node(bc, buf);
 
 	ext4_buf_free(buf);
 	bc->ref_blocks--;
@@ -178,10 +176,7 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 			buf->lru_id = ++bc->lru_ctr;
 			RB_REMOVE(ext4_buf_lru, &bc->lru_root, buf);
 			if (ext4_bcache_test_flag(buf, BC_DIRTY))
-				SLIST_REMOVE(&bc->dirty_list,
-					     buf,
-					     ext4_buf,
-					     dirty_node);
+				ext4_bcache_remove_dirty_node(bc, buf);
 
 		}
 
@@ -255,8 +250,12 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b)
 	if (!buf->refctr) {
 		RB_INSERT(ext4_buf_lru, &bc->lru_root, buf);
 		/* This buffer is ready to be flushed. */
-		if (ext4_bcache_test_flag(buf, BC_DIRTY))
-			SLIST_INSERT_HEAD(&bc->dirty_list, buf, dirty_node);
+		if (ext4_bcache_test_flag(buf, BC_DIRTY)) {
+			if (bc->bdev->cache_write_back)
+				ext4_bcache_insert_dirty_node(bc, buf);
+			else
+				ext4_block_flush_buf(bc->bdev, buf);
+		}
 
 		/* The buffer is invalidated...drop it. */
 		if (!ext4_bcache_test_flag(buf, BC_UPTODATE))

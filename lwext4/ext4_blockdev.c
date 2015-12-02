@@ -63,6 +63,7 @@ int ext4_block_bind_bcache(struct ext4_blockdev *bdev, struct ext4_bcache *bc)
 {
 	ext4_assert(bdev && bc);
 	bdev->bc = bc;
+	bc->bdev = bdev;
 	return EOK;
 }
 
@@ -85,8 +86,7 @@ int ext4_block_fini(struct ext4_blockdev *bdev)
 	return bdev->close(bdev);
 }
 
-static int
-ext4_block_flush_buf(struct ext4_blockdev *bdev, struct ext4_buf *buf)
+int ext4_block_flush_buf(struct ext4_blockdev *bdev, struct ext4_buf *buf)
 {
 	int r;
 	struct ext4_bcache *bc = bdev->bc;
@@ -98,10 +98,7 @@ ext4_block_flush_buf(struct ext4_blockdev *bdev, struct ext4_buf *buf)
 		if (r)
 			return r;
 
-		SLIST_REMOVE(&bc->dirty_list,
-				buf,
-				ext4_buf,
-				dirty_node);
+		ext4_bcache_remove_dirty_node(bc, buf);
 		ext4_bcache_clear_flag(buf, BC_DIRTY);
 	}
 	return EOK;
@@ -195,47 +192,13 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 
 int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 {
-	uint64_t pba;
-	uint32_t pb_cnt;
-	int r;
-
 	ext4_assert(bdev && b);
 	ext4_assert(b->buf);
 
 	if (!(bdev->flags & EXT4_BDEV_INITIALIZED))
 		return EIO;
 
-	/*Free cache delay mode*/
-	if (bdev->cache_write_back) {
-
-		/*Free cache block and mark as free delayed*/
-		return ext4_bcache_free(bdev->bc, b);
-	}
-
-	if (b->buf->refctr > 1)
-		return ext4_bcache_free(bdev->bc, b);
-
-	/*We handle the dirty flag ourselves.*/
-	if (ext4_bcache_test_flag(b->buf, BC_DIRTY) || b->dirty) {
-		b->uptodate = true;
-		ext4_bcache_set_flag(b->buf, BC_UPTODATE);
-
-		pba = (b->lb_id * bdev->lg_bsize) / bdev->ph_bsize;
-		pb_cnt = bdev->lg_bsize / bdev->ph_bsize;
-
-		r = bdev->bwrite(bdev, b->data, pba, pb_cnt);
-		ext4_bcache_clear_flag(b->buf, BC_DIRTY);
-		if (r != EOK) {
-			b->dirty = true;
-			ext4_bcache_free(bdev->bc, b);
-			return r;
-		}
-
-		b->dirty = false;
-		bdev->bwrite_ctr++;
-	}
-	ext4_bcache_free(bdev->bc, b);
-	return EOK;
+	return ext4_bcache_free(bdev->bc, b);
 }
 
 int ext4_blocks_get_direct(struct ext4_blockdev *bdev, void *buf, uint64_t lba,

@@ -139,6 +139,12 @@ int ext4_block_bind_bcache(struct ext4_blockdev *bdev, struct ext4_bcache *bc);
  * @return  standard error code*/
 int ext4_block_fini(struct ext4_blockdev *bdev);
 
+/**@brief   Flush data in given buffer to disk.
+ * @param   bdev block device descriptor
+ * @param   buf buffer
+ * @return  standard error code*/
+int ext4_block_flush_buf(struct ext4_blockdev *bdev, struct ext4_buf *buf);
+
 /**@brief   Set logical block size in block device.
  * @param   bdev block device descriptor
  * @param   lb_size logical block size (in bytes)
