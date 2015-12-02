@@ -102,27 +102,6 @@ struct ext4_buf {
 	SLIST_ENTRY(ext4_buf) dirty_node;
 };
 
-#define ext4_bcache_insert_dirty_node(bc, buf) \
-do { \
-	if (!(buf)->on_dirty_list) {             \
-		SLIST_INSERT_HEAD(&(bc)->dirty_list, \
-				  (buf),            \
-				  dirty_node); \
-		(buf)->on_dirty_list = true;  \
-	} \
-} while (0)
-
-#define ext4_bcache_remove_dirty_node(bc, buf) \
-do { \
-	if ((buf)->on_dirty_list) {             \
-		SLIST_REMOVE(&(bc)->dirty_list,  \
-				(buf),           \
-				ext4_buf,      \
-				dirty_node);   \
-		(buf)->on_dirty_list = false;  \
-	} \
-} while (0)
-
 /**@brief   Block cache descriptor*/
 struct ext4_bcache {
 
@@ -175,6 +154,29 @@ enum bcache_state_bits {
 	    .itemsize = __itemsize,                                            \
 	    .lru_ctr = 0,                                                      \
 	}
+
+/**@brief   Insert buffer to dirty cache list
+ * @param   bc block cache descriptor
+ * @param   buf buffer descriptor */
+static inline void
+ext4_bcache_insert_dirty_node(struct ext4_bcache *bc, struct ext4_buf *buf) {
+	if (!buf->on_dirty_list) {
+		SLIST_INSERT_HEAD(&bc->dirty_list, buf, dirty_node);
+		buf->on_dirty_list = true;
+	}
+}
+
+/**@brief   Remove buffer to dirty cache list
+ * @param   bc block cache descriptor
+ * @param   buf buffer descriptor */
+static inline void
+ext4_bcache_remove_dirty_node(struct ext4_bcache *bc, struct ext4_buf *buf) {
+	if (buf->on_dirty_list) {
+		SLIST_REMOVE(&bc->dirty_list, buf, ext4_buf, dirty_node);
+		buf->on_dirty_list = false;
+	}
+}
+
 
 /**@brief   Dynamic initialization of block cache.
  * @param   bc block cache descriptor
