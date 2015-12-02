@@ -7,7 +7,7 @@ set(OBJCOPY             avr-objcopy)
 set(OBJDUMP             avr-objdump)
 set(SIZE                avr-size)
 
-set(CMAKE_C_FLAGS   "${MCPU_FLAGS} -Wall -std=gnu99 -fdata-sections -ffunction-sections" CACHE INTERNAL "c compiler flags")
+set(CMAKE_C_FLAGS   "${MCPU_FLAGS} -Wall -std=gnu11 -fdata-sections -ffunction-sections" CACHE INTERNAL "c compiler flags")
 set(CMAKE_CXX_FLAGS "${MCPU_FLAGS} -Wall -fdata-sections -ffunction-sections" CACHE INTERNAL "cxx compiler flags")
 set(CMAKE_ASM_FLAGS "${MCPU_FLAGS} -x assembler-with-cpp" CACHE INTERNAL "asm compiler flags")
 set(CMAKE_EXE_LINKER_FLAGS "${MCPU_FLAGS} -nostartfiles -Wl,--gc-sections" CACHE INTERNAL "exe link flags")
