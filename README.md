@@ -23,7 +23,8 @@ Some features are based on FreeBSD and Linux implementations.
 KaHo Ng (https://github.com/ngkaho1234):
 * advanced extents implementation
 * xattr support
-* metadata checksum suport
+* metadata checksum support
+* journal recovery
 * many bugfixes & improvements
 
 fuse-lwext4 project:
@@ -71,7 +72,7 @@ Features compatible:
 ------------
 *  dir_prealloc: no
 *  imagic_inodes: no
-*  has_journal: no
+*  has_journal: yes (in progress)
 *  ext_attr: yes
 *  resize_inode: no
 *  dir_index: yes
@@ -93,8 +94,7 @@ Features read-only:
 Project tree
 =====
 *  blockdev         - block devices set, supported blockdev
-*  demos            - demo directory sources
-*  fs_test          - test suite
+*  fs_test          - test suite, mkfs and demo application
 *  lwext4           - internals of the lwext4 library
 *  toolchain        - specific toolchain cmake files
 *  CMakeLists.txt   - CMake config file
