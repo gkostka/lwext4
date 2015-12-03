@@ -141,7 +141,8 @@ int ext4_fs_get_inode_ref(struct ext4_fs *fs, uint32_t index,
  * @param fs        Filesystem to reset blocks field of i-inode on
  * @param inode_ref ref Pointer for inode to be operated on
  */
-void ext4_fs_inode_blocks_init(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref);
+void ext4_fs_inode_blocks_init(struct ext4_fs *fs,
+			       struct ext4_inode_ref *inode_ref);
 
 /**@brief Put reference to i-node.
  * @param ref Pointer for reference to be put back
@@ -200,9 +201,9 @@ int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
  *                          is supported under the current context
  * @return Error code
  */
-int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, ext4_fsblk_t *fblock,
-				       bool support_unwritten);
+int ext4_fs_get_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
+				 uint64_t iblock, ext4_fsblk_t *fblock,
+				 bool support_unwritten);
 
 /**@brief Initialize a part of unwritten range of the inode.
  * @param inode_ref I-node to proceed on.
@@ -210,8 +211,8 @@ int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
  * @param fblock    Output pointer for return physical block address
  * @return Error code
  */
-int ext4_fs_init_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, ext4_fsblk_t *fblock);
+int ext4_fs_init_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
+				  uint64_t iblock, ext4_fsblk_t *fblock);
 
 /**@brief Append following logical block to the i-node.
  * @param inode_ref I-node to append block to
@@ -219,8 +220,8 @@ int ext4_fs_init_inode_data_block_index(struct ext4_inode_ref *inode_ref,
  * @param iblock    Output logical number of newly allocated block
  * @return Error code
  */
-int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
-			       ext4_fsblk_t *fblock, uint32_t *iblock);
+int ext4_fs_append_inode_dblk(struct ext4_inode_ref *inode_ref,
+			      ext4_fsblk_t *fblock, uint32_t *iblock);
 
 /**@brief   Increment inode link count.
  * @param   inode none handle

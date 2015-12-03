@@ -348,7 +348,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	struct ext4_sblock *sb = &dir->fs->sb;
 	uint32_t block_size = ext4_sb_get_block_size(&dir->fs->sb);
 
-	int rc = ext4_fs_append_inode_block(dir, &fblock, &iblock);
+	int rc = ext4_fs_append_inode_dblk(dir, &fblock, &iblock);
 	if (rc != EOK)
 		return rc;
 
@@ -396,7 +396,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	ext4_dir_dx_climit_set_limit(climit, root_limit);
 
 	/* Append new block, where will be new entries inserted in the future */
-	rc = ext4_fs_append_inode_block(dir, &fblock, &iblock);
+	rc = ext4_fs_append_inode_dblk(dir, &fblock, &iblock);
 	if (rc != EOK) {
 		ext4_block_set(dir->fs->bdev, &block);
 		return rc;
@@ -523,7 +523,7 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 	struct ext4_dir_idx_entry *q;
 	struct ext4_dir_idx_entry *m;
 	struct ext4_dir_idx_entry *at;
-	ext4_fsblk_t fblock;
+	ext4_fsblk_t fblk;
 	uint32_t block_size;
 	uint16_t limit;
 	uint16_t entry_space;
@@ -572,16 +572,15 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 		}
 
 		/* Goto child node */
-		uint32_t next_block = ext4_dir_dx_entry_get_block(at);
+		uint32_t n_blk = ext4_dir_dx_entry_get_block(at);
 
 		ind_level--;
 
-		r = ext4_fs_get_inode_data_block_index(inode_ref, next_block,
-						       &fblock, false);
+		r = ext4_fs_get_inode_dblk_idx(inode_ref, n_blk, &fblk, false);
 		if (r != EOK)
 			return r;
 
-		r = ext4_block_get(inode_ref->fs->bdev, tmp_blk, fblock);
+		r = ext4_block_get(inode_ref->fs->bdev, tmp_blk, fblk);
 		if (r != EOK)
 			return r;
 
@@ -605,7 +604,7 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 					"Inode: %" PRIu32", "
 					"Block: %" PRIu32"\n",
 					inode_ref->index,
-					next_block);
+					n_blk);
 		}
 
 		++tmp_dx_blk;
@@ -629,7 +628,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 {
 	int r;
 	uint32_t num_handles = 0;
-	ext4_fsblk_t block_addr;
+	ext4_fsblk_t blk_adr;
 	struct ext4_dir_idx_block *p = dx_block;
 
 	/* Try to find data block with next bunch of entries */
@@ -657,15 +656,13 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 
 	/* Fill new path */
 	while (num_handles--) {
-		uint32_t block_idx = ext4_dir_dx_entry_get_block(p->position);
-
-		r = ext4_fs_get_inode_data_block_index(inode_ref, block_idx,
-						       &block_addr, false);
+		uint32_t blk = ext4_dir_dx_entry_get_block(p->position);
+		r = ext4_fs_get_inode_dblk_idx(inode_ref, blk, &blk_adr, false);
 		if (r != EOK)
 			return r;
 
 		struct ext4_block b;
-		r = ext4_block_get(inode_ref->fs->bdev, &b, block_addr);
+		r = ext4_block_get(inode_ref->fs->bdev, &b, blk_adr);
 		if (r != EOK)
 			return r;
 
@@ -675,7 +672,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 					"Inode: %" PRIu32", "
 					"Block: %" PRIu32"\n",
 					inode_ref->index,
-					block_idx);
+					blk);
 		}
 
 		p++;
@@ -701,8 +698,7 @@ int ext4_dir_dx_find_entry(struct ext4_dir_search_result *result,
 	ext4_fsblk_t root_block_addr;
 	int rc2;
 	int rc;
-	rc = ext4_fs_get_inode_data_block_index(inode_ref,  0, &root_block_addr,
-					       false);
+	rc = ext4_fs_get_inode_dblk_idx(inode_ref,  0, &root_block_addr, false);
 	if (rc != EOK)
 		return rc;
 
@@ -752,8 +748,8 @@ int ext4_dir_dx_find_entry(struct ext4_dir_search_result *result,
 		struct ext4_block b;
 
 		leaf_blk_idx = ext4_dir_dx_entry_get_block(dx_block->position);
-		rc = ext4_fs_get_inode_data_block_index(inode_ref, leaf_blk_idx,
-						       &leaf_block_addr, false);
+		rc = ext4_fs_get_inode_dblk_idx(inode_ref, leaf_blk_idx,
+						&leaf_block_addr, false);
 		if (rc != EOK)
 			goto cleanup;
 
@@ -989,7 +985,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	/* Allocate new block for store the second part of entries */
 	ext4_fsblk_t new_fblock;
 	uint32_t new_iblock;
-	rc = ext4_fs_append_inode_block(inode_ref, &new_fblock, &new_iblock);
+	rc = ext4_fs_append_inode_dblk(inode_ref, &new_fblock, &new_iblock);
 	if (rc != EOK) {
 		free(sort);
 		free(entry_buffer);
@@ -1140,7 +1136,7 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 		/* Add new block to directory */
 		ext4_fsblk_t new_fblk;
 		uint32_t new_iblk;
-		r = ext4_fs_append_inode_block(ino_ref, &new_fblk, &new_iblk);
+		r = ext4_fs_append_inode_dblk(ino_ref, &new_fblk, &new_iblk);
 		if (r != EOK)
 			return r;
 
@@ -1260,7 +1256,7 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	int r;
 	/* Get direct block 0 (index root) */
 	ext4_fsblk_t rblock_addr;
-	r =  ext4_fs_get_inode_data_block_index(parent, 0, &rblock_addr, false);
+	r =  ext4_fs_get_inode_dblk_idx(parent, 0, &rblock_addr, false);
 	if (r != EOK)
 		return r;
 
@@ -1306,7 +1302,7 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	/* Try to insert to existing data block */
 	uint32_t leaf_block_idx = ext4_dir_dx_entry_get_block(dx_blk->position);
 	ext4_fsblk_t leaf_block_addr;
-	r = ext4_fs_get_inode_data_block_index(parent, leaf_block_idx,
+	r = ext4_fs_get_inode_dblk_idx(parent, leaf_block_idx,
 						&leaf_block_addr, false);
 	if (r != EOK)
 		goto release_index;
@@ -1393,7 +1389,7 @@ int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
 {
 	/* Load block 0, where will be index root located */
 	ext4_fsblk_t fblock;
-	int rc = ext4_fs_get_inode_data_block_index(dir, 0, &fblock, false);
+	int rc = ext4_fs_get_inode_dblk_idx(dir, 0, &fblock, false);
 	if (rc != EOK)
 		return rc;
 

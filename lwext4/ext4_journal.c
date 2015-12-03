@@ -175,7 +175,7 @@ int jbd_inode_bmap(struct jbd_fs *jbd_fs,
 		   ext4_lblk_t iblock,
 		   ext4_fsblk_t *fblock)
 {
-	int rc = ext4_fs_get_inode_data_block_index(
+	int rc = ext4_fs_get_inode_dblk_idx(
 			&jbd_fs->inode_ref,
 			iblock,
 			fblock,

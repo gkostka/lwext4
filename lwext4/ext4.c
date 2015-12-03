@@ -228,7 +228,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 		}
 
 		/*New empty directory. Two links (. and ..) */
-		ext4_inode_set_links_cnt(c->inode, 2);
+		ext4_inode_set_links_cnt(ch->inode, 2);
 		ext4_fs_inode_links_count_inc(parent);
 		ch->dirty = true;
 		parent->dirty = true;
@@ -240,7 +240,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 	 */
 	if (is_dir) {
 		bool idx;
-		idx = ext4_inode_has_flag(c->inode, EXT4_INODE_FLAG_INDEX);
+		idx = ext4_inode_has_flag(ch->inode, EXT4_INODE_FLAG_INDEX);
 		struct ext4_dir_search_result res;
 		if (!idx) {
 			r = ext4_dir_find_entry(&res, ch, "..", strlen(".."));
@@ -316,7 +316,7 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
 	 * ext4_inode_set_change_inode_time(child->inode,
 	 *     (uint32_t) now);
 	 */
-	if (ext4_inode_get_links_cnt(child_inode_ref->inode)) {
+	if (ext4_inode_get_links_cnt(child->inode)) {
 		ext4_fs_inode_links_count_dec(child);
 		child->dirty = true;
 	}
@@ -1353,8 +1353,7 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 		if (size > (block_size - unalg))
 			len = block_size - unalg;
 
-		r = ext4_fs_get_inode_data_block_index(&ref, iblock_idx,
-							&fblock, true);
+		r = ext4_fs_get_inode_dblk_idx(&ref, iblock_idx, &fblock, true);
 		if (r != EOK)
 			goto Finish;
 
@@ -1388,8 +1387,8 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 	fblock_count = 0;
 	while (size >= block_size) {
 		while (iblock_idx < iblock_last) {
-			r = ext4_fs_get_inode_data_block_index(&ref, iblock_idx,
-							       &fblock, true);
+			r = ext4_fs_get_inode_dblk_idx(&ref, iblock_idx,
+						       &fblock, true);
 			if (r != EOK)
 				goto Finish;
 
@@ -1421,8 +1420,7 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 	}
 
 	if (size) {
-		r = ext4_fs_get_inode_data_block_index(&ref, iblock_idx,
-						       &fblock, true);
+		r = ext4_fs_get_inode_dblk_idx(&ref, iblock_idx, &fblock, true);
 		if (r != EOK)
 			goto Finish;
 
@@ -1502,7 +1500,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 		if (size > (block_size - unalg))
 			len = block_size - unalg;
 
-		r = ext4_fs_init_inode_data_block_index(&ref, iblk_idx, &fblk);
+		r = ext4_fs_init_inode_dblk_idx(&ref, iblk_idx, &fblk);
 		if (r != EOK)
 			goto Finish;
 
@@ -1538,12 +1536,12 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 
 		while (iblk_idx < iblock_last) {
 			if (iblk_idx < ifile_blocks) {
-				r = ext4_fs_init_inode_data_block_index(
-				    &ref, iblk_idx, &fblk);
+				r = ext4_fs_init_inode_dblk_idx(&ref, iblk_idx,
+								&fblk);
 				if (r != EOK)
 					goto Finish;
 			} else {
-				rr = ext4_fs_append_inode_block(&ref, &fblk,
+				rr = ext4_fs_append_inode_dblk(&ref, &fblk,
 							       &iblk_idx);
 				if (rr != EOK) {
 					/* Unable to append more blocks. But
@@ -1597,12 +1595,11 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 
 	if (size) {
 		if (iblk_idx < ifile_blocks) {
-			r = ext4_fs_init_inode_data_block_index(&ref, iblk_idx,
-							        &fblk);
+			r = ext4_fs_init_inode_dblk_idx(&ref, iblk_idx, &fblk);
 			if (r != EOK)
 				goto Finish;
 		} else {
-			r = ext4_fs_append_inode_block(&ref, &fblk, &iblk_idx);
+			r = ext4_fs_append_inode_dblk(&ref, &fblk, &iblk_idx);
 			if (r != EOK)
 				/*Node size sholud be updated.*/
 				goto out_fsize;
@@ -1888,7 +1885,7 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 		ext4_inode_clear_flag(ref.inode, EXT4_INODE_FLAG_EXTENTS);
 	} else {
 		ext4_fs_inode_blocks_init(&f->mp->fs, &ref);
-		r = ext4_fs_append_inode_block(&ref, &fblock, &sblock);
+		r = ext4_fs_append_inode_dblk(&ref, &fblock, &sblock);
 		if (r != EOK)
 			goto Finish;
 

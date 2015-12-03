@@ -1249,8 +1249,8 @@ int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
 
 	/* If inode has some blocks, get last block address + 1 */
 	if (iblock_cnt > 0) {
-		r = ext4_fs_get_inode_data_block_index(inode_ref, iblock_cnt - 1,
-						       goal, false);
+		r = ext4_fs_get_inode_dblk_idx(inode_ref, iblock_cnt - 1,
+					       goal, false);
 		if (r != EOK)
 			return r;
 
@@ -1303,7 +1303,7 @@ int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
 	return ext4_fs_put_block_group_ref(&bg_ref);
 }
 
-static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
+static int ext4_fs_get_inode_dblk_idx_internal(struct ext4_inode_ref *inode_ref,
 				       uint64_t iblock, ext4_fsblk_t *fblock,
 				       bool extent_create,
 				       bool support_unwritten __unused)
@@ -1418,19 +1418,19 @@ static int ext4_fs_get_inode_data_block_idx(struct ext4_inode_ref *inode_ref,
 }
 
 
-int ext4_fs_get_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, ext4_fsblk_t *fblock,
-				       bool support_unwritten)
+int ext4_fs_get_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
+			       uint64_t iblock, ext4_fsblk_t *fblock,
+			       bool support_unwritten)
 {
-	return ext4_fs_get_inode_data_block_idx(inode_ref, iblock, fblock,
-			false, support_unwritten);
+	return ext4_fs_get_inode_dblk_idx_internal(inode_ref, iblock, fblock,
+						   false, support_unwritten);
 }
 
-int ext4_fs_init_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, ext4_fsblk_t *fblock)
+int ext4_fs_init_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
+				uint64_t iblock, ext4_fsblk_t *fblock)
 {
-	return ext4_fs_get_inode_data_block_idx(inode_ref, iblock, fblock,
-			true, true);
+	return ext4_fs_get_inode_dblk_idx_internal(inode_ref, iblock, fblock,
+						   true, true);
 }
 
 static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
@@ -1598,8 +1598,8 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 }
 
 
-int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
-			       ext4_fsblk_t *fblock, uint32_t *iblock)
+int ext4_fs_append_inode_dblk(struct ext4_inode_ref *inode_ref,
+			      ext4_fsblk_t *fblock, uint32_t *iblock)
 {
 #if CONFIG_EXTENT_ENABLE
 	/* Handle extents separately */
@@ -1614,7 +1614,6 @@ int ext4_fs_append_inode_block(struct ext4_inode_ref *inode_ref,
 
 		rc = ext4_extent_get_blocks(inode_ref, *iblock, 1,
 						&current_fsblk, true, NULL);
-
 
 		*fblock = current_fsblk;
 		ext4_assert(*fblock);

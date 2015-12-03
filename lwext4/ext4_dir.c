@@ -234,8 +234,8 @@ static int ext4_dir_iterator_seek(struct ext4_dir_iter *it, uint64_t pos)
 		}
 
 		ext4_fsblk_t next_blk;
-		r = ext4_fs_get_inode_data_block_index(it->inode_ref,
-						next_blk_idx, &next_blk, false);
+		r = ext4_fs_get_inode_dblk_idx(it->inode_ref, next_blk_idx,
+					       &next_blk, false);
 		if (r != EOK)
 			return r;
 
@@ -325,6 +325,7 @@ void ext4_dir_write_entry(struct ext4_sblock *sb, struct ext4_dir_en *en,
 int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 		       uint32_t name_len, struct ext4_inode_ref *child)
 {
+	int r;
 	struct ext4_fs *fs = parent->fs;
 	struct ext4_sblock *sb = &parent->fs->sb;
 
@@ -332,12 +333,12 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 	/* Index adding (if allowed) */
 	if ((ext4_sb_feature_com(sb, EXT4_FCOM_DIR_INDEX)) &&
 	    (ext4_inode_has_flag(parent->inode, EXT4_INODE_FLAG_INDEX))) {
-		int rc = ext4_dir_dx_add_entry(parent, child, name);
+		r = ext4_dir_dx_add_entry(parent, child, name);
 
 		/* Check if index is not corrupted */
-		if (rc != EXT4_ERR_BAD_DX_DIR) {
-			if (rc != EOK)
-				return rc;
+		if (r != EXT4_ERR_BAD_DX_DIR) {
+			if (r != EOK)
+				return r;
 
 			return EOK;
 		}
@@ -358,15 +359,14 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 	/* Find block, where is space for new entry and try to add */
 	bool success = false;
 	for (iblock = 0; iblock < total_blocks; ++iblock) {
-		int rc = ext4_fs_get_inode_data_block_index(parent, iblock,
-							&fblock, false);
-		if (rc != EOK)
-			return rc;
+		r = ext4_fs_get_inode_dblk_idx(parent, iblock, &fblock, false);
+		if (r != EOK)
+			return r;
 
 		struct ext4_block block;
-		rc = ext4_block_get(fs->bdev, &block, fblock);
-		if (rc != EOK)
-			return rc;
+		r = ext4_block_get(fs->bdev, &block, fblock);
+		if (r != EOK)
+			return r;
 
 		if (!ext4_dir_csum_verify(parent, (void *)block.data)) {
 			ext4_dbg(DEBUG_DIR,
@@ -378,14 +378,14 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 		}
 
 		/* If adding is successful, function can finish */
-		rc = ext4_dir_try_insert_entry(sb, parent, &block, child,
+		r = ext4_dir_try_insert_entry(sb, parent, &block, child,
 						name, name_len);
-		if (rc == EOK)
+		if (r == EOK)
 			success = true;
 
-		rc = ext4_block_set(fs->bdev, &block);
-		if (rc != EOK)
-			return rc;
+		r = ext4_block_set(fs->bdev, &block);
+		if (r != EOK)
+			return r;
 
 		if (success)
 			return EOK;
@@ -395,16 +395,16 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 
 	iblock = 0;
 	fblock = 0;
-	int rc = ext4_fs_append_inode_block(parent, &fblock, &iblock);
-	if (rc != EOK)
-		return rc;
+	r = ext4_fs_append_inode_dblk(parent, &fblock, &iblock);
+	if (r != EOK)
+		return r;
 
 	/* Load new block */
 	struct ext4_block b;
 
-	rc = ext4_block_get_noread(fs->bdev, &b, fblock);
-	if (rc != EOK)
-		return rc;
+	r = ext4_block_get_noread(fs->bdev, &b, fblock);
+	if (r != EOK)
+		return r;
 
 	/* Fill block with zeroes */
 	memset(b.data, 0, block_size);
@@ -422,15 +422,16 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 
 	ext4_dir_set_csum(parent, (void *)b.data);
 	b.dirty = true;
-	rc = ext4_block_set(fs->bdev, &b);
+	r = ext4_block_set(fs->bdev, &b);
 
-	return rc;
+	return r;
 }
 
 int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 			struct ext4_inode_ref *parent, const char *name,
 			uint32_t name_len)
 {
+	int r;
 	struct ext4_sblock *sb = &parent->fs->sb;
 
 	/* Entry clear */
@@ -441,12 +442,11 @@ int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 	/* Index search */
 	if ((ext4_sb_feature_com(sb, EXT4_FCOM_DIR_INDEX)) &&
 	    (ext4_inode_has_flag(parent->inode, EXT4_INODE_FLAG_INDEX))) {
-		int rc = ext4_dir_dx_find_entry(result, parent, name_len, name);
-
+		r = ext4_dir_dx_find_entry(result, parent, name_len, name);
 		/* Check if index is not corrupted */
-		if (rc != EXT4_ERR_BAD_DX_DIR) {
-			if (rc != EOK)
-				return rc;
+		if (r != EXT4_ERR_BAD_DX_DIR) {
+			if (r != EOK)
+				return r;
 
 			return EOK;
 		}
@@ -468,18 +468,15 @@ int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 	/* Walk through all data blocks */
 	for (iblock = 0; iblock < total_blocks; ++iblock) {
 		/* Load block address */
-		int rc =
-		    ext4_fs_get_inode_data_block_index(parent,
-				    iblock, &fblock,
-				    false);
-		if (rc != EOK)
-			return rc;
+		r = ext4_fs_get_inode_dblk_idx(parent, iblock, &fblock, false);
+		if (r != EOK)
+			return r;
 
 		/* Load data block */
 		struct ext4_block b;
-		rc = ext4_block_get(parent->fs->bdev, &b, fblock);
-		if (rc != EOK)
-			return rc;
+		r = ext4_block_get(parent->fs->bdev, &b, fblock);
+		if (r != EOK)
+			return r;
 
 		if (!ext4_dir_csum_verify(parent, (void *)b.data)) {
 			ext4_dbg(DEBUG_DIR,
@@ -492,8 +489,8 @@ int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 
 		/* Try to find entry in block */
 		struct ext4_dir_en *res_entry;
-		rc = ext4_dir_find_in_block(&b, sb, name_len, name, &res_entry);
-		if (rc == EOK) {
+		r = ext4_dir_find_in_block(&b, sb, name_len, name, &res_entry);
+		if (r == EOK) {
 			result->block = b;
 			result->dentry = res_entry;
 			return EOK;
@@ -501,9 +498,9 @@ int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 
 		/* Entry not found - put block and continue to the next block */
 
-		rc = ext4_block_set(parent->fs->bdev, &b);
-		if (rc != EOK)
-			return rc;
+		r = ext4_block_set(parent->fs->bdev, &b);
+		if (r != EOK)
+			return r;
 	}
 
 	return ENOENT;
