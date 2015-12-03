@@ -466,16 +466,19 @@ int ext4_recover(const char *mount_point)
 		return ENOENT;
 
 	int r = ENOTSUP;
+	EXT4_MP_LOCK(mp);
 	if (ext4_sb_feature_com(&mp->fs.sb, EXT4_FCOM_HAS_JOURNAL)) {
 		struct jbd_fs *jbd_fs = calloc(1, sizeof(struct jbd_fs));
-		if (!jbd_fs)
-			return ENOMEM;
+		if (!jbd_fs) {
+			 r = ENOMEM;
+			 goto Finish;
+		}
 
 
 		r = jbd_get_fs(&mp->fs, jbd_fs);
 		if (r != EOK) {
 			free(jbd_fs);
-			return r;
+			goto Finish;
 		}
 
 		r = jbd_recover(jbd_fs);
@@ -483,6 +486,9 @@ int ext4_recover(const char *mount_point)
 		free(jbd_fs);
 	}
 
+
+Finish:
+	EXT4_MP_UNLOCK(mp);
 	return r;
 }
 
