@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)
  *
- *
  * HelenOS:
  * Copyright (c) 2012 Martin Sucha
  * Copyright (c) 2012 Frantisek Princ
@@ -109,7 +108,7 @@ void ext4_balloc_set_bitmap_csum(struct ext4_sblock *sb,
 
 	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 		return;
-	
+
 	/* See if we need to assign a 32bit checksum */
 	bg->block_bitmap_csum_lo = lo_checksum;
 	if (desc_size == EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE)
@@ -130,7 +129,7 @@ ext4_balloc_verify_bitmap_csum(struct ext4_sblock *sb,
 
 	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 		return true;
-	
+
 	if (bg->block_bitmap_csum_lo != lo_checksum)
 		return false;
 
@@ -149,12 +148,12 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 	struct ext4_fs *fs = inode_ref->fs;
 	struct ext4_sblock *sb = &fs->sb;
 
-	uint32_t block_group = ext4_balloc_get_bgid_of_block(sb, baddr);
+	uint32_t bg_id = ext4_balloc_get_bgid_of_block(sb, baddr);
 	uint32_t index_in_group = ext4_fs_addr_to_idx_bg(sb, baddr);
 
 	/* Load block group reference */
 	struct ext4_block_group_ref bg_ref;
-	int rc = ext4_fs_get_block_group_ref(fs, block_group, &bg_ref);
+	int rc = ext4_fs_get_block_group_ref(fs, bg_id, &bg_ref);
 	if (rc != EOK)
 		return rc;
 
@@ -216,8 +215,8 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 	return ext4_fs_put_block_group_ref(&bg_ref);
 }
 
-int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t first,
-			    uint32_t count)
+int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
+			    ext4_fsblk_t first, uint32_t count)
 {
 	int rc = EOK;
 	struct ext4_fs *fs = inode_ref->fs;
@@ -335,14 +334,14 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
 	/* Load block group number for goal and relative index */
-	uint32_t block_group = ext4_balloc_get_bgid_of_block(sb, goal);
+	uint32_t bg_id = ext4_balloc_get_bgid_of_block(sb, goal);
 	uint32_t idx_in_bg = ext4_fs_addr_to_idx_bg(sb, goal);
 
 	struct ext4_block b;
 	struct ext4_block_group_ref bg_ref;
 
 	/* Load block group reference */
-	r = ext4_fs_get_block_group_ref(inode_ref->fs, block_group, &bg_ref);
+	r = ext4_fs_get_block_group_ref(inode_ref->fs, bg_id, &bg_ref);
 	if (r != EOK)
 		return r;
 
@@ -392,11 +391,11 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 			return r;
 		}
 
-		alloc = ext4_fs_bg_idx_to_addr(sb, idx_in_bg, block_group);
+		alloc = ext4_fs_bg_idx_to_addr(sb, idx_in_bg, bg_id);
 		goto success;
 	}
 
-	uint32_t blk_in_bg = ext4_blocks_in_group_cnt(sb, block_group);
+	uint32_t blk_in_bg = ext4_blocks_in_group_cnt(sb, bg_id);
 
 	uint32_t end_idx = (idx_in_bg + 63) & ~63;
 	if (end_idx > blk_in_bg)
@@ -414,7 +413,7 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 			if (r != EOK)
 				return r;
 
-			alloc = ext4_fs_bg_idx_to_addr(sb, tmp_idx, block_group);
+			alloc = ext4_fs_bg_idx_to_addr(sb, tmp_idx, bg_id);
 			goto success;
 		}
 	}
@@ -429,7 +428,7 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 		if (r != EOK)
 			return r;
 
-		alloc = ext4_fs_bg_idx_to_addr(sb, rel_blk_idx, block_group);
+		alloc = ext4_fs_bg_idx_to_addr(sb, rel_blk_idx, bg_id);
 		goto success;
 	}
 
@@ -448,7 +447,7 @@ goal_failed:
 
 	/* Try other block groups */
 	uint32_t block_group_count = ext4_block_group_cnt(sb);
-	uint32_t bgid = (block_group + 1) % block_group_count;
+	uint32_t bgid = (bg_id + 1) % block_group_count;
 	uint32_t count = block_group_count;
 
 	while (count > 0) {
