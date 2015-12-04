@@ -69,6 +69,8 @@ struct ext4_block {
 	uint8_t *data;
 };
 
+struct ext4_bcache;
+
 /**@brief   Single block descriptor*/
 struct ext4_buf {
 	/**@brief   Flags*/
@@ -100,6 +102,19 @@ struct ext4_buf {
 
 	/**@brief   Dirty list node*/
 	SLIST_ENTRY(ext4_buf) dirty_node;
+
+	/**@brief   Callback routine after a disk-write operation.
+	 * @param   bc block cache descriptor
+	 * @param   buf buffer descriptor
+	 * @param   standard error code returned by bdev->bwrite()
+	 * @param   arg argument passed to this routine*/
+	void (*end_write)(struct ext4_bcache *bc,
+			  struct ext4_buf *buf,
+			  int res,
+			  void *arg);
+
+	/**@brief   argument passed to end_write() callback.*/
+	void *end_write_arg;
 };
 
 /**@brief   Block cache descriptor*/
