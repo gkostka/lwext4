@@ -425,7 +425,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 
 	ext4_dir_en_set_inode(be, 0);
 
-	new_block.dirty = true;
+	ext4_bcache_set_dirty(new_block.buf);
 	rc = ext4_block_set(dir->fs->bdev, &new_block);
 	if (rc != EOK) {
 		ext4_block_set(dir->fs->bdev, &block);
@@ -437,7 +437,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	ext4_dir_dx_entry_set_block(entry, iblock);
 
 	ext4_dir_set_dx_csum(dir, (struct ext4_dir_en *)block.data);
-	block.dirty = true;
+	ext4_bcache_set_dirty(block.buf);
 
 	return ext4_block_set(dir->fs->bdev, &block);
 }
@@ -897,7 +897,7 @@ ext4_dir_dx_insert_entry(struct ext4_inode_ref *inode_ref __unused,
 	ext4_dir_dx_entry_set_hash(new_index_entry, hash);
 	ext4_dir_dx_climit_set_count(climit, count + 1);
 	ext4_dir_set_dx_csum(inode_ref, (void *)index_block->b.data);
-	index_block->b.dirty = true;
+	ext4_bcache_set_dirty(index_block->b.buf);
 }
 
 /**@brief Split directory entries to two parts preventing node overflow.
@@ -1073,8 +1073,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	}
 	ext4_dir_set_csum(inode_ref, (void *)old_data_block->data);
 	ext4_dir_set_csum(inode_ref, (void *)new_data_block_tmp.data);
-	old_data_block->dirty = true;
-	new_data_block_tmp.dirty = true;
+	ext4_bcache_set_dirty(old_data_block->buf);
+	ext4_bcache_set_dirty(new_data_block_tmp.buf);
 
 	free(sort);
 	free(entry_buffer);
@@ -1187,7 +1187,7 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 						ino_ref,
 						(struct ext4_dir_en *)
 						dxb->b.data);
-				dxb->b.dirty = true;
+				ext4_bcache_set_dirty(dxb->b.buf);
 
 				struct ext4_block block_tmp = dxb->b;
 
@@ -1205,11 +1205,11 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 						 new_iblk);
 			ext4_dir_set_dx_csum(ino_ref, (void *)dx_blks[0].b.data);
 			ext4_dir_set_dx_csum(ino_ref, (void *)dx_blks[1].b.data);
-			dx_blks[0].b.dirty = true;
-			dx_blks[1].b.dirty = true;
+			ext4_bcache_set_dirty(dx_blks[0].b.buf);
+			ext4_bcache_set_dirty(dx_blks[1].b.buf);
 
 			ext4_dir_set_dx_csum(ino_ref, (void *)b.data);
-			b.dirty = true;
+			ext4_bcache_set_dirty(b.buf);
 			return ext4_block_set(ino_ref->fs->bdev, &b);
 		} else {
 			size_t sz;
@@ -1241,8 +1241,8 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 
 			ext4_dir_set_dx_csum(ino_ref, (void *)dx_blks[0].b.data);
 			ext4_dir_set_dx_csum(ino_ref, (void *)dx_blks[1].b.data);
-			dx_blks[0].b.dirty = true;
-			dx_blks[1].b.dirty = true;
+			ext4_bcache_set_dirty(dx_blks[0].b.buf);
+			ext4_bcache_set_dirty(dx_blks[1].b.buf);
 		}
 	}
 
@@ -1414,7 +1414,7 @@ int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
 	ext4_dx_dot_en_set_inode(&root->dots[1], parent_inode);
 
 	ext4_dir_set_dx_csum(dir, (void *)block.data);
-	block.dirty = true;
+	ext4_bcache_set_dirty(block.buf);
 
 	return ext4_block_set(dir->fs->bdev, &block);
 }

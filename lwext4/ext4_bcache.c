@@ -182,10 +182,6 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 
 		buf->refctr++;
 
-		b->uptodate = ext4_bcache_test_flag(buf, BC_UPTODATE);
-		/* Right now we don't propagate the dirty flag from ext4_buf to
-		 * ext4_block. */
-		b->dirty = false;
 		b->buf = buf;
 		b->data = buf->data;
 
@@ -207,8 +203,6 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 	 * by 1*/
 	buf->lru_id = ++bc->lru_ctr;
 
-	b->uptodate = false;
-	b->dirty = false;
 	b->buf = buf;
 	b->data = buf->data;
 
@@ -234,18 +228,6 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b)
 	/*Just decrease reference counter*/
 	buf->refctr--;
 
-	/* If buffer is modified, buf will be mark up-to-date and dirty. */
-	if (b->dirty) {
-		ext4_bcache_set_flag(buf, BC_DIRTY);
-		ext4_bcache_set_flag(buf, BC_UPTODATE);
-		b->uptodate = true;
-	}
-	/* Someone might want to drop this buffer from bcache. */
-	if (!b->uptodate) {
-		ext4_bcache_clear_flag(buf, BC_DIRTY);
-		ext4_bcache_clear_flag(buf, BC_UPTODATE);
-	}
-
 	/* We are the last one touching this buffer, do the cleanups. */
 	if (!buf->refctr) {
 		RB_INSERT(ext4_buf_lru, &bc->lru_root, buf);
@@ -265,8 +247,6 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b)
 
 	b->lb_id = 0;
 	b->data = 0;
-	b->uptodate = false;
-	b->dirty = false;
 
 	return EOK;
 }

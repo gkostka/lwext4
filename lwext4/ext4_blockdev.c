@@ -146,7 +146,6 @@ int ext4_block_get_noread(struct ext4_blockdev *bdev, struct ext4_block *b,
 	if (!(lba < bdev->lg_bcnt))
 		return ERANGE;
 
-	b->dirty = 0;
 	b->lb_id = lba;
 
 	/*If cache is full we have to (flush and) drop it anyway :(*/
@@ -171,7 +170,7 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 	if (r != EOK)
 		return r;
 
-	if (b->uptodate) {
+	if (ext4_bcache_test_flag(b->buf, BC_UPTODATE)) {
 		/* Data in the cache is up-to-date.
 		 * Reading from physical device is not required */
 		return EOK;
@@ -187,7 +186,6 @@ int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
 	/* Mark buffer up-to-date, since
 	 * fresh data is read from physical device just now. */
 	ext4_bcache_set_flag(b->buf, BC_UPTODATE);
-	b->uptodate = true;
 	return EOK;
 }
 

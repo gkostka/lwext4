@@ -353,7 +353,7 @@ static int ext4_ext_dirty(struct ext4_inode_ref *inode_ref,
 			  struct ext4_extent_path *path)
 {
 	if (path->block.lb_id)
-		path->block.dirty = true;
+		ext4_bcache_set_dirty(path->block.buf);
 	else
 		inode_ref->dirty = true;
 
@@ -374,7 +374,7 @@ static void ext4_ext_drop_refs(struct ext4_inode_ref *inode_ref,
 
 	for (i = 0; i <= depth; i++, path++) {
 		if (path->block.lb_id) {
-			if (path->block.dirty)
+			if (ext4_bcache_test_flag(path->block.buf, BC_DIRTY))
 				ext4_extent_block_csum_set(inode_ref,
 						path->header);
 
@@ -798,7 +798,7 @@ out:
 	} else if (bh.lb_id) {
 		/* If we got a sibling leaf. */
 		ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&bh));
-		bh.dirty = true;
+		ext4_bcache_set_dirty(bh.buf);
 
 		spt->path.p_block = ext4_idx_pblock(ix);
 		spt->path.depth = to_le16(eh->depth);
@@ -1070,7 +1070,7 @@ out:
 	} else if (bh.lb_id) {
 		/* If we got a sibling leaf. */
 		ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&bh));
-		bh.dirty = true;
+		ext4_bcache_set_dirty(bh.buf);
 
 		spt->path.p_block = ext4_ext_pblock(ex);
 		spt->path.depth = to_le16(eh->depth);
@@ -1166,7 +1166,7 @@ static int ext4_ext_grow_indepth(struct ext4_inode_ref *inode_ref,
 	}
 	neh->depth = to_le16(to_le16(neh->depth) + 1);
 
-	bh.dirty = true;
+	ext4_bcache_set_dirty(bh.buf);
 	inode_ref->dirty = true;
 	ext4_block_set(inode_ref->fs->bdev, &bh);
 
@@ -1728,7 +1728,7 @@ static int ext4_ext_zero_unwritten_range(struct ext4_inode_ref *inode_ref,
 			break;
 
 		memset(bh.data, 0, block_size);
-		bh.dirty = true;
+		ext4_bcache_set_dirty(bh.buf);
 		err = ext4_block_set(inode_ref->fs->bdev, &bh);
 		if (err != EOK)
 			break;

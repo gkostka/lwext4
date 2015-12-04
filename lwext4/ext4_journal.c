@@ -410,7 +410,7 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 			journal_block.data,
 			jbd_get32(&jbd_fs->sb, blocksize));
 
-		ext4_block.dirty = true;
+		ext4_bcache_set_dirty(ext4_block.buf);
 		ext4_block_set(fs->bdev, &ext4_block);
 	} else {
 		uint16_t mount_count, state;

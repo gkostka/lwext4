@@ -49,16 +49,10 @@ extern "C" {
 #include "queue.h"
 
 #define EXT4_BLOCK_ZERO() 	\
-	{.uptodate = 0, .dirty = 0, .lb_id = 0, .data = 0}
+	{.lb_id = 0, .data = 0}
 
 /**@brief   Single block descriptor*/
 struct ext4_block {
-	/**@brief   Uptodate flag*/
-	bool uptodate;
-
-	/**@brief   Dirty flag*/
-	bool dirty;
-
 	/**@brief   Logical block ID*/
 	uint64_t lb_id;
 
@@ -161,6 +155,16 @@ enum bcache_state_bits {
 
 #define ext4_bcache_test_flag(buf, b)    \
 	(((buf)->flags & (1 << (b))) >> (b))
+
+static inline void ext4_bcache_set_dirty(struct ext4_buf *buf) {
+	ext4_bcache_set_flag(buf, BC_UPTODATE);
+	ext4_bcache_set_flag(buf, BC_DIRTY);
+}
+
+static inline void ext4_bcache_clear_dirty(struct ext4_buf *buf) {
+	ext4_bcache_clear_flag(buf, BC_UPTODATE);
+	ext4_bcache_clear_flag(buf, BC_DIRTY);
+}
 
 /**@brief   Static initializer of block cache structure.*/
 #define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)                 \

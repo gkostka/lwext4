@@ -248,7 +248,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 				return EIO;
 
 			ext4_dir_en_set_inode(res.dentry, parent->index);
-			res.block.dirty = true;
+			ext4_bcache_set_dirty(res.block.buf);
 			r = ext4_dir_destroy_result(ch, &res);
 			if (r != EOK)
 				return r;
@@ -1509,7 +1509,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 			goto Finish;
 
 		memcpy(b.data + unalg, u8_buf, len);
-		b.dirty = true;
+		ext4_bcache_set_dirty(b.buf);
 
 		r = ext4_block_set(f->mp->fs.bdev, &b);
 		if (r != EOK)
@@ -1610,7 +1610,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 			goto Finish;
 
 		memcpy(b.data, u8_buf, size);
-		b.dirty = true;
+		ext4_bcache_set_dirty(b.buf);
 
 		r = ext4_block_set(f->mp->fs.bdev, &b);
 		if (r != EOK)
@@ -1894,7 +1894,7 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 			goto Finish;
 
 		memcpy(b.data, buf, size);
-		b.dirty = true;
+		ext4_bcache_set_dirty(b.buf);
 		r = ext4_block_set(f->mp->fs.bdev, &b);
 		if (r != EOK)
 			goto Finish;

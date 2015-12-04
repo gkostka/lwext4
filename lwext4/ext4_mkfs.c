@@ -394,7 +394,7 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 					break;
 			}
 
-			b.dirty = true;
+			ext4_bcache_set_dirty(b.buf);
 			r = ext4_block_set(bd, &b);
 			if (r != EOK)
 				return r;
@@ -407,7 +407,7 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 		if (r != EOK)
 			return r;
 		memset(b.data, 0, block_size);
-		b.dirty = true;
+		ext4_bcache_set_dirty(b.buf);
 		r = ext4_block_set(bd, &b);
 		if (r != EOK)
 			return r;
@@ -415,7 +415,7 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 		if (r != EOK)
 			return r;
 		memset(b.data, 0, block_size);
-		b.dirty = true;
+		ext4_bcache_set_dirty(b.buf);
 		r = ext4_block_set(bd, &b);
 		if (r != EOK)
 			return r;

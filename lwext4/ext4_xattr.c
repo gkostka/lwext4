@@ -655,7 +655,7 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 		block_data = (char *)block_header + block_size_rem;
 		block_size_rem -= sizeof(struct ext4_xattr_header);
 
-		xattr_ref->block.dirty = true;
+		ext4_bcache_set_dirty(xattr_ref->block.buf);
 	} else {
 		/* We don't need an extra block.*/
 		if (xattr_ref->block_loaded) {
@@ -677,7 +677,7 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 				    &xattr_ref->fs->sb, 0);
 
 				xattr_ref->inode_ref->dirty = true;
-				xattr_ref->block.dirty = true;
+				ext4_bcache_set_dirty(xattr_ref->block.buf);
 			}
 		}
 	}
@@ -726,7 +726,7 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 		ext4_xattr_set_block_checksum(xattr_ref->inode_ref,
 					      xattr_ref->block.lb_id,
 					      block_header);
-		xattr_ref->block.dirty = true;
+		ext4_bcache_set_dirty(xattr_ref->block.buf);
 	}
 
 Finish:

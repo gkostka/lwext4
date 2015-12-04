@@ -356,7 +356,7 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
          * of bitmap ), set rest of the block bitmap to 1
          */
         ext4_fs_mark_bitmap_end(group_blocks, block_size * 8, block_bitmap.data);
-	block_bitmap.dirty = true;
+	ext4_bcache_set_dirty(block_bitmap.buf);
 
 	ext4_balloc_set_bitmap_csum(sb, bg_ref->block_group, block_bitmap.data);
 	bg_ref->dirty = true;
@@ -399,7 +399,7 @@ static int ext4_fs_init_inode_bitmap(struct ext4_block_group_ref *bg_ref)
 	if (i < end_bit)
 		memset(b.data + (i >> 3), 0xff, (end_bit - i) >> 3);
 
-	b.dirty = true;
+	ext4_bcache_set_dirty(b.buf);
 
 	ext4_ialloc_set_bitmap_csum(sb, bg, b.data);
 	bg_ref->dirty = true;
@@ -440,7 +440,7 @@ static int ext4_fs_init_inode_table(struct ext4_block_group_ref *bg_ref)
 			return rc;
 
 		memset(b.data, 0, block_size);
-		b.dirty = true;
+		ext4_bcache_set_dirty(b.buf);
 
 		ext4_block_set(bg_ref->fs->bdev, &b);
 		if (rc != EOK)
@@ -629,7 +629,7 @@ int ext4_fs_put_block_group_ref(struct ext4_block_group_ref *ref)
 		ref->block_group->checksum = to_le16(cs);
 
 		/* Mark block dirty for writing changes to physical device */
-		ref->block.dirty = true;
+		ext4_bcache_set_dirty(ref->block.buf);
 	}
 
 	/* Put back block, that contains block group descriptor */
@@ -781,7 +781,7 @@ int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref)
 	if (ref->dirty) {
 		/* Mark block dirty for writing changes to physical device */
 		ext4_fs_set_inode_checksum(ref);
-		ref->block.dirty = true;
+		ext4_bcache_set_dirty(ref->block.buf);
 	}
 
 	/* Put back block, that contains i-node */
@@ -1118,7 +1118,7 @@ static int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
 		/* Set zero if physical data block address found */
 		if (level == 1) {
 			((uint32_t *)block.data)[offset_in_block] = to_le32(0);
-			block.dirty = true;
+			ext4_bcache_set_dirty(block.buf);
 		}
 
 		rc = ext4_block_set(fs->bdev, &block);
@@ -1507,7 +1507,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 
 		/* Initialize new block */
 		memset(new_block.data, 0, block_size);
-		new_block.dirty = true;
+		ext4_bcache_set_dirty(new_block.buf);
 
 		/* Put back the allocated block */
 		rc = ext4_block_set(fs->bdev, &new_block);
@@ -1554,7 +1554,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 
 			/* Initialize allocated block */
 			memset(new_block.data, 0, block_size);
-			new_block.dirty = true;
+			ext4_bcache_set_dirty(new_block.buf);
 
 			rc = ext4_block_set(fs->bdev, &new_block);
 			if (rc != EOK) {
@@ -1565,7 +1565,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 			/* Write block address to the parent */
 			uint32_t * p = (uint32_t * )block.data;
 			p[off_in_blk] = to_le32((uint32_t)new_blk);
-			block.dirty = true;
+			ext4_bcache_set_dirty(block.buf);
 			current_block = new_blk;
 		}
 
@@ -1573,7 +1573,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 		if (l == 1) {
 			uint32_t * p = (uint32_t * )block.data;
 			p[off_in_blk] = to_le32((uint32_t)fblock);
-			block.dirty = true;
+			ext4_bcache_set_dirty(block.buf);
 		}
 
 		rc = ext4_block_set(fs->bdev, &block);

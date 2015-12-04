@@ -421,7 +421,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 	}
 
 	ext4_dir_set_csum(parent, (void *)b.data);
-	b.dirty = true;
+	ext4_bcache_set_dirty(b.buf);
 	r = ext4_block_set(fs->bdev, &b);
 
 	return r;
@@ -554,7 +554,7 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
 
 	ext4_dir_set_csum(parent,
 			(struct ext4_dir_en *)result.block.data);
-	result.block.dirty = true;
+	ext4_bcache_set_dirty(result.block.buf);
 
 	return ext4_dir_destroy_result(parent, &result);
 }
@@ -591,7 +591,7 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 			ext4_dir_write_entry(sb, start, rec_len, child, name,
 					     name_len);
 			ext4_dir_set_csum(inode_ref, (void *)dst_blk->data);
-			dst_blk->dirty = true;
+			ext4_bcache_set_dirty(dst_blk->buf);
 
 			return EOK;
 		}
@@ -620,7 +620,7 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 
 				ext4_dir_set_csum(inode_ref,
 						  (void *)dst_blk->data);
-				dst_blk->dirty = true;
+				ext4_bcache_set_dirty(dst_blk->buf);
 				return EOK;
 			}
 		}
