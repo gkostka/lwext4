@@ -1093,6 +1093,33 @@ struct jbd_fs {
 	bool dirty;
 };
 
+struct jbd_buf {
+	struct ext4_block block;
+	struct ext4_block block_jbd;
+
+	struct jbd_trans *trans;
+
+	LIST_ENTRY(jbd_buf) buf_node;
+};
+
+struct jbd_trans {
+	uint32_t trans_id;
+	LIST_HEAD(jbd_trans_buf, jbd_buf) buf_list;
+	LIST_ENTRY(jbd_trans) trans_node;
+};
+
+struct jbd_journal {
+	uint32_t first;
+	uint32_t start;
+	uint32_t last;
+	uint32_t first_trans_id;
+	uint32_t last_trans_id;
+
+	LIST_HEAD(jbd_trans_list, jbd_trans) trans_list;
+
+	struct jbd_fs *jbd_fs;
+};
+
 /*****************************************************************************/
 
 #define EXT4_CRC32_INIT (0xFFFFFFFFUL)
