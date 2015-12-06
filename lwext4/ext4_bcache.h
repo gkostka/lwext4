@@ -166,6 +166,12 @@ static inline void ext4_bcache_clear_dirty(struct ext4_buf *buf) {
 	ext4_bcache_clear_flag(buf, BC_DIRTY);
 }
 
+/**@brief   Increment reference counter of buf by 1.*/
+#define ext4_bcache_inc_ref(buf) ((buf)->refctr++)
+
+/**@brief   Decrement reference counter of buf by 1.*/
+#define ext4_bcache_dec_ref(buf) ((buf)->refctr--)
+
 /**@brief   Static initializer of block cache structure.*/
 #define EXT4_BCACHE_STATIC_INSTANCE(__name, __cnt, __itemsize)                 \
 	static struct ext4_bcache __name = {                                   \

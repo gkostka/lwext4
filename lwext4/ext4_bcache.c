@@ -180,7 +180,7 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 
 		}
 
-		buf->refctr++;
+		ext4_bcache_inc_ref(buf);
 
 		b->buf = buf;
 		b->data = buf->data;
@@ -198,7 +198,7 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 	/* One more buffer in bcache now. :-) */
 	bc->ref_blocks++;
 
-	buf->refctr = 1;
+	ext4_bcache_inc_ref(buf);
 	/* Assign new value to LRU id and increment LRU counter
 	 * by 1*/
 	buf->lru_id = ++bc->lru_ctr;
@@ -226,7 +226,7 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b)
 	ext4_assert(buf->refctr);
 
 	/*Just decrease reference counter*/
-	buf->refctr--;
+	ext4_bcache_dec_ref(buf);
 
 	/* We are the last one touching this buffer, do the cleanups. */
 	if (!buf->refctr) {
