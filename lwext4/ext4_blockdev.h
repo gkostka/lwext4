@@ -50,9 +50,7 @@ extern "C" {
 /**@brief   Initialization status flag*/
 #define EXT4_BDEV_INITIALIZED (1 << 0)
 
-/**@brief   Definition of the simple block device.*/
-struct ext4_blockdev {
-
+struct ext4_blockdev_iface {
 	/**@brief   Open device function
 	 * @param   bdev block device.*/
 	int (*open)(struct ext4_blockdev *bdev);
@@ -76,9 +74,6 @@ struct ext4_blockdev {
 	 * @param   bdev block device.*/
 	int (*close)(struct ext4_blockdev *bdev);
 
-	/**@brief   Block cache.*/
-	struct ext4_bcache *bc;
-
 	/**@brief   Block size (bytes): physical*/
 	uint32_t ph_bsize;
 
@@ -88,14 +83,26 @@ struct ext4_blockdev {
 	/**@brief   Block size buffer: physical*/
 	uint8_t *ph_bbuf;
 
+	/**@brief   Flags of block device*/
+	uint32_t ph_flags;
+};
+
+/**@brief   Definition of the simple block device.*/
+struct ext4_blockdev {
+	/**@brief Block device interface*/
+	struct ext4_blockdev_iface *bdif;
+
+	/**@brief Offset in bdif. For multi partition mode.*/
+	uint64_t ph_blk_offset;
+
+	/**@brief   Block cache.*/
+	struct ext4_bcache *bc;
+
 	/**@brief   Block size (bytes) logical*/
 	uint32_t lg_bsize;
 
-	/**@brief   Block count: physical*/
+	/**@brief   Block count: logical*/
 	uint64_t lg_bcnt;
-
-	/**@brief   Flags of block device*/
-	uint32_t flags;
 
 	/**@brief   Cache write back mode reference counter*/
 	uint32_t cache_write_back;
@@ -111,14 +118,17 @@ struct ext4_blockdev {
 #define EXT4_BLOCKDEV_STATIC_INSTANCE(__name, __bsize, __bcnt, __open,         \
 				      __bread, __bwrite, __close)              \
 	static uint8_t __name##_ph_bbuf[(__bsize)];                            \
+	static struct ext4_blockdev_iface __name##_iface = {                   \
+		.open = __open,                                                \
+		.bread = __bread,                                              \
+		.bwrite = __bwrite,                                            \
+		.close = __close,                                              \
+		.ph_bsize = __bsize,                                           \
+		.ph_bcnt = __bcnt,                                             \
+		.ph_bbuf = __name##_ph_bbuf,                                   \
+	};								       \
 	static struct ext4_blockdev __name = {                                 \
-	    .open = __open,                                                    \
-	    .bread = __bread,                                                  \
-	    .bwrite = __bwrite,                                                \
-	    .close = __close,                                                  \
-	    .ph_bsize = __bsize,                                               \
-	    .ph_bcnt = __bcnt,                                                 \
-	    .ph_bbuf = __name##_ph_bbuf,                                       \
+		.bdif = &__name##_iface,                                       \
 	}
 
 /**@brief   Block device initialization.

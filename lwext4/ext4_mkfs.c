@@ -627,7 +627,7 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 		return r;
 
 	if (info->len == 0)
-		info->len = bd->ph_bcnt * bd->ph_bsize;
+		info->len = bd->bdif->ph_bcnt * bd->bdif->ph_bsize;
 
 	if (info->block_size == 0)
 		info->block_size = 4096; /*Set block size to default value*/

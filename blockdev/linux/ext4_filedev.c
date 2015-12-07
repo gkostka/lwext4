@@ -74,7 +74,7 @@ static int filedev_open(struct ext4_blockdev *bdev)
 	if (fseeko(dev_file, 0, SEEK_END))
 		return EFAULT;
 
-	_filedev.ph_bcnt = ftell(dev_file) / _filedev.ph_bsize;
+	_filedev.bdif->ph_bcnt = ftell(dev_file) / _filedev.bdif->ph_bsize;
 
 	return EOK;
 }
@@ -84,11 +84,11 @@ static int filedev_open(struct ext4_blockdev *bdev)
 static int filedev_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 			 uint32_t blk_cnt)
 {
-	if (fseeko(dev_file, blk_id * bdev->ph_bsize, SEEK_SET))
+	if (fseeko(dev_file, blk_id * bdev->bdif->ph_bsize, SEEK_SET))
 		return EIO;
 	if (!blk_cnt)
 		return EOK;
-	if (!fread(buf, bdev->ph_bsize * blk_cnt, 1, dev_file))
+	if (!fread(buf, bdev->bdif->ph_bsize * blk_cnt, 1, dev_file))
 		return EIO;
 
 	return EOK;
@@ -111,11 +111,11 @@ static void drop_cache(void)
 static int filedev_bwrite(struct ext4_blockdev *bdev, const void *buf,
 			  uint64_t blk_id, uint32_t blk_cnt)
 {
-	if (fseeko(dev_file, blk_id * bdev->ph_bsize, SEEK_SET))
+	if (fseeko(dev_file, blk_id * bdev->bdif->ph_bsize, SEEK_SET))
 		return EIO;
 	if (!blk_cnt)
 		return EOK;
-	if (!fwrite(buf, bdev->ph_bsize * blk_cnt, 1, dev_file))
+	if (!fwrite(buf, bdev->bdif->ph_bsize * blk_cnt, 1, dev_file))
 		return EIO;
 
 	drop_cache();
