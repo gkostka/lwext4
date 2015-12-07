@@ -90,7 +90,7 @@ static uint32_t ext4_ext_block_csum(struct ext4_inode_ref *inode_ref,
 				     sizeof(ino_index));
 		checksum = ext4_crc32c(checksum, &ino_gen,
 				     sizeof(ino_gen));
-		/* Finally calculate crc32 checksum against 
+		/* Finally calculate crc32 checksum against
 		 * the entire extent block up to the checksum field */
 		checksum = ext4_crc32c(checksum, eh,
 				EXT4_EXTENT_TAIL_OFFSET(eh));

@@ -661,7 +661,7 @@ static uint32_t ext4_fs_inode_checksum(struct ext4_inode_ref *inode_ref)
 		 * and inode generation */
 		checksum = ext4_crc32c(checksum, &ino_index, sizeof(ino_index));
 		checksum = ext4_crc32c(checksum, &ino_gen, sizeof(ino_gen));
-		/* Finally calculate crc32 checksum against 
+		/* Finally calculate crc32 checksum against
 		 * the entire inode */
 		checksum = ext4_crc32c(checksum, inode_ref->inode, inode_size);
 		ext4_inode_set_csum(sb, inode_ref->inode, orig_checksum);

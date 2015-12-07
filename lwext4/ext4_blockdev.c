@@ -117,7 +117,7 @@ int ext4_block_cache_shake(struct ext4_blockdev *bdev)
 	struct ext4_buf *buf;
 	while (!RB_EMPTY(&bdev->bc->lru_root) &&
 		ext4_bcache_is_full(bdev->bc)) {
-		
+
 		buf = ext4_buf_lowest_lru(bdev->bc);
 		ext4_assert(buf);
 		if (ext4_bcache_test_flag(buf, BC_DIRTY)) {
@@ -384,7 +384,7 @@ int ext4_block_cache_write_back(struct ext4_blockdev *bdev, uint8_t on_off)
 
 	/*Flush all delayed cache blocks*/
 	while (!SLIST_EMPTY(&bdev->bc->dirty_list)) {
-		
+
 		buf = SLIST_FIRST(&bdev->bc->dirty_list);
 		ext4_assert(buf);
 		r = ext4_block_flush_buf(bdev, buf);

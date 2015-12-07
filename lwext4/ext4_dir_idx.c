@@ -205,7 +205,7 @@ static int ext4_dir_dx_hash_string(struct ext4_hash_info *hinfo, int len,
 #if CONFIG_META_CSUM_ENABLE
 static uint32_t ext4_dir_dx_checksum(struct ext4_inode_ref *inode_ref, void *de,
 				     int count_offset, int count,
-		 	 	     struct ext4_dir_idx_tail *t)
+				     struct ext4_dir_idx_tail *t)
 {
 	uint32_t orig_cum, csum = 0;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
@@ -1203,8 +1203,8 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 			/* Finally insert new entry */
 			ext4_dir_dx_insert_entry(ino_ref, dx_blks, hash_right,
 						 new_iblk);
-			ext4_dir_set_dx_csum(ino_ref, (void *)dx_blks[0].b.data);
-			ext4_dir_set_dx_csum(ino_ref, (void *)dx_blks[1].b.data);
+			ext4_dir_set_dx_csum(ino_ref, (void*)dx_blks[0].b.data);
+			ext4_dir_set_dx_csum(ino_ref, (void*)dx_blks[1].b.data);
 			ext4_bcache_set_dirty(dx_blks[0].b.buf);
 			ext4_bcache_set_dirty(dx_blks[1].b.buf);
 
@@ -1239,8 +1239,8 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 			dxb->b = b;
 			*new_dx_block = dxb;
 
-			ext4_dir_set_dx_csum(ino_ref, (void *)dx_blks[0].b.data);
-			ext4_dir_set_dx_csum(ino_ref, (void *)dx_blks[1].b.data);
+			ext4_dir_set_dx_csum(ino_ref, (void*)dx_blks[0].b.data);
+			ext4_dir_set_dx_csum(ino_ref, (void*)dx_blks[1].b.data);
 			ext4_bcache_set_dirty(dx_blks[0].b.buf);
 			ext4_bcache_set_dirty(dx_blks[1].b.buf);
 		}

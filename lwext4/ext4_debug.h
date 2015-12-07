@@ -157,19 +157,19 @@ uint32_t ext4_dmask_get(void);
 
 #if CONFIG_DEBUG_ASSERT
 /**@brief   Debug assertion.*/
- #if CONFIG_HAVE_OWN_ASSERT
- #define ext4_assert(_v)                                                       \
- 	do {                                                                   \
- 		if (!(_v)) {                                                   \
- 			printf("assertion failed:\nfile: %s\nline: %d\n",      \
- 			       __FILE__, __LINE__);                            \
- 			       while (1)				       \
-			       	       ;				       \
- 		}                                                              \
- 	} while (0)
- #else
- #define ext4_assert(_v) assert(_v)
- #endif
+#if CONFIG_HAVE_OWN_ASSERT
+#define ext4_assert(_v)                                                        \
+	do {                                                                   \
+		if (!(_v)) {                                                   \
+			printf("assertion failed:\nfile: %s\nline: %d\n",      \
+			       __FILE__, __LINE__);                            \
+			       while (1)				       \
+				       ;				       \
+		}                                                              \
+	} while (0)
+#else
+#define ext4_assert(_v) assert(_v)
+#endif
 #else
 #define ext4_assert(_v)
 #endif

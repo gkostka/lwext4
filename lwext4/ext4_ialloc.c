@@ -112,7 +112,7 @@ void ext4_ialloc_set_bitmap_csum(struct ext4_sblock *sb, struct ext4_bgroup *bg,
 	uint32_t csum = ext4_ialloc_bitmap_csum(sb, bitmap);
 	uint16_t lo_csum = to_le16(csum & 0xFFFF),
 		 hi_csum = to_le16(csum >> 16);
-	
+
 	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 		return;
 
@@ -136,7 +136,7 @@ ext4_ialloc_verify_bitmap_csum(struct ext4_sblock *sb, struct ext4_bgroup *bg,
 
 	if (!ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM))
 		return true;
-	
+
 	if (bg->inode_bitmap_csum_lo != lo_csum)
 		return false;
 
