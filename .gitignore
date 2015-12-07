@@ -3,4 +3,9 @@ ext_images/
 
 .cproject
 .project
-.settings/  
+.settings/
+
+.atom-gdb.json
+.build-tools.cson
+.gdbinit
+tags
