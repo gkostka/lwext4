@@ -130,6 +130,19 @@ static bool jbd_verify_sb(struct jbd_sb *sb)
 	return true;
 }
 
+static int jbd_write_sb(struct jbd_fs *jbd_fs)
+{
+	int rc = EOK;
+	if (jbd_fs->dirty) {
+		rc = jbd_sb_write(jbd_fs, &jbd_fs->sb);
+		if (rc != EOK)
+			return rc;
+
+		jbd_fs->dirty = false;
+	}
+	return rc;
+}
+
 int jbd_get_fs(struct ext4_fs *fs,
 	       struct jbd_fs *jbd_fs)
 {
@@ -163,11 +176,10 @@ int jbd_get_fs(struct ext4_fs *fs,
 
 int jbd_put_fs(struct jbd_fs *jbd_fs)
 {
-	int rc;
-	if (jbd_fs->dirty)
-		jbd_sb_write(jbd_fs, &jbd_fs->sb);
+	int rc = EOK;
+	rc = jbd_write_sb(jbd_fs);
 
-	rc = ext4_fs_put_inode_ref(&jbd_fs->inode_ref);
+	ext4_fs_put_inode_ref(&jbd_fs->inode_ref);
 	return rc;
 }
 
@@ -248,64 +260,150 @@ int jbd_tag_bytes(struct jbd_fs *jbd_fs)
 	return size - sizeof(uint32_t);
 }
 
-static void
+/**@brief: tag information. */
+struct tag_info {
+	int tag_bytes;
+	ext4_fsblk_t block;
+	bool uuid_exist;
+	uint8_t uuid[UUID_SIZE];
+	bool last_tag;
+};
+
+static int
 jbd_extract_block_tag(struct jbd_fs *jbd_fs,
-		      uint32_t tag_bytes,
 		      void *__tag,
-		      ext4_fsblk_t *block,
-		      bool *uuid_exist,
-		      uint8_t *uuid,
-		      bool *last_tag)
+		      int tag_bytes,
+		      int32_t remain_buf_size,
+		      struct tag_info *tag_info)
 {
 	char *uuid_start;
-	*uuid_exist = false;
-	*last_tag = false;
+	tag_info->tag_bytes = tag_bytes;
+	tag_info->uuid_exist = false;
+	tag_info->last_tag = false;
+
+	if (remain_buf_size - tag_bytes < 0)
+		return EINVAL;
+
 	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 				     JBD_FEATURE_INCOMPAT_CSUM_V3)) {
 		struct jbd_block_tag3 *tag = __tag;
-		*block = jbd_get32(tag, blocknr);
+		tag_info->block = jbd_get32(tag, blocknr);
 		if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 					     JBD_FEATURE_INCOMPAT_64BIT))
-			 *block |= (uint64_t)jbd_get32(tag, blocknr_high) << 32;
+			 tag_info->block |=
+				 (uint64_t)jbd_get32(tag, blocknr_high) << 32;
 
 		if (jbd_get32(tag, flags) & JBD_FLAG_ESCAPE)
-			*block = 0;
+			tag_info->block = 0;
 
 		if (!(jbd_get32(tag, flags) & JBD_FLAG_SAME_UUID)) {
+			if (remain_buf_size - tag_bytes < UUID_SIZE)
+				return EINVAL;
+
 			uuid_start = (char *)tag + tag_bytes;
-			*uuid_exist = true;
-			memcpy(uuid, uuid_start, UUID_SIZE);
+			tag_info->uuid_exist = true;
+			tag_info->tag_bytes += UUID_SIZE;
+			memcpy(tag_info->uuid, uuid_start, UUID_SIZE);
 		}
 
 		if (jbd_get32(tag, flags) & JBD_FLAG_LAST_TAG)
-			*last_tag = true;
+			tag_info->last_tag = true;
 
 	} else {
 		struct jbd_block_tag *tag = __tag;
-		*block = jbd_get32(tag, blocknr);
+		tag_info->block = jbd_get32(tag, blocknr);
 		if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 					     JBD_FEATURE_INCOMPAT_64BIT))
-			 *block |= (uint64_t)jbd_get32(tag, blocknr_high) << 32;
+			 tag_info->block |=
+				 (uint64_t)jbd_get32(tag, blocknr_high) << 32;
 
 		if (jbd_get16(tag, flags) & JBD_FLAG_ESCAPE)
-			*block = 0;
+			tag_info->block = 0;
 
 		if (!(jbd_get16(tag, flags) & JBD_FLAG_SAME_UUID)) {
+			if (remain_buf_size - tag_bytes < UUID_SIZE)
+				return EINVAL;
+
 			uuid_start = (char *)tag + tag_bytes;
-			*uuid_exist = true;
-			memcpy(uuid, uuid_start, UUID_SIZE);
+			tag_info->uuid_exist = true;
+			tag_info->tag_bytes += UUID_SIZE;
+			memcpy(tag_info->uuid, uuid_start, UUID_SIZE);
 		}
 
 		if (jbd_get16(tag, flags) & JBD_FLAG_LAST_TAG)
-			*last_tag = true;
+			tag_info->last_tag = true;
 
 	}
+	return EOK;
+}
+
+static int
+jbd_write_block_tag(struct jbd_fs *jbd_fs,
+		    void *__tag,
+		    int32_t remain_buf_size,
+		    struct tag_info *tag_info)
+{
+	char *uuid_start;
+	int tag_bytes = jbd_tag_bytes(jbd_fs);
+
+	tag_info->tag_bytes = tag_bytes;
+
+	if (remain_buf_size - tag_bytes < 0)
+		return EINVAL;
+
+	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+				     JBD_FEATURE_INCOMPAT_CSUM_V3)) {
+		struct jbd_block_tag3 *tag = __tag;
+		jbd_set32(tag, blocknr, tag_info->block);
+		if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+					     JBD_FEATURE_INCOMPAT_64BIT))
+			jbd_set32(tag, blocknr_high, tag_info->block >> 32);
+
+		if (!tag_info->uuid_exist) {
+			if (remain_buf_size - tag_bytes < UUID_SIZE)
+				return EINVAL;
+
+			uuid_start = (char *)tag + tag_bytes;
+			tag_info->tag_bytes += UUID_SIZE;
+			memcpy(uuid_start, tag_info->uuid, UUID_SIZE);
+			jbd_set32(tag, flags,
+				  jbd_get32(tag, flags) | JBD_FLAG_SAME_UUID);
+		}
+
+		if (tag_info->last_tag)
+			jbd_set32(tag, flags,
+				  jbd_get32(tag, flags) | JBD_FLAG_LAST_TAG);
+
+	} else {
+		struct jbd_block_tag *tag = __tag;
+		jbd_set32(tag, blocknr, tag_info->block);
+		if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+					     JBD_FEATURE_INCOMPAT_64BIT))
+			jbd_set32(tag, blocknr_high, tag_info->block >> 32);
+
+		if (!tag_info->uuid_exist) {
+			if (remain_buf_size - tag_bytes < UUID_SIZE)
+				return EINVAL;
+
+			uuid_start = (char *)tag + tag_bytes;
+			tag_info->tag_bytes += UUID_SIZE;
+			memcpy(uuid_start, tag_info->uuid, UUID_SIZE);
+			jbd_set16(tag, flags,
+				  jbd_get16(tag, flags) | JBD_FLAG_SAME_UUID);
+		}
+
+		if (tag_info->last_tag)
+			jbd_set16(tag, flags,
+				  jbd_get16(tag, flags) | JBD_FLAG_LAST_TAG);
+
+	}
+	return EOK;
 }
 
 static void
 jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 			void *__tag_start,
-			uint32_t tag_tbl_size,
+			int32_t tag_tbl_size,
 			void (*func)(struct jbd_fs * jbd_fs,
 					ext4_fsblk_t block,
 					uint8_t *uuid,
@@ -313,9 +411,8 @@ jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 			void *arg)
 {
 	ext4_fsblk_t block = 0;
-	uint8_t uuid[UUID_SIZE];
 	char *tag_start, *tag_ptr;
-	uint32_t tag_bytes = jbd_tag_bytes(jbd_fs);
+	int tag_bytes = jbd_tag_bytes(jbd_fs);
 	tag_start = __tag_start;
 	tag_ptr = tag_start;
 
@@ -325,26 +422,24 @@ jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 				     JBD_FEATURE_INCOMPAT_CSUM_V3))
 		tag_tbl_size -= sizeof(struct jbd_block_tail);
 
-	while (tag_ptr - tag_start + tag_bytes <= tag_tbl_size) {
-		bool uuid_exist;
-		bool last_tag;
-		jbd_extract_block_tag(jbd_fs,
-				      tag_bytes,
+	while (tag_tbl_size) {
+		struct tag_info tag_info;
+		int rc = jbd_extract_block_tag(jbd_fs,
 				      tag_ptr,
-				      &block,
-				      &uuid_exist,
-				      uuid,
-				      &last_tag);
-		if (func)
-			func(jbd_fs, block, uuid, arg);
-
-		if (last_tag)
+				      tag_bytes,
+				      tag_tbl_size,
+				      &tag_info);
+		if (rc != EOK)
 			break;
 
-		tag_ptr += tag_bytes;
-		if (uuid_exist)
-			tag_ptr += UUID_SIZE;
+		if (func)
+			func(jbd_fs, block, tag_info.uuid, arg);
 
+		if (tag_info.last_tag)
+			break;
+
+		tag_ptr += tag_info.tag_bytes;
+		tag_tbl_size -= tag_info.tag_bytes;
 	}
 }
 
@@ -663,6 +758,215 @@ int jbd_recover(struct jbd_fs *jbd_fs)
 	}
 	jbd_destroy_revoke_tree(&info);
 	return r;
+}
+
+void jbd_journal_write_sb(struct jbd_journal *journal)
+{
+	struct jbd_fs *jbd_fs = journal->jbd_fs;
+	jbd_set32(&jbd_fs->sb, start, journal->first);
+	jbd_set32(&jbd_fs->sb, sequence, journal->trans_id);
+	jbd_fs->dirty = true;
+}
+
+int jbd_journal_start(struct jbd_fs *jbd_fs,
+		      struct jbd_journal *journal)
+{
+	journal->first = jbd_get32(&jbd_fs->sb, first);
+	journal->start = journal->first;
+	journal->last = journal->first;
+	journal->trans_id = 1;
+
+	journal->block_size = jbd_get32(&jbd_fs->sb, blocksize);
+
+	TAILQ_INIT(&journal->trans_queue);
+	journal->jbd_fs = jbd_fs;
+	jbd_journal_write_sb(journal);
+	return jbd_write_sb(jbd_fs);
+}
+
+int jbd_journal_stop(struct jbd_journal *journal)
+{
+	journal->start = 0;
+	journal->trans_id = 0;
+	jbd_journal_write_sb(journal);
+	return jbd_write_sb(journal->jbd_fs);
+}
+
+static inline bool jbd_has_enough_space(struct jbd_journal *journal,
+					uint32_t blk_cnt)
+{
+	uint32_t new_last = journal->last + blk_cnt;
+	wrap(&journal->jbd_fs->sb, new_last);
+	if (new_last >= journal->start)
+		return false;
+
+	return true;
+}
+
+static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal)
+{
+	uint32_t start_block = journal->last++;
+	wrap(&journal->jbd_fs->sb, journal->last);
+	return start_block;
+}
+
+struct jbd_trans *
+jbd_journal_new_trans()
+{
+	struct jbd_trans *trans = calloc(1, sizeof(struct jbd_trans));
+	if (!trans)
+		return NULL;
+
+	/* We will assign a trans_id to this transaction,
+	 * once it has been committed.*/
+	return trans;
+}
+
+int jbd_trans_add_block(struct jbd_trans *trans,
+			struct ext4_block *block)
+{
+	struct jbd_buf *buf = calloc(1, sizeof(struct jbd_buf));
+	if (!buf)
+		return ENOMEM;
+
+	buf->trans = trans;
+	buf->block = *block;
+	ext4_bcache_inc_ref(block->buf);
+	trans->buf_cnt++;
+	LIST_INSERT_HEAD(&trans->buf_list, buf, buf_node);
+	return EOK;
+}
+
+int jbd_trans_revoke_block(struct jbd_trans *trans,
+			   ext4_fsblk_t lba)
+{
+	struct jbd_revoke_rec *rec =
+		calloc(1, sizeof(struct jbd_revoke_rec));
+	if (!rec)
+		return ENOMEM;
+
+	rec->lba = lba;
+	trans->revoke_cnt++;
+	LIST_INSERT_HEAD(&trans->revoke_list, rec, revoke_node);
+	return EOK;
+}
+
+void jbd_journal_abort_trans(struct jbd_journal *journal,
+			     struct jbd_trans *trans)
+{
+	struct jbd_buf *var, *tmp;
+	struct jbd_revoke_rec *rec, *tmp2;
+	LIST_FOREACH_SAFE(var, &trans->buf_list, buf_node,
+			  tmp) {
+		ext4_block_set(journal->jbd_fs->bdev, &var->block);
+		LIST_REMOVE(var, buf_node);
+		free(var);
+	}
+	LIST_FOREACH_SAFE(rec, &trans->revoke_list, revoke_node,
+			  tmp2) {
+		LIST_REMOVE(rec, revoke_node);
+		free(rec);
+	}
+
+	free(trans);
+}
+
+static void jbd_journal_end_write()
+{
+
+}
+
+static int jbd_journal_prepare(struct jbd_journal *journal,
+			       struct jbd_trans *trans)
+{
+	int rc = EOK, i = 0;
+	int32_t tag_tbl_size;
+	uint32_t desc_iblock = 0;
+	uint32_t data_iblock = 0;
+	char *tag_start = NULL, *tag_ptr = NULL;
+	struct jbd_buf *jbd_buf;
+	struct ext4_block desc_block, data_block;
+
+	tag_tbl_size = journal->block_size - sizeof(struct jbd_bhdr);
+
+	LIST_FOREACH(jbd_buf, &trans->buf_list, buf_node) {
+		struct tag_info tag_info;
+		bool uuid_exist = false;
+again:
+		if (!desc_iblock) {
+			struct jbd_bhdr *bhdr;
+			desc_iblock = jbd_journal_alloc_block(journal);
+			rc = jbd_block_get_noread(journal->jbd_fs,
+					   &desc_block, desc_iblock);
+			if (!rc)
+				break;
+
+			ext4_bcache_set_dirty(desc_block.buf);
+
+			bhdr = (struct jbd_bhdr *)desc_block.data;
+			bhdr->magic = JBD_MAGIC_NUMBER;
+			bhdr->blocktype = JBD_DESCRIPTOR_BLOCK;
+			bhdr->sequence = trans->trans_id;
+			tag_start = (char *)(bhdr + 1);
+			tag_ptr = tag_start;
+			uuid_exist = true;
+		}
+		tag_info.block = jbd_buf->block.lb_id;
+		tag_info.uuid_exist = uuid_exist;
+		if (i == trans->buf_cnt - 1)
+			tag_info.last_tag = true;
+
+		if (uuid_exist)
+			memcpy(tag_info.uuid, journal->jbd_fs->sb.uuid,
+					UUID_SIZE);
+
+		rc = jbd_write_block_tag(journal->jbd_fs,
+				tag_ptr,
+				tag_tbl_size,
+				&tag_info);
+		if (rc != EOK) {
+			jbd_block_set(journal->jbd_fs, &desc_block);
+			desc_iblock = 0;
+			goto again;
+		}
+
+		data_iblock = jbd_journal_alloc_block(journal);
+		rc = jbd_block_get_noread(journal->jbd_fs,
+				&data_block, data_iblock);
+		if (rc != EOK)
+			break;
+
+		ext4_bcache_set_dirty(data_block.buf);
+
+		memcpy(data_block.data, jbd_buf->block.data,
+			journal->block_size);
+
+		rc = jbd_block_set(journal->jbd_fs, &data_block);
+		if (rc != EOK)
+			break;
+
+		tag_ptr += tag_info.tag_bytes;
+		tag_tbl_size -= tag_info.tag_bytes;
+
+		i++;
+	}
+	if (rc != EOK)
+		jbd_journal_abort_trans(journal, trans);
+
+	if (desc_iblock)
+		jbd_block_set(journal->jbd_fs, &desc_block);
+
+	return rc;
+}
+
+void
+jbd_journal_commit_trans(struct jbd_journal *journal,
+			 struct jbd_trans *trans)
+{
+	trans->trans_id = journal->trans_id++;
+	TAILQ_INSERT_TAIL(&journal->trans_queue,
+			  trans,
+			  trans_node);
 }
 
 /**
