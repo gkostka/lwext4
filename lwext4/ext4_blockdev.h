@@ -47,9 +47,6 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
-/**@brief   Initialization status flag*/
-#define EXT4_BDEV_INITIALIZED (1 << 0)
-
 struct ext4_blockdev_iface {
 	/**@brief   Open device function
 	 * @param   bdev block device.*/
@@ -83,8 +80,8 @@ struct ext4_blockdev_iface {
 	/**@brief   Block size buffer: physical*/
 	uint8_t *ph_bbuf;
 
-	/**@brief   Flags of block device*/
-	uint32_t ph_flags;
+	/**@brief   Reference counter to block device interface*/
+	uint32_t ph_refctr;
 };
 
 /**@brief   Definition of the simple block device.*/

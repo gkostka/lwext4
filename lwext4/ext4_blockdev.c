@@ -46,19 +46,23 @@ int ext4_block_init(struct ext4_blockdev *bdev)
 {
 	int rc;
 	ext4_assert(bdev);
-
+	ext4_assert(bdev->bdif);
 	ext4_assert(bdev->bdif->open &&
 		   bdev->bdif->close &&
 		   bdev->bdif->bread &&
 		   bdev->bdif->bwrite);
+
+	if (bdev->bdif->ph_refctr) {
+		bdev->bdif->ph_refctr++;
+		return EOK;
+	}
 
 	/*Low level block init*/
 	rc = bdev->bdif->open(bdev);
 	if (rc != EOK)
 		return rc;
 
-	bdev->bdif->ph_flags |= EXT4_BDEV_INITIALIZED;
-
+	bdev->bdif->ph_refctr = 1;
 	return EOK;
 }
 
@@ -83,7 +87,12 @@ int ext4_block_fini(struct ext4_blockdev *bdev)
 {
 	ext4_assert(bdev);
 
-	bdev->bdif->ph_flags &= ~(EXT4_BDEV_INITIALIZED);
+	if (!bdev->bdif->ph_refctr)
+		return EOK;
+
+	bdev->bdif->ph_refctr--;
+	if (bdev->bdif->ph_refctr)
+		return EOK;
 
 	/*Low level block fini*/
 	return bdev->bdif->close(bdev);
@@ -143,7 +152,7 @@ int ext4_block_get_noread(struct ext4_blockdev *bdev, struct ext4_block *b,
 
 	ext4_assert(bdev && b);
 
-	if (!(bdev->bdif->ph_flags & EXT4_BDEV_INITIALIZED))
+	if (!bdev->bdif->ph_refctr)
 		return EIO;
 
 	if (!(lba < bdev->lg_bcnt))
@@ -197,7 +206,7 @@ int ext4_block_set(struct ext4_blockdev *bdev, struct ext4_block *b)
 	ext4_assert(bdev && b);
 	ext4_assert(b->buf);
 
-	if (!(bdev->bdif->ph_flags & EXT4_BDEV_INITIALIZED))
+	if (!bdev->bdif->ph_refctr)
 		return EIO;
 
 	return ext4_bcache_free(bdev->bc, b);
@@ -249,7 +258,7 @@ int ext4_block_writebytes(struct ext4_blockdev *bdev, uint64_t off,
 
 	ext4_assert(bdev && buf);
 
-	if (!(bdev->bdif->ph_flags & EXT4_BDEV_INITIALIZED))
+	if (!bdev->bdif->ph_refctr)
 		return EIO;
 
 	block_idx = (off / bdev->bdif->ph_bsize) + bdev->ph_blk_offset;
@@ -321,7 +330,7 @@ int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off, void *buf,
 
 	ext4_assert(bdev && buf);
 
-	if (!(bdev->bdif->ph_flags & EXT4_BDEV_INITIALIZED))
+	if (!bdev->bdif->ph_refctr)
 		return EIO;
 
 	block_idx = (off / bdev->bdif->ph_bsize) + bdev->ph_blk_offset;
