@@ -46,7 +46,6 @@ extern "C" {
 
 /**@brief Master boot record block devices descriptor*/
 struct ext4_mbr_bdevs {
-	uint32_t cnt;
 	struct ext4_blockdev partitions[4];
 };
 

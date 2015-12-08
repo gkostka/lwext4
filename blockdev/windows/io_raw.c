@@ -93,6 +93,9 @@ static int io_raw_open(struct ext4_blockdev *bdev)
 	_filedev.bdif->ph_bsize = pdg.BytesPerSector;
 	_filedev.bdif->ph_bcnt = disk_size / pdg.BytesPerSector;
 
+	_filedev.part_offset = 0;
+	_filedev.part_size = disk_size;
+
 	return EOK;
 }
 

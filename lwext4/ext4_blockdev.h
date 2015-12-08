@@ -100,7 +100,10 @@ struct ext4_blockdev {
 	struct ext4_blockdev_iface *bdif;
 
 	/**@brief Offset in bdif. For multi partition mode.*/
-	uint64_t ph_blk_offset;
+	uint64_t part_offset;
+
+	/**@brief Part size in bdif. For multi partition mode.*/
+	uint64_t part_size;
 
 	/**@brief   Block cache.*/
 	struct ext4_bcache *bc;
@@ -138,6 +141,8 @@ struct ext4_blockdev {
 	};								       \
 	static struct ext4_blockdev __name = {                                 \
 		.bdif = &__name##_iface,                                       \
+		.part_offset = 0,                                              \
+		.part_size =  (__bcnt) * (__bsize),                            \
 	}
 
 /**@brief   Block device initialization.
