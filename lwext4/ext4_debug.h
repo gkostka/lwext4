@@ -78,6 +78,7 @@ extern "C" {
 #define DEBUG_MKFS (1ul << 14)
 #define DEBUG_EXT4 (1ul << 15)
 #define DEBUG_JBD (1ul << 16)
+#define DEBUG_MBR (1ul << 17)
 
 #define DEBUG_ALL (0xFFFFFFFF)
 
@@ -116,12 +117,14 @@ static inline const char *ext4_dmask_id2str(uint32_t m)
 		return "ext4_mkfs: ";
 	case DEBUG_JBD:
 		return "ext4_jbd: ";
+	case DEBUG_MBR:
+		return "ext4_mbr: ";
 	case DEBUG_EXT4:
 		return "ext4: ";
 	}
 	return "";
 }
-#define DBG_NONE  "        "
+#define DBG_NONE  ""
 #define DBG_INFO  "[info]  "
 #define DBG_WARN  "[warn]  "
 #define DBG_ERROR "[error] "
