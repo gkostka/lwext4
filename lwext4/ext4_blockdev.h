@@ -71,6 +71,16 @@ struct ext4_blockdev_iface {
 	 * @param   bdev block device.*/
 	int (*close)(struct ext4_blockdev *bdev);
 
+	/**@brief   Lock block device. Required in multi partition mode
+	 *          operations. Not mandatory field.
+	 * @param   bdev block device.*/
+	int (*lock)(struct ext4_blockdev *bdev);
+
+	/**@brief   Unlock block device. Required in multi partition mode
+	 *          operations. Not mandatory field.
+	 * @param   bdev block device.*/
+	int (*unlock)(struct ext4_blockdev *bdev);
+
 	/**@brief   Block size (bytes): physical*/
 	uint32_t ph_bsize;
 
@@ -112,14 +122,16 @@ struct ext4_blockdev {
 };
 
 /**@brief   Static initialization of the block device.*/
-#define EXT4_BLOCKDEV_STATIC_INSTANCE(__name, __bsize, __bcnt, __open,         \
-				      __bread, __bwrite, __close)              \
+#define EXT4_BLOCKDEV_STATIC_INSTANCE(__name, __bsize, __bcnt, __open, __bread,\
+				      __bwrite, __close, __lock, __unlock)     \
 	static uint8_t __name##_ph_bbuf[(__bsize)];                            \
 	static struct ext4_blockdev_iface __name##_iface = {                   \
 		.open = __open,                                                \
 		.bread = __bread,                                              \
 		.bwrite = __bwrite,                                            \
 		.close = __close,                                              \
+		.lock = __lock,                                                \
+		.unlock = __unlock,                                            \
 		.ph_bsize = __bsize,                                           \
 		.ph_bcnt = __bcnt,                                             \
 		.ph_bbuf = __name##_ph_bbuf,                                   \

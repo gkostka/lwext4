@@ -56,7 +56,7 @@ static int io_raw_close(struct ext4_blockdev *bdev);
 
 /******************************************************************************/
 EXT4_BLOCKDEV_STATIC_INSTANCE(_filedev, EXT4_IORAW_BSIZE, 0, io_raw_open,
-			      io_raw_bread, io_raw_bwrite, io_raw_close);
+			      io_raw_bread, io_raw_bwrite, io_raw_close, 0, 0);
 
 /******************************************************************************/
 static int io_raw_open(struct ext4_blockdev *bdev)
@@ -90,8 +90,8 @@ static int io_raw_open(struct ext4_blockdev *bdev)
 	disk_size = pdg.Cylinders.QuadPart * (ULONG)pdg.TracksPerCylinder *
 		    (ULONG)pdg.SectorsPerTrack * (ULONG)pdg.BytesPerSector;
 
-	_filedev.ph_bsize = pdg.BytesPerSector;
-	_filedev.ph_bcnt = disk_size / pdg.BytesPerSector;
+	_filedev.bdif->ph_bsize = pdg.BytesPerSector;
+	_filedev.bdif->ph_bcnt = disk_size / pdg.BytesPerSector;
 
 	return EOK;
 }

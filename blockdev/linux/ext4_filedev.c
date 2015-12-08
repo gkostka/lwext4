@@ -58,7 +58,7 @@ static int filedev_close(struct ext4_blockdev *bdev);
 
 /******************************************************************************/
 EXT4_BLOCKDEV_STATIC_INSTANCE(_filedev, EXT4_FILEDEV_BSIZE, 0, filedev_open,
-			      filedev_bread, filedev_bwrite, filedev_close);
+		filedev_bread, filedev_bwrite, filedev_close, 0, 0);
 
 /******************************************************************************/
 static int filedev_open(struct ext4_blockdev *bdev)

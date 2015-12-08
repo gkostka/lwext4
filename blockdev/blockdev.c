@@ -39,10 +39,13 @@ static int blockdev_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id
 static int blockdev_bwrite(struct ext4_blockdev *bdev, const void *buf,
 			  uint64_t blk_id, uint32_t blk_cnt);
 static int blockdev_close(struct ext4_blockdev *bdev);
+static int blockdev_lock(struct ext4_blockdev *bdev);
+static int blockdev_unlock(struct ext4_blockdev *bdev);
 
 /******************************************************************************/
 EXT4_BLOCKDEV_STATIC_INSTANCE(blockdev, 512, 0, blockdev_open,
-			      blockdev_bread, blockdev_bwrite, blockdev_close);
+			      blockdev_bread, blockdev_bwrite, blockdev_close,
+			      blockdev_lock, blockdev_unlock);
 
 /******************************************************************************/
 static int blockdev_open(struct ext4_blockdev *bdev)
@@ -72,6 +75,18 @@ static int blockdev_bwrite(struct ext4_blockdev *bdev, const void *buf,
 static int blockdev_close(struct ext4_blockdev *bdev)
 {
 	/*blockdev_close: skeleton*/
+	return EIO;
+}
+
+static int blockdev_lock(struct ext4_blockdev *bdev)
+{
+	/*blockdev_lock: skeleton*/
+	return EIO;
+}
+
+static int blockdev_unlock(struct ext4_blockdev *bdev)
+{
+	/*blockdev_unlock: skeleton*/
 	return EIO;
 }
 
