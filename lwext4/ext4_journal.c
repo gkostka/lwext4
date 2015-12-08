@@ -887,8 +887,6 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 	struct jbd_buf *jbd_buf;
 	struct ext4_block desc_block, data_block;
 
-	tag_tbl_size = journal->block_size - sizeof(struct jbd_bhdr);
-
 	LIST_FOREACH(jbd_buf, &trans->buf_list, buf_node) {
 		struct tag_info tag_info;
 		bool uuid_exist = false;
@@ -907,9 +905,12 @@ again:
 			bhdr->magic = JBD_MAGIC_NUMBER;
 			bhdr->blocktype = JBD_DESCRIPTOR_BLOCK;
 			bhdr->sequence = trans->trans_id;
+
 			tag_start = (char *)(bhdr + 1);
 			tag_ptr = tag_start;
 			uuid_exist = true;
+			tag_tbl_size = journal->block_size -
+				sizeof(struct jbd_bhdr);
 		}
 		tag_info.block = jbd_buf->block.lb_id;
 		tag_info.uuid_exist = uuid_exist;
@@ -955,6 +956,80 @@ again:
 
 	if (desc_iblock)
 		jbd_block_set(journal->jbd_fs, &desc_block);
+
+	return rc;
+}
+
+static int
+jbd_journal_prepare_revoke(struct jbd_journal *journal,
+			   struct jbd_trans *trans)
+{
+	int rc = EOK, i = 0;
+	int32_t tag_tbl_size;
+	uint32_t desc_iblock = 0;
+	char *blocks_entry = NULL;
+	struct jbd_revoke_rec *rec;
+	struct ext4_block desc_block;
+	struct jbd_revoke_header *header = NULL;
+	int32_t record_len = 4;
+
+	if (JBD_HAS_INCOMPAT_FEATURE(&journal->jbd_fs->sb,
+				     JBD_FEATURE_INCOMPAT_64BIT))
+		record_len = 8;
+
+	LIST_FOREACH(rec, &trans->revoke_list, revoke_node) {
+again:
+		if (!desc_iblock) {
+			struct jbd_bhdr *bhdr;
+			desc_iblock = jbd_journal_alloc_block(journal);
+			rc = jbd_block_get_noread(journal->jbd_fs,
+					   &desc_block, desc_iblock);
+			if (!rc)
+				break;
+
+			ext4_bcache_set_dirty(desc_block.buf);
+
+			bhdr = (struct jbd_bhdr *)desc_block.data;
+			bhdr->magic = JBD_MAGIC_NUMBER;
+			bhdr->blocktype = JBD_REVOKE_BLOCK;
+			bhdr->sequence = trans->trans_id;
+			
+			header = (struct jbd_revoke_header *)bhdr;
+			blocks_entry = (char *)(header + 1);
+			tag_tbl_size = journal->block_size -
+				sizeof(struct jbd_bhdr);
+		}
+
+		if (tag_tbl_size < record_len) {
+			header->count = journal->block_size - tag_tbl_size;
+			jbd_block_set(journal->jbd_fs, &desc_block);
+			desc_iblock = 0;
+			header = NULL;
+			goto again;
+		}
+		if (record_len == 8) {
+			uint64_t *blocks =
+				(uint64_t *)blocks_entry;
+			*blocks = to_be64(rec->lba);
+		} else {
+			uint32_t *blocks =
+				(uint32_t *)blocks_entry;
+			*blocks = to_be32(rec->lba);
+		}
+		blocks_entry += record_len;
+		tag_tbl_size -= record_len;
+
+		i++;
+	}
+	if (rc != EOK)
+		jbd_journal_abort_trans(journal, trans);
+
+	if (desc_iblock) {
+		if (header != NULL)
+			header->count = journal->block_size - tag_tbl_size;
+
+		jbd_block_set(journal->jbd_fs, &desc_block);
+	}
 
 	return rc;
 }
