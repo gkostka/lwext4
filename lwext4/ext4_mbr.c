@@ -39,6 +39,7 @@
 #include "ext4_debug.h"
 #include "ext4_mbr.h"
 
+#include <inttypes.h>
 #include <string.h>
 
 #define MBR_SIGNATURE 0xAA55
@@ -90,20 +91,20 @@ int ext4_mbr_scan(struct ext4_blockdev *parent, struct ext4_mbr_bdevs *bdevs)
 		ext4_dbg(DEBUG_MBR, "mbr_part: %d\n", i);
 		ext4_dbg(DEBUG_MBR, "\tstatus: 0x%x\n", pe->status);
 		ext4_dbg(DEBUG_MBR, "\ttype 0x%x:\n", pe->type);
-		ext4_dbg(DEBUG_MBR, "\tfirst_lba: 0x%x\n", pe->first_lba);
-		ext4_dbg(DEBUG_MBR, "\tsectors: 0x%x\n", pe->sectors);
+		ext4_dbg(DEBUG_MBR, "\tfirst_lba: 0x%"PRIx32"\n", pe->first_lba);
+		ext4_dbg(DEBUG_MBR, "\tsectors: 0x%"PRIx32"\n", pe->sectors);
 
 		if (!pe->sectors)
-			continue;
+			continue; /*Empty entry*/
 
 		if (pe->type != 0x83)
-			continue;
+			continue; /*Unsupported entry. 0x83 - linux native*/
 
 		bdevs->partitions[i].bdif = parent->bdif;
 		bdevs->partitions[i].part_offset =
-				pe->first_lba * parent->bdif->ph_bsize;
+			(uint64_t)pe->first_lba * parent->bdif->ph_bsize;
 		bdevs->partitions[i].part_size =
-				(uint64_t)pe->sectors * parent->bdif->ph_bsize;
+			(uint64_t)pe->sectors * parent->bdif->ph_bsize;
 	}
 
 	blockdev_fini:

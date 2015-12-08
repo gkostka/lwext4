@@ -170,10 +170,10 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		printf("\toffeset: 0x%llx, %lluMB\n",
+		printf("\toffeset: 0x%"PRIx64", %"PRIu64"MB\n",
 			bdevs.partitions[i].part_offset,
 			bdevs.partitions[i].part_offset / (1024 * 1024));
-		printf("\tsize: 0x%llx, %lluMB\n",
+		printf("\tsize:    0x%"PRIx64", %"PRIu64"MB\n",
 			bdevs.partitions[i].part_size,
 			bdevs.partitions[i].part_size / (1024 * 1024));
 	}
