@@ -92,6 +92,12 @@ struct ext4_blockdev_iface {
 
 	/**@brief   Reference counter to block device interface*/
 	uint32_t ph_refctr;
+
+	/**@brief   Physical read counter*/
+	uint32_t bread_ctr;
+
+	/**@brief   Physical write counter*/
+	uint32_t bwrite_ctr;
 };
 
 /**@brief   Definition of the simple block device.*/
@@ -116,12 +122,6 @@ struct ext4_blockdev {
 
 	/**@brief   Cache write back mode reference counter*/
 	uint32_t cache_write_back;
-
-	/**@brief   Physical read counter*/
-	uint32_t bread_ctr;
-
-	/**@brief   Physical write counter*/
-	uint32_t bwrite_ctr;
 };
 
 /**@brief   Static initialization of the block device.*/

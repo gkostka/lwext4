@@ -65,6 +65,7 @@ static int ext4_bdif_bread(struct ext4_blockdev *bdev, void *buf,
 {
 	ext4_bdif_lock(bdev);
 	int r = bdev->bdif->bread(bdev, buf, blk_id, blk_cnt);
+	bdev->bdif->bread_ctr++;
 	ext4_bdif_unlock(bdev);
 	return r;
 }
@@ -74,6 +75,7 @@ static int ext4_bdif_bwrite(struct ext4_blockdev *bdev, const void *buf,
 {
 	ext4_bdif_lock(bdev);
 	int r = bdev->bdif->bwrite(bdev, buf, blk_id, blk_cnt);
+	bdev->bdif->bwrite_ctr++;
 	ext4_bdif_unlock(bdev);
 	return r;
 }
@@ -259,7 +261,6 @@ int ext4_blocks_get_direct(struct ext4_blockdev *bdev, void *buf, uint64_t lba,
 	pba = (lba * bdev->lg_bsize + bdev->part_offset) / bdev->bdif->ph_bsize;
 	pb_cnt = bdev->lg_bsize / bdev->bdif->ph_bsize;
 
-	bdev->bread_ctr++;
 	return ext4_bdif_bread(bdev, buf, pba, pb_cnt * cnt);
 }
 
@@ -274,7 +275,6 @@ int ext4_blocks_set_direct(struct ext4_blockdev *bdev, const void *buf,
 	pba = (lba * bdev->lg_bsize + bdev->part_offset) / bdev->bdif->ph_bsize;
 	pb_cnt = bdev->lg_bsize / bdev->bdif->ph_bsize;
 
-	bdev->bwrite_ctr++;
 	return ext4_bdif_bwrite(bdev, buf, pba, pb_cnt * cnt);
 }
 
