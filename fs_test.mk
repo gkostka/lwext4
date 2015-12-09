@@ -1,10 +1,10 @@
 
 ifeq ($(OS),Windows_NT)
-LWEXT4_CLIENT = @build_generic\\fs_test\\lwext4_client
-LWEXT4_SERVER = @build_generic\\fs_test\\lwext4_server
+LWEXT4_CLIENT = @build_generic\\fs_test\\lwext4-client
+LWEXT4_SERVER = @build_generic\\fs_test\\lwext4-server
 else
-LWEXT4_CLIENT = @build_generic/fs_test/lwext4_client
-LWEXT4_SERVER = @build_generic/fs_test/lwext4_server
+LWEXT4_CLIENT = @build_generic/fs_test/lwext4-client
+LWEXT4_SERVER = @build_generic/fs_test/lwext4-server
 endif
 
 TEST_DIR = /test
@@ -575,6 +575,9 @@ server_ext3:
 	
 server_ext4:
 	$(LWEXT4_SERVER) -i ext_images/ext4
+	
+server_kill:
+	-killall lwext4-server
 
 fsck_images:
 	sudo fsck.ext2 ext_images/ext2 -v -f
@@ -595,45 +598,45 @@ test_set_small: t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t1
 test_set_full: t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26
 
 test_ext2_full:
-	-killall lwext4_server
+	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext2 &
 	make test_set_full
-	-killall lwext4_server
+	make server_kill
 
 
 test_ext3_full:
-	-killall lwext4_server
+	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext3 &
 	make test_set_full
-	-killall lwext4_server
+	make server_kill
 
 test_ext4_full:
-	-killall lwext4_server
+	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext4 &
 	make test_set_full
-	-killall lwext4_server
+	make server_kill
 
 test_all: images_big test_ext2_full test_ext3_full test_ext4_full fsck_images
 
 
 test_ext2_small:
-	-killall lwext4_server
+	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext2 &
 	make test_set_small
-	-killall lwext4_server
+	make server_kill
 
 
 test_ext3_small:
-	-killall lwext4_server
+	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext3 &
 	make test_set_small
-	-killall lwext4_server
+	make server_kill
 
 test_ext4_small:
-	-killall lwext4_server
+	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext4 &
 	make test_set_small
-	-killall lwext4_server
+	make server_kill
 	
 test: unpack_images test_ext2_small test_ext3_small test_ext4_small
 	
