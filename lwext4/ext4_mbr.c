@@ -63,7 +63,7 @@ struct ext4_mbr {
 int ext4_mbr_scan(struct ext4_blockdev *parent, struct ext4_mbr_bdevs *bdevs)
 {
 	int r;
-	int i;
+	size_t i;
 
 	ext4_dbg(DEBUG_MBR, DBG_INFO "ext4_mbr_scan\n");
 	memset(bdevs, 0, sizeof(struct ext4_mbr_bdevs));
@@ -85,10 +85,18 @@ int ext4_mbr_scan(struct ext4_blockdev *parent, struct ext4_mbr_bdevs *bdevs)
 		goto blockdev_fini;
 	}
 
+	/*Show bootstrap code*/
+	ext4_dbg(DEBUG_MBR, "mbr_part: bootstrap:");
+	for (i = 0; i < sizeof(mbr->bootstrap); ++i) {
+		if (!(i & 0xF))
+				ext4_dbg(DEBUG_MBR | DEBUG_NOPREFIX, "\n");
+		ext4_dbg(DEBUG_MBR | DEBUG_NOPREFIX, "%02x, ", mbr->bootstrap[i]);
+	}
 
+	ext4_dbg(DEBUG_MBR | DEBUG_NOPREFIX, "\n\n");
 	for (i = 0; i < 4; ++i) {
 		const struct ext4_part_entry *pe = &mbr->part_entry[i];
-		ext4_dbg(DEBUG_MBR, "mbr_part: %d\n", i);
+		ext4_dbg(DEBUG_MBR, "mbr_part: %d\n", (int)i);
 		ext4_dbg(DEBUG_MBR, "\tstatus: 0x%x\n", pe->status);
 		ext4_dbg(DEBUG_MBR, "\ttype 0x%x:\n", pe->type);
 		ext4_dbg(DEBUG_MBR, "\tfirst_lba: 0x%"PRIx32"\n", pe->first_lba);
