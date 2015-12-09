@@ -80,6 +80,7 @@ extern "C" {
 #define DEBUG_JBD (1ul << 16)
 #define DEBUG_MBR (1ul << 17)
 
+#define DEBUG_NOPREFIX (1ul << 31)
 #define DEBUG_ALL (0xFFFFFFFF)
 
 static inline const char *ext4_dmask_id2str(uint32_t m)
@@ -145,8 +146,8 @@ uint32_t ext4_dmask_get(void);
 /**@brief   Debug printf.*/
 #define ext4_dbg(m, ...)                                                       \
 	do {                                                                   \
-		if (m & ext4_dmask_get()) {                                    \
-			if (CONFIG_DEBUG_PREFIX) {                             \
+		if ((m) & ext4_dmask_get()) {                                  \
+			if (!((m) & DEBUG_NOPREFIX)) {                         \
 				printf("%s", ext4_dmask_id2str(m));            \
 				printf("l: %d   ", __LINE__);                  \
 			}                                                      \

@@ -98,12 +98,6 @@ extern "C" {
 #define CONFIG_DEBUG_PRINTF 1
 #endif
 
-/**@brief   Debug printf prefixes*/
-#ifndef CONFIG_DEBUG_PREFIX
-#define CONFIG_DEBUG_PREFIX 1
-#endif
-
-
 /**@brief   Assert printf enable (stdout)*/
 #ifndef CONFIG_DEBUG_ASSERT
 #define CONFIG_DEBUG_ASSERT 1
