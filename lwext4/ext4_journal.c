@@ -792,17 +792,6 @@ int jbd_journal_stop(struct jbd_journal *journal)
 	return jbd_write_sb(journal->jbd_fs);
 }
 
-static inline bool jbd_has_enough_space(struct jbd_journal *journal,
-					uint32_t blk_cnt)
-{
-	uint32_t new_last = journal->last + blk_cnt;
-	wrap(&journal->jbd_fs->sb, new_last);
-	if (new_last >= journal->start)
-		return false;
-
-	return true;
-}
-
 static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal)
 {
 	uint32_t start_block = journal->last++;
@@ -811,7 +800,7 @@ static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal)
 }
 
 struct jbd_trans *
-jbd_journal_new_trans()
+jbd_journal_new_trans(struct jbd_journal *journal)
 {
 	struct jbd_trans *trans = calloc(1, sizeof(struct jbd_trans));
 	if (!trans)
@@ -819,6 +808,8 @@ jbd_journal_new_trans()
 
 	/* We will assign a trans_id to this transaction,
 	 * once it has been committed.*/
+	trans->journal = journal;
+	trans->error = EOK;
 	return trans;
 }
 
@@ -832,7 +823,7 @@ int jbd_trans_add_block(struct jbd_trans *trans,
 	buf->trans = trans;
 	buf->block = *block;
 	ext4_bcache_inc_ref(block->buf);
-	trans->buf_cnt++;
+	trans->data_cnt++;
 	LIST_INSERT_HEAD(&trans->buf_list, buf, buf_node);
 	return EOK;
 }
@@ -846,21 +837,20 @@ int jbd_trans_revoke_block(struct jbd_trans *trans,
 		return ENOMEM;
 
 	rec->lba = lba;
-	trans->revoke_cnt++;
 	LIST_INSERT_HEAD(&trans->revoke_list, rec, revoke_node);
 	return EOK;
 }
 
-void jbd_journal_abort_trans(struct jbd_journal *journal,
-			     struct jbd_trans *trans)
+void jbd_journal_free_trans(struct jbd_journal *journal,
+			    struct jbd_trans *trans)
 {
-	struct jbd_buf *var, *tmp;
+	struct jbd_buf *jbd_buf, *tmp;
 	struct jbd_revoke_rec *rec, *tmp2;
-	LIST_FOREACH_SAFE(var, &trans->buf_list, buf_node,
+	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node,
 			  tmp) {
-		ext4_block_set(journal->jbd_fs->bdev, &var->block);
-		LIST_REMOVE(var, buf_node);
-		free(var);
+		ext4_block_set(journal->jbd_fs->bdev, &jbd_buf->block);
+		LIST_REMOVE(jbd_buf, buf_node);
+		free(jbd_buf);
 	}
 	LIST_FOREACH_SAFE(rec, &trans->revoke_list, revoke_node,
 			  tmp2) {
@@ -871,9 +861,40 @@ void jbd_journal_abort_trans(struct jbd_journal *journal,
 	free(trans);
 }
 
-static void jbd_journal_end_write()
+static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
+			  struct ext4_buf *buf __unused,
+			  int res,
+			  void *arg)
 {
+	struct jbd_trans *trans = arg;
+	trans->error = res;
+}
 
+static int jbd_trans_write_commit_block(struct jbd_trans *trans)
+{
+	int rc;
+	struct jbd_commit_header *header;
+	uint32_t commit_iblock = 0;
+	struct ext4_block commit_block;
+	struct jbd_journal *journal = trans->journal;
+
+	commit_iblock = jbd_journal_alloc_block(trans->journal);
+	rc = jbd_block_get_noread(journal->jbd_fs,
+			&commit_block, commit_iblock);
+	if (rc != EOK)
+		return rc;
+
+	header = (struct jbd_commit_header *)commit_block.data;
+	header->header.magic = JBD_MAGIC_NUMBER;
+	header->header.blocktype = JBD_COMMIT_BLOCK;
+	header->header.sequence = trans->trans_id;
+
+	ext4_bcache_set_dirty(commit_block.buf);
+	rc = jbd_block_set(journal->jbd_fs, &commit_block);
+	if (rc != EOK)
+		return rc;
+
+	return EOK;
 }
 
 static int jbd_journal_prepare(struct jbd_journal *journal,
@@ -914,7 +935,7 @@ again:
 		}
 		tag_info.block = jbd_buf->block.lb_id;
 		tag_info.uuid_exist = uuid_exist;
-		if (i == trans->buf_cnt - 1)
+		if (i == trans->data_cnt - 1)
 			tag_info.last_tag = true;
 
 		if (uuid_exist)
@@ -951,10 +972,7 @@ again:
 
 		i++;
 	}
-	if (rc != EOK)
-		jbd_journal_abort_trans(journal, trans);
-
-	if (desc_iblock)
+	if (rc == EOK && desc_iblock)
 		jbd_block_set(journal->jbd_fs, &desc_block);
 
 	return rc;
@@ -968,7 +986,7 @@ jbd_journal_prepare_revoke(struct jbd_journal *journal,
 	int32_t tag_tbl_size;
 	uint32_t desc_iblock = 0;
 	char *blocks_entry = NULL;
-	struct jbd_revoke_rec *rec;
+	struct jbd_revoke_rec *rec, *tmp;
 	struct ext4_block desc_block;
 	struct jbd_revoke_header *header = NULL;
 	int32_t record_len = 4;
@@ -977,15 +995,17 @@ jbd_journal_prepare_revoke(struct jbd_journal *journal,
 				     JBD_FEATURE_INCOMPAT_64BIT))
 		record_len = 8;
 
-	LIST_FOREACH(rec, &trans->revoke_list, revoke_node) {
+	LIST_FOREACH_SAFE(rec, &trans->revoke_list, revoke_node,
+			  tmp) {
 again:
 		if (!desc_iblock) {
 			struct jbd_bhdr *bhdr;
 			desc_iblock = jbd_journal_alloc_block(journal);
 			rc = jbd_block_get_noread(journal->jbd_fs,
 					   &desc_block, desc_iblock);
-			if (!rc)
+			if (!rc) {
 				break;
+			}
 
 			ext4_bcache_set_dirty(desc_block.buf);
 
@@ -997,7 +1017,7 @@ again:
 			header = (struct jbd_revoke_header *)bhdr;
 			blocks_entry = (char *)(header + 1);
 			tag_tbl_size = journal->block_size -
-				sizeof(struct jbd_bhdr);
+				sizeof(struct jbd_revoke_header);
 		}
 
 		if (tag_tbl_size < record_len) {
@@ -1021,10 +1041,7 @@ again:
 
 		i++;
 	}
-	if (rc != EOK)
-		jbd_journal_abort_trans(journal, trans);
-
-	if (desc_iblock) {
+	if (rc == EOK && desc_iblock) {
 		if (header != NULL)
 			header->count = journal->block_size - tag_tbl_size;
 
@@ -1035,13 +1052,72 @@ again:
 }
 
 void
-jbd_journal_commit_trans(struct jbd_journal *journal,
+jbd_journal_submit_trans(struct jbd_journal *journal,
 			 struct jbd_trans *trans)
 {
-	trans->trans_id = journal->trans_id++;
 	TAILQ_INSERT_TAIL(&journal->trans_queue,
 			  trans,
 			  trans_node);
+}
+
+/*
+ * XXX: one should disable cache writeback first.
+ */
+void
+jbd_journal_commit_to_disk(struct jbd_journal *journal)
+{
+	int rc;
+	uint32_t last = journal->last,
+		 trans_id = journal->trans_id,
+		 start = journal->start;
+	struct jbd_trans *trans, *tmp;
+	TAILQ_FOREACH_SAFE(trans, &journal->trans_queue,
+			   trans_node,
+			   tmp) {
+		struct jbd_buf *jbd_buf;
+		TAILQ_REMOVE(&journal->trans_queue, trans, trans_node);
+
+		trans->trans_id = trans_id + 1;
+		rc = jbd_journal_prepare(journal, trans);
+		if (rc != EOK) {
+			journal->last = last;
+			jbd_journal_free_trans(journal, trans);
+			continue;
+		}
+		rc = jbd_journal_prepare_revoke(journal, trans);
+		if (rc != EOK) {
+			journal->last = last;
+			jbd_journal_free_trans(journal, trans);
+			continue;
+		}
+		rc = jbd_trans_write_commit_block(trans);
+		if (rc != EOK) {
+			journal->last = last;
+			jbd_journal_free_trans(journal, trans);
+			continue;
+		}
+		LIST_FOREACH(jbd_buf, &trans->buf_list, buf_node) {
+			struct ext4_block *block = &jbd_buf->block;
+			block->buf->end_write = jbd_trans_end_write;
+			block->buf->end_write_arg = trans;
+			ext4_block_set(journal->jbd_fs->inode_ref.fs->bdev,
+					block);
+		}
+		if (trans->error != EOK) {
+			journal->last = last;
+			jbd_journal_free_trans(journal, trans);
+			continue;
+		}
+
+		start = last;
+		trans_id++;
+		last = journal->last;
+		jbd_journal_free_trans(journal, trans);
+	}
+	
+	journal->start = start;
+	journal->trans_id = trans_id;
+	jbd_journal_write_sb(journal);
 }
 
 /**

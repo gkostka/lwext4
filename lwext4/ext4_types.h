@@ -1107,8 +1107,11 @@ struct jbd_revoke_rec {
 struct jbd_trans {
 	uint32_t trans_id;
 
-	int buf_cnt;
-	int revoke_cnt;
+	int data_cnt;
+	int error;
+
+	struct jbd_journal *journal;
+
 	LIST_HEAD(jbd_trans_buf, jbd_buf) buf_list;
 	LIST_HEAD(jbd_revoke_list, jbd_revoke_rec) revoke_list;
 	TAILQ_ENTRY(jbd_trans) trans_node;
