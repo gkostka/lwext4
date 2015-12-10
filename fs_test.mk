@@ -600,6 +600,7 @@ test_set_full: t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18
 test_ext2_full:
 	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext2 &
+	sleep 1
 	make test_set_full
 	make server_kill
 
@@ -607,12 +608,14 @@ test_ext2_full:
 test_ext3_full:
 	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext3 &
+	sleep 1
 	make test_set_full
 	make server_kill
 
 test_ext4_full:
 	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext4 &
+	sleep 1
 	make test_set_full
 	make server_kill
 
@@ -622,6 +625,7 @@ test_all: images_big test_ext2_full test_ext3_full test_ext4_full fsck_images
 test_ext2_small:
 	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext2 &
+	sleep 1
 	make test_set_small
 	make server_kill
 
@@ -629,12 +633,14 @@ test_ext2_small:
 test_ext3_small:
 	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext3 &
+	sleep 1
 	make test_set_small
 	make server_kill
 
 test_ext4_small:
 	make server_kill
 	$(LWEXT4_SERVER) -i ext_images/ext4 &
+	sleep 1
 	make test_set_small
 	make server_kill
 	
