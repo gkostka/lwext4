@@ -1107,7 +1107,9 @@ struct jbd_revoke_rec {
 struct jbd_trans {
 	uint32_t trans_id;
 
+	int alloc_blocks;
 	int data_cnt;
+	int written_cnt;
 	int error;
 
 	struct jbd_journal *journal;
@@ -1122,10 +1124,12 @@ struct jbd_journal {
 	uint32_t start;
 	uint32_t last;
 	uint32_t trans_id;
+	uint32_t alloc_trans_id;
 
 	uint32_t block_size;
 
 	TAILQ_HEAD(jbd_trans_queue, jbd_trans) trans_queue;
+	TAILQ_HEAD(jbd_cp_queue, jbd_trans) cp_queue;
 
 	struct jbd_fs *jbd_fs;
 };

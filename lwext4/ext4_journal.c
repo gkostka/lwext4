@@ -775,6 +775,7 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 	journal->start = journal->first;
 	journal->last = journal->first;
 	journal->trans_id = 1;
+	journal->alloc_trans_id = 1;
 
 	journal->block_size = jbd_get32(&jbd_fs->sb, blocksize);
 
@@ -792,9 +793,11 @@ int jbd_journal_stop(struct jbd_journal *journal)
 	return jbd_write_sb(journal->jbd_fs);
 }
 
-static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal)
+static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal,
+					struct jbd_trans *trans)
 {
 	uint32_t start_block = journal->last++;
+	trans->alloc_blocks++;
 	wrap(&journal->jbd_fs->sb, journal->last);
 	return start_block;
 }
@@ -813,6 +816,11 @@ jbd_journal_new_trans(struct jbd_journal *journal)
 	return trans;
 }
 
+static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
+			  struct ext4_buf *buf __unused,
+			  int res,
+			  void *arg);
+
 int jbd_trans_add_block(struct jbd_trans *trans,
 			struct ext4_block *block)
 {
@@ -823,6 +831,10 @@ int jbd_trans_add_block(struct jbd_trans *trans,
 	buf->trans = trans;
 	buf->block = *block;
 	ext4_bcache_inc_ref(block->buf);
+
+	block->buf->end_write = jbd_trans_end_write;
+	block->buf->end_write_arg = trans;
+
 	trans->data_cnt++;
 	LIST_INSERT_HEAD(&trans->buf_list, buf, buf_node);
 	return EOK;
@@ -861,15 +873,6 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 	free(trans);
 }
 
-static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
-			  struct ext4_buf *buf __unused,
-			  int res,
-			  void *arg)
-{
-	struct jbd_trans *trans = arg;
-	trans->error = res;
-}
-
 static int jbd_trans_write_commit_block(struct jbd_trans *trans)
 {
 	int rc;
@@ -878,7 +881,7 @@ static int jbd_trans_write_commit_block(struct jbd_trans *trans)
 	struct ext4_block commit_block;
 	struct jbd_journal *journal = trans->journal;
 
-	commit_iblock = jbd_journal_alloc_block(trans->journal);
+	commit_iblock = jbd_journal_alloc_block(journal, trans);
 	rc = jbd_block_get_noread(journal->jbd_fs,
 			&commit_block, commit_iblock);
 	if (rc != EOK)
@@ -914,7 +917,7 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 again:
 		if (!desc_iblock) {
 			struct jbd_bhdr *bhdr;
-			desc_iblock = jbd_journal_alloc_block(journal);
+			desc_iblock = jbd_journal_alloc_block(journal, trans);
 			rc = jbd_block_get_noread(journal->jbd_fs,
 					   &desc_block, desc_iblock);
 			if (!rc)
@@ -952,7 +955,7 @@ again:
 			goto again;
 		}
 
-		data_iblock = jbd_journal_alloc_block(journal);
+		data_iblock = jbd_journal_alloc_block(journal, trans);
 		rc = jbd_block_get_noread(journal->jbd_fs,
 				&data_block, data_iblock);
 		if (rc != EOK)
@@ -1000,7 +1003,7 @@ jbd_journal_prepare_revoke(struct jbd_journal *journal,
 again:
 		if (!desc_iblock) {
 			struct jbd_bhdr *bhdr;
-			desc_iblock = jbd_journal_alloc_block(journal);
+			desc_iblock = jbd_journal_alloc_block(journal, trans);
 			rc = jbd_block_get_noread(journal->jbd_fs,
 					   &desc_block, desc_iblock);
 			if (!rc) {
@@ -1060,64 +1063,60 @@ jbd_journal_submit_trans(struct jbd_journal *journal,
 			  trans_node);
 }
 
+static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
+			  struct ext4_buf *buf __unused,
+			  int res,
+			  void *arg)
+{
+	struct jbd_trans *trans = arg;
+	struct jbd_journal *journal = trans->journal;
+	if (res != EOK)
+		trans->error = res;
+
+	trans->written_cnt++;
+	if (trans->written_cnt == trans->data_cnt) {
+		TAILQ_REMOVE(&journal->cp_queue, trans, trans_node);
+		journal->start += trans->alloc_blocks;
+		journal->trans_id = ++trans->trans_id;
+		jbd_journal_write_sb(journal);
+		jbd_journal_free_trans(journal, trans);
+	}
+}
+
 /*
  * XXX: one should disable cache writeback first.
  */
-void
-jbd_journal_commit_to_disk(struct jbd_journal *journal)
+static void
+jbd_journal_commit_one(struct jbd_journal *journal)
 {
-	int rc;
-	uint32_t last = journal->last,
-		 trans_id = journal->trans_id,
-		 start = journal->start;
-	struct jbd_trans *trans, *tmp;
-	TAILQ_FOREACH_SAFE(trans, &journal->trans_queue,
-			   trans_node,
-			   tmp) {
-		struct jbd_buf *jbd_buf;
+	int rc = EOK;
+	uint32_t last = journal->last;
+	struct jbd_trans *trans;
+	if ((trans = TAILQ_FIRST(&journal->trans_queue))) {
 		TAILQ_REMOVE(&journal->trans_queue, trans, trans_node);
 
-		trans->trans_id = trans_id + 1;
+		trans->trans_id = journal->alloc_trans_id;
 		rc = jbd_journal_prepare(journal, trans);
-		if (rc != EOK) {
-			journal->last = last;
-			jbd_journal_free_trans(journal, trans);
-			continue;
-		}
-		rc = jbd_journal_prepare_revoke(journal, trans);
-		if (rc != EOK) {
-			journal->last = last;
-			jbd_journal_free_trans(journal, trans);
-			continue;
-		}
-		rc = jbd_trans_write_commit_block(trans);
-		if (rc != EOK) {
-			journal->last = last;
-			jbd_journal_free_trans(journal, trans);
-			continue;
-		}
-		LIST_FOREACH(jbd_buf, &trans->buf_list, buf_node) {
-			struct ext4_block *block = &jbd_buf->block;
-			block->buf->end_write = jbd_trans_end_write;
-			block->buf->end_write_arg = trans;
-			ext4_block_set(journal->jbd_fs->inode_ref.fs->bdev,
-					block);
-		}
-		if (trans->error != EOK) {
-			journal->last = last;
-			jbd_journal_free_trans(journal, trans);
-			continue;
-		}
+		if (rc != EOK)
+			goto Finish;
 
-		start = last;
-		trans_id++;
-		last = journal->last;
+		rc = jbd_journal_prepare_revoke(journal, trans);
+		if (rc != EOK)
+			goto Finish;
+
+		rc = jbd_trans_write_commit_block(trans);
+		if (rc != EOK)
+			goto Finish;
+
+		journal->alloc_trans_id++;
+		TAILQ_INSERT_TAIL(&journal->cp_queue, trans,
+			  trans_node);
+	}
+Finish:
+	if (rc != EOK) {
+		journal->last = last;
 		jbd_journal_free_trans(journal, trans);
 	}
-	
-	journal->start = start;
-	journal->trans_id = trans_id;
-	jbd_journal_write_sb(journal);
 }
 
 /**
