@@ -410,7 +410,6 @@ jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 					void *arg),
 			void *arg)
 {
-	ext4_fsblk_t block = 0;
 	char *tag_start, *tag_ptr;
 	int tag_bytes = jbd_tag_bytes(jbd_fs);
 	tag_start = __tag_start;
@@ -433,7 +432,7 @@ jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 			break;
 
 		if (func)
-			func(jbd_fs, block, tag_info.uuid, arg);
+			func(jbd_fs, tag_info.block, tag_info.uuid, arg);
 
 		if (tag_info.last_tag)
 			break;
@@ -854,13 +853,16 @@ int jbd_trans_revoke_block(struct jbd_trans *trans,
 }
 
 void jbd_journal_free_trans(struct jbd_journal *journal,
-			    struct jbd_trans *trans)
+			    struct jbd_trans *trans,
+			    bool abort)
 {
 	struct jbd_buf *jbd_buf, *tmp;
 	struct jbd_revoke_rec *rec, *tmp2;
 	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node,
 			  tmp) {
-		ext4_block_set(journal->jbd_fs->bdev, &jbd_buf->block);
+		if (abort)
+			ext4_block_set(journal->jbd_fs->bdev, &jbd_buf->block);
+
 		LIST_REMOVE(jbd_buf, buf_node);
 		free(jbd_buf);
 	}
@@ -1063,6 +1065,15 @@ jbd_journal_submit_trans(struct jbd_journal *journal,
 			  trans_node);
 }
 
+void jbd_journal_cp_trans(struct jbd_journal *journal, struct jbd_trans *trans)
+{
+	struct jbd_buf *jbd_buf, *tmp;
+	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node,
+			tmp) {
+		ext4_block_set(journal->jbd_fs->bdev, &jbd_buf->block);
+	}
+}
+
 static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 			  struct ext4_buf *buf __unused,
 			  int res,
@@ -1079,7 +1090,11 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 		journal->start += trans->alloc_blocks;
 		journal->trans_id = ++trans->trans_id;
 		jbd_journal_write_sb(journal);
-		jbd_journal_free_trans(journal, trans);
+		jbd_journal_free_trans(journal, trans, false);
+
+		if ((trans = TAILQ_FIRST(&journal->cp_queue))) {
+			jbd_journal_cp_trans(journal, trans);
+		}
 	}
 }
 
@@ -1111,11 +1126,14 @@ jbd_journal_commit_one(struct jbd_journal *journal)
 		journal->alloc_trans_id++;
 		TAILQ_INSERT_TAIL(&journal->cp_queue, trans,
 			  trans_node);
+		if (trans == TAILQ_FIRST(&journal->cp_queue)) {
+			jbd_journal_cp_trans(journal, trans);
+		}
 	}
 Finish:
 	if (rc != EOK) {
 		journal->last = last;
-		jbd_journal_free_trans(journal, trans);
+		jbd_journal_free_trans(journal, trans, true);
 	}
 }
 
