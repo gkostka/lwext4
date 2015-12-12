@@ -2505,6 +2505,53 @@ void ext4_dir_entry_rewind(ext4_dir *d)
     d->next_off = 0;
 }
 
+int ext4_test_journal(const char *mount_point)
+{
+	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
+	if (!mp)
+		return ENOENT;
+
+	int r = ENOTSUP;
+	EXT4_MP_LOCK(mp);
+	if (ext4_sb_feature_com(&mp->fs.sb, EXT4_FCOM_HAS_JOURNAL)) {
+		struct jbd_fs *jbd_fs = calloc(1, sizeof(struct jbd_fs));
+		struct jbd_journal *journal;
+		if (!jbd_fs) {
+			 r = ENOMEM;
+			 goto Finish;
+		}
+		journal = calloc(1, sizeof(struct jbd_journal));
+		if (!journal) {
+			free(jbd_fs);
+			r = ENOMEM;
+			goto Finish;
+		}
+
+		r = jbd_get_fs(&mp->fs, jbd_fs);
+		if (r != EOK) {
+			free(jbd_fs);
+			goto Finish;
+		}
+		r = jbd_journal_start(jbd_fs, journal);
+		if (r != EOK) {
+			jbd_put_fs(jbd_fs);
+			free(journal);
+			free(jbd_fs);
+			goto Finish;
+		}
+
+		jbd_journal_stop(journal);
+		jbd_put_fs(jbd_fs);
+		free(journal);
+		free(jbd_fs);
+	}
+
+
+Finish:
+	EXT4_MP_UNLOCK(mp);
+	return r;
+}
+
 /**
  * @}
  */
