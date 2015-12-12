@@ -1101,8 +1101,7 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 /*
  * XXX: one should disable cache writeback first.
  */
-static void
-jbd_journal_commit_one(struct jbd_journal *journal)
+void jbd_journal_commit_one(struct jbd_journal *journal)
 {
 	int rc = EOK;
 	uint32_t last = journal->last;

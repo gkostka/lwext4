@@ -51,6 +51,20 @@ int jbd_inode_bmap(struct jbd_fs *jbd_fs,
 		   ext4_lblk_t iblock,
 		   ext4_fsblk_t *fblock);
 int jbd_recover(struct jbd_fs *jbd_fs);
+int jbd_journal_start(struct jbd_fs *jbd_fs,
+		      struct jbd_journal *journal);
+int jbd_journal_stop(struct jbd_journal *journal);
+struct jbd_trans *jbd_journal_new_trans(struct jbd_journal *journal);
+int jbd_trans_add_block(struct jbd_trans *trans,
+			struct ext4_block *block);
+int jbd_trans_revoke_block(struct jbd_trans *trans,
+			   ext4_fsblk_t lba);
+void jbd_journal_free_trans(struct jbd_journal *journal,
+			    struct jbd_trans *trans,
+			    bool abort);
+void jbd_journal_submit_trans(struct jbd_journal *journal,
+			      struct jbd_trans *trans);
+void jbd_journal_commit_one(struct jbd_journal *journal);
 
 #ifdef __cplusplus
 }
