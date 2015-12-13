@@ -752,7 +752,14 @@ int jbd_recover(struct jbd_fs *jbd_fs)
 
 	r = jbd_iterate_log(jbd_fs, &info, ACTION_RECOVER);
 	if (r == EOK) {
+		uint32_t features_incompatible =
+			ext4_get32(&jbd_fs->inode_ref.fs->sb,
+				   features_incompatible);
 		jbd_set32(&jbd_fs->sb, start, 0);
+		features_incompatible &= ~EXT4_FINCOM_RECOVER;
+		ext4_set32(&jbd_fs->inode_ref.fs->sb,
+			   features_incompatible,
+			   features_incompatible);
 		jbd_fs->dirty = true;
 	}
 	jbd_destroy_revoke_tree(&info);
