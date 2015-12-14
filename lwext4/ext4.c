@@ -2540,12 +2540,34 @@ int ext4_test_journal(const char *mount_point)
 			goto Finish;
 		}
 
-		jbd_journal_stop(journal);
+		ext4_fsblk_t rand_block = rand() % 4096;
+		if (!rand_block)
+			rand_block = 1;
+		struct ext4_block block;
+		r = ext4_block_get(mp->fs.bdev, &block, rand_block);
+		if (r != EOK)
+			goto out;
+
+		struct jbd_trans *trans = jbd_journal_new_trans(journal);
+		if (!trans) {
+			ext4_block_set(mp->fs.bdev, &block);
+			r = ENOMEM;
+			goto out;
+		}
+		r = jbd_trans_add_block(trans, &block);
+		if (r != EOK) {
+			jbd_journal_free_trans(journal, trans, true);
+			ext4_block_set(mp->fs.bdev, &block);
+			r = ENOMEM;
+			goto out;
+		}
+		jbd_journal_submit_trans(journal, trans);
+		jbd_journal_commit_one(journal);
+out:
 		jbd_put_fs(jbd_fs);
 		free(journal);
 		free(jbd_fs);
 	}
-
 
 Finish:
 	EXT4_MP_UNLOCK(mp);
