@@ -2540,29 +2540,48 @@ int ext4_test_journal(const char *mount_point)
 			goto Finish;
 		}
 
-		ext4_fsblk_t rand_block = rand() % 4096;
-		if (!rand_block)
-			rand_block = 1;
-		struct ext4_block block;
-		r = ext4_block_get(mp->fs.bdev, &block, rand_block);
-		if (r != EOK)
-			goto out;
+		int i;
+		for (i = 0;i < 50;i++) {
+			ext4_fsblk_t rand_block = rand() % 4096;
+			if (!rand_block)
+				rand_block = 1;
+			struct ext4_block block;
+			r = ext4_block_get(mp->fs.bdev, &block, rand_block);
+			if (r != EOK)
+				goto out;
 
-		struct jbd_trans *trans = jbd_journal_new_trans(journal);
-		if (!trans) {
+			ext4_bcache_set_dirty(block.buf);
+
+			struct jbd_trans *trans = jbd_journal_new_trans(journal);
+			if (!trans) {
+				ext4_block_set(mp->fs.bdev, &block);
+				r = ENOMEM;
+				goto out;
+			}
+
+			switch (rand() % 2) {
+			case 0:
+				r = jbd_trans_add_block(trans, &block);
+				if (r != EOK) {
+					jbd_journal_free_trans(journal, trans, true);
+					ext4_block_set(mp->fs.bdev, &block);
+					r = ENOMEM;
+					goto out;
+				}
+				break;
+			case 1:
+				r = jbd_trans_revoke_block(trans, rand_block);
+				if (r != EOK) {
+					jbd_journal_free_trans(journal, trans, true);
+					ext4_block_set(mp->fs.bdev, &block);
+					r = ENOMEM;
+					goto out;
+				}
+			}
 			ext4_block_set(mp->fs.bdev, &block);
-			r = ENOMEM;
-			goto out;
+			jbd_journal_submit_trans(journal, trans);
+			jbd_journal_commit_one(journal);
 		}
-		r = jbd_trans_add_block(trans, &block);
-		if (r != EOK) {
-			jbd_journal_free_trans(journal, trans, true);
-			ext4_block_set(mp->fs.bdev, &block);
-			r = ENOMEM;
-			goto out;
-		}
-		jbd_journal_submit_trans(journal, trans);
-		jbd_journal_commit_one(journal);
 out:
 		jbd_put_fs(jbd_fs);
 		free(journal);
