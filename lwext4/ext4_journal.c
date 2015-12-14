@@ -769,7 +769,7 @@ int jbd_recover(struct jbd_fs *jbd_fs)
 void jbd_journal_write_sb(struct jbd_journal *journal)
 {
 	struct jbd_fs *jbd_fs = journal->jbd_fs;
-	jbd_set32(&jbd_fs->sb, start, journal->first);
+	jbd_set32(&jbd_fs->sb, start, journal->start);
 	jbd_set32(&jbd_fs->sb, sequence, journal->trans_id);
 	jbd_fs->dirty = true;
 }
