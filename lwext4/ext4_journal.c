@@ -1049,7 +1049,8 @@ again:
 		}
 
 		if (tag_tbl_size < record_len) {
-			header->count = journal->block_size - tag_tbl_size;
+			jbd_set32(header, count,
+				  journal->block_size - tag_tbl_size);
 			jbd_block_set(journal->jbd_fs, &desc_block);
 			desc_iblock = 0;
 			header = NULL;
@@ -1071,7 +1072,8 @@ again:
 	}
 	if (rc == EOK && desc_iblock) {
 		if (header != NULL)
-			header->count = journal->block_size - tag_tbl_size;
+			jbd_set32(header, count,
+				  journal->block_size - tag_tbl_size);
 
 		jbd_block_set(journal->jbd_fs, &desc_block);
 	}
