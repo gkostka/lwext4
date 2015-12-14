@@ -1107,6 +1107,7 @@ struct jbd_revoke_rec {
 struct jbd_trans {
 	uint32_t trans_id;
 
+	uint32_t start_iblock;
 	int alloc_blocks;
 	int data_cnt;
 	int written_cnt;

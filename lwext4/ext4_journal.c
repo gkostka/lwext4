@@ -831,7 +831,13 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 int jbd_trans_add_block(struct jbd_trans *trans,
 			struct ext4_block *block)
 {
-	struct jbd_buf *buf = calloc(1, sizeof(struct jbd_buf));
+	struct jbd_buf *buf;
+	/* We do not need to add those unmodified buffer to
+	 * a transaction. */
+	if (!ext4_bcache_test_flag(block->buf, BC_DIRTY))
+		return EOK;
+
+	buf = calloc(1, sizeof(struct jbd_buf));
 	if (!buf)
 		return ENOMEM;
 
@@ -946,6 +952,10 @@ again:
 			uuid_exist = true;
 			tag_tbl_size = journal->block_size -
 				sizeof(struct jbd_bhdr);
+
+			if (!trans->start_iblock)
+				trans->start_iblock = desc_iblock;
+
 		}
 		tag_info.block = jbd_buf->block.lb_id;
 		tag_info.uuid_exist = uuid_exist;
@@ -1032,6 +1042,10 @@ again:
 			blocks_entry = (char *)(header + 1);
 			tag_tbl_size = journal->block_size -
 				sizeof(struct jbd_revoke_header);
+
+			if (!trans->start_iblock)
+				trans->start_iblock = desc_iblock;
+
 		}
 
 		if (tag_tbl_size < record_len) {
@@ -1097,8 +1111,9 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 	trans->written_cnt++;
 	if (trans->written_cnt == trans->data_cnt) {
 		TAILQ_REMOVE(&journal->cp_queue, trans, trans_node);
-		journal->start += trans->alloc_blocks;
-		journal->trans_id = ++trans->trans_id;
+		journal->start = trans->start_iblock +
+				 trans->alloc_blocks;
+		journal->trans_id = trans->trans_id + 1;
 		jbd_journal_write_sb(journal);
 		jbd_write_sb(journal->jbd_fs);
 		jbd_journal_free_trans(journal, trans, false);
@@ -1134,11 +1149,14 @@ void jbd_journal_commit_one(struct jbd_journal *journal)
 			goto Finish;
 
 		journal->alloc_trans_id++;
-		TAILQ_INSERT_TAIL(&journal->cp_queue, trans,
-			  trans_node);
-		if (trans == TAILQ_FIRST(&journal->cp_queue)) {
-			jbd_journal_cp_trans(journal, trans);
-		}
+		if (trans->data_cnt) {
+			TAILQ_INSERT_TAIL(&journal->cp_queue, trans,
+					trans_node);
+			if (trans == TAILQ_FIRST(&journal->cp_queue)) {
+				jbd_journal_cp_trans(journal, trans);
+			}
+		} else
+			jbd_journal_free_trans(journal, trans, false);
 	}
 Finish:
 	if (rc != EOK) {
