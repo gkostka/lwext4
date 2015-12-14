@@ -761,6 +761,8 @@ int jbd_recover(struct jbd_fs *jbd_fs)
 			   features_incompatible,
 			   features_incompatible);
 		jbd_fs->dirty = true;
+		r = ext4_sb_write(jbd_fs->inode_ref.fs->bdev,
+				  &jbd_fs->inode_ref.fs->sb);
 	}
 	jbd_destroy_revoke_tree(&info);
 	return r;
@@ -777,6 +779,19 @@ void jbd_journal_write_sb(struct jbd_journal *journal)
 int jbd_journal_start(struct jbd_fs *jbd_fs,
 		      struct jbd_journal *journal)
 {
+	int r;
+	uint32_t features_incompatible =
+			ext4_get32(&jbd_fs->inode_ref.fs->sb,
+				   features_incompatible);
+	features_incompatible |= EXT4_FINCOM_RECOVER;
+	ext4_set32(&jbd_fs->inode_ref.fs->sb,
+			features_incompatible,
+			features_incompatible);
+	r = ext4_sb_write(jbd_fs->inode_ref.fs->bdev,
+			&jbd_fs->inode_ref.fs->sb);
+	if (r != EOK)
+		return r;
+
 	journal->first = jbd_get32(&jbd_fs->sb, first);
 	journal->start = journal->first;
 	journal->last = journal->first;
@@ -794,6 +809,20 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 
 int jbd_journal_stop(struct jbd_journal *journal)
 {
+	int r;
+	struct jbd_fs *jbd_fs = journal->jbd_fs;
+	uint32_t features_incompatible =
+			ext4_get32(&jbd_fs->inode_ref.fs->sb,
+				   features_incompatible);
+	features_incompatible &= ~EXT4_FINCOM_RECOVER;
+	ext4_set32(&jbd_fs->inode_ref.fs->sb,
+			features_incompatible,
+			features_incompatible);
+	r = ext4_sb_write(jbd_fs->inode_ref.fs->bdev,
+			&jbd_fs->inode_ref.fs->sb);
+	if (r != EOK)
+		return r;
+
 	journal->start = 0;
 	journal->trans_id = 0;
 	jbd_journal_write_sb(journal);
