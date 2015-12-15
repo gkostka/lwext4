@@ -1125,7 +1125,8 @@ void jbd_journal_cp_trans(struct jbd_journal *journal, struct jbd_trans *trans)
 	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
 	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node,
 			tmp) {
-		ext4_block_set(fs->bdev, &jbd_buf->block);
+		struct ext4_block block = jbd_buf->block;
+		ext4_block_set(fs->bdev, &block);
 	}
 }
 
@@ -1136,26 +1137,41 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 {
 	struct jbd_trans *trans = arg;
 	struct jbd_journal *journal = trans->journal;
+	bool first_in_queue =
+		trans == TAILQ_FIRST(&journal->cp_queue);
 	if (res != EOK)
 		trans->error = res;
 
 	trans->written_cnt++;
 	if (trans->written_cnt == trans->data_cnt) {
-again:
 		TAILQ_REMOVE(&journal->cp_queue, trans, trans_node);
-		journal->start = trans->start_iblock +
-				 trans->alloc_blocks;
-		journal->trans_id = trans->trans_id + 1;
-		jbd_journal_write_sb(journal);
-		jbd_write_sb(journal->jbd_fs);
+
+		if (first_in_queue) {
+			journal->start = trans->start_iblock +
+				trans->alloc_blocks;
+			journal->trans_id = trans->trans_id + 1;
+		}
 		jbd_journal_free_trans(journal, trans, false);
 
-		if ((trans = TAILQ_FIRST(&journal->cp_queue))) {
-			if (trans->data_cnt) {
-				jbd_journal_cp_trans(journal, trans);
-				return;
+		if (first_in_queue) {
+			while ((trans = TAILQ_FIRST(&journal->cp_queue))) {
+				if (!trans->data_cnt) {
+					TAILQ_REMOVE(&journal->cp_queue,
+						     trans,
+						     trans_node);
+					journal->start = trans->start_iblock +
+						trans->alloc_blocks;
+					journal->trans_id = trans->trans_id + 1;
+					jbd_journal_free_trans(journal,
+							       trans, false);
+				} else {
+					journal->start = trans->start_iblock;
+					journal->trans_id = trans->trans_id;
+					break;
+				}
 			}
-			goto again;
+			jbd_journal_write_sb(journal);
+			jbd_write_sb(journal->jbd_fs);
 		}
 	}
 }
@@ -1187,6 +1203,10 @@ void jbd_journal_commit_one(struct jbd_journal *journal)
 		journal->alloc_trans_id++;
 		if (TAILQ_EMPTY(&journal->cp_queue)) {
 			if (trans->data_cnt) {
+				journal->start = trans->start_iblock;
+				journal->trans_id = trans->trans_id;
+				jbd_journal_write_sb(journal);
+				jbd_write_sb(journal->jbd_fs);
 				TAILQ_INSERT_TAIL(&journal->cp_queue, trans,
 						trans_node);
 				jbd_journal_cp_trans(journal, trans);
@@ -1195,12 +1215,15 @@ void jbd_journal_commit_one(struct jbd_journal *journal)
 					trans->alloc_blocks;
 				journal->trans_id = trans->trans_id + 1;
 				jbd_journal_write_sb(journal);
-				jbd_write_sb(journal->jbd_fs);
 				jbd_journal_free_trans(journal, trans, false);
 			}
-		} else
+		} else {
 			TAILQ_INSERT_TAIL(&journal->cp_queue, trans,
 					trans_node);
+			if (trans->data_cnt)
+				jbd_journal_cp_trans(journal, trans);
+
+		}
 	}
 Finish:
 	if (rc != EOK) {
