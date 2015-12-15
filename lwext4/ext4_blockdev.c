@@ -140,7 +140,7 @@ int ext4_block_flush_buf(struct ext4_blockdev *bdev, struct ext4_buf *buf)
 {
 	int r;
 	struct ext4_bcache *bc = bdev->bc;
-	/*Only flushing unreferenced buffer is allowed.*/
+	/*Only flushing data in an unreferenced buffer is allowed.*/
 	ext4_assert(!buf->refctr);
 
 	if (ext4_bcache_test_flag(buf, BC_DIRTY)) {
@@ -409,11 +409,22 @@ int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off, void *buf,
 	return r;
 }
 
+int ext4_block_cache_flush(struct ext4_blockdev *bdev)
+{
+	while (!SLIST_EMPTY(&bdev->bc->dirty_list)) {
+		int r;
+		struct ext4_buf *buf = SLIST_FIRST(&bdev->bc->dirty_list);
+		ext4_assert(buf);
+		r = ext4_block_flush_buf(bdev, buf);
+		if (r != EOK)
+			return r;
+
+	}
+	return EOK;
+}
+
 int ext4_block_cache_write_back(struct ext4_blockdev *bdev, uint8_t on_off)
 {
-	int r;
-	struct ext4_buf *buf;
-
 	if (on_off)
 		bdev->cache_write_back++;
 
@@ -423,17 +434,8 @@ int ext4_block_cache_write_back(struct ext4_blockdev *bdev, uint8_t on_off)
 	if (bdev->cache_write_back)
 		return EOK;
 
-	/*Flush all delayed cache blocks*/
-	while (!SLIST_EMPTY(&bdev->bc->dirty_list)) {
-
-		buf = SLIST_FIRST(&bdev->bc->dirty_list);
-		ext4_assert(buf);
-		r = ext4_block_flush_buf(bdev, buf);
-		if (r != EOK)
-			return r;
-
-	}
-	return EOK;
+	/*Flush data in all delayed cache blocks*/
+	return ext4_block_cache_flush(bdev);
 }
 
 /**

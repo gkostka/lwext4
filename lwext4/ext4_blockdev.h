@@ -231,6 +231,11 @@ int ext4_block_writebytes(struct ext4_blockdev *bdev, uint64_t off,
 int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off, void *buf,
 			 uint32_t len);
 
+/**@brief   Flush all dirty buffers to disk
+ * @param   bdev block device descriptor
+ * @return  standard error code*/
+int ext4_block_cache_flush(struct ext4_blockdev *bdev);
+
 /**@brief   Enable/disable write back cache mode
  * @param   bdev block device descriptor
  * @param   on_off
