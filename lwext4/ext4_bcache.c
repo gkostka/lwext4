@@ -233,10 +233,13 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b)
 		RB_INSERT(ext4_buf_lru, &bc->lru_root, buf);
 		/* This buffer is ready to be flushed. */
 		if (ext4_bcache_test_flag(buf, BC_DIRTY)) {
-			if (bc->bdev->cache_write_back)
+			if (bc->bdev->cache_write_back &&
+			    !ext4_bcache_test_flag(buf, BC_FLUSH))
 				ext4_bcache_insert_dirty_node(bc, buf);
-			else
+			else {
 				ext4_block_flush_buf(bc->bdev, buf);
+				ext4_bcache_clear_flag(buf, BC_FLUSH);
+			}
 		}
 
 		/* The buffer is invalidated...drop it. */

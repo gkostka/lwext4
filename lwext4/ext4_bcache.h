@@ -142,9 +142,17 @@ struct ext4_bcache {
 	SLIST_HEAD(ext4_buf_dirty, ext4_buf) dirty_list;
 };
 
+/**@brief buffer state bits
+ *
+ *  - BC♡UPTODATE: Buffer contains valid data.
+ *  - BC_DIRTY: Buffer is dirty.
+ *  - BC_FLUSH: Buffer will be immediately flushed,
+ *              when no one references it.
+ */
 enum bcache_state_bits {
 	BC_UPTODATE,
-	BC_DIRTY
+	BC_DIRTY,
+	BC_FLUSH
 };
 
 #define ext4_bcache_set_flag(buf, b)    \
