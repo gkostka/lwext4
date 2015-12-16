@@ -209,6 +209,9 @@ int jbd_block_get(struct jbd_fs *jbd_fs,
 
 	struct ext4_blockdev *bdev = jbd_fs->inode_ref.fs->bdev;
 	rc = ext4_block_get(bdev, block, fblock);
+	if (rc == EOK)
+		ext4_bcache_set_flag(block->buf, BC_FLUSH);
+
 	return rc;
 }
 
@@ -226,6 +229,9 @@ int jbd_block_get_noread(struct jbd_fs *jbd_fs,
 
 	struct ext4_blockdev *bdev = jbd_fs->inode_ref.fs->bdev;
 	rc = ext4_block_get_noread(bdev, block, fblock);
+	if (rc == EOK)
+		ext4_bcache_set_flag(block->buf, BC_FLUSH);
+
 	return rc;
 }
 
