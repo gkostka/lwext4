@@ -2583,6 +2583,7 @@ int ext4_test_journal(const char *mount_point)
 			jbd_journal_commit_one(journal);
 		}
 out:
+		jbd_journal_stop(journal);
 		jbd_put_fs(jbd_fs);
 		free(journal);
 		free(jbd_fs);
