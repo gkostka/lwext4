@@ -39,6 +39,7 @@
 #include "ext4_types.h"
 #include "ext4_fs.h"
 #include "ext4_super.h"
+#include "ext4_journal.h"
 #include "ext4_errno.h"
 #include "ext4_blockdev.h"
 #include "ext4_crc32c.h"
@@ -815,11 +816,17 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 
 int jbd_journal_stop(struct jbd_journal *journal)
 {
+
 	int r;
 	struct jbd_fs *jbd_fs = journal->jbd_fs;
-	uint32_t features_incompatible =
-			ext4_get32(&jbd_fs->inode_ref.fs->sb,
-				   features_incompatible);
+	uint32_t features_incompatible;
+
+	jbd_journal_commit_all(journal);
+	ext4_block_cache_flush(jbd_fs->inode_ref.fs->bdev);
+
+	features_incompatible =
+		ext4_get32(&jbd_fs->inode_ref.fs->sb,
+			   features_incompatible);
 	features_incompatible &= ~EXT4_FINCOM_RECOVER;
 	ext4_set32(&jbd_fs->inode_ref.fs->sb,
 			features_incompatible,
