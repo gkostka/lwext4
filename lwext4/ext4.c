@@ -2513,6 +2513,7 @@ int ext4_test_journal(const char *mount_point)
 
 	int r = ENOTSUP;
 	EXT4_MP_LOCK(mp);
+	ext4_block_cache_write_back(mp->fs.bdev, 1);
 	if (ext4_sb_feature_com(&mp->fs.sb, EXT4_FCOM_HAS_JOURNAL)) {
 		struct jbd_fs *jbd_fs = calloc(1, sizeof(struct jbd_fs));
 		struct jbd_journal *journal;
@@ -2590,6 +2591,7 @@ out:
 	}
 
 Finish:
+	ext4_block_cache_write_back(mp->fs.bdev, 0);
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
