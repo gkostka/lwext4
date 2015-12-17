@@ -587,6 +587,9 @@ jbd_revoke_entry_lookup(struct recover_info *info, ext4_fsblk_t block)
 	return RB_FIND(jbd_revoke, &info->revoke_root, &tmp);
 }
 
+/**@brief  Replay a block in a transaction.
+ * @param  jbd_fs jbd filesystem
+ * @param  block  block address to be replayed.*/
 static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 				  ext4_fsblk_t block,
 				  uint8_t *uuid __unused,
@@ -602,6 +605,8 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 
 	(*this_block)++;
 
+	/* We replay this block only if the current transaction id
+	 * is equal or greater than that in revoke entry.*/
 	revoke_entry = jbd_revoke_entry_lookup(info, block);
 	if (revoke_entry &&
 	    arg->this_trans_id < revoke_entry->trans_id)
@@ -615,6 +620,7 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 	if (r != EOK)
 		return;
 
+	/* We need special treatment for ext4 superblock. */
 	if (block) {
 		r = ext4_block_get_noread(fs->bdev, &ext4_block, block);
 		if (r != EOK) {
@@ -652,12 +658,18 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 	return;
 }
 
+/**@brief  Add block address to revoke tree, along with
+ *         its transaction id.
+ * @param  info  journal replay info
+ * @param  block  block address to be replayed.*/
 static void jbd_add_revoke_block_tags(struct recover_info *info,
 				      ext4_fsblk_t block)
 {
 	struct revoke_entry *revoke_entry;
 
 	ext4_dbg(DEBUG_JBD, "Add block %" PRIu64 " to revoke tree\n", block);
+	/* If the revoke entry with respect to the block address
+	 * exists already, update its transaction id.*/
 	revoke_entry = jbd_revoke_entry_lookup(info, block);
 	if (revoke_entry) {
 		revoke_entry->trans_id = info->this_trans_id;
@@ -695,7 +707,10 @@ do {									\
 #define ACTION_REVOKE 1
 #define ACTION_RECOVER 2
 
-
+/**@brief  Add entries in a revoke block to revoke tree.
+ * @param  jbd_fs jbd filesystem
+ * @param  header revoke block header
+ * @param  recover_info  journal replay info*/
 static void jbd_build_revoke_tree(struct jbd_fs *jbd_fs,
 				  struct jbd_bhdr *header,
 				  struct recover_info *info)
@@ -704,6 +719,8 @@ static void jbd_build_revoke_tree(struct jbd_fs *jbd_fs,
 	struct jbd_revoke_header *revoke_hdr =
 		(struct jbd_revoke_header *)header;
 	uint32_t i, nr_entries, record_len = 4;
+
+	/* If we are working on a 64bit jbd filesystem, */
 	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 				     JBD_FEATURE_INCOMPAT_64BIT))
 		record_len = 8;
@@ -752,6 +769,11 @@ static void jbd_replay_descriptor_block(struct jbd_fs *jbd_fs,
 				arg);
 }
 
+/**@brief  The core routine of journal replay.
+ * @param  jbd_fs jbd filesystem
+ * @param  recover_info  journal replay info
+ * @param  action action needed to be taken
+ * @return standard error code*/
 int jbd_iterate_log(struct jbd_fs *jbd_fs,
 		    struct recover_info *info,
 		    int action)
@@ -762,6 +784,7 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 	uint32_t start_trans_id, this_trans_id;
 	uint32_t start_block, this_block;
 
+	/* We start iterating valid blocks in the whole journal.*/
 	start_trans_id = this_trans_id = jbd_get32(sb, sequence);
 	start_block = this_block = jbd_get32(sb, start);
 
@@ -771,6 +794,10 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 	while (!log_end) {
 		struct ext4_block block;
 		struct jbd_bhdr *header;
+		/* If we are not scanning for the last
+		 * valid transaction in the journal,
+		 * we will stop when we reach the end of
+		 * the journal.*/
 		if (action != ACTION_SCAN)
 			if (this_trans_id > info->last_trans_id) {
 				log_end = true;
@@ -782,12 +809,19 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			break;
 
 		header = (struct jbd_bhdr *)block.data;
+		/* This block does not have a valid magic number,
+		 * so we have reached the end of the journal.*/
 		if (jbd_get32(header, magic) != JBD_MAGIC_NUMBER) {
 			jbd_block_set(jbd_fs, &block);
 			log_end = true;
 			continue;
 		}
 
+		/* If the transaction id we found is not expected,
+		 * we may have reached the end of the journal.
+		 *
+		 * If we are not scanning the journal, something
+		 * bad might have taken place. :-( */
 		if (jbd_get32(header, sequence) != this_trans_id) {
 			if (action != ACTION_SCAN)
 				r = EIO;
@@ -819,6 +853,9 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			ext4_dbg(DEBUG_JBD, "Commit block: %" PRIu32", "
 					    "trans_id: %" PRIu32"\n",
 					    this_block, this_trans_id);
+			/* This is the end of a transaction,
+			 * we may now proceed to the next transaction.
+			 */
 			this_trans_id++;
 			break;
 		case JBD_REVOKE_BLOCK:
@@ -844,6 +881,7 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 	}
 	ext4_dbg(DEBUG_JBD, "End of journal.\n");
 	if (r == EOK && action == ACTION_SCAN) {
+		/* We have finished scanning the journal. */
 		info->start_trans_id = start_trans_id;
 		if (this_trans_id > start_trans_id)
 			info->last_trans_id = this_trans_id - 1;
@@ -854,6 +892,9 @@ int jbd_iterate_log(struct jbd_fs *jbd_fs,
 	return r;
 }
 
+/**@brief  Replay journal.
+ * @param  jbd_fs jbd filesystem
+ * @return standard error code*/
 int jbd_recover(struct jbd_fs *jbd_fs)
 {
 	int r;
@@ -874,6 +915,10 @@ int jbd_recover(struct jbd_fs *jbd_fs)
 
 	r = jbd_iterate_log(jbd_fs, &info, ACTION_RECOVER);
 	if (r == EOK) {
+		/* If we successfully replay the journal,
+		 * clear EXT4_FINCOM_RECOVER flag on the
+		 * ext4 superblock, and set the start of
+		 * journal to 0.*/
 		uint32_t features_incompatible =
 			ext4_get32(&jbd_fs->inode_ref.fs->sb,
 				   features_incompatible);
@@ -898,6 +943,10 @@ void jbd_journal_write_sb(struct jbd_journal *journal)
 	jbd_fs->dirty = true;
 }
 
+/**@brief  Start accessing the journal.
+ * @param  jbd_fs jbd filesystem
+ * @param  journal current journal session
+ * @return standard error code*/
 int jbd_journal_start(struct jbd_fs *jbd_fs,
 		      struct jbd_journal *journal)
 {
@@ -929,14 +978,19 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 	return jbd_write_sb(jbd_fs);
 }
 
+/**@brief  Stop accessing the journal.
+ * @param  journal current journal session
+ * @return standard error code*/
 int jbd_journal_stop(struct jbd_journal *journal)
 {
-
 	int r;
 	struct jbd_fs *jbd_fs = journal->jbd_fs;
 	uint32_t features_incompatible;
 
+	/* Commit all the transactions to the journal.*/
 	jbd_journal_commit_all(journal);
+	/* Make sure that journalled content have reached
+	 * the disk.*/
 	ext4_block_cache_flush(jbd_fs->inode_ref.fs->bdev);
 
 	features_incompatible =
@@ -957,6 +1011,10 @@ int jbd_journal_stop(struct jbd_journal *journal)
 	return jbd_write_sb(journal->jbd_fs);
 }
 
+/**@brief  Allocate a block in the journal.
+ * @param  journal current journal session
+ * @param  trans transaction
+ * @return allocated block address*/
 static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal,
 					struct jbd_trans *trans)
 {
@@ -965,12 +1023,18 @@ static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal,
 	start_block = journal->last++;
 	trans->alloc_blocks++;
 	wrap(&journal->jbd_fs->sb, journal->last);
+	
+	/* If there is no space left, flush all journalled
+	 * blocks to disk first.*/
 	if (journal->last == journal->start)
 		ext4_block_cache_flush(journal->jbd_fs->inode_ref.fs->bdev);
 
 	return start_block;
 }
 
+/**@brief  Allocate a new transaction
+ * @param  journal current journal session
+ * @return transaction allocated*/
 struct jbd_trans *
 jbd_journal_new_trans(struct jbd_journal *journal)
 {
@@ -990,6 +1054,10 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 			  int res,
 			  void *arg);
 
+/**@brief  Add block to a transaction
+ * @param  trans transaction
+ * @param  block block descriptor
+ * @return standard error code*/
 int jbd_trans_add_block(struct jbd_trans *trans,
 			struct ext4_block *block)
 {
@@ -1007,6 +1075,8 @@ int jbd_trans_add_block(struct jbd_trans *trans,
 	buf->block = *block;
 	ext4_bcache_inc_ref(block->buf);
 
+	/* If the content reach the disk, notify us
+	 * so that we may do a checkpoint. */
 	block->buf->end_write = jbd_trans_end_write;
 	block->buf->end_write_arg = trans;
 
@@ -1015,6 +1085,10 @@ int jbd_trans_add_block(struct jbd_trans *trans,
 	return EOK;
 }
 
+/**@brief  Add block to be revoked to a transaction
+ * @param  trans transaction
+ * @param  lba logical block address
+ * @return standard error code*/
 int jbd_trans_revoke_block(struct jbd_trans *trans,
 			   ext4_fsblk_t lba)
 {
@@ -1028,6 +1102,11 @@ int jbd_trans_revoke_block(struct jbd_trans *trans,
 	return EOK;
 }
 
+/**@brief  Free a transaction
+ * @param  journal current journal session
+ * @param  trans transaction
+ * @param  abort discard all the modifications on the block?
+ * @return standard error code*/
 void jbd_journal_free_trans(struct jbd_journal *journal,
 			    struct jbd_trans *trans,
 			    bool abort)
@@ -1052,6 +1131,9 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 	free(trans);
 }
 
+/**@brief  Write commit block for a transaction
+ * @param  trans transaction
+ * @return standard error code*/
 static int jbd_trans_write_commit_block(struct jbd_trans *trans)
 {
 	int rc;
@@ -1079,6 +1161,10 @@ static int jbd_trans_write_commit_block(struct jbd_trans *trans)
 	return EOK;
 }
 
+/**@brief  Write descriptor block for a transaction
+ * @param  journal current journal session
+ * @param  trans transaction
+ * @return standard error code*/
 static int jbd_journal_prepare(struct jbd_journal *journal,
 			       struct jbd_trans *trans)
 {
@@ -1164,6 +1250,10 @@ again:
 	return rc;
 }
 
+/**@brief  Write revoke block for a transaction
+ * @param  journal current journal session
+ * @param  trans transaction
+ * @return standard error code*/
 static int
 jbd_journal_prepare_revoke(struct jbd_journal *journal,
 			   struct jbd_trans *trans)
@@ -1243,6 +1333,9 @@ again:
 	return rc;
 }
 
+/**@brief  Submit the transaction to transaction queue.
+ * @param  journal current journal session
+ * @param  trans transaction*/
 void
 jbd_journal_submit_trans(struct jbd_journal *journal,
 			 struct jbd_trans *trans)
@@ -1252,6 +1345,9 @@ jbd_journal_submit_trans(struct jbd_journal *journal,
 			  trans_node);
 }
 
+/**@brief  Put references of block descriptors in a transaction.
+ * @param  journal current journal session
+ * @param  trans transaction*/
 void jbd_journal_cp_trans(struct jbd_journal *journal, struct jbd_trans *trans)
 {
 	struct jbd_buf *jbd_buf, *tmp;
@@ -1263,6 +1359,8 @@ void jbd_journal_cp_trans(struct jbd_journal *journal, struct jbd_trans *trans)
 	}
 }
 
+/**@brief  Update the start block of the journal when
+ *         all the contents in a transaction reach the disk.*/
 static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 			  struct ext4_buf *buf __unused,
 			  int res,
@@ -1312,6 +1410,9 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 	}
 }
 
+/**@brief  Commit one transaction on transaction queue
+ *         to the journal.
+ * @param  journal current journal session.*/
 void jbd_journal_commit_one(struct jbd_journal *journal)
 {
 	int rc = EOK;
@@ -1368,6 +1469,9 @@ Finish:
 	}
 }
 
+/**@brief  Commit all the transactions on transaction queue
+ *         to the journal.
+ * @param  journal current journal session.*/
 void jbd_journal_commit_all(struct jbd_journal *journal)
 {
 	while (!TAILQ_EMPTY(&journal->trans_queue)) {
