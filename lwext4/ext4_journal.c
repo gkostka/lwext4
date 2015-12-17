@@ -838,9 +838,14 @@ int jbd_journal_stop(struct jbd_journal *journal)
 static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal,
 					struct jbd_trans *trans)
 {
-	uint32_t start_block = journal->last++;
+	uint32_t start_block;
+
+	start_block = journal->last++;
 	trans->alloc_blocks++;
 	wrap(&journal->jbd_fs->sb, journal->last);
+	if (journal->last == journal->start)
+		ext4_block_cache_flush(journal->jbd_fs->inode_ref.fs->bdev);
+
 	return start_block;
 }
 
@@ -1190,6 +1195,7 @@ void jbd_journal_commit_one(struct jbd_journal *journal)
 	int rc = EOK;
 	uint32_t last = journal->last;
 	struct jbd_trans *trans;
+
 	if ((trans = TAILQ_FIRST(&journal->trans_queue))) {
 		TAILQ_REMOVE(&journal->trans_queue, trans, trans_node);
 
