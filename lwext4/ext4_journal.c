@@ -49,22 +49,45 @@
 #include <string.h>
 #include <stdlib.h>
 
+/**@brief  Revoke entry during journal replay.*/
 struct revoke_entry {
+	/**@brief  Block number not to be replayed.*/
 	ext4_fsblk_t block;
+
+	/**@brief  For any transaction id smaller
+	 *         than trans_id, records of @block
+	 *         in those transactions should not
+	 *         be replayed.*/
 	uint32_t trans_id;
+
+	/**@brief  Revoke tree node.*/
 	RB_ENTRY(revoke_entry) revoke_node;
 };
 
+/**@brief  Valid journal replay information.*/
 struct recover_info {
+	/**@brief  Starting transaction id.*/
 	uint32_t start_trans_id;
+
+	/**@brief  Ending transaction id.*/
 	uint32_t last_trans_id;
+
+	/**@brief  Used as internal argument.*/
 	uint32_t this_trans_id;
+
+	/**@brief  RB-Tree storing revoke entries.*/
 	RB_HEAD(jbd_revoke, revoke_entry) revoke_root;
 };
 
+/**@brief  Journal replay internal arguments.*/
 struct replay_arg {
+	/**@brief  Journal replay information.*/
 	struct recover_info *info;
+
+	/**@brief  Current block we are on.*/
 	uint32_t *this_block;
+
+	/**@brief  Current trans_id we are on.*/
 	uint32_t this_trans_id;
 };
 
@@ -84,10 +107,15 @@ RB_GENERATE_INTERNAL(jbd_revoke, revoke_entry, revoke_node,
 #define jbd_alloc_revoke_entry() calloc(1, sizeof(struct revoke_entry))
 #define jbd_free_revoke_entry(addr) free(addr)
 
+/**@brief  Data block lookup helper.*/
 int jbd_inode_bmap(struct jbd_fs *jbd_fs,
 		   ext4_lblk_t iblock,
 		   ext4_fsblk_t *fblock);
 
+/**@brief  Write jbd superblock to disk.
+ * @param  jbd_fs jbd filesystem
+ * @param  s jbd superblock
+ * @return standard error code*/
 int jbd_sb_write(struct jbd_fs *jbd_fs, struct jbd_sb *s)
 {
 	int rc;
@@ -103,6 +131,10 @@ int jbd_sb_write(struct jbd_fs *jbd_fs, struct jbd_sb *s)
 				     EXT4_SUPERBLOCK_SIZE);
 }
 
+/**@brief  Read jbd superblock from disk.
+ * @param  jbd_fs jbd filesystem
+ * @param  s jbd superblock
+ * @return standard error code*/
 int jbd_sb_read(struct jbd_fs *jbd_fs, struct jbd_sb *s)
 {
 	int rc;
@@ -118,6 +150,9 @@ int jbd_sb_read(struct jbd_fs *jbd_fs, struct jbd_sb *s)
 				    EXT4_SUPERBLOCK_SIZE);
 }
 
+/**@brief  Verify jbd superblock.
+ * @param  sb jbd superblock
+ * @return true if jbd superblock is valid */
 static bool jbd_verify_sb(struct jbd_sb *sb)
 {
 	struct jbd_bhdr *header = &sb->header;
@@ -131,6 +166,9 @@ static bool jbd_verify_sb(struct jbd_sb *sb)
 	return true;
 }
 
+/**@brief  Write back dirty jbd superblock to disk.
+ * @param  jbd_fs jbd filesystem
+ * @return standard error code*/
 static int jbd_write_sb(struct jbd_fs *jbd_fs)
 {
 	int rc = EOK;
@@ -144,6 +182,10 @@ static int jbd_write_sb(struct jbd_fs *jbd_fs)
 	return rc;
 }
 
+/**@brief  Get reference to jbd filesystem.
+ * @param  fs Filesystem to load journal of
+ * @param  jbd_fs jbd filesystem
+ * @return standard error code*/
 int jbd_get_fs(struct ext4_fs *fs,
 	       struct jbd_fs *jbd_fs)
 {
@@ -151,6 +193,9 @@ int jbd_get_fs(struct ext4_fs *fs,
 	uint32_t journal_ino;
 
 	memset(jbd_fs, 0, sizeof(struct jbd_fs));
+	/* See if there is journal inode on this filesystem.*/
+	/* FIXME: detection on existance ofbkejournal bdev is
+	 *        missing.*/
 	journal_ino = ext4_get32(&fs->sb, journal_inode_number);
 
 	rc = ext4_fs_get_inode_ref(fs,
@@ -175,6 +220,9 @@ int jbd_get_fs(struct ext4_fs *fs,
 	return rc;
 }
 
+/**@brief  Put reference of jbd filesystem.
+ * @param  jbd_fs jbd filesystem
+ * @return standard error code*/
 int jbd_put_fs(struct jbd_fs *jbd_fs)
 {
 	int rc = EOK;
@@ -184,6 +232,11 @@ int jbd_put_fs(struct jbd_fs *jbd_fs)
 	return rc;
 }
 
+/**@brief  Data block lookup helper.
+ * @param  jbd_fs jbd filesystem
+ * @param  iblock block index
+ * @param  fblock logical block address
+ * @return standard error code*/
 int jbd_inode_bmap(struct jbd_fs *jbd_fs,
 		   ext4_lblk_t iblock,
 		   ext4_fsblk_t *fblock)
@@ -196,6 +249,11 @@ int jbd_inode_bmap(struct jbd_fs *jbd_fs,
 	return rc;
 }
 
+/**@brief   jbd block get function (through cache).
+ * @param   jbd_fs jbd filesystem
+ * @param   block block descriptor
+ * @param   fblock jbd logical block address
+ * @return  standard error code*/
 int jbd_block_get(struct jbd_fs *jbd_fs,
 		  struct ext4_block *block,
 		  ext4_fsblk_t fblock)
@@ -203,6 +261,9 @@ int jbd_block_get(struct jbd_fs *jbd_fs,
 	/* TODO: journal device. */
 	int rc;
 	ext4_lblk_t iblock = (ext4_lblk_t)fblock;
+
+	/* Lookup the logical block address of
+	 * fblock.*/
 	rc = jbd_inode_bmap(jbd_fs, iblock,
 			    &fblock);
 	if (rc != EOK)
@@ -210,12 +271,20 @@ int jbd_block_get(struct jbd_fs *jbd_fs,
 
 	struct ext4_blockdev *bdev = jbd_fs->inode_ref.fs->bdev;
 	rc = ext4_block_get(bdev, block, fblock);
+
+	/* If succeeded, mark buffer as BC_FLUSH to indicate
+	 * that data should be written to disk immediately.*/
 	if (rc == EOK)
 		ext4_bcache_set_flag(block->buf, BC_FLUSH);
 
 	return rc;
 }
 
+/**@brief   jbd block get function (through cache, don't read).
+ * @param   jbd_fs jbd filesystem
+ * @param   block block descriptor
+ * @param   fblock jbd logical block address
+ * @return  standard error code*/
 int jbd_block_get_noread(struct jbd_fs *jbd_fs,
 			 struct ext4_block *block,
 			 ext4_fsblk_t fblock)
@@ -236,6 +305,10 @@ int jbd_block_get_noread(struct jbd_fs *jbd_fs,
 	return rc;
 }
 
+/**@brief   jbd block set procedure (through cache).
+ * @param   jbd_fs jbd filesystem
+ * @param   block block descriptor
+ * @return  standard error code*/
 int jbd_block_set(struct jbd_fs *jbd_fs,
 		  struct ext4_block *block)
 {
@@ -243,19 +316,24 @@ int jbd_block_set(struct jbd_fs *jbd_fs,
 			      block);
 }
 
-/*
- * helper functions to deal with 32 or 64bit block numbers.
- */
+/**@brief  helper functions to calculate
+ *         block tag size, not including UUID part.
+ * @param  jbd_fs jbd filesystem
+ * @return tag size in bytes*/
 int jbd_tag_bytes(struct jbd_fs *jbd_fs)
 {
 	int size;
 
+	/* It is very easy to deal with the case which
+	 * JBD_FEATURE_INCOMPAT_CSUM_V3 is enabled.*/
 	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 				     JBD_FEATURE_INCOMPAT_CSUM_V3))
 		return sizeof(struct jbd_block_tag3);
 
 	size = sizeof(struct jbd_block_tag);
 
+	/* If JBD_FEATURE_INCOMPAT_CSUM_V2 is enabled,
+	 * add 2 bytes to size.*/
 	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 				     JBD_FEATURE_INCOMPAT_CSUM_V2))
 		size += sizeof(uint16_t);
@@ -264,18 +342,35 @@ int jbd_tag_bytes(struct jbd_fs *jbd_fs)
 				     JBD_FEATURE_INCOMPAT_64BIT))
 		return size;
 
+	/* If block number is 4 bytes in size,
+	 * minus 4 bytes from size */
 	return size - sizeof(uint32_t);
 }
 
-/**@brief: tag information. */
+/**@brief  Tag information. */
 struct tag_info {
+	/**@brief  Tag size in bytes, including UUID part.*/
 	int tag_bytes;
+
+	/**@brief  block number stored in this tag.*/
 	ext4_fsblk_t block;
+
+	/**@brief  whether UUID part exists or not.*/
 	bool uuid_exist;
+
+	/**@brief  UUID content if UUID part exists.*/
 	uint8_t uuid[UUID_SIZE];
+
+	/**@brief  Is this the last tag? */
 	bool last_tag;
 };
 
+/**@brief  Extract information from a block tag.
+ * @param  __tag pointer to the block tag
+ * @param  tag_bytes block tag size of this jbd filesystem
+ * @param  remaining size in buffer containing the block tag
+ * @param  tag_info information of this tag.
+ * @return  EOK when succeed, otherwise return EINVAL.*/
 static int
 jbd_extract_block_tag(struct jbd_fs *jbd_fs,
 		      void *__tag,
@@ -288,6 +383,7 @@ jbd_extract_block_tag(struct jbd_fs *jbd_fs,
 	tag_info->uuid_exist = false;
 	tag_info->last_tag = false;
 
+	/* See whether it is possible to hold a valid block tag.*/
 	if (remain_buf_size - tag_bytes < 0)
 		return EINVAL;
 
@@ -304,6 +400,7 @@ jbd_extract_block_tag(struct jbd_fs *jbd_fs,
 			tag_info->block = 0;
 
 		if (!(jbd_get32(tag, flags) & JBD_FLAG_SAME_UUID)) {
+			/* See whether it is possible to hold UUID part.*/
 			if (remain_buf_size - tag_bytes < UUID_SIZE)
 				return EINVAL;
 
@@ -328,6 +425,7 @@ jbd_extract_block_tag(struct jbd_fs *jbd_fs,
 			tag_info->block = 0;
 
 		if (!(jbd_get16(tag, flags) & JBD_FLAG_SAME_UUID)) {
+			/* See whether it is possible to hold UUID part.*/
 			if (remain_buf_size - tag_bytes < UUID_SIZE)
 				return EINVAL;
 
@@ -344,6 +442,11 @@ jbd_extract_block_tag(struct jbd_fs *jbd_fs,
 	return EOK;
 }
 
+/**@brief  Write information to a block tag.
+ * @param  __tag pointer to the block tag
+ * @param  remaining size in buffer containing the block tag
+ * @param  tag_info information of this tag.
+ * @return  EOK when succeed, otherwise return EINVAL.*/
 static int
 jbd_write_block_tag(struct jbd_fs *jbd_fs,
 		    void *__tag,
@@ -355,6 +458,7 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 
 	tag_info->tag_bytes = tag_bytes;
 
+	/* See whether it is possible to hold a valid block tag.*/
 	if (remain_buf_size - tag_bytes < 0)
 		return EINVAL;
 
@@ -367,6 +471,7 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 			jbd_set32(tag, blocknr_high, tag_info->block >> 32);
 
 		if (tag_info->uuid_exist) {
+			/* See whether it is possible to hold UUID part.*/
 			if (remain_buf_size - tag_bytes < UUID_SIZE)
 				return EINVAL;
 
@@ -389,6 +494,7 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 			jbd_set32(tag, blocknr_high, tag_info->block >> 32);
 
 		if (tag_info->uuid_exist) {
+			/* See whether it is possible to hold UUID part.*/
 			if (remain_buf_size - tag_bytes < UUID_SIZE)
 				return EINVAL;
 
@@ -407,6 +513,13 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 	return EOK;
 }
 
+/**@brief  Iterate all block tags in a block.
+ * @param  jbd_fs jbd filesystem
+ * @param  __tag_start pointer to the block
+ * @param  tag_tbl_size size of the block
+ * @param  func callback routine to indicate that
+ *         a block tag is found
+ * @param  arg additional argument to be passed to func */
 static void
 jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 			void *__tag_start,
@@ -422,6 +535,7 @@ jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 	tag_start = __tag_start;
 	tag_ptr = tag_start;
 
+	/* Cut off the size of block tail storing checksum. */
 	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 				     JBD_FEATURE_INCOMPAT_CSUM_V2) ||
 	    JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
@@ -441,6 +555,7 @@ jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 		if (func)
 			func(jbd_fs, tag_info.block, tag_info.uuid, arg);
 
+		/* Stop the iteration when we reach the last tag. */
 		if (tag_info.last_tag)
 			break;
 
