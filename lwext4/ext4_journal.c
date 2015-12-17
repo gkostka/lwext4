@@ -1160,6 +1160,7 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 		if (first_in_queue) {
 			journal->start = trans->start_iblock +
 				trans->alloc_blocks;
+			wrap(&journal->jbd_fs->sb, journal->start);
 			journal->trans_id = trans->trans_id + 1;
 		}
 		jbd_journal_free_trans(journal, trans, false);
@@ -1172,11 +1173,13 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 						     trans_node);
 					journal->start = trans->start_iblock +
 						trans->alloc_blocks;
+					wrap(&journal->jbd_fs->sb, journal->start);
 					journal->trans_id = trans->trans_id + 1;
 					jbd_journal_free_trans(journal,
 							       trans, false);
 				} else {
 					journal->start = trans->start_iblock;
+					wrap(&journal->jbd_fs->sb, journal->start);
 					journal->trans_id = trans->trans_id;
 					break;
 				}
@@ -1213,6 +1216,7 @@ void jbd_journal_commit_one(struct jbd_journal *journal)
 		if (TAILQ_EMPTY(&journal->cp_queue)) {
 			if (trans->data_cnt) {
 				journal->start = trans->start_iblock;
+				wrap(&journal->jbd_fs->sb, journal->start);
 				journal->trans_id = trans->trans_id;
 				jbd_journal_write_sb(journal);
 				jbd_write_sb(journal->jbd_fs);
@@ -1222,6 +1226,7 @@ void jbd_journal_commit_one(struct jbd_journal *journal)
 			} else {
 				journal->start = trans->start_iblock +
 					trans->alloc_blocks;
+				wrap(&journal->jbd_fs->sb, journal->start);
 				journal->trans_id = trans->trans_id + 1;
 				jbd_journal_write_sb(journal);
 				jbd_journal_free_trans(journal, trans, false);
