@@ -1116,8 +1116,10 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
 	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node,
 			  tmp) {
-		if (abort)
+		if (abort) {
+			ext4_bcache_clear_dirty(jbd_buf->block.buf);
 			ext4_block_set(fs->bdev, &jbd_buf->block);
+		}
 
 		LIST_REMOVE(jbd_buf, buf_node);
 		free(jbd_buf);
