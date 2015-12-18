@@ -62,6 +62,8 @@ int jbd_trans_revoke_block(struct jbd_trans *trans,
 void jbd_journal_free_trans(struct jbd_journal *journal,
 			    struct jbd_trans *trans,
 			    bool abort);
+int jbd_journal_commit_trans(struct jbd_journal *journal,
+			     struct jbd_trans *trans);
 void jbd_journal_submit_trans(struct jbd_journal *journal,
 			      struct jbd_trans *trans);
 void jbd_journal_commit_one(struct jbd_journal *journal);
