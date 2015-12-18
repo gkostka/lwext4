@@ -107,16 +107,11 @@ RB_GENERATE_INTERNAL(jbd_revoke, revoke_entry, revoke_node,
 #define jbd_alloc_revoke_entry() calloc(1, sizeof(struct revoke_entry))
 #define jbd_free_revoke_entry(addr) free(addr)
 
-/**@brief  Data block lookup helper.*/
-int jbd_inode_bmap(struct jbd_fs *jbd_fs,
-		   ext4_lblk_t iblock,
-		   ext4_fsblk_t *fblock);
-
 /**@brief  Write jbd superblock to disk.
  * @param  jbd_fs jbd filesystem
  * @param  s jbd superblock
  * @return standard error code*/
-int jbd_sb_write(struct jbd_fs *jbd_fs, struct jbd_sb *s)
+static int jbd_sb_write(struct jbd_fs *jbd_fs, struct jbd_sb *s)
 {
 	int rc;
 	struct ext4_fs *fs = jbd_fs->inode_ref.fs;
@@ -135,7 +130,7 @@ int jbd_sb_write(struct jbd_fs *jbd_fs, struct jbd_sb *s)
  * @param  jbd_fs jbd filesystem
  * @param  s jbd superblock
  * @return standard error code*/
-int jbd_sb_read(struct jbd_fs *jbd_fs, struct jbd_sb *s)
+static int jbd_sb_read(struct jbd_fs *jbd_fs, struct jbd_sb *s)
 {
 	int rc;
 	struct ext4_fs *fs = jbd_fs->inode_ref.fs;
@@ -254,7 +249,7 @@ int jbd_inode_bmap(struct jbd_fs *jbd_fs,
  * @param   block block descriptor
  * @param   fblock jbd logical block address
  * @return  standard error code*/
-int jbd_block_get(struct jbd_fs *jbd_fs,
+static int jbd_block_get(struct jbd_fs *jbd_fs,
 		  struct ext4_block *block,
 		  ext4_fsblk_t fblock)
 {
@@ -285,7 +280,7 @@ int jbd_block_get(struct jbd_fs *jbd_fs,
  * @param   block block descriptor
  * @param   fblock jbd logical block address
  * @return  standard error code*/
-int jbd_block_get_noread(struct jbd_fs *jbd_fs,
+static int jbd_block_get_noread(struct jbd_fs *jbd_fs,
 			 struct ext4_block *block,
 			 ext4_fsblk_t fblock)
 {
@@ -309,7 +304,7 @@ int jbd_block_get_noread(struct jbd_fs *jbd_fs,
  * @param   jbd_fs jbd filesystem
  * @param   block block descriptor
  * @return  standard error code*/
-int jbd_block_set(struct jbd_fs *jbd_fs,
+static int jbd_block_set(struct jbd_fs *jbd_fs,
 		  struct ext4_block *block)
 {
 	return ext4_block_set(jbd_fs->inode_ref.fs->bdev,
@@ -320,7 +315,7 @@ int jbd_block_set(struct jbd_fs *jbd_fs,
  *         block tag size, not including UUID part.
  * @param  jbd_fs jbd filesystem
  * @return tag size in bytes*/
-int jbd_tag_bytes(struct jbd_fs *jbd_fs)
+static int jbd_tag_bytes(struct jbd_fs *jbd_fs)
 {
 	int size;
 
@@ -774,9 +769,9 @@ static void jbd_replay_descriptor_block(struct jbd_fs *jbd_fs,
  * @param  recover_info  journal replay info
  * @param  action action needed to be taken
  * @return standard error code*/
-int jbd_iterate_log(struct jbd_fs *jbd_fs,
-		    struct recover_info *info,
-		    int action)
+static int jbd_iterate_log(struct jbd_fs *jbd_fs,
+			   struct recover_info *info,
+			   int action)
 {
 	int r = EOK;
 	bool log_end = false;
@@ -935,7 +930,7 @@ int jbd_recover(struct jbd_fs *jbd_fs)
 	return r;
 }
 
-void jbd_journal_write_sb(struct jbd_journal *journal)
+static void jbd_journal_write_sb(struct jbd_journal *journal)
 {
 	struct jbd_fs *jbd_fs = journal->jbd_fs;
 	jbd_set32(&jbd_fs->sb, start, journal->start);
