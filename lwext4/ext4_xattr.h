@@ -70,7 +70,7 @@ const char *ext4_extract_xattr_name(const char *full_name, size_t full_name_len,
 			      uint8_t *name_index, size_t *name_len);
 
 const char *ext4_get_xattr_name_prefix(uint8_t name_index,
-					size_t *ret_prefix_len);
+				       size_t *ret_prefix_len);
 
 #ifdef __cplusplus
 }
