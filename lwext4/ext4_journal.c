@@ -1359,7 +1359,7 @@ void jbd_journal_cp_trans(struct jbd_journal *journal, struct jbd_trans *trans)
 /**@brief  Update the start block of the journal when
  *         all the contents in a transaction reach the disk.*/
 static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
-			  struct ext4_buf *buf __unused,
+			  struct ext4_buf *buf,
 			  int res,
 			  void *arg)
 {
@@ -1369,6 +1369,10 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 		trans == TAILQ_FIRST(&journal->cp_queue);
 	if (res != EOK)
 		trans->error = res;
+
+	/* Clear the end_write and end_write_arg fields. */
+	buf->end_write = NULL;
+	buf->end_write_arg = NULL;
 
 	trans->written_cnt++;
 	if (trans->written_cnt == trans->data_cnt) {
