@@ -136,7 +136,7 @@ typedef struct ext4_file {
 /*****************************DIRECTORY DESCRIPTOR***************************/
 
 /**@brief   Directory entry descriptor. Copy from ext4_types.h*/
-typedef struct {
+typedef struct ext4_direntry {
 	uint32_t inode;
 	uint16_t entry_length;
 	uint8_t name_length;
@@ -144,7 +144,7 @@ typedef struct {
 	uint8_t name[255];
 } ext4_direntry;
 
-typedef struct {
+typedef struct ext4_dir {
 	/**@brief   File descriptor*/
 	ext4_file f;
 	/**@brief   Current directory entry.*/
@@ -281,7 +281,7 @@ int ext4_flink(const char *path, const char *hardlink_path);
 int ext4_frename(const char *path, const char *new_path);
 
 /**@brief   File open function.
- * @param   filename, (has to start from mount point)
+ * @param   path filename (has to start from mount point)
  *          /my_partition/my_file
  * @param   flags open file flags
  *  |---------------------------------------------------------------|
@@ -363,21 +363,80 @@ uint64_t ext4_ftell(ext4_file *f);
  * @return  file size */
 uint64_t ext4_fsize(ext4_file *f);
 
+/**@brief Change file/directory/link mode bits
+ * @param path to file/dir/link
+ * @param mode new mode bits (for example 0777)
+ * @return  standard error code*/
 int ext4_chmod(const char *path, uint32_t mode);
+
+/**@brief Change file owner and group
+ * @param path to file/dir/link
+ * @param uid user id
+ * @param gid group id
+ * @return  standard error code*/
 int ext4_chown(const char *path, uint32_t uid, uint32_t gid);
+
+/**@brief Set file access time
+ * @param path to file/dir/link
+ * @param atime access timestamp
+ * @return  standard error code*/
 int ext4_file_set_atime(const char *path, uint32_t atime);
+
+/**@brief Set file modify time
+ * @param path to file/dir/link
+ * @param mtime modify timestamp
+ * @return  standard error code*/
 int ext4_file_set_mtime(const char *path, uint32_t mtime);
+
+/**@brief Set file change time
+ * @param path to file/dir/link
+ * @param ctime change timestamp
+ * @return  standard error code*/
 int ext4_file_set_ctime(const char *path, uint32_t ctime);
 
+/**@brief Create symbolic link
+ * @param target destination path
+ * @param path source entry
+ * @return standard error code*/
 int ext4_fsymlink(const char *target, const char *path);
 
+
+/**@brief Read symbolic link payload
+ * @param path to symlink
+ * @param buf output buffer
+ * @param bufsize output buffer max size
+ * @param rcnt bytes read
+ * @return standard error code*/
 int ext4_readlink(const char *path, char *buf, size_t bufsize, size_t *rcnt);
 
+/**@brief Set extended attribute
+ * @param path to entry
+ *
+ * TODO: write detailed description
+ */
 int ext4_setxattr(const char *path, const char *name, size_t name_len,
 		  const void *data, size_t data_size, bool replace);
+
+/**@brief Get extended attribute
+ * @param path to entry
+ *
+ * TODO: write detailed description
+ */
 int ext4_getxattr(const char *path, const char *name, size_t name_len,
 		  void *buf, size_t buf_size, size_t *data_size);
+
+/**@brief List extended attributes
+ * @param path to entry
+ *
+ * TODO: write detailed description
+ */
 int ext4_listxattr(const char *path, char *list, size_t size, size_t *ret_size);
+
+/**@brief Remove extended attribute
+ * @param path to entry
+ *
+ * TODO: write detailed description
+ */
 int ext4_removexattr(const char *path, const char *name, size_t name_len);
 
 
@@ -413,6 +472,15 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d);
 /**@brief   Rewine directory entry offset.
  * @param   d directory handle*/
 void ext4_dir_entry_rewind(ext4_dir *d);
+
+/**@brief   Test journal functionality
+ * @param   mount_point mount point, for example
+ *          -   /
+ *          -   /my_partition/
+ *          -   /my_second_partition/
+ *
+ * @return standard error code */
+int ext4_test_journal(const char *mount_point);
 
 #ifdef __cplusplus
 }

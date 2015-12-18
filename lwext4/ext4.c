@@ -2502,7 +2502,7 @@ Finish:
 
 void ext4_dir_entry_rewind(ext4_dir *d)
 {
-    d->next_off = 0;
+	d->next_off = 0;
 }
 
 int ext4_test_journal(const char *mount_point)
@@ -2553,8 +2553,8 @@ int ext4_test_journal(const char *mount_point)
 
 			ext4_bcache_set_dirty(block.buf);
 
-			struct jbd_trans *trans = jbd_journal_new_trans(journal);
-			if (!trans) {
+			struct jbd_trans *t = jbd_journal_new_trans(journal);
+			if (!t) {
 				ext4_block_set(mp->fs.bdev, &block);
 				r = ENOMEM;
 				goto out;
@@ -2562,25 +2562,27 @@ int ext4_test_journal(const char *mount_point)
 
 			switch (rand() % 2) {
 			case 0:
-				r = jbd_trans_add_block(trans, &block);
+				r = jbd_trans_add_block(t, &block);
 				if (r != EOK) {
-					jbd_journal_free_trans(journal, trans, true);
+					jbd_journal_free_trans(journal, t,
+							       true);
 					ext4_block_set(mp->fs.bdev, &block);
 					r = ENOMEM;
 					goto out;
 				}
 				break;
 			case 1:
-				r = jbd_trans_revoke_block(trans, rand_block);
+				r = jbd_trans_revoke_block(t, rand_block);
 				if (r != EOK) {
-					jbd_journal_free_trans(journal, trans, true);
+					jbd_journal_free_trans(journal, t,
+							       true);
 					ext4_block_set(mp->fs.bdev, &block);
 					r = ENOMEM;
 					goto out;
 				}
 			}
 			ext4_block_set(mp->fs.bdev, &block);
-			jbd_journal_submit_trans(journal, trans);
+			jbd_journal_submit_trans(journal, t);
 			jbd_journal_commit_one(journal);
 		}
 out:
