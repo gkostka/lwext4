@@ -460,6 +460,7 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 	if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 				     JBD_FEATURE_INCOMPAT_CSUM_V3)) {
 		struct jbd_block_tag3 *tag = __tag;
+		memset(tag, 0, sizeof(struct jbd_block_tag3));
 		jbd_set32(tag, blocknr, tag_info->block);
 		if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 					     JBD_FEATURE_INCOMPAT_64BIT))
@@ -483,6 +484,7 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 
 	} else {
 		struct jbd_block_tag *tag = __tag;
+		memset(tag, 0, sizeof(struct jbd_block_tag));
 		jbd_set32(tag, blocknr, tag_info->block);
 		if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 					     JBD_FEATURE_INCOMPAT_64BIT))
