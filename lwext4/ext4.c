@@ -2551,8 +2551,6 @@ int ext4_test_journal(const char *mount_point)
 			if (r != EOK)
 				goto out;
 
-			ext4_bcache_set_dirty(block.buf);
-
 			struct jbd_trans *t = jbd_journal_new_trans(journal);
 			if (!t) {
 				ext4_block_set(mp->fs.bdev, &block);
@@ -2570,6 +2568,7 @@ int ext4_test_journal(const char *mount_point)
 					r = ENOMEM;
 					goto out;
 				}
+				ext4_bcache_set_dirty(block.buf);
 				break;
 			case 1:
 				r = jbd_trans_revoke_block(t, rand_block);

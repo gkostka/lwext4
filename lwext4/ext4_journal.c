@@ -1049,7 +1049,8 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 			  int res,
 			  void *arg);
 
-/**@brief  Add block to a transaction
+/**@brief  Add block to a transaction and gain
+ *         access to it before making any modications.
  * @param  trans transaction
  * @param  block block descriptor
  * @return standard error code*/
@@ -1057,10 +1058,16 @@ int jbd_trans_add_block(struct jbd_trans *trans,
 			struct ext4_block *block)
 {
 	struct jbd_buf *buf;
-	/* We do not need to add those unmodified buffer to
-	 * a transaction. */
-	if (!ext4_bcache_test_flag(block->buf, BC_DIRTY))
-		return EOK;
+	struct ext4_fs *fs =
+		trans->journal->jbd_fs->inode_ref.fs;
+
+	/* If the buffer has already been modified, we should
+	 * flush dirty data in this buffer to disk.*/
+	if (ext4_bcache_test_flag(block->buf, BC_DIRTY)) {
+		/* XXX: i don't want to know whether the call
+		 * succeeds or not. */
+		ext4_block_flush_buf(fs->bdev, block->buf);
+	}
 
 	buf = calloc(1, sizeof(struct jbd_buf));
 	if (!buf)
@@ -1170,12 +1177,22 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 	uint32_t desc_iblock = 0;
 	uint32_t data_iblock = 0;
 	char *tag_start = NULL, *tag_ptr = NULL;
-	struct jbd_buf *jbd_buf;
+	struct jbd_buf *jbd_buf, *tmp;
 	struct ext4_block desc_block, data_block;
+	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
 
-	LIST_FOREACH(jbd_buf, &trans->buf_list, buf_node) {
+	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node, tmp) {
 		struct tag_info tag_info;
 		bool uuid_exist = false;
+		if (!ext4_bcache_test_flag(jbd_buf->block.buf,
+					   BC_DIRTY)) {
+			/* The buffer has not been modified, just release
+			 * that jbd_buf. */
+			ext4_block_set(fs->bdev, &jbd_buf->block);
+			LIST_REMOVE(jbd_buf, buf_node);
+			free(jbd_buf);
+			continue;
+		}
 again:
 		if (!desc_iblock) {
 			struct jbd_bhdr *bhdr;
@@ -1430,6 +1447,15 @@ int jbd_journal_commit_trans(struct jbd_journal *journal,
 	rc = jbd_journal_prepare_revoke(journal, trans);
 	if (rc != EOK)
 		goto Finish;
+
+	if (LIST_EMPTY(&trans->buf_list) &&
+	    LIST_EMPTY(&trans->revoke_list)) {
+		/* Since there are no entries in both buffer list
+		 * and revoke entry list, we do not consider trans as
+		 * complete transaction and just return EOK.*/
+		jbd_journal_free_trans(journal, trans, false);
+		goto Finish;
+	}
 
 	rc = jbd_trans_write_commit_block(trans);
 	if (rc != EOK)
