@@ -107,25 +107,28 @@ Project tree
   
 Compile
 =====
-Windows
+Dependencies
 ------------
-* CMake:  http://www.cmake.org/cmake/resources/software.html
-* MinGw:  http://www.mingw.org/
-* GnuWin: http://gnuwin32.sourceforge.net/ 
+* Windows 
 
-Linux
-------------
-* CMake, make, gcc
+Download MSYS-2:  https://sourceforge.net/projects/msys2/
 
-Generate makefiles
-------------
+Install required packages is MSYS2 Shell package manager:
 ```bash
- make
- ```
+ pacman -S make gcc cmake p7zip
+  ```
+  
+* Linux 
 
+Package installation (Debian):
+```bash
+ apt-get install make gcc cmake p7zip
+  ```
+ 
 Compile & install tools
 ------------
 ```bash
+ make generic
  cd build_generic
  make
  sudo make install
@@ -133,7 +136,7 @@ Compile & install tools
 
 lwext4-generic demo application
 =====
-Simple lwext4 library presentation:
+Simple lwext4 library test applicatin:
 * load ext2/3/4 images
 * load linux block device with ext2/3/4 part
 * load windows volume with ext2/3/4 filesystem 
