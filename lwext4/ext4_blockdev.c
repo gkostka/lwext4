@@ -140,8 +140,6 @@ int ext4_block_flush_buf(struct ext4_blockdev *bdev, struct ext4_buf *buf)
 {
 	int r;
 	struct ext4_bcache *bc = bdev->bc;
-	/*Only flushing data in an unreferenced buffer is allowed.*/
-	ext4_assert(!buf->refctr);
 
 	if (ext4_bcache_test_flag(buf, BC_DIRTY)) {
 		r = ext4_blocks_set_direct(bdev, buf->data, buf->lba, 1);
