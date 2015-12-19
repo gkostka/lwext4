@@ -1073,7 +1073,7 @@ int jbd_trans_add_block(struct jbd_trans *trans,
 	/* If the content reach the disk, notify us
 	 * so that we may do a checkpoint. */
 	block->buf->end_write = jbd_trans_end_write;
-	block->buf->end_write_arg = trans;
+	block->buf->end_write_arg = buf;
 
 	trans->data_cnt++;
 	LIST_INSERT_HEAD(&trans->buf_list, buf, buf_node);
@@ -1363,7 +1363,8 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 			  int res,
 			  void *arg)
 {
-	struct jbd_trans *trans = arg;
+	struct jbd_buf *jbd_buf = arg;
+	struct jbd_trans *trans = jbd_buf->trans;
 	struct jbd_journal *journal = trans->journal;
 	bool first_in_queue =
 		trans == TAILQ_FIRST(&journal->cp_queue);
