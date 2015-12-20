@@ -243,10 +243,16 @@ int main(int argc, char **argv)
 
 	fflush(stdout);
 	uint8_t *rw_buff = malloc(rw_szie);
-	if (!rw_buff)
+	if (!rw_buff) {
+		free(rw_buff);
 		return EXIT_FAILURE;
-	if (!test_lwext4_file_test(rw_buff, rw_szie, rw_count))
+	}
+	if (!test_lwext4_file_test(rw_buff, rw_szie, rw_count)) {
+		free(rw_buff);
 		return EXIT_FAILURE;
+	}
+
+	free(rw_buff);
 
 	fflush(stdout);
 	test_lwext4_dir_ls("/mp/");
