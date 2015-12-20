@@ -975,6 +975,46 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 	return jbd_write_sb(jbd_fs);
 }
 
+static void jbd_journal_flush_trans(struct jbd_trans *trans)
+{
+	struct jbd_buf *jbd_buf, *tmp;
+	struct jbd_journal *journal = trans->journal;
+	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
+	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node,
+			tmp) {
+		struct ext4_block block = jbd_buf->block;
+		ext4_block_flush_buf(fs->bdev, block.buf);
+	}
+}
+
+static void
+jbd_journal_skip_pure_revoke(struct jbd_journal *journal,
+			     struct jbd_trans *trans)
+{
+	journal->start = trans->start_iblock +
+		trans->alloc_blocks;
+	wrap(&journal->jbd_fs->sb, journal->start);
+	journal->trans_id = trans->trans_id + 1;
+	jbd_journal_free_trans(journal,
+			trans, false);
+	jbd_journal_write_sb(journal);
+}
+
+static void jbd_journal_flush_all_trans(struct jbd_journal *journal)
+{
+	struct jbd_trans *trans;
+	while ((trans = TAILQ_FIRST(&journal->cp_queue))) {
+		if (!trans->data_cnt) {
+			TAILQ_REMOVE(&journal->cp_queue,
+					trans,
+					trans_node);
+			jbd_journal_skip_pure_revoke(journal, trans);
+		} else
+			jbd_journal_flush_trans(trans);
+
+	}
+}
+
 /**@brief  Stop accessing the journal.
  * @param  journal current journal session
  * @return standard error code*/
@@ -986,9 +1026,10 @@ int jbd_journal_stop(struct jbd_journal *journal)
 
 	/* Commit all the transactions to the journal.*/
 	jbd_journal_commit_all(journal);
+
 	/* Make sure that journalled content have reached
 	 * the disk.*/
-	ext4_block_cache_flush(jbd_fs->inode_ref.fs->bdev);
+	jbd_journal_flush_all_trans(journal);
 
 	features_incompatible =
 		ext4_get32(&jbd_fs->inode_ref.fs->sb,
@@ -1394,6 +1435,9 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 	if (res != EOK)
 		trans->error = res;
 
+	LIST_REMOVE(jbd_buf, buf_node);
+	free(jbd_buf);
+
 	/* Clear the end_write and end_write_arg fields. */
 	buf->end_write = NULL;
 	buf->end_write_arg = NULL;
@@ -1416,12 +1460,8 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 					TAILQ_REMOVE(&journal->cp_queue,
 						     trans,
 						     trans_node);
-					journal->start = trans->start_iblock +
-						trans->alloc_blocks;
-					wrap(&journal->jbd_fs->sb, journal->start);
-					journal->trans_id = trans->trans_id + 1;
-					jbd_journal_free_trans(journal,
-							       trans, false);
+					jbd_journal_skip_pure_revoke(journal,
+								     trans);
 				} else {
 					journal->start = trans->start_iblock;
 					wrap(&journal->jbd_fs->sb, journal->start);
