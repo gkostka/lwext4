@@ -1121,6 +1121,8 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node,
 			  tmp) {
 		if (abort) {
+			jbd_buf->block.buf->end_write = NULL;
+			jbd_buf->block.buf->end_write_arg = NULL;
 			ext4_bcache_clear_dirty(jbd_buf->block.buf);
 			ext4_block_set(fs->bdev, &jbd_buf->block);
 		}
@@ -1190,6 +1192,8 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 					   BC_DIRTY)) {
 			/* The buffer has not been modified, just release
 			 * that jbd_buf. */
+			jbd_buf->block.buf->end_write = NULL;
+			jbd_buf->block.buf->end_write_arg = NULL;
 			ext4_block_set(fs->bdev, &jbd_buf->block);
 			LIST_REMOVE(jbd_buf, buf_node);
 			free(jbd_buf);
