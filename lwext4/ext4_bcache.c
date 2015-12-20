@@ -149,8 +149,12 @@ struct ext4_buf *ext4_buf_lowest_lru(struct ext4_bcache *bc)
 
 void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf)
 {
-	/*Cannot drop any referenced buffers.*/
-	ext4_assert(!buf->refctr);
+	/* Warn on dropping any referenced buffers.*/
+	if (buf->refctr) {
+		ext4_dbg(DEBUG_BCACHE, DBG_WARN "Buffer is still referenced. "
+				"lba: %" PRIu64 ", refctr: %" PRIu32 "\n",
+				buf->lba, buf->refctr);
+	}
 
 	RB_REMOVE(ext4_buf_lba, &bc->lba_root, buf);
 	RB_REMOVE(ext4_buf_lru, &bc->lru_root, buf);
@@ -259,6 +263,7 @@ bool ext4_bcache_is_full(struct ext4_bcache *bc)
 {
 	return (bc->cnt <= bc->ref_blocks);
 }
+
 
 /**
  * @}
