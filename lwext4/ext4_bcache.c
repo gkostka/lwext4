@@ -81,6 +81,15 @@ int ext4_bcache_init_dynamic(struct ext4_bcache *bc, uint32_t cnt,
 	return EOK;
 }
 
+void ext4_bcache_cleanup(struct ext4_bcache *bc)
+{
+	struct ext4_buf *buf, *tmp;
+	RB_FOREACH_SAFE(buf, ext4_buf_lba, &bc->lba_root, tmp) {
+		ext4_block_flush_buf(bc->bdev, buf);
+		ext4_bcache_drop_buf(bc, buf);
+	}
+}
+
 int ext4_bcache_fini_dynamic(struct ext4_bcache *bc)
 {
 	memset(bc, 0, sizeof(struct ext4_bcache));

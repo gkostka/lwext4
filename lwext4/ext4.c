@@ -403,6 +403,7 @@ int ext4_mount(const char *dev_name, const char *mount_point)
 	/*Bind block cache to block device*/
 	r = ext4_block_bind_bcache(bd, bc);
 	if (r != EOK) {
+		ext4_bcache_cleanup(bc);
 		ext4_block_fini(bd);
 		if (mp->cache_dynamic) {
 			ext4_bcache_fini_dynamic(bc);
@@ -437,6 +438,7 @@ int ext4_umount(const char *mount_point)
 
 	mp->mounted = 0;
 
+	ext4_bcache_cleanup(mp->fs.bdev->bc);
 	if (mp->cache_dynamic) {
 		ext4_bcache_fini_dynamic(mp->fs.bdev->bc);
 		free(mp->fs.bdev->bc);
