@@ -1065,7 +1065,7 @@ static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal,
 	/* If there is no space left, flush all journalled
 	 * blocks to disk first.*/
 	if (journal->last == journal->start)
-		ext4_block_cache_flush(journal->jbd_fs->inode_ref.fs->bdev);
+		jbd_journal_flush_all_trans(journal);
 
 	return start_block;
 }
