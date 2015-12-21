@@ -2562,7 +2562,7 @@ int ext4_test_journal(const char *mount_point)
 
 			switch (rand() % 2) {
 			case 0:
-				r = jbd_trans_add_block(t, &block);
+				r = jbd_trans_get_access(journal, &block);
 				if (r != EOK) {
 					jbd_journal_free_trans(journal, t,
 							       true);
@@ -2570,7 +2570,14 @@ int ext4_test_journal(const char *mount_point)
 					r = ENOMEM;
 					goto out;
 				}
-				ext4_bcache_set_dirty(block.buf);
+				r = jbd_trans_set_block_dirty(t, &block);
+				if (r != EOK) {
+					jbd_journal_free_trans(journal, t,
+							       true);
+					ext4_block_set(mp->fs.bdev, &block);
+					r = ENOMEM;
+					goto out;
+				}
 				break;
 			case 1:
 				r = jbd_trans_revoke_block(t, rand_block);

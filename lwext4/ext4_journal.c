@@ -1092,25 +1092,33 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 			  int res,
 			  void *arg);
 
-/**@brief  Add block to a transaction and gain
- *         access to it before making any modications.
- * @param  trans transaction
- * @param  block block descriptor
- * @return standard error code*/
-int jbd_trans_add_block(struct jbd_trans *trans,
-			struct ext4_block *block)
+/**@brief  gain access to it before making any modications.
+ * @param  journal current journal session
+ * @param  block descriptor
+ * @return standard error code.*/
+int jbd_trans_get_access(struct jbd_journal *journal,
+			 struct ext4_block *block)
 {
-	struct jbd_buf *buf;
-	struct ext4_fs *fs =
-		trans->journal->jbd_fs->inode_ref.fs;
+	int r = EOK;
+	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
 
 	/* If the buffer has already been modified, we should
 	 * flush dirty data in this buffer to disk.*/
-	if (ext4_bcache_test_flag(block->buf, BC_DIRTY)) {
-		/* XXX: i don't want to know whether the call
-		 * succeeds or not. */
-		ext4_block_flush_buf(fs->bdev, block->buf);
+	if (ext4_bcache_test_flag(block->buf, BC_DIRTY) &&
+	    block->buf->end_write == jbd_trans_end_write) {
+		r = ext4_block_flush_buf(fs->bdev, block->buf);
 	}
+	return r;
+}
+
+/**@brief  Add block to a transaction and mark it dirty.
+ * @param  trans transaction
+ * @param  block block descriptor
+ * @return standard error code*/
+int jbd_trans_set_block_dirty(struct jbd_trans *trans,
+			      struct ext4_block *block)
+{
+	struct jbd_buf *buf;
 
 	buf = calloc(1, sizeof(struct jbd_buf));
 	if (!buf)
@@ -1127,6 +1135,8 @@ int jbd_trans_add_block(struct jbd_trans *trans,
 
 	trans->data_cnt++;
 	LIST_INSERT_HEAD(&trans->buf_list, buf, buf_node);
+
+	ext4_bcache_set_dirty(block->buf);
 	return EOK;
 }
 
