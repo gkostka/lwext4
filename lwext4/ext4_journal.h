@@ -56,6 +56,7 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 int jbd_journal_stop(struct jbd_journal *journal);
 struct jbd_trans *jbd_journal_new_trans(struct jbd_journal *journal);
 int jbd_trans_get_access(struct jbd_journal *journal,
+			 struct jbd_trans *trans,
 			 struct ext4_block *block);
 int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 			      struct ext4_block *block);

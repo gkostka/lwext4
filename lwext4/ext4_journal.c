@@ -1094,9 +1094,11 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 
 /**@brief  gain access to it before making any modications.
  * @param  journal current journal session
+ * @param  trans transaction
  * @param  block descriptor
  * @return standard error code.*/
 int jbd_trans_get_access(struct jbd_journal *journal,
+			 struct jbd_trans *trans,
 			 struct ext4_block *block)
 {
 	int r = EOK;
@@ -1105,7 +1107,8 @@ int jbd_trans_get_access(struct jbd_journal *journal,
 	/* If the buffer has already been modified, we should
 	 * flush dirty data in this buffer to disk.*/
 	if (ext4_bcache_test_flag(block->buf, BC_DIRTY) &&
-	    block->buf->end_write == jbd_trans_end_write) {
+	    block->buf->end_write == jbd_trans_end_write &&
+	    block->buf->end_write_arg != trans) {
 		r = ext4_block_flush_buf(fs->bdev, block->buf);
 	}
 	return r;

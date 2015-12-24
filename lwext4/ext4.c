@@ -2562,7 +2562,7 @@ int ext4_test_journal(const char *mount_point)
 
 			switch (rand() % 2) {
 			case 0:
-				r = jbd_trans_get_access(journal, &block);
+				r = jbd_trans_get_access(journal, t, &block);
 				if (r != EOK) {
 					jbd_journal_free_trans(journal, t,
 							       true);
