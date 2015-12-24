@@ -306,6 +306,10 @@ struct ext4_fs {
 	uint64_t inode_blocks_per_level[4];
 
 	uint32_t last_inode_bg_id;
+
+	struct jbd_fs *jbd_fs;
+	struct jbd_journal *jbd_journal;
+	struct jbd_trans *curr_trans;
 };
 
 /* Inode table/bitmap not in use */

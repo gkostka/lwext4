@@ -83,6 +83,9 @@ struct ext4_mountpoint {
 
 	/**@brief   Dynamic allocation cache flag.*/
 	bool cache_dynamic;
+
+	struct jbd_fs jbd_fs;
+	struct jbd_journal jbd_journal;
 };
 
 /**@brief   Block devices descriptor.*/
@@ -412,6 +415,16 @@ int ext4_mount(const char *dev_name, const char *mount_point)
 		return r;
 	}
 
+	if (ext4_sb_feature_com(&mp->fs.sb,
+				EXT4_FCOM_HAS_JOURNAL)) {
+		r = jbd_get_fs(&mp->fs, &mp->jbd_fs);
+		ext4_assert(r == EOK);
+		r = jbd_journal_start(&mp->jbd_fs, &mp->jbd_journal);
+		ext4_assert(r == EOK);
+		mp->fs.jbd_fs = &mp->jbd_fs;
+		mp->fs.jbd_journal = &mp->jbd_journal;
+	}
+
 	return r;
 }
 
@@ -431,6 +444,16 @@ int ext4_umount(const char *mount_point)
 
 	if (!mp)
 		return ENODEV;
+
+	if (ext4_sb_feature_com(&mp->fs.sb,
+				EXT4_FCOM_HAS_JOURNAL)) {
+		r = jbd_journal_stop(&mp->jbd_journal);
+		ext4_assert(r == EOK);
+		r = jbd_put_fs(&mp->jbd_fs);
+		ext4_assert(r == EOK);
+		mp->fs.jbd_journal = NULL;
+		mp->fs.jbd_fs = NULL;
+	}
 
 	r = ext4_fs_fini(&mp->fs);
 	if (r != EOK)
@@ -494,6 +517,46 @@ Finish:
 	return r;
 }
 
+int ext4_trans_start(struct ext4_mountpoint *mp)
+{
+	int r = EOK;
+	if (mp->fs.jbd_journal) {
+		struct jbd_journal *journal = mp->fs.jbd_journal;
+		struct jbd_trans *trans;
+		trans = jbd_journal_new_trans(journal);
+		if (!trans) {
+			r = ENOMEM;
+			goto Finish;
+		}
+		mp->fs.curr_trans = trans;
+	}
+Finish:
+	return r;
+}
+
+int ext4_trans_stop(struct ext4_mountpoint *mp)
+{
+	int r = EOK;
+	if (mp->fs.jbd_journal) {
+		struct jbd_journal *journal = mp->fs.jbd_journal;
+		struct jbd_trans *trans = mp->fs.curr_trans;
+		r = jbd_journal_commit_trans(journal, trans);
+		mp->fs.curr_trans = NULL;
+	}
+	return r;
+}
+
+int ext4_trans_abort(struct ext4_mountpoint *mp)
+{
+	int r = EOK;
+	if (mp->fs.jbd_journal) {
+		struct jbd_journal *journal = mp->fs.jbd_journal;
+		struct jbd_trans *trans = mp->fs.curr_trans;
+		r = jbd_journal_commit_trans(journal, trans);
+		mp->fs.curr_trans = NULL;
+	}
+	return r;
+}
 
 int ext4_mount_point_stats(const char *mount_point,
 			   struct ext4_mount_stats *stats)
