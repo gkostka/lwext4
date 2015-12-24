@@ -415,16 +415,6 @@ int ext4_mount(const char *dev_name, const char *mount_point)
 		return r;
 	}
 
-	if (ext4_sb_feature_com(&mp->fs.sb,
-				EXT4_FCOM_HAS_JOURNAL)) {
-		r = jbd_get_fs(&mp->fs, &mp->jbd_fs);
-		ext4_assert(r == EOK);
-		r = jbd_journal_start(&mp->jbd_fs, &mp->jbd_journal);
-		ext4_assert(r == EOK);
-		mp->fs.jbd_fs = &mp->jbd_fs;
-		mp->fs.jbd_journal = &mp->jbd_journal;
-	}
-
 	return r;
 }
 
@@ -444,16 +434,6 @@ int ext4_umount(const char *mount_point)
 
 	if (!mp)
 		return ENODEV;
-
-	if (ext4_sb_feature_com(&mp->fs.sb,
-				EXT4_FCOM_HAS_JOURNAL)) {
-		r = jbd_journal_stop(&mp->jbd_journal);
-		ext4_assert(r == EOK);
-		r = jbd_put_fs(&mp->jbd_fs);
-		ext4_assert(r == EOK);
-		mp->fs.jbd_journal = NULL;
-		mp->fs.jbd_fs = NULL;
-	}
 
 	r = ext4_fs_fini(&mp->fs);
 	if (r != EOK)
@@ -482,6 +462,64 @@ static struct ext4_mountpoint *ext4_get_mount(const char *path)
 			return &_mp[i];
 	}
 	return 0;
+}
+
+int ext4_journal_start(const char *mount_point)
+{
+	int r = EOK;
+	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
+	if (!mp)
+		return ENOENT;
+
+	if (ext4_sb_feature_com(&mp->fs.sb,
+				EXT4_FCOM_HAS_JOURNAL)) {
+		r = jbd_get_fs(&mp->fs, &mp->jbd_fs);
+		if (r != EOK)
+			goto Finish;
+
+		r = jbd_journal_start(&mp->jbd_fs, &mp->jbd_journal);
+		if (r != EOK) {
+			mp->jbd_fs.dirty = false;
+			jbd_put_fs(&mp->jbd_fs);
+			goto Finish;
+		}
+		mp->fs.jbd_fs = &mp->jbd_fs;
+		mp->fs.jbd_journal = &mp->jbd_journal;
+	}
+Finish:
+	return r;
+}
+
+int ext4_journal_stop(const char *mount_point)
+{
+	int r = EOK;
+	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
+	if (!mp)
+		return ENOENT;
+
+	if (ext4_sb_feature_com(&mp->fs.sb,
+				EXT4_FCOM_HAS_JOURNAL)) {
+		r = jbd_journal_stop(&mp->jbd_journal);
+		if (r != EOK) {
+			mp->jbd_fs.dirty = false;
+			jbd_put_fs(&mp->jbd_fs);
+			mp->fs.jbd_journal = NULL;
+			mp->fs.jbd_fs = NULL;
+			goto Finish;
+		}
+
+		r = jbd_put_fs(&mp->jbd_fs);
+		if (r != EOK) {
+			mp->fs.jbd_journal = NULL;
+			mp->fs.jbd_fs = NULL;
+			goto Finish;
+		}
+
+		mp->fs.jbd_journal = NULL;
+		mp->fs.jbd_fs = NULL;
+	}
+Finish:
+	return r;
 }
 
 int ext4_recover(const char *mount_point)
