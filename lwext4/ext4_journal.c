@@ -101,8 +101,20 @@ jbd_revoke_entry_cmp(struct revoke_entry *a, struct revoke_entry *b)
 	return 0;
 }
 
+static int
+jbd_block_rec_cmp(struct jbd_block_rec *a, struct jbd_block_rec *b)
+{
+	if (a->lba > b->lba)
+		return 1;
+	else if (a->lba < b->lba)
+		return -1;
+	return 0;
+}
+
 RB_GENERATE_INTERNAL(jbd_revoke, revoke_entry, revoke_node,
 		     jbd_revoke_entry_cmp, static inline)
+RB_GENERATE_INTERNAL(jbd_block, jbd_block_rec, block_rec_node,
+		     jbd_block_rec_cmp, static inline)
 
 #define jbd_alloc_revoke_entry() calloc(1, sizeof(struct revoke_entry))
 #define jbd_free_revoke_entry(addr) free(addr)
@@ -1080,6 +1092,8 @@ jbd_journal_new_trans(struct jbd_journal *journal)
 	if (!trans)
 		return NULL;
 
+	RB_INIT(&trans->block_rec_root);
+
 	/* We will assign a trans_id to this transaction,
 	 * once it has been committed.*/
 	trans->journal = journal;
@@ -1114,6 +1128,46 @@ int jbd_trans_get_access(struct jbd_journal *journal,
 	return r;
 }
 
+static inline int
+jbd_trans_insert_block_rec(struct jbd_trans *trans,
+			   ext4_fsblk_t lba)
+{
+	struct jbd_block_rec *block_rec;
+	block_rec = calloc(1, sizeof(struct jbd_block_rec));
+	if (!block_rec)
+		return ENOMEM;
+
+	block_rec->lba = lba;
+	RB_INSERT(jbd_block, &trans->block_rec_root, block_rec);
+	return EOK;
+}
+
+static struct jbd_block_rec *
+jbd_trans_block_rec_lookup(struct jbd_trans *trans,
+			   ext4_fsblk_t lba)
+{
+	struct jbd_block_rec tmp = {
+		.lba = lba
+	};
+
+	return RB_FIND(jbd_block, &trans->block_rec_root, &tmp);
+}
+
+static inline void
+jbd_trans_remove_block_recs(struct jbd_trans *trans)
+{
+	struct jbd_block_rec *block_rec, *tmp;
+	RB_FOREACH_SAFE(block_rec,
+			jbd_block,
+			&trans->block_rec_root,
+			tmp) {
+		RB_REMOVE(jbd_block,
+			  &trans->block_rec_root,
+			  block_rec);
+		free(block_rec);
+	}
+}
+
 /**@brief  Add block to a transaction and mark it dirty.
  * @param  trans transaction
  * @param  block block descriptor
@@ -1128,6 +1182,11 @@ int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 		buf = calloc(1, sizeof(struct jbd_buf));
 		if (!buf)
 			return ENOMEM;
+
+		if (jbd_trans_insert_block_rec(trans, block->lb_id) != EOK) {
+			free(buf);
+			return ENOMEM;
+		}
 
 		buf->trans = trans;
 		buf->block = *block;
@@ -1193,6 +1252,7 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 		free(rec);
 	}
 
+	jbd_trans_remove_block_recs(trans);
 	free(trans);
 }
 

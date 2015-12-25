@@ -1104,6 +1104,11 @@ struct jbd_revoke_rec {
 	LIST_ENTRY(jbd_revoke_rec) revoke_node;
 };
 
+struct jbd_block_rec {
+	ext4_fsblk_t lba;
+	RB_ENTRY(jbd_block_rec) block_rec_node;
+};
+
 struct jbd_trans {
 	uint32_t trans_id;
 
@@ -1117,6 +1122,7 @@ struct jbd_trans {
 
 	LIST_HEAD(jbd_trans_buf, jbd_buf) buf_list;
 	LIST_HEAD(jbd_revoke_list, jbd_revoke_rec) revoke_list;
+	RB_HEAD(jbd_block, jbd_block_rec) block_rec_root;
 	TAILQ_ENTRY(jbd_trans) trans_node;
 };
 
