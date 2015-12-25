@@ -169,6 +169,13 @@ int ext4_block_fini(struct ext4_blockdev *bdev);
  * @return  standard error code*/
 int ext4_block_flush_buf(struct ext4_blockdev *bdev, struct ext4_buf *buf);
 
+/**@brief   Flush data in buffer of given lba to disk,
+ *          if that buffer exists in block cache.
+ * @param   bdev block device descriptor
+ * @param   lba logical block address
+ * @return  standard error code*/
+int ext4_block_flush_lba(struct ext4_blockdev *bdev, uint64_t lba);
+
 /**@brief   Set logical block size in block device.
  * @param   bdev block device descriptor
  * @param   lb_size logical block size (in bytes)

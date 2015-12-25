@@ -161,6 +161,19 @@ int ext4_block_flush_buf(struct ext4_blockdev *bdev, struct ext4_buf *buf)
 	return EOK;
 }
 
+int ext4_block_flush_lba(struct ext4_blockdev *bdev, uint64_t lba)
+{
+	int r = EOK;
+	struct ext4_buf *buf;
+	struct ext4_block b;
+	buf = ext4_bcache_find_get(bdev->bc, &b, lba);
+	if (buf) {
+		r = ext4_block_flush_buf(bdev, buf);
+		ext4_bcache_free(bdev->bc, &b);
+	}
+	return r;
+}
+
 int ext4_block_cache_shake(struct ext4_blockdev *bdev)
 {
 	struct ext4_buf *buf;
