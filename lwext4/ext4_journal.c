@@ -1123,23 +1123,26 @@ int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 {
 	struct jbd_buf *buf;
 
-	buf = calloc(1, sizeof(struct jbd_buf));
-	if (!buf)
-		return ENOMEM;
+	if (!ext4_bcache_test_flag(block->buf, BC_DIRTY) &&
+	    block->buf->end_write != jbd_trans_end_write) {
+		buf = calloc(1, sizeof(struct jbd_buf));
+		if (!buf)
+			return ENOMEM;
 
-	buf->trans = trans;
-	buf->block = *block;
-	ext4_bcache_inc_ref(block->buf);
+		buf->trans = trans;
+		buf->block = *block;
+		ext4_bcache_inc_ref(block->buf);
 
-	/* If the content reach the disk, notify us
-	 * so that we may do a checkpoint. */
-	block->buf->end_write = jbd_trans_end_write;
-	block->buf->end_write_arg = buf;
+		/* If the content reach the disk, notify us
+		 * so that we may do a checkpoint. */
+		block->buf->end_write = jbd_trans_end_write;
+		block->buf->end_write_arg = buf;
 
-	trans->data_cnt++;
-	LIST_INSERT_HEAD(&trans->buf_list, buf, buf_node);
+		trans->data_cnt++;
+		LIST_INSERT_HEAD(&trans->buf_list, buf, buf_node);
 
-	ext4_bcache_set_dirty(block->buf);
+		ext4_bcache_set_dirty(block->buf);
+	}
 	return EOK;
 }
 
