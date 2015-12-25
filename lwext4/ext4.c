@@ -596,6 +596,29 @@ int ext4_trans_abort(struct ext4_mountpoint *mp)
 	return r;
 }
 
+int ext4_trans_get_write_access(struct ext4_fs *fs,
+				struct ext4_block *block)
+{
+	int r = EOK;
+	if (fs->jbd_journal && fs->curr_trans) {
+		struct jbd_journal *journal = fs->jbd_journal;
+		struct jbd_trans *trans = fs->curr_trans;
+		r = jbd_trans_get_access(journal, trans, block);
+	}
+	return r;
+}
+
+int ext4_trans_set_block_dirty(struct ext4_fs *fs,
+			 struct ext4_block *block)
+{
+	int r = EOK;
+	if (fs->jbd_journal && fs->curr_trans) {
+		struct jbd_trans *trans = fs->curr_trans;
+		r = jbd_trans_set_block_dirty(trans, block);
+	}
+	return r;
+}
+
 int ext4_mount_point_stats(const char *mount_point,
 			   struct ext4_mount_stats *stats)
 {
