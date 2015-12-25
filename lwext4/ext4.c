@@ -558,7 +558,7 @@ Finish:
 int ext4_trans_start(struct ext4_mountpoint *mp)
 {
 	int r = EOK;
-	if (mp->fs.jbd_journal) {
+	if (mp->fs.jbd_journal && !mp->fs.curr_trans) {
 		struct jbd_journal *journal = mp->fs.jbd_journal;
 		struct jbd_trans *trans;
 		trans = jbd_journal_new_trans(journal);
@@ -575,7 +575,7 @@ Finish:
 int ext4_trans_stop(struct ext4_mountpoint *mp)
 {
 	int r = EOK;
-	if (mp->fs.jbd_journal) {
+	if (mp->fs.jbd_journal && mp->fs.curr_trans) {
 		struct jbd_journal *journal = mp->fs.jbd_journal;
 		struct jbd_trans *trans = mp->fs.curr_trans;
 		r = jbd_journal_commit_trans(journal, trans);
@@ -587,7 +587,7 @@ int ext4_trans_stop(struct ext4_mountpoint *mp)
 int ext4_trans_abort(struct ext4_mountpoint *mp)
 {
 	int r = EOK;
-	if (mp->fs.jbd_journal) {
+	if (mp->fs.jbd_journal && mp->fs.curr_trans) {
 		struct jbd_journal *journal = mp->fs.jbd_journal;
 		struct jbd_trans *trans = mp->fs.curr_trans;
 		r = jbd_journal_commit_trans(journal, trans);
