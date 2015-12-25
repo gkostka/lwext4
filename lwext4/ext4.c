@@ -1294,7 +1294,6 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 
 	uint8_t *u8_buf = buf;
 	int r;
-	struct ext4_block b;
 	struct ext4_inode_ref ref;
 
 	ext4_assert(f && f->mp);
@@ -1361,15 +1360,11 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 
 		/* Do we get an unwritten range? */
 		if (fblock != 0) {
-			r = ext4_block_get(f->mp->fs.bdev, &b, fblock);
+			uint64_t off = fblock * block_size + unalg;
+			r = ext4_block_readbytes(f->mp->fs.bdev, off, u8_buf, len);
 			if (r != EOK)
 				goto Finish;
 
-			memcpy(u8_buf, b.data + unalg, len);
-
-			r = ext4_block_set(f->mp->fs.bdev, &b);
-			if (r != EOK)
-				goto Finish;
 		} else {
 			/* Yes, we do. */
 			memset(u8_buf, 0, len);
@@ -1422,17 +1417,13 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 	}
 
 	if (size) {
+		uint64_t off;
 		r = ext4_fs_get_inode_dblk_idx(&ref, iblock_idx, &fblock, true);
 		if (r != EOK)
 			goto Finish;
 
-		r = ext4_block_get(f->mp->fs.bdev, &b, fblock);
-		if (r != EOK)
-			goto Finish;
-
-		memcpy(u8_buf, b.data, size);
-
-		r = ext4_block_set(f->mp->fs.bdev, &b);
+		off = fblock * block_size;
+		r = ext4_block_readbytes(f->mp->fs.bdev, off, u8_buf, size);
 		if (r != EOK)
 			goto Finish;
 
@@ -1460,7 +1451,6 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 	ext4_fsblk_t fblk;
 	ext4_fsblk_t fblock_start;
 
-	struct ext4_block b;
 	struct ext4_inode_ref ref;
 	const uint8_t *u8_buf = buf;
 	int r, rr = EOK;
@@ -1499,6 +1489,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 
 	if (unalg) {
 		size_t len =  size;
+		uint64_t off;
 		if (size > (block_size - unalg))
 			len = block_size - unalg;
 
@@ -1506,14 +1497,8 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 		if (r != EOK)
 			goto Finish;
 
-		r = ext4_block_get(f->mp->fs.bdev, &b, fblk);
-		if (r != EOK)
-			goto Finish;
-
-		memcpy(b.data + unalg, u8_buf, len);
-		ext4_bcache_set_dirty(b.buf);
-
-		r = ext4_block_set(f->mp->fs.bdev, &b);
+		off = fblk * block_size + unalg;
+		r = ext4_block_writebytes(f->mp->fs.bdev, off, u8_buf, len);
 		if (r != EOK)
 			goto Finish;
 
@@ -1596,6 +1581,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 		goto Finish;
 
 	if (size) {
+		uint64_t off;
 		if (iblk_idx < ifile_blocks) {
 			r = ext4_fs_init_inode_dblk_idx(&ref, iblk_idx, &fblk);
 			if (r != EOK)
@@ -1607,14 +1593,8 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 				goto out_fsize;
 		}
 
-		r = ext4_block_get(f->mp->fs.bdev, &b, fblk);
-		if (r != EOK)
-			goto Finish;
-
-		memcpy(b.data, u8_buf, size);
-		ext4_bcache_set_dirty(b.buf);
-
-		r = ext4_block_set(f->mp->fs.bdev, &b);
+		off = fblk * block_size;
+		r = ext4_block_writebytes(f->mp->fs.bdev, off, u8_buf, size);
 		if (r != EOK)
 			goto Finish;
 
@@ -1847,7 +1827,6 @@ int ext4_file_set_ctime(const char *path, uint32_t ctime)
 
 static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 {
-	struct ext4_block b;
 	struct ext4_inode_ref ref;
 	uint32_t sblock;
 	ext4_fsblk_t fblock;
@@ -1889,15 +1868,10 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 		if (r != EOK)
 			goto Finish;
 
-		r = ext4_block_get(f->mp->fs.bdev, &b, fblock);
+		r = ext4_block_writebytes(f->mp->fs.bdev, 0, buf, size);
 		if (r != EOK)
 			goto Finish;
 
-		memcpy(b.data, buf, size);
-		ext4_bcache_set_dirty(b.buf);
-		r = ext4_block_set(f->mp->fs.bdev, &b);
-		if (r != EOK)
-			goto Finish;
 	}
 
 	/*Stop write back cache mode*/
