@@ -1860,10 +1860,8 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 		return EOK;
 
 	r = ext4_fs_get_inode_ref(&f->mp->fs, f->inode, &ref);
-	if (r != EOK) {
-		EXT4_MP_UNLOCK(f->mp);
+	if (r != EOK)
 		return r;
-	}
 
 	/*Sync file size*/
 	block_size = ext4_sb_get_block_size(&f->mp->fs.sb);
