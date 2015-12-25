@@ -62,6 +62,8 @@ int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 			      struct ext4_block *block);
 int jbd_trans_revoke_block(struct jbd_trans *trans,
 			   ext4_fsblk_t lba);
+int jbd_trans_try_revoke_block(struct jbd_trans *trans,
+			       ext4_fsblk_t lba);
 void jbd_journal_free_trans(struct jbd_journal *journal,
 			    struct jbd_trans *trans,
 			    bool abort);

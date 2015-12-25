@@ -1222,6 +1222,28 @@ int jbd_trans_revoke_block(struct jbd_trans *trans,
 	return EOK;
 }
 
+/**@brief  Try to add block to be revoked to a transaction.
+ *         If @lba still remains in an transaction on checkpoint
+ *         queue, add @lba as a revoked block to the transaction.
+ * @param  trans transaction
+ * @param  lba logical block address
+ * @return standard error code*/
+int jbd_trans_try_revoke_block(struct jbd_trans *trans,
+			       ext4_fsblk_t lba)
+{
+	int r = EOK;
+	struct jbd_trans *tmp;
+	struct jbd_journal *journal = trans->journal;
+	TAILQ_FOREACH(tmp, &journal->cp_queue, trans_node) {
+		struct jbd_block_rec *block_rec =
+			jbd_trans_block_rec_lookup(trans, lba);
+		if (block_rec)
+			jbd_trans_revoke_block(trans, lba);
+
+	}
+	return r;
+}
+
 /**@brief  Free a transaction
  * @param  journal current journal session
  * @param  trans transaction
