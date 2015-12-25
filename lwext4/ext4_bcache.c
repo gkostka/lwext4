@@ -176,11 +176,11 @@ void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf)
 	bc->ref_blocks--;
 }
 
-int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
-		      bool *is_new)
+struct ext4_buf *
+ext4_bcache_find_get(struct ext4_bcache *bc, struct ext4_block *b,
+		     uint64_t lba)
 {
-	/* Try to search the buffer with exaxt LBA. */
-	struct ext4_buf *buf = ext4_buf_lookup(bc, b->lb_id);
+	struct ext4_buf *buf = ext4_buf_lookup(bc, lba);
 	if (buf) {
 		/* If buffer is not referenced. */
 		if (!buf->refctr) {
@@ -197,7 +197,16 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 
 		b->buf = buf;
 		b->data = buf->data;
+	}
+	return buf;
+}
 
+int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
+		      bool *is_new)
+{
+	/* Try to search the buffer with exaxt LBA. */
+	struct ext4_buf *buf = ext4_bcache_find_get(bc, b, b->lb_id);
+	if (buf) {
 		*is_new = false;
 		return EOK;
 	}
