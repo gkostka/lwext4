@@ -1048,6 +1048,7 @@ int ext4_flink(const char *path, const char *hardlink_path)
 		return EINVAL;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDONLY, EXT4_DE_UNKNOWN,
 			       &parent_inode, &name_off);
@@ -1077,6 +1078,11 @@ Finish:
 	if (child_loaded)
 		ext4_fs_put_inode_ref(&child_ref);
 
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
 
@@ -1096,6 +1102,7 @@ int ext4_frename(const char *path, const char *new_path)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDONLY, EXT4_DE_UNKNOWN,
 				&parent_inode, &name_off);
@@ -1133,6 +1140,11 @@ Finish:
 
 	if (child_loaded)
 		ext4_fs_put_inode_ref(&child_ref);
+
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
 
 	EXT4_MP_UNLOCK(mp);
 	return r;
@@ -1181,9 +1193,12 @@ int ext4_fremove(const char *path)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
+
 	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN,
 			       &parent_inode, &name_off);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1191,6 +1206,7 @@ int ext4_fremove(const char *path)
 	/*Load parent*/
 	r = ext4_fs_get_inode_ref(&mp->fs, parent_inode, &parent);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1199,6 +1215,7 @@ int ext4_fremove(const char *path)
 	r = ext4_fs_get_inode_ref(&mp->fs, f.inode, &child);
 	if (r != EOK) {
 		ext4_fs_put_inode_ref(&parent);
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1233,6 +1250,12 @@ int ext4_fremove(const char *path)
 Finish:
 	ext4_fs_put_inode_ref(&child);
 	ext4_fs_put_inode_ref(&parent);
+
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
@@ -1286,9 +1309,17 @@ int ext4_fopen(ext4_file *f, const char *path, const char *flags)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
+
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
 	r = ext4_generic_open(f, path, flags, true, 0, 0);
 	ext4_block_cache_write_back(mp->fs.bdev, 0);
+
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
@@ -1305,9 +1336,17 @@ int ext4_fopen2(ext4_file *f, const char *path, int flags)
         filetype = EXT4_DE_REG_FILE;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
+
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
 	r = ext4_generic_open2(f, path, flags, filetype, NULL, NULL);
 	ext4_block_cache_write_back(mp->fs.bdev, 0);
+
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
@@ -1377,7 +1416,14 @@ int ext4_ftruncate(ext4_file *f, uint64_t size)
 		return EPERM;
 
 	EXT4_MP_LOCK(f->mp);
+
+	ext4_trans_start(f->mp);
 	r = ext4_ftruncate_no_lock(f, size);
+	if (r != EOK)
+		ext4_trans_abort(f->mp);
+	else
+		ext4_trans_stop(f->mp);
+
 	EXT4_MP_UNLOCK(f->mp);
 	return r;
 }
@@ -1565,6 +1611,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 		return EOK;
 
 	EXT4_MP_LOCK(f->mp);
+	ext4_trans_start(f->mp);
 
 	struct ext4_fs *const fs = &f->mp->fs;
 	struct ext4_sblock *const sb = &f->mp->fs.sb;
@@ -1574,6 +1621,7 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 
 	r = ext4_fs_get_inode_ref(fs, f->inode, &ref);
 	if (r != EOK) {
+		ext4_trans_abort(f->mp);
 		EXT4_MP_UNLOCK(f->mp);
 		return r;
 	}
@@ -1713,7 +1761,13 @@ out_fsize:
 	}
 
 Finish:
-	ext4_fs_put_inode_ref(&ref);
+	r = ext4_fs_put_inode_ref(&ref);
+
+	if (r != EOK)
+		ext4_trans_abort(f->mp);
+	else
+		ext4_trans_stop(f->mp);
+
 	EXT4_MP_UNLOCK(f->mp);
 	return r;
 }
@@ -1766,9 +1820,11 @@ int ext4_chmod(const char *path, uint32_t mode)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN, NULL, NULL);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1777,6 +1833,7 @@ int ext4_chmod(const char *path, uint32_t mode)
 	ext4_fclose(&f);
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1784,7 +1841,12 @@ int ext4_chmod(const char *path, uint32_t mode)
 	ext4_inode_set_mode(sb, inode_ref.inode, mode);
 	inode_ref.dirty = true;
 
-	ext4_fs_put_inode_ref(&inode_ref);
+	r = ext4_fs_put_inode_ref(&inode_ref);
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
@@ -1801,9 +1863,11 @@ int ext4_chown(const char *path, uint32_t uid, uint32_t gid)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN, NULL, NULL);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1811,6 +1875,7 @@ int ext4_chown(const char *path, uint32_t uid, uint32_t gid)
 	ext4_fclose(&f);
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1819,7 +1884,12 @@ int ext4_chown(const char *path, uint32_t uid, uint32_t gid)
 	ext4_inode_set_gid(inode_ref.inode, gid);
 	inode_ref.dirty = true;
 
-	ext4_fs_put_inode_ref(&inode_ref);
+	r = ext4_fs_put_inode_ref(&inode_ref);
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
@@ -1836,9 +1906,11 @@ int ext4_file_set_atime(const char *path, uint32_t atime)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN, NULL, NULL);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1846,6 +1918,7 @@ int ext4_file_set_atime(const char *path, uint32_t atime)
 	ext4_fclose(&f);
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1853,7 +1926,12 @@ int ext4_file_set_atime(const char *path, uint32_t atime)
 	ext4_inode_set_access_time(inode_ref.inode, atime);
 	inode_ref.dirty = true;
 
-	ext4_fs_put_inode_ref(&inode_ref);
+	r = ext4_fs_put_inode_ref(&inode_ref);
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
@@ -1870,9 +1948,11 @@ int ext4_file_set_mtime(const char *path, uint32_t mtime)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN, NULL, NULL);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1880,6 +1960,7 @@ int ext4_file_set_mtime(const char *path, uint32_t mtime)
 	ext4_fclose(&f);
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1887,7 +1968,12 @@ int ext4_file_set_mtime(const char *path, uint32_t mtime)
 	ext4_inode_set_modif_time(inode_ref.inode, mtime);
 	inode_ref.dirty = true;
 
-	ext4_fs_put_inode_ref(&inode_ref);
+	r = ext4_fs_put_inode_ref(&inode_ref);
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
@@ -1904,9 +1990,11 @@ int ext4_file_set_ctime(const char *path, uint32_t ctime)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDWR, EXT4_DE_UNKNOWN, NULL, NULL);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1914,6 +2002,7 @@ int ext4_file_set_ctime(const char *path, uint32_t ctime)
 	ext4_fclose(&f);
 	r = ext4_fs_get_inode_ref(&mp->fs, ino, &inode_ref);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -1921,7 +2010,12 @@ int ext4_file_set_ctime(const char *path, uint32_t ctime)
 	ext4_inode_set_change_inode_time(inode_ref.inode, ctime);
 	inode_ref.dirty = true;
 
-	ext4_fs_put_inode_ref(&inode_ref);
+	r = ext4_fs_put_inode_ref(&inode_ref);
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
@@ -2006,6 +2100,8 @@ int ext4_fsymlink(const char *target, const char *path)
 	filetype = EXT4_DE_SYMLINK;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
+
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
 	r = ext4_generic_open2(&f, path, O_RDWR|O_CREAT, filetype, NULL, NULL);
 	if (r == EOK)
@@ -2048,6 +2144,11 @@ int ext4_readlink(const char *path, char *buf, size_t bufsize, size_t *rcnt)
 
 Finish:
 	ext4_block_cache_write_back(mp->fs.bdev, 0);
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
@@ -2308,12 +2409,14 @@ int ext4_dir_rm(const char *path)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
 
 	struct ext4_fs *const fs = &mp->fs;
 
 	/*Check if exist.*/
 	r = ext4_generic_open(&f, path, "r", false, &inode_up, &name_off);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -2479,6 +2582,12 @@ int ext4_dir_rm(const char *path)
 
 	ext4_block_cache_write_back(mp->fs.bdev, 0);
 	EXT4_MP_UNLOCK(mp);
+
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
 	return r;
 }
 
@@ -2493,11 +2602,13 @@ int ext4_dir_mk(const char *path)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
 
 	/*Check if exist.*/
 	r = ext4_generic_open(&f, path, "r", false, 0, 0);
 	if (r == EOK) {
 		/*Directory already created*/
+		ext4_trans_stop(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
@@ -2505,10 +2616,12 @@ int ext4_dir_mk(const char *path)
 	/*Create new dir*/
 	r = ext4_generic_open(&f, path, "w", false, 0, 0);
 	if (r != EOK) {
+		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
 
+	ext4_trans_stop(mp);
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
