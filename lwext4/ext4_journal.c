@@ -982,6 +982,7 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 
 	TAILQ_INIT(&journal->trans_queue);
 	TAILQ_INIT(&journal->cp_queue);
+	RB_INIT(&journal->block_rec_root);
 	journal->jbd_fs = jbd_fs;
 	jbd_journal_write_sb(journal);
 	return jbd_write_sb(jbd_fs);
@@ -1043,6 +1044,13 @@ int jbd_journal_stop(struct jbd_journal *journal)
 	 * the disk.*/
 	jbd_journal_flush_all_trans(journal);
 
+	/* There should be no block record in this journal
+	 * session. */
+	if (!RB_EMPTY(&journal->block_rec_root))
+		ext4_dbg(DEBUG_JBD,
+			 DBG_WARN "There are still block records "
+			 	  "in this journal session!\n");
+
 	features_incompatible =
 		ext4_get32(&jbd_fs->inode_ref.fs->sb,
 			   features_incompatible);
@@ -1092,8 +1100,6 @@ jbd_journal_new_trans(struct jbd_journal *journal)
 	if (!trans)
 		return NULL;
 
-	RB_INIT(&trans->block_rec_root);
-
 	/* We will assign a trans_id to this transaction,
 	 * once it has been committed.*/
 	trans->journal = journal;
@@ -1128,42 +1134,55 @@ int jbd_trans_get_access(struct jbd_journal *journal,
 	return r;
 }
 
-static inline int
-jbd_trans_insert_block_rec(struct jbd_trans *trans,
-			   ext4_fsblk_t lba)
-{
-	struct jbd_block_rec *block_rec;
-	block_rec = calloc(1, sizeof(struct jbd_block_rec));
-	if (!block_rec)
-		return ENOMEM;
-
-	block_rec->lba = lba;
-	RB_INSERT(jbd_block, &trans->block_rec_root, block_rec);
-	return EOK;
-}
-
 static struct jbd_block_rec *
-jbd_trans_block_rec_lookup(struct jbd_trans *trans,
+jbd_trans_block_rec_lookup(struct jbd_journal *journal,
 			   ext4_fsblk_t lba)
 {
 	struct jbd_block_rec tmp = {
 		.lba = lba
 	};
 
-	return RB_FIND(jbd_block, &trans->block_rec_root, &tmp);
+	return RB_FIND(jbd_block,
+		       &journal->block_rec_root,
+		       &tmp);
+}
+
+static inline struct jbd_block_rec *
+jbd_trans_insert_block_rec(struct jbd_trans *trans,
+			   ext4_fsblk_t lba,
+			   struct ext4_buf *buf)
+{
+	struct jbd_block_rec *block_rec;
+	block_rec = jbd_trans_block_rec_lookup(trans->journal, lba);
+	if (block_rec) {
+		/* Data should be flushed to disk already. */
+		ext4_assert(!block_rec->buf);
+		/* Now this block record belongs to this transaction. */
+		block_rec->trans = trans;
+		return block_rec;
+	}
+	block_rec = calloc(1, sizeof(struct jbd_block_rec));
+	if (!block_rec)
+		return NULL;
+
+	block_rec->lba = lba;
+	block_rec->buf = buf;
+	block_rec->trans = trans;
+	RB_INSERT(jbd_block, &trans->journal->block_rec_root, block_rec);
+	return block_rec;
 }
 
 static inline void
-jbd_trans_remove_block_recs(struct jbd_trans *trans)
+jbd_trans_remove_block_rec(struct jbd_journal *journal,
+			   struct jbd_buf *jbd_buf)
 {
-	struct jbd_block_rec *block_rec, *tmp;
-	RB_FOREACH_SAFE(block_rec,
-			jbd_block,
-			&trans->block_rec_root,
-			tmp) {
+	struct jbd_block_rec *block_rec = jbd_buf->block_rec;
+	/* If this block record doesn't belong to this transaction,
+	 * give up.*/
+	if (block_rec->trans == jbd_buf->trans) {
 		RB_REMOVE(jbd_block,
-			  &trans->block_rec_root,
-			  block_rec);
+				&journal->block_rec_root,
+				block_rec);
 		free(block_rec);
 	}
 }
@@ -1179,15 +1198,19 @@ int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 
 	if (!ext4_bcache_test_flag(block->buf, BC_DIRTY) &&
 	    block->buf->end_write != jbd_trans_end_write) {
+		struct jbd_block_rec *block_rec;
 		buf = calloc(1, sizeof(struct jbd_buf));
 		if (!buf)
 			return ENOMEM;
 
-		if (jbd_trans_insert_block_rec(trans, block->lb_id) != EOK) {
+		if ((block_rec = jbd_trans_insert_block_rec(trans,
+					block->lb_id,
+					block->buf)) == NULL) {
 			free(buf);
 			return ENOMEM;
 		}
 
+		buf->block_rec = block_rec;
 		buf->trans = trans;
 		buf->block = *block;
 		ext4_bcache_inc_ref(block->buf);
@@ -1232,16 +1255,25 @@ int jbd_trans_try_revoke_block(struct jbd_trans *trans,
 			       ext4_fsblk_t lba)
 {
 	int r = EOK;
-	struct jbd_trans *tmp;
 	struct jbd_journal *journal = trans->journal;
-	TAILQ_FOREACH(tmp, &journal->cp_queue, trans_node) {
-		struct jbd_block_rec *block_rec =
-			jbd_trans_block_rec_lookup(trans, lba);
-		if (block_rec)
-			jbd_trans_revoke_block(trans, lba);
+	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
+	struct jbd_block_rec *block_rec =
+		jbd_trans_block_rec_lookup(journal, lba);
 
+	/* Make sure we don't flush any buffers belong to this transaction. */
+	if (block_rec && block_rec->trans != trans) {
+		/* If the buffer has not been flushed yet, flush it now. */
+		if (block_rec->buf) {
+			r = ext4_block_flush_buf(fs->bdev, block_rec->buf);
+			if (r != EOK)
+				return r;
+
+		}
+
+		jbd_trans_revoke_block(trans, lba);
 	}
-	return r;
+
+	return EOK;
 }
 
 /**@brief  Free a transaction
@@ -1265,6 +1297,7 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 			ext4_block_set(fs->bdev, &jbd_buf->block);
 		}
 
+		jbd_trans_remove_block_rec(journal, jbd_buf);
 		LIST_REMOVE(jbd_buf, buf_node);
 		free(jbd_buf);
 	}
@@ -1274,7 +1307,6 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 		free(rec);
 	}
 
-	jbd_trans_remove_block_recs(trans);
 	free(trans);
 }
 
@@ -1534,6 +1566,8 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 		trans->error = res;
 
 	LIST_REMOVE(jbd_buf, buf_node);
+	jbd_buf->block_rec->buf = NULL;
+	jbd_trans_remove_block_rec(journal, jbd_buf);
 	free(jbd_buf);
 
 	/* Clear the end_write and end_write_arg fields. */

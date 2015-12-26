@@ -1096,6 +1096,7 @@ struct jbd_fs {
 struct jbd_buf {
 	struct ext4_block block;
 	struct jbd_trans *trans;
+	struct jbd_block_rec *block_rec;
 	LIST_ENTRY(jbd_buf) buf_node;
 };
 
@@ -1106,6 +1107,8 @@ struct jbd_revoke_rec {
 
 struct jbd_block_rec {
 	ext4_fsblk_t lba;
+	struct ext4_buf *buf;
+	struct jbd_trans *trans;
 	RB_ENTRY(jbd_block_rec) block_rec_node;
 };
 
@@ -1122,7 +1125,6 @@ struct jbd_trans {
 
 	LIST_HEAD(jbd_trans_buf, jbd_buf) buf_list;
 	LIST_HEAD(jbd_revoke_list, jbd_revoke_rec) revoke_list;
-	RB_HEAD(jbd_block, jbd_block_rec) block_rec_root;
 	TAILQ_ENTRY(jbd_trans) trans_node;
 };
 
@@ -1137,6 +1139,7 @@ struct jbd_journal {
 
 	TAILQ_HEAD(jbd_trans_queue, jbd_trans) trans_queue;
 	TAILQ_HEAD(jbd_cp_queue, jbd_trans) cp_queue;
+	RB_HEAD(jbd_block, jbd_block_rec) block_rec_root;
 
 	struct jbd_fs *jbd_fs;
 };
