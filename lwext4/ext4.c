@@ -555,7 +555,7 @@ Finish:
 	return r;
 }
 
-int ext4_trans_start(struct ext4_mountpoint *mp)
+static int ext4_trans_start(struct ext4_mountpoint *mp)
 {
 	int r = EOK;
 	if (mp->fs.jbd_journal && !mp->fs.curr_trans) {
@@ -572,7 +572,7 @@ Finish:
 	return r;
 }
 
-int ext4_trans_stop(struct ext4_mountpoint *mp)
+static int ext4_trans_stop(struct ext4_mountpoint *mp)
 {
 	int r = EOK;
 	if (mp->fs.jbd_journal && mp->fs.curr_trans) {
@@ -584,7 +584,7 @@ int ext4_trans_stop(struct ext4_mountpoint *mp)
 	return r;
 }
 
-void ext4_trans_abort(struct ext4_mountpoint *mp)
+static void ext4_trans_abort(struct ext4_mountpoint *mp)
 {
 	if (mp->fs.jbd_journal && mp->fs.curr_trans) {
 		struct jbd_journal *journal = mp->fs.jbd_journal;
