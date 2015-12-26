@@ -2552,7 +2552,7 @@ int ext4_test_journal(const char *mount_point)
 				}
 				break;
 			case 1:
-				r = jbd_trans_revoke_block(t, rand_block);
+				r = jbd_trans_try_revoke_block(t, rand_block);
 				if (r != EOK) {
 					jbd_journal_free_trans(journal, t,
 							       true);
