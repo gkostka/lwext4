@@ -211,6 +211,7 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 
 	bg_ref.dirty = true;
 
+	ext4_bcache_invalidate_lba(fs->bdev->bc, baddr, 1);
 	/* Release block group reference */
 	return ext4_fs_put_block_group_ref(&bg_ref);
 }
@@ -317,6 +318,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
 		bg_first++;
 	}
 
+	ext4_bcache_invalidate_lba(fs->bdev->bc, first, count);
 	/*All blocks should be released*/
 	ext4_assert(count == 0);
 	return rc;

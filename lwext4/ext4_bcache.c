@@ -176,6 +176,21 @@ void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf)
 	bc->ref_blocks--;
 }
 
+void ext4_bcache_invalidate_lba(struct ext4_bcache *bc,
+				uint64_t from,
+				uint32_t cnt)
+{
+	uint64_t end = from + cnt - 1;
+	struct ext4_buf *tmp = ext4_buf_lookup(bc, from), *buf;
+	RB_FOREACH_FROM(buf, ext4_buf_lba, tmp) {
+		if (buf->lba > end)
+			break;
+
+		/* Clear both dirty and up-to-date flags. */
+		ext4_bcache_clear_dirty(buf);
+	}
+}
+
 struct ext4_buf *
 ext4_bcache_find_get(struct ext4_bcache *bc, struct ext4_block *b,
 		     uint64_t lba)

@@ -238,6 +238,15 @@ struct ext4_buf *ext4_buf_lowest_lru(struct ext4_bcache *bc);
  * @param   buf buffer*/
 void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf);
 
+/**@brief   Invalidate a range of buffers.
+ * @param   bc block cache descriptor
+ * @param   from starting lba
+ * @param   cnt block counts
+ * @param   buf buffer*/
+void ext4_bcache_invalidate_lba(struct ext4_bcache *bc,
+				uint64_t from,
+				uint32_t cnt);
+
 /**@brief   Find existing buffer from block cache memory.
  *          Unreferenced block allocation is based on LRU
  *          (Last Recently Used) algorithm.
