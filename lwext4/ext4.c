@@ -1497,10 +1497,6 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 		if (r != EOK)
 			goto Finish;
 
-		r = ext4_block_flush_lba(f->mp->fs.bdev, fblk);
-		if (r != EOK)
-			goto Finish;
-
 		off = fblk * block_size + unalg;
 		r = ext4_block_writebytes(f->mp->fs.bdev, off, u8_buf, len);
 		if (r != EOK)
@@ -1524,8 +1520,6 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 	fblock_start = 0;
 	fblock_count = 0;
 	while (size >= block_size) {
-
-		uint32_t i;
 
 		while (iblk_idx < iblock_last) {
 			if (iblk_idx < ifile_blocks) {
@@ -1554,13 +1548,6 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 				break;
 
 			fblock_count++;
-		}
-
-		for (i = 0;i < fblock_count;i++) {
-			r = ext4_block_flush_lba(f->mp->fs.bdev, fblock_start + i);
-			if (r != EOK)
-				goto Finish;
-
 		}
 
 		r = ext4_blocks_set_direct(f->mp->fs.bdev, u8_buf, fblock_start,
@@ -1605,10 +1592,6 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 				/*Node size sholud be updated.*/
 				goto out_fsize;
 		}
-
-		r = ext4_block_flush_lba(f->mp->fs.bdev, fblk);
-		if (r != EOK)
-			goto Finish;
 
 		off = fblk * block_size;
 		r = ext4_block_writebytes(f->mp->fs.bdev, off, u8_buf, size);
