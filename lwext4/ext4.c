@@ -584,16 +584,14 @@ int ext4_trans_stop(struct ext4_mountpoint *mp)
 	return r;
 }
 
-int ext4_trans_abort(struct ext4_mountpoint *mp)
+void ext4_trans_abort(struct ext4_mountpoint *mp)
 {
-	int r = EOK;
 	if (mp->fs.jbd_journal && mp->fs.curr_trans) {
 		struct jbd_journal *journal = mp->fs.jbd_journal;
 		struct jbd_trans *trans = mp->fs.curr_trans;
-		r = jbd_journal_commit_trans(journal, trans);
+		jbd_journal_free_trans(journal, trans, true);
 		mp->fs.curr_trans = NULL;
 	}
-	return r;
 }
 
 int ext4_trans_get_write_access(struct ext4_fs *fs,
