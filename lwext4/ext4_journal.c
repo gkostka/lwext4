@@ -1403,6 +1403,8 @@ again:
 		tag_info.uuid_exist = uuid_exist;
 		if (i == trans->data_cnt - 1)
 			tag_info.last_tag = true;
+		else
+			tag_info.last_tag = false;
 
 		if (uuid_exist)
 			memcpy(tag_info.uuid, journal->jbd_fs->sb.uuid,
