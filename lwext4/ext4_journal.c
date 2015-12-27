@@ -1123,13 +1123,16 @@ int jbd_trans_get_access(struct jbd_journal *journal,
 {
 	int r = EOK;
 	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
+	struct jbd_buf *jbd_buf = block->buf->end_write_arg;
 
 	/* If the buffer has already been modified, we should
 	 * flush dirty data in this buffer to disk.*/
 	if (ext4_bcache_test_flag(block->buf, BC_DIRTY) &&
-	    block->buf->end_write == jbd_trans_end_write &&
-	    block->buf->end_write_arg != trans) {
-		r = ext4_block_flush_buf(fs->bdev, block->buf);
+	    block->buf->end_write == jbd_trans_end_write) {
+		ext4_assert(jbd_buf);
+		if (jbd_buf->trans != trans)
+			r = ext4_block_flush_buf(fs->bdev, block->buf);
+
 	}
 	return r;
 }
