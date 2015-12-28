@@ -136,7 +136,7 @@ Compile & install tools
 
 lwext4-generic demo application
 =====
-Simple lwext4 library test applicatin:
+Simple lwext4 library test application:
 * load ext2/3/4 images
 * load linux block device with ext2/3/4 part
 * load windows volume with ext2/3/4 filesystem 
