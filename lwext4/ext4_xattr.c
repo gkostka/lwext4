@@ -543,7 +543,7 @@ static int ext4_xattr_try_alloc_block(struct ext4_xattr_ref *xattr_ref)
 		if (ret != EOK)
 			goto Finish;
 
-		ret = ext4_block_get(xattr_ref->fs->bdev, &xattr_ref->block,
+		ret = ext4_trans_block_get(xattr_ref->fs->bdev, &xattr_ref->block,
 				     xattr_block);
 		if (ret != EOK) {
 			ext4_balloc_free_block(xattr_ref->inode_ref,
@@ -655,7 +655,7 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 		block_data = (char *)block_header + block_size_rem;
 		block_size_rem -= sizeof(struct ext4_xattr_header);
 
-		ext4_bcache_set_dirty(xattr_ref->block.buf);
+		ext4_trans_set_block_dirty(xattr_ref->block.buf);
 	} else {
 		/* We don't need an extra block.*/
 		if (xattr_ref->block_loaded) {
@@ -677,7 +677,7 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 				    &xattr_ref->fs->sb, 0);
 
 				xattr_ref->inode_ref->dirty = true;
-				ext4_bcache_set_dirty(xattr_ref->block.buf);
+				ext4_trans_set_block_dirty(xattr_ref->block.buf);
 			}
 		}
 	}
@@ -726,7 +726,7 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 		ext4_xattr_set_block_checksum(xattr_ref->inode_ref,
 					      xattr_ref->block.lb_id,
 					      block_header);
-		ext4_bcache_set_dirty(xattr_ref->block.buf);
+		ext4_trans_set_block_dirty(xattr_ref->block.buf);
 	}
 
 Finish:
@@ -837,7 +837,7 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	ref->ea_size = 0;
 	ref->iter_from = NULL;
 	if (xattr_block) {
-		rc = ext4_block_get(fs->bdev, &ref->block, xattr_block);
+		rc = ext4_trans_block_get(fs->bdev, &ref->block, xattr_block);
 		if (rc != EOK)
 			return EIO;
 

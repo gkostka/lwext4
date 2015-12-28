@@ -132,6 +132,7 @@ ext4_buf_alloc(struct ext4_bcache *bc, uint64_t lba)
 
 	buf->lba = lba;
 	buf->data = data;
+	buf->bc = bc;
 	return buf;
 }
 

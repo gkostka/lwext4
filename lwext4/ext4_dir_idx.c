@@ -353,7 +353,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 		return rc;
 
 	struct ext4_block block;
-	rc = ext4_block_get_noread(dir->fs->bdev, &block, fblock);
+	rc = ext4_trans_block_get_noread(dir->fs->bdev, &block, fblock);
 	if (rc != EOK)
 		return rc;
 
@@ -403,7 +403,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	}
 
 	struct ext4_block new_block;
-	rc = ext4_block_get_noread(dir->fs->bdev, &new_block, fblock);
+	rc = ext4_trans_block_get_noread(dir->fs->bdev, &new_block, fblock);
 	if (rc != EOK) {
 		ext4_block_set(dir->fs->bdev, &block);
 		return rc;
@@ -425,7 +425,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 
 	ext4_dir_en_set_inode(be, 0);
 
-	ext4_bcache_set_dirty(new_block.buf);
+	ext4_trans_set_block_dirty(new_block.buf);
 	rc = ext4_block_set(dir->fs->bdev, &new_block);
 	if (rc != EOK) {
 		ext4_block_set(dir->fs->bdev, &block);
@@ -437,7 +437,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	ext4_dir_dx_entry_set_block(entry, iblock);
 
 	ext4_dir_set_dx_csum(dir, (struct ext4_dir_en *)block.data);
-	ext4_bcache_set_dirty(block.buf);
+	ext4_trans_set_block_dirty(block.buf);
 
 	return ext4_block_set(dir->fs->bdev, &block);
 }
@@ -580,7 +580,7 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 		if (r != EOK)
 			return r;
 
-		r = ext4_block_get(inode_ref->fs->bdev, tmp_blk, fblk);
+		r = ext4_trans_block_get(inode_ref->fs->bdev, tmp_blk, fblk);
 		if (r != EOK)
 			return r;
 
@@ -662,7 +662,7 @@ static int ext4_dir_dx_next_block(struct ext4_inode_ref *inode_ref,
 			return r;
 
 		struct ext4_block b;
-		r = ext4_block_get(inode_ref->fs->bdev, &b, blk_adr);
+		r = ext4_trans_block_get(inode_ref->fs->bdev, &b, blk_adr);
 		if (r != EOK)
 			return r;
 
@@ -705,7 +705,7 @@ int ext4_dir_dx_find_entry(struct ext4_dir_search_result *result,
 	struct ext4_fs *fs = inode_ref->fs;
 
 	struct ext4_block root_block;
-	rc = ext4_block_get(fs->bdev, &root_block, root_block_addr);
+	rc = ext4_trans_block_get(fs->bdev, &root_block, root_block_addr);
 	if (rc != EOK)
 		return rc;
 
@@ -753,7 +753,7 @@ int ext4_dir_dx_find_entry(struct ext4_dir_search_result *result,
 		if (rc != EOK)
 			goto cleanup;
 
-		rc = ext4_block_get(fs->bdev, &b, leaf_block_addr);
+		rc = ext4_trans_block_get(fs->bdev, &b, leaf_block_addr);
 		if (rc != EOK)
 			goto cleanup;
 
@@ -897,7 +897,7 @@ ext4_dir_dx_insert_entry(struct ext4_inode_ref *inode_ref __unused,
 	ext4_dir_dx_entry_set_hash(new_index_entry, hash);
 	ext4_dir_dx_climit_set_count(climit, count + 1);
 	ext4_dir_set_dx_csum(inode_ref, (void *)index_block->b.data);
-	ext4_bcache_set_dirty(index_block->b.buf);
+	ext4_trans_set_block_dirty(index_block->b.buf);
 }
 
 /**@brief Split directory entries to two parts preventing node overflow.
@@ -994,7 +994,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 
 	/* Load new block */
 	struct ext4_block new_data_block_tmp;
-	rc = ext4_block_get_noread(inode_ref->fs->bdev, &new_data_block_tmp,
+	rc = ext4_trans_block_get_noread(inode_ref->fs->bdev, &new_data_block_tmp,
 				   new_fblock);
 	if (rc != EOK) {
 		free(sort);
@@ -1073,8 +1073,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	}
 	ext4_dir_set_csum(inode_ref, (void *)old_data_block->data);
 	ext4_dir_set_csum(inode_ref, (void *)new_data_block_tmp.data);
-	ext4_bcache_set_dirty(old_data_block->buf);
-	ext4_bcache_set_dirty(new_data_block_tmp.buf);
+	ext4_trans_set_block_dirty(old_data_block->buf);
+	ext4_trans_set_block_dirty(new_data_block_tmp.buf);
 
 	free(sort);
 	free(entry_buffer);
@@ -1142,7 +1142,7 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 
 		/* load new block */
 		struct ext4_block b;
-		r = ext4_block_get_noread(ino_ref->fs->bdev, &b, new_fblk);
+		r = ext4_trans_block_get_noread(ino_ref->fs->bdev, &b, new_fblk);
 		if (r != EOK)
 			return r;
 
@@ -1187,7 +1187,7 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 						ino_ref,
 						(struct ext4_dir_en *)
 						dxb->b.data);
-				ext4_bcache_set_dirty(dxb->b.buf);
+				ext4_trans_set_block_dirty(dxb->b.buf);
 
 				struct ext4_block block_tmp = dxb->b;
 
@@ -1205,11 +1205,11 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 						 new_iblk);
 			ext4_dir_set_dx_csum(ino_ref, (void*)dx_blks[0].b.data);
 			ext4_dir_set_dx_csum(ino_ref, (void*)dx_blks[1].b.data);
-			ext4_bcache_set_dirty(dx_blks[0].b.buf);
-			ext4_bcache_set_dirty(dx_blks[1].b.buf);
+			ext4_trans_set_block_dirty(dx_blks[0].b.buf);
+			ext4_trans_set_block_dirty(dx_blks[1].b.buf);
 
 			ext4_dir_set_dx_csum(ino_ref, (void *)b.data);
-			ext4_bcache_set_dirty(b.buf);
+			ext4_trans_set_block_dirty(b.buf);
 			return ext4_block_set(ino_ref->fs->bdev, &b);
 		} else {
 			size_t sz;
@@ -1241,8 +1241,8 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 
 			ext4_dir_set_dx_csum(ino_ref, (void*)dx_blks[0].b.data);
 			ext4_dir_set_dx_csum(ino_ref, (void*)dx_blks[1].b.data);
-			ext4_bcache_set_dirty(dx_blks[0].b.buf);
-			ext4_bcache_set_dirty(dx_blks[1].b.buf);
+			ext4_trans_set_block_dirty(dx_blks[0].b.buf);
+			ext4_trans_set_block_dirty(dx_blks[1].b.buf);
 		}
 	}
 
@@ -1263,7 +1263,7 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	struct ext4_fs *fs = parent->fs;
 	struct ext4_block root_blk;
 
-	r = ext4_block_get(fs->bdev, &root_blk, rblock_addr);
+	r = ext4_trans_block_get(fs->bdev, &root_blk, rblock_addr);
 	if (r != EOK)
 		return r;
 
@@ -1316,7 +1316,7 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 		goto release_target_index;
 
 	struct ext4_block target_block;
-	r = ext4_block_get(fs->bdev, &target_block, leaf_block_addr);
+	r = ext4_trans_block_get(fs->bdev, &target_block, leaf_block_addr);
 	if (r != EOK)
 		goto release_index;
 
@@ -1394,7 +1394,7 @@ int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
 		return rc;
 
 	struct ext4_block block;
-	rc = ext4_block_get(dir->fs->bdev, &block, fblock);
+	rc = ext4_trans_block_get(dir->fs->bdev, &block, fblock);
 	if (rc != EOK)
 		return rc;
 
@@ -1414,7 +1414,7 @@ int ext4_dir_dx_reset_parent_inode(struct ext4_inode_ref *dir,
 	ext4_dx_dot_en_set_inode(&root->dots[1], parent_inode);
 
 	ext4_dir_set_dx_csum(dir, (void *)block.data);
-	ext4_bcache_set_dirty(block.buf);
+	ext4_trans_set_block_dirty(block.buf);
 
 	return ext4_block_set(dir->fs->bdev, &block);
 }

@@ -182,6 +182,9 @@ int ext4_mount(const char *dev_name, const char *mount_point);
  * @return  standard error code */
 int ext4_umount(const char *mount_point);
 
+int ext4_journal_start(const char *mount_point);
+
+int ext4_journal_stop(const char *mount_point);
 
 /**@brief   Journal recovery.
  * @param   mount_point mount point

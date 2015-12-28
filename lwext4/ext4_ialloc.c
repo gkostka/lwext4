@@ -169,7 +169,7 @@ int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
 	    ext4_bg_get_inode_bitmap(bg, sb);
 
 	struct ext4_block b;
-	rc = ext4_block_get(fs->bdev, &b, bitmap_block_addr);
+	rc = ext4_trans_block_get(fs->bdev, &b, bitmap_block_addr);
 	if (rc != EOK)
 		return rc;
 
@@ -184,7 +184,7 @@ int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
 	uint32_t index_in_group = ext4_ialloc_inode_to_bgidx(sb, index);
 	ext4_bmap_bit_clr(b.data, index_in_group);
 	ext4_ialloc_set_bitmap_csum(sb, bg, b.data);
-	ext4_bcache_set_dirty(b.buf);
+	ext4_trans_set_block_dirty(b.buf);
 
 	/* Put back the block with bitmap */
 	rc = ext4_block_set(fs->bdev, &b);
@@ -260,7 +260,7 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *idx, bool is_dir)
 			uint32_t bmp_blk_add = ext4_bg_get_inode_bitmap(bg, sb);
 
 			struct ext4_block b;
-			rc = ext4_block_get(fs->bdev, &b, bmp_blk_add);
+			rc = ext4_trans_block_get(fs->bdev, &b, bmp_blk_add);
 			if (rc != EOK) {
 				ext4_fs_put_block_group_ref(&bg_ref);
 				return rc;
@@ -300,7 +300,7 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *idx, bool is_dir)
 			/* Free i-node found, save the bitmap */
 			ext4_ialloc_set_bitmap_csum(sb,bg,
 						    b.data);
-			ext4_bcache_set_dirty(b.buf);
+			ext4_trans_set_block_dirty(b.buf);
 
 			ext4_block_set(fs->bdev, &b);
 			if (rc != EOK) {

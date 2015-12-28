@@ -42,6 +42,7 @@ extern "C" {
 
 #include "ext4_config.h"
 #include "ext4_bcache.h"
+#include "ext4_trans.h"
 #include "ext4_debug.h"
 
 #include <stdbool.h>
@@ -122,6 +123,9 @@ struct ext4_blockdev {
 
 	/**@brief   Cache write back mode reference counter*/
 	uint32_t cache_write_back;
+
+	/**@brief   The filesystem this block device belongs to. */
+	struct ext4_fs *fs;
 };
 
 /**@brief   Static initialization of the block device.*/

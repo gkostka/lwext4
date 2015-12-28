@@ -85,6 +85,9 @@ struct ext4_buf {
 	/**@brief   Reference count table*/
 	uint32_t refctr;
 
+	/**@brief   The block cache this buffer belongs to. */
+	struct ext4_bcache *bc;
+
 	/**@brief   Whether or not buffer is on dirty list.*/
 	bool on_dirty_list;
 

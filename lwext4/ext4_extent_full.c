@@ -353,7 +353,7 @@ static int ext4_ext_dirty(struct ext4_inode_ref *inode_ref,
 			  struct ext4_extent_path *path)
 {
 	if (path->block.lb_id)
-		ext4_bcache_set_dirty(path->block.buf);
+		ext4_trans_set_block_dirty(path->block.buf);
 	else
 		inode_ref->dirty = true;
 
@@ -440,7 +440,7 @@ static int read_extent_tree_block(struct ext4_inode_ref *inode_ref,
 {
 	int err;
 
-	err = ext4_block_get(inode_ref->fs->bdev, bh, pblk);
+	err = ext4_trans_block_get(inode_ref->fs->bdev, bh, pblk);
 	if (err != EOK)
 		goto errout;
 
@@ -627,7 +627,7 @@ static int ext4_ext_split_node(struct ext4_inode_ref *inode_ref,
 		goto cleanup;
 
 	/*  For write access.# */
-	ret = ext4_block_get_noread(inode_ref->fs->bdev, &bh, newblock);
+	ret = ext4_trans_block_get_noread(inode_ref->fs->bdev, &bh, newblock);
 	if (ret != EOK)
 		goto cleanup;
 
@@ -798,7 +798,7 @@ out:
 	} else if (bh.lb_id) {
 		/* If we got a sibling leaf. */
 		ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&bh));
-		ext4_bcache_set_dirty(bh.buf);
+		ext4_trans_set_block_dirty(bh.buf);
 
 		spt->path.p_block = ext4_idx_pblock(ix);
 		spt->path.depth = to_le16(eh->depth);
@@ -1070,7 +1070,7 @@ out:
 	} else if (bh.lb_id) {
 		/* If we got a sibling leaf. */
 		ext4_extent_block_csum_set(inode_ref, ext_block_hdr(&bh));
-		ext4_bcache_set_dirty(bh.buf);
+		ext4_trans_set_block_dirty(bh.buf);
 
 		spt->path.p_block = ext4_ext_pblock(ex);
 		spt->path.depth = to_le16(eh->depth);
@@ -1129,7 +1129,7 @@ static int ext4_ext_grow_indepth(struct ext4_inode_ref *inode_ref,
 		return err;
 
 	/* # */
-	err = ext4_block_get_noread(inode_ref->fs->bdev, &bh, newblock);
+	err = ext4_trans_block_get_noread(inode_ref->fs->bdev, &bh, newblock);
 	if (err != EOK) {
 		ext4_ext_free_blocks(inode_ref, newblock, 1, 0);
 		return err;
@@ -1166,7 +1166,7 @@ static int ext4_ext_grow_indepth(struct ext4_inode_ref *inode_ref,
 	}
 	neh->depth = to_le16(to_le16(neh->depth) + 1);
 
-	ext4_bcache_set_dirty(bh.buf);
+	ext4_trans_set_block_dirty(bh.buf);
 	inode_ref->dirty = true;
 	ext4_block_set(inode_ref->fs->bdev, &bh);
 
@@ -1723,12 +1723,12 @@ static int ext4_ext_zero_unwritten_range(struct ext4_inode_ref *inode_ref,
 	uint32_t block_size = ext4_sb_get_block_size(&inode_ref->fs->sb);
 	for (i = 0; i < blocks_count; i++) {
 		struct ext4_block bh = EXT4_BLOCK_ZERO();
-		err = ext4_block_get_noread(inode_ref->fs->bdev, &bh, block + i);
+		err = ext4_trans_block_get_noread(inode_ref->fs->bdev, &bh, block + i);
 		if (err != EOK)
 			break;
 
 		memset(bh.data, 0, block_size);
-		ext4_bcache_set_dirty(bh.buf);
+		ext4_trans_set_block_dirty(bh.buf);
 		err = ext4_block_set(inode_ref->fs->bdev, &bh);
 		if (err != EOK)
 			break;

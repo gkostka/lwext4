@@ -165,7 +165,7 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 
 	struct ext4_block bitmap_block;
 
-	rc = ext4_block_get(fs->bdev, &bitmap_block, bitmap_block_addr);
+	rc = ext4_trans_block_get(fs->bdev, &bitmap_block, bitmap_block_addr);
 	if (rc != EOK) {
 		ext4_fs_put_block_group_ref(&bg_ref);
 		return rc;
@@ -181,7 +181,7 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 	/* Modify bitmap */
 	ext4_bmap_bit_clr(bitmap_block.data, index_in_group);
 	ext4_balloc_set_bitmap_csum(sb, bg, bitmap_block.data);
-	ext4_bcache_set_dirty(bitmap_block.buf);
+	ext4_trans_set_block_dirty(bitmap_block.buf);
 
 	/* Release block with bitmap */
 	rc = ext4_block_set(fs->bdev, &bitmap_block);
@@ -211,6 +211,12 @@ int ext4_balloc_free_block(struct ext4_inode_ref *inode_ref, ext4_fsblk_t baddr)
 
 	bg_ref.dirty = true;
 
+	rc = ext4_trans_try_revoke_block(fs->bdev, baddr);
+	if (rc != EOK) {
+		bg_ref.dirty = false;
+		ext4_fs_put_block_group_ref(&bg_ref);
+		return rc;
+	}
 	ext4_bcache_invalidate_lba(fs->bdev->bc, baddr, 1);
 	/* Release block group reference */
 	return ext4_fs_put_block_group_ref(&bg_ref);
@@ -256,7 +262,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
 		ext4_fsblk_t bitmap_blk = ext4_bg_get_block_bitmap(bg, sb);
 
 		struct ext4_block blk;
-		rc = ext4_block_get(fs->bdev, &blk, bitmap_blk);
+		rc = ext4_trans_block_get(fs->bdev, &blk, bitmap_blk);
 		if (rc != EOK) {
 			ext4_fs_put_block_group_ref(&bg_ref);
 			return rc;
@@ -277,7 +283,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
 		/* Modify bitmap */
 		ext4_bmap_bits_free(blk.data, idx_in_bg_first, free_cnt);
 		ext4_balloc_set_bitmap_csum(sb, bg, blk.data);
-		ext4_bcache_set_dirty(blk.buf);
+		ext4_trans_set_block_dirty(blk.buf);
 
 		count -= free_cnt;
 		first += free_cnt;
@@ -316,6 +322,14 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
 			break;
 
 		bg_first++;
+	}
+
+	uint32_t i;
+	for (i = 0;i < count;i++) {
+		rc = ext4_trans_try_revoke_block(fs->bdev, first + i);
+		if (rc != EOK)
+			return rc;
+
 	}
 
 	ext4_bcache_invalidate_lba(fs->bdev->bc, first, count);
@@ -368,7 +382,7 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 	/* Load block with bitmap */
 	bmp_blk_adr = ext4_bg_get_block_bitmap(bg_ref.block_group, sb);
 
-	r = ext4_block_get(inode_ref->fs->bdev, &b, bmp_blk_adr);
+	r = ext4_trans_block_get(inode_ref->fs->bdev, &b, bmp_blk_adr);
 	if (r != EOK) {
 		ext4_fs_put_block_group_ref(&bg_ref);
 		return r;
@@ -386,7 +400,7 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 		ext4_bmap_bit_set(b.data, idx_in_bg);
 		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group,
 					    b.data);
-		ext4_bcache_set_dirty(b.buf);
+		ext4_trans_set_block_dirty(b.buf);
 		r = ext4_block_set(inode_ref->fs->bdev, &b);
 		if (r != EOK) {
 			ext4_fs_put_block_group_ref(&bg_ref);
@@ -410,7 +424,7 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 			ext4_bmap_bit_set(b.data, tmp_idx);
 
 			ext4_balloc_set_bitmap_csum(sb, bg, b.data);
-			ext4_bcache_set_dirty(b.buf);
+			ext4_trans_set_block_dirty(b.buf);
 			r = ext4_block_set(inode_ref->fs->bdev, &b);
 			if (r != EOK)
 				return r;
@@ -425,7 +439,7 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 	if (r == EOK) {
 		ext4_bmap_bit_set(b.data, rel_blk_idx);
 		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group, b.data);
-		ext4_bcache_set_dirty(b.buf);
+		ext4_trans_set_block_dirty(b.buf);
 		r = ext4_block_set(inode_ref->fs->bdev, &b);
 		if (r != EOK)
 			return r;
@@ -466,7 +480,7 @@ goal_failed:
 
 		/* Load block with bitmap */
 		bmp_blk_adr = ext4_bg_get_block_bitmap(bg, sb);
-		r = ext4_block_get(inode_ref->fs->bdev, &b, bmp_blk_adr);
+		r = ext4_trans_block_get(inode_ref->fs->bdev, &b, bmp_blk_adr);
 		if (r != EOK) {
 			ext4_fs_put_block_group_ref(&bg_ref);
 			return r;
@@ -493,7 +507,7 @@ goal_failed:
 		if (r == EOK) {
 			ext4_bmap_bit_set(b.data, rel_blk_idx);
 			ext4_balloc_set_bitmap_csum(sb, bg, b.data);
-			ext4_bcache_set_dirty(b.buf);
+			ext4_trans_set_block_dirty(b.buf);
 			r = ext4_block_set(inode_ref->fs->bdev, &b);
 			if (r != EOK) {
 				ext4_fs_put_block_group_ref(&bg_ref);
@@ -576,7 +590,7 @@ int ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
 	bmp_blk_addr = ext4_bg_get_block_bitmap(bg_ref.block_group, sb);
 
 	struct ext4_block b;
-	rc = ext4_block_get(fs->bdev, &b, bmp_blk_addr);
+	rc = ext4_trans_block_get(fs->bdev, &b, bmp_blk_addr);
 	if (rc != EOK) {
 		ext4_fs_put_block_group_ref(&bg_ref);
 		return rc;
@@ -596,7 +610,7 @@ int ext4_balloc_try_alloc_block(struct ext4_inode_ref *inode_ref,
 	if (*free) {
 		ext4_bmap_bit_set(b.data, index_in_group);
 		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group, b.data);
-		ext4_bcache_set_dirty(b.buf);
+		ext4_trans_set_block_dirty(b.buf);
 	}
 
 	/* Release block with bitmap */

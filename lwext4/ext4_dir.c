@@ -239,7 +239,7 @@ static int ext4_dir_iterator_seek(struct ext4_dir_iter *it, uint64_t pos)
 		if (r != EOK)
 			return r;
 
-		r = ext4_block_get(bdev, &it->curr_blk, next_blk);
+		r = ext4_trans_block_get(bdev, &it->curr_blk, next_blk);
 		if (r != EOK) {
 			it->curr_blk.lb_id = 0;
 			return r;
@@ -364,7 +364,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 			return r;
 
 		struct ext4_block block;
-		r = ext4_block_get(fs->bdev, &block, fblock);
+		r = ext4_trans_block_get(fs->bdev, &block, fblock);
 		if (r != EOK)
 			return r;
 
@@ -402,7 +402,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 	/* Load new block */
 	struct ext4_block b;
 
-	r = ext4_block_get_noread(fs->bdev, &b, fblock);
+	r = ext4_trans_block_get_noread(fs->bdev, &b, fblock);
 	if (r != EOK)
 		return r;
 
@@ -421,7 +421,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 	}
 
 	ext4_dir_set_csum(parent, (void *)b.data);
-	ext4_bcache_set_dirty(b.buf);
+	ext4_trans_set_block_dirty(b.buf);
 	r = ext4_block_set(fs->bdev, &b);
 
 	return r;
@@ -474,7 +474,7 @@ int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 
 		/* Load data block */
 		struct ext4_block b;
-		r = ext4_block_get(parent->fs->bdev, &b, fblock);
+		r = ext4_trans_block_get(parent->fs->bdev, &b, fblock);
 		if (r != EOK)
 			return r;
 
@@ -554,7 +554,7 @@ int ext4_dir_remove_entry(struct ext4_inode_ref *parent, const char *name,
 
 	ext4_dir_set_csum(parent,
 			(struct ext4_dir_en *)result.block.data);
-	ext4_bcache_set_dirty(result.block.buf);
+	ext4_trans_set_block_dirty(result.block.buf);
 
 	return ext4_dir_destroy_result(parent, &result);
 }
@@ -591,7 +591,7 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 			ext4_dir_write_entry(sb, start, rec_len, child, name,
 					     name_len);
 			ext4_dir_set_csum(inode_ref, (void *)dst_blk->data);
-			ext4_bcache_set_dirty(dst_blk->buf);
+			ext4_trans_set_block_dirty(dst_blk->buf);
 
 			return EOK;
 		}
@@ -620,7 +620,7 @@ int ext4_dir_try_insert_entry(struct ext4_sblock *sb,
 
 				ext4_dir_set_csum(inode_ref,
 						  (void *)dst_blk->data);
-				ext4_bcache_set_dirty(dst_blk->buf);
+				ext4_trans_set_block_dirty(dst_blk->buf);
 				return EOK;
 			}
 		}

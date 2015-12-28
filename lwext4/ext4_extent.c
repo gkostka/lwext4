@@ -257,7 +257,7 @@ ext4_extent_find_block(struct ext4_inode_ref *inode_ref, uint32_t iblock,
 				return rc;
 		}
 
-		int rc = ext4_block_get(inode_ref->fs->bdev, &block, child);
+		int rc = ext4_trans_block_get(inode_ref->fs->bdev, &block, child);
 		if (rc != EOK)
 			return rc;
 		if (!ext4_extent_verify_block_csum(inode_ref,
@@ -342,7 +342,7 @@ static int ext4_extent_find_extent(struct ext4_inode_ref *inode_ref,
 		    ext4_extent_index_get_leaf(tmp_path[pos].index);
 
 		struct ext4_block block;
-		rc = ext4_block_get(inode_ref->fs->bdev, &block, fblock);
+		rc = ext4_trans_block_get(inode_ref->fs->bdev, &block, fblock);
 		if (rc != EOK)
 			goto cleanup;
 
@@ -419,7 +419,7 @@ static int ext4_extent_release_branch(struct ext4_inode_ref *inode_ref,
 	ext4_fsblk_t fblock = ext4_extent_index_get_leaf(index);
 	uint32_t i;
 	struct ext4_block block;
-	int rc = ext4_block_get(inode_ref->fs->bdev, &block, fblock);
+	int rc = ext4_trans_block_get(inode_ref->fs->bdev, &block, fblock);
 	if (rc != EOK)
 		return rc;
 
@@ -534,7 +534,7 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 
 	ext4_extent_header_set_entries_count(path_ptr->header, entries);
 	ext4_extent_block_csum_set(inode_ref, path_ptr->header);
-	ext4_bcache_set_dirty(path_ptr->block.buf);
+	ext4_trans_set_block_dirty(path_ptr->block.buf);
 
 	/* If leaf node is empty, parent entry must be modified */
 	bool remove_parent_record = false;
@@ -576,7 +576,7 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 
 		ext4_extent_header_set_entries_count(path_ptr->header, entries);
 		ext4_extent_block_csum_set(inode_ref, path_ptr->header);
-		ext4_bcache_set_dirty(path_ptr->block.buf);
+		ext4_trans_set_block_dirty(path_ptr->block.buf);
 
 		/* Free the node if it is empty */
 		if ((entries == 0) && (path_ptr != path)) {
@@ -651,7 +651,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 
 			struct ext4_block block;
 			rc =
-			    ext4_block_get_noread(inode_ref->fs->bdev, &block, fblock);
+			    ext4_trans_block_get_noread(inode_ref->fs->bdev, &block, fblock);
 			if (rc != EOK) {
 				ext4_balloc_free_block(inode_ref, fblock);
 				return rc;
@@ -704,7 +704,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 			ext4_extent_header_set_generation(path_ptr->header, 0);
 
 			ext4_extent_block_csum_set(inode_ref, path_ptr->header);
-			ext4_bcache_set_dirty(path_ptr->block.buf);
+			ext4_trans_set_block_dirty(path_ptr->block.buf);
 
 			/* Jump to the preceding item */
 			path_ptr--;
@@ -730,7 +730,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 			ext4_extent_header_set_entries_count(path_ptr->header,
 							     entries + 1);
 			ext4_extent_block_csum_set(inode_ref, path_ptr->header);
-			ext4_bcache_set_dirty(path_ptr->block.buf);
+			ext4_trans_set_block_dirty(path_ptr->block.buf);
 
 			/* No more splitting needed */
 			return EOK;
@@ -755,7 +755,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 			return rc;
 
 		struct ext4_block block;
-		rc = ext4_block_get_noread(inode_ref->fs->bdev, &block, new_fblock);
+		rc = ext4_trans_block_get_noread(inode_ref->fs->bdev, &block, new_fblock);
 		if (rc != EOK)
 			return rc;
 
@@ -813,7 +813,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 							 limit);
 
 		ext4_extent_block_csum_set(inode_ref, old_root->header);
-		ext4_bcache_set_dirty(old_root->block.buf);
+		ext4_trans_set_block_dirty(old_root->block.buf);
 
 		/* Re-initialize new root metadata */
 		new_root->depth = root_depth + 1;
@@ -831,7 +831,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 
 		/* Since new_root belongs to on-disk inode,
 		 * we don't do checksum here */
-		ext4_bcache_set_dirty(new_root->block.buf);
+		ext4_trans_set_block_dirty(new_root->block.buf);
 	} else {
 		if (path->depth) {
 			path->index =
@@ -848,7 +848,7 @@ static int ext4_extent_append_extent(struct ext4_inode_ref *inode_ref,
 		ext4_extent_header_set_entries_count(path->header, entries + 1);
 		/* Since new_root belongs to on-disk inode,
 		 * we don't do checksum here */
-		ext4_bcache_set_dirty(path->block.buf);
+		ext4_trans_set_block_dirty(path->block.buf);
 	}
 
 	return EOK;
@@ -928,7 +928,7 @@ ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 			}
 
 			ext4_extent_block_csum_set(inode_ref, path_ptr->header);
-			ext4_bcache_set_dirty(path_ptr->block.buf);
+			ext4_trans_set_block_dirty(path_ptr->block.buf);
 
 			goto finish;
 		} else {
@@ -970,7 +970,7 @@ ext4_extent_append_block(struct ext4_inode_ref *inode_ref, uint32_t *iblock,
 			}
 
 			ext4_extent_block_csum_set(inode_ref, path_ptr->header);
-			ext4_bcache_set_dirty(path_ptr->block.buf);
+			ext4_trans_set_block_dirty(path_ptr->block.buf);
 
 			goto finish;
 		}
@@ -1011,7 +1011,7 @@ append_extent:
 	}
 
 	ext4_extent_block_csum_set(inode_ref, path_ptr->header);
-	ext4_bcache_set_dirty(path_ptr->block.buf);
+	ext4_trans_set_block_dirty(path_ptr->block.buf);
 
 finish:
 	/* Set return values */
