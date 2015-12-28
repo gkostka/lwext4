@@ -187,6 +187,9 @@ void ext4_bcache_invalidate_lba(struct ext4_bcache *bc,
 			break;
 
 		/* Clear both dirty and up-to-date flags. */
+		if (ext4_bcache_test_flag(buf, BC_DIRTY))
+			ext4_bcache_remove_dirty_node(bc, buf);
+
 		ext4_bcache_clear_dirty(buf);
 	}
 }
