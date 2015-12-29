@@ -1114,6 +1114,7 @@ struct jbd_block_rec {
 	struct ext4_buf *buf;
 	struct jbd_trans *trans;
 	RB_ENTRY(jbd_block_rec) block_rec_node;
+	LIST_ENTRY(jbd_block_rec) tbrec_node;
 };
 
 struct jbd_trans {
@@ -1129,6 +1130,7 @@ struct jbd_trans {
 
 	TAILQ_HEAD(jbd_trans_buf, jbd_buf) buf_queue;
 	LIST_HEAD(jbd_revoke_list, jbd_revoke_rec) revoke_list;
+	LIST_HEAD(jbd_trans_block_rec, jbd_block_rec) tbrec_list;
 	TAILQ_ENTRY(jbd_trans) trans_node;
 };
 
