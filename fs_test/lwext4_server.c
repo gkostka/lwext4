@@ -48,11 +48,10 @@
 #include <sys/types.h>
 #endif
 
+#include <ext4.h>
 #include "../blockdev/linux/ext4_filedev.h"
 #include "../blockdev/windows/io_raw.h"
 
-#include <ext4.h>
-#include <errno.h>
 
 static int winsock_init(void);
 static void winsock_fini(void);
