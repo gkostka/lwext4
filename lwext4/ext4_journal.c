@@ -992,7 +992,7 @@ static void jbd_journal_flush_trans(struct jbd_trans *trans)
 	struct jbd_buf *jbd_buf, *tmp;
 	struct jbd_journal *journal = trans->journal;
 	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
-	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node,
+	TAILQ_FOREACH_SAFE(jbd_buf, &trans->buf_queue, buf_node,
 			tmp) {
 		struct ext4_block block = jbd_buf->block;
 		ext4_block_flush_buf(fs->bdev, block.buf);
@@ -1223,7 +1223,7 @@ int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 		block->buf->end_write_arg = buf;
 
 		trans->data_cnt++;
-		LIST_INSERT_HEAD(&trans->buf_list, buf, buf_node);
+		TAILQ_INSERT_HEAD(&trans->buf_queue, buf, buf_node);
 
 		ext4_bcache_set_dirty(block->buf);
 	}
@@ -1290,7 +1290,7 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 	struct jbd_buf *jbd_buf, *tmp;
 	struct jbd_revoke_rec *rec, *tmp2;
 	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
-	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node,
+	TAILQ_FOREACH_SAFE(jbd_buf, &trans->buf_queue, buf_node,
 			  tmp) {
 		if (abort) {
 			jbd_buf->block.buf->end_write = NULL;
@@ -1300,7 +1300,7 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 		}
 
 		jbd_trans_remove_block_rec(journal, jbd_buf);
-		LIST_REMOVE(jbd_buf, buf_node);
+		TAILQ_REMOVE(&trans->buf_queue, jbd_buf, buf_node);
 		free(jbd_buf);
 	}
 	LIST_FOREACH_SAFE(rec, &trans->revoke_list, revoke_node,
@@ -1358,7 +1358,28 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 	struct ext4_block desc_block, data_block;
 	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
 
-	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node, tmp) {
+	/* Try to remove any non-dirty buffers from the tail of
+	 * buf_queue. */
+	TAILQ_FOREACH_REVERSE_SAFE(jbd_buf, &trans->buf_queue,
+			jbd_trans_buf, buf_node, tmp) {
+		/* We stop the iteration when we find a dirty buffer. */
+		if (ext4_bcache_test_flag(jbd_buf->block.buf,
+					BC_DIRTY))
+			break;
+
+		/* The buffer has not been modified, just release
+		 * that jbd_buf. */
+		jbd_trans_remove_block_rec(journal, jbd_buf);
+		trans->data_cnt--;
+
+		jbd_buf->block.buf->end_write = NULL;
+		jbd_buf->block.buf->end_write_arg = NULL;
+		ext4_block_set(fs->bdev, &jbd_buf->block);
+		TAILQ_REMOVE(&trans->buf_queue, jbd_buf, buf_node);
+		free(jbd_buf);
+	}
+
+	TAILQ_FOREACH_SAFE(jbd_buf, &trans->buf_queue, buf_node, tmp) {
 		struct tag_info tag_info;
 		bool uuid_exist = false;
 		if (!ext4_bcache_test_flag(jbd_buf->block.buf,
@@ -1371,7 +1392,7 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 			jbd_buf->block.buf->end_write = NULL;
 			jbd_buf->block.buf->end_write_arg = NULL;
 			ext4_block_set(fs->bdev, &jbd_buf->block);
-			LIST_REMOVE(jbd_buf, buf_node);
+			TAILQ_REMOVE(&trans->buf_queue, jbd_buf, buf_node);
 			free(jbd_buf);
 			continue;
 		}
@@ -1550,7 +1571,7 @@ void jbd_journal_cp_trans(struct jbd_journal *journal, struct jbd_trans *trans)
 {
 	struct jbd_buf *jbd_buf, *tmp;
 	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
-	LIST_FOREACH_SAFE(jbd_buf, &trans->buf_list, buf_node,
+	TAILQ_FOREACH_SAFE(jbd_buf, &trans->buf_queue, buf_node,
 			tmp) {
 		struct ext4_block block = jbd_buf->block;
 		ext4_block_set(fs->bdev, &block);
@@ -1572,7 +1593,7 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 	if (res != EOK)
 		trans->error = res;
 
-	LIST_REMOVE(jbd_buf, buf_node);
+	TAILQ_REMOVE(&trans->buf_queue, jbd_buf, buf_node);
 	jbd_buf->block_rec->buf = NULL;
 	jbd_trans_remove_block_rec(journal, jbd_buf);
 	free(jbd_buf);
@@ -1633,7 +1654,7 @@ int jbd_journal_commit_trans(struct jbd_journal *journal,
 	if (rc != EOK)
 		goto Finish;
 
-	if (LIST_EMPTY(&trans->buf_list) &&
+	if (TAILQ_EMPTY(&trans->buf_queue) &&
 	    LIST_EMPTY(&trans->revoke_list)) {
 		/* Since there are no entries in both buffer list
 		 * and revoke entry list, we do not consider trans as
