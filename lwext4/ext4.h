@@ -182,8 +182,24 @@ int ext4_mount(const char *dev_name, const char *mount_point);
  * @return  standard error code */
 int ext4_umount(const char *mount_point);
 
+/**@brief   Start journaling. Journaling start/stop functions are transparent
+ *          and might be used on filesystems without journaling support.
+ * @warning Usage:
+ *              ext4_mount("sda1", "/");
+ *              ext4_journal_start("/");
+ *
+ *              //File operations here...
+ *
+ *              ext4_journal_stop("/");
+ *              ext4_umount("/");
+ * @param   mount_point mount name
+ * @return  standard error code */
 int ext4_journal_start(const char *mount_point);
 
+/**@brief   Stop journaling. Journaling start/stop functions are transparent
+ *          and might be used on filesystems without journaling support.
+ * @param   mount_point mount name
+ * @return  standard error code */
 int ext4_journal_stop(const char *mount_point);
 
 /**@brief   Journal recovery.
