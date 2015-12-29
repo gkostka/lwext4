@@ -37,7 +37,7 @@
 extern "C" {
 #endif
 
-#include "ext4_config.h"
+#include "../ext4_config.h"
 
 /*
  * This file defines four types of data structures: singly-linked lists,
