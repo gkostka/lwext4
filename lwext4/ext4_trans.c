@@ -78,7 +78,8 @@ int ext4_trans_block_get_noread(struct ext4_blockdev *bdev,
 	if (r != EOK)
 		return r;
 
-	if((r = ext4_trans_get_write_access(bdev->fs, b)) != EOK)
+	r = ext4_trans_get_write_access(bdev->fs, b);
+	if (r != EOK)
 		ext4_block_set(bdev, b);
 
 	return r;
@@ -92,7 +93,8 @@ int ext4_trans_block_get(struct ext4_blockdev *bdev,
 	if (r != EOK)
 		return r;
 
-	if((r = ext4_trans_get_write_access(bdev->fs, b)) != EOK)
+	r = ext4_trans_get_write_access(bdev->fs, b);
+	if (r != EOK)
 		ext4_block_set(bdev, b);
 
 	return r;
@@ -105,7 +107,7 @@ int ext4_trans_try_revoke_block(struct ext4_blockdev *bdev,
 	struct ext4_fs *fs = bdev->fs;
 	if (fs->jbd_journal && fs->curr_trans) {
 		struct jbd_trans *trans = fs->curr_trans;
-		jbd_trans_try_revoke_block(trans, lba);
+		r = jbd_trans_try_revoke_block(trans, lba);
 	}
 	return r;
 }
