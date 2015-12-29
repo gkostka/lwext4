@@ -35,7 +35,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include <fcntl.h>
 
 /**@brief   Default filename.*/
 static const char *fname = "ext2";
