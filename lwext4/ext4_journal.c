@@ -1365,6 +1365,9 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 					   BC_DIRTY)) {
 			/* The buffer has not been modified, just release
 			 * that jbd_buf. */
+			jbd_trans_remove_block_rec(journal, jbd_buf);
+			trans->data_cnt--;
+
 			jbd_buf->block.buf->end_write = NULL;
 			jbd_buf->block.buf->end_write_arg = NULL;
 			ext4_block_set(fs->bdev, &jbd_buf->block);
