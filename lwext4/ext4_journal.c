@@ -44,7 +44,6 @@
 #include "ext4_blockdev.h"
 #include "ext4_crc32c.h"
 #include "ext4_debug.h"
-#include "tree.h"
 
 #include <string.h>
 #include <stdlib.h>

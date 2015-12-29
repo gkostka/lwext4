@@ -48,7 +48,7 @@ extern "C" {
 
 #include "ext4_config.h"
 #include "ext4_blockdev.h"
-#include "tree.h"
+#include "misc/tree.h"
 
 #include <stddef.h>
 #include <stdint.h>
