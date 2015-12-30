@@ -332,14 +332,35 @@ bool test_lwext4_mount(struct ext4_blockdev *bdev, struct ext4_bcache *bcache)
 		return false;
 	}
 
+	r = ext4_recover("/mp/");
+	if (r != EOK && r != ENOTSUP) {
+		printf("ext4_recover: rc = %d\n", r);
+		return false;
+	}
+
+	r = ext4_journal_start("/mp/");
+	if (r != EOK) {
+		printf("ext4_journal_start: rc = %d\n", r);
+		return false;
+	}
+
 	ext4_cache_write_back("/mp/", 1);
 	return true;
 }
 
 bool test_lwext4_umount(void)
 {
+	int r;
+
 	ext4_cache_write_back("/mp/", 0);
-	int r = ext4_umount("/mp/");
+
+	r = ext4_journal_stop("/mp/");
+	if (r != EOK) {
+		printf("ext4_journal_stop: fail %d", r);
+		return false;
+	}
+
+	r = ext4_umount("/mp/");
 	if (r != EOK) {
 		printf("ext4_umount: fail %d", r);
 		return false;
