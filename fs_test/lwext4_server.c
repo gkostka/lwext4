@@ -412,6 +412,17 @@ int _mount(char *p)
 	}
 
 	rc = ext4_mount(dev_name, mount_point);
+	if (rc != EOK)
+		return rc;
+
+	rc = ext4_recover(mount_point);
+	if (rc != EOK && rc != ENOTSUP)
+		return rc;
+
+	rc = ext4_journal_start(mount_point);
+	if (rc != EOK)
+		return rc;
+
 	if (cache_wb)
 		ext4_cache_write_back(mount_point, 1);
 	return rc;
@@ -420,6 +431,7 @@ int _mount(char *p)
 int _umount(char *p)
 {
 	char mount_point[32];
+	int rc;
 
 	if (sscanf(p, "%s", mount_point) != 1) {
 		printf("Param list error\n");
@@ -429,7 +441,15 @@ int _umount(char *p)
 	if (cache_wb)
 		ext4_cache_write_back(mount_point, 0);
 
-	return ext4_umount(mount_point);
+	rc = ext4_journal_stop(mount_point);
+	if (rc != EOK)
+		return rc;
+
+	rc = ext4_umount(mount_point);
+	if (rc != EOK)
+		return rc;
+
+	return rc;
 }
 
 int _mount_point_stats(char *p)
