@@ -102,15 +102,7 @@ static bool open_windows(void)
 
 static bool open_filedev(void)
 {
-	if (winpart) {
-		if (!open_windows())
-			return false;
-	} else {
-		if (!open_linux())
-			return false;
-	}
-
-	return true;
+	return winpart ? open_windows() : open_linux();
 }
 
 static bool parse_opt(int argc, char **argv)

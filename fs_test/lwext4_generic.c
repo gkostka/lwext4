@@ -148,6 +148,10 @@ static bool open_windows(void)
 #endif
 }
 
+static bool open_filedev(void)
+{
+	return winpart ? open_windows() : open_linux();
+}
 
 static bool parse_opt(int argc, char **argv)
 {
@@ -216,12 +220,9 @@ int main(int argc, char **argv)
 	printf("\trw count: %d\n", rw_count);
 	printf("\tcache mode: %s\n", cache_mode ? "dynamic" : "static");
 
-	if (winpart) {
-		if (!open_windows())
-			return EXIT_FAILURE;
-	} else {
-		if (!open_linux())
-			return EXIT_FAILURE;
+	if (!open_filedev()) {
+		printf("open_filedev error\n");
+		return EXIT_FAILURE;
 	}
 
 
