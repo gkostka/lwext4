@@ -110,9 +110,10 @@ static bool parse_opt(int argc, char **argv)
 			{"call", required_argument, 0, 'c'},
 			{"port", required_argument, 0, 'p'},
 			{"addr", required_argument, 0, 'a'},
+			{"version", no_argument, 0, 'x'},
 			{0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "c:p:a:", long_options,
+	while (-1 != (c = getopt_long(argc, argv, "c:p:a:x", long_options,
 			&option_index))) {
 
 		switch (c) {
@@ -124,6 +125,10 @@ static bool parse_opt(int argc, char **argv)
 			break;
 		case 'c':
 			op_code = optarg;
+			break;
+		case 'x':
+			puts(VERSION);
+			exit(0);
 			break;
 		default:
 			printf("%s", usage);

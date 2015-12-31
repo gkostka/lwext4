@@ -116,9 +116,10 @@ static bool parse_opt(int argc, char **argv)
 	    {"ext", required_argument, 0, 'e'},
 	    {"wpart", no_argument, 0, 'w'},
 	    {"verbose", no_argument, 0, 'v'},
+	    {"version", no_argument, 0, 'x'},
 	    {0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "i:b:e:wv",
+	while (-1 != (c = getopt_long(argc, argv, "i:b:e:wvx",
 				      long_options, &option_index))) {
 
 		switch (c) {
@@ -136,6 +137,10 @@ static bool parse_opt(int argc, char **argv)
 			break;
 		case 'v':
 			verbose = true;
+			break;
+		case 'x':
+			puts(VERSION);
+			exit(0);
 			break;
 		default:
 			printf("%s", usage);
