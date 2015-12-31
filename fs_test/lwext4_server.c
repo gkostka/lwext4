@@ -70,15 +70,15 @@ static int connection_port = 1234;
 static char *ext4_fname = "ext2";
 
 /**@brief   Verbose mode*/
-static int verbose = 0;
+static bool verbose = false;
 
 /**@brief   Winpart mode*/
-static int winpart = 0;
+static bool winpart = false;
 
 /**@brief   Blockdev handle*/
 static struct ext4_blockdev *bd;
 
-static int cache_wb = 0;
+static bool cache_wb = false;
 
 static char read_buffer[MAX_RW_BUFFER];
 static char write_buffer[MAX_RW_BUFFER];
@@ -299,12 +299,12 @@ static bool parse_opt(int argc, char **argv)
 	static struct option long_options[] = {
 	    {"image", required_argument, 0, 'i'},
 	    {"port", required_argument, 0, 'p'},
-	    {"verbose", required_argument, 0, 'v'},
-	    {"winpart", required_argument, 0, 'w'},
-	    {"cache_wb", required_argument, 0, 'c'},
+	    {"verbose", no_argument, 0, 'v'},
+	    {"winpart", no_argument, 0, 'w'},
+	    {"cache_wb", no_argument, 0, 'c'},
 	    {0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "c:i:p:v:w:", long_options,
+	while (-1 != (c = getopt_long(argc, argv, "i:p:vcw", long_options,
 				      &option_index))) {
 
 		switch (c) {
@@ -315,13 +315,13 @@ static bool parse_opt(int argc, char **argv)
 			connection_port = atoi(optarg);
 			break;
 		case 'v':
-			verbose = atoi(optarg);
+			verbose = true;
 			break;
 		case 'c':
-			cache_wb = atoi(optarg);
+			cache_wb = true;
 			break;
 		case 'w':
-			winpart = atoi(optarg);
+			winpart = true;
 			break;
 		default:
 			printf("%s", usage);
@@ -410,6 +410,9 @@ int _mount(char *p)
 		printf("Param list error\n");
 		return -1;
 	}
+
+	if (verbose)
+		ext4_dmask_set(DEBUG_ALL);
 
 	rc = ext4_mount(dev_name, mount_point);
 	if (rc != EOK)
