@@ -290,7 +290,8 @@ int ext4_bcache_free(struct ext4_bcache *bc, struct ext4_block *b)
 		}
 
 		/* The buffer is invalidated...drop it. */
-		if (!ext4_bcache_test_flag(buf, BC_UPTODATE))
+		if (!ext4_bcache_test_flag(buf, BC_UPTODATE) ||
+		    ext4_bcache_test_flag(buf, BC_TMP))
 			ext4_bcache_drop_buf(bc, buf);
 
 	}

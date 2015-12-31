@@ -151,11 +151,14 @@ struct ext4_bcache {
  *  - BC_DIRTY: Buffer is dirty.
  *  - BC_FLUSH: Buffer will be immediately flushed,
  *              when no one references it.
+ *  - BC_TMP: Buffer will be dropped once its refctr
+ *            reaches zero.
  */
 enum bcache_state_bits {
 	BC_UPTODATE,
 	BC_DIRTY,
-	BC_FLUSH
+	BC_FLUSH,
+	BC_TMP
 };
 
 #define ext4_bcache_set_flag(buf, b)    \

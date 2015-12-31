@@ -280,8 +280,12 @@ static int jbd_block_get(struct jbd_fs *jbd_fs,
 
 	/* If succeeded, mark buffer as BC_FLUSH to indicate
 	 * that data should be written to disk immediately.*/
-	if (rc == EOK)
+	if (rc == EOK) {
 		ext4_bcache_set_flag(block->buf, BC_FLUSH);
+		/* As we don't want to occupy too much space
+		 * in block cache, we set this buffer BC_TMP.*/
+		ext4_bcache_set_flag(block->buf, BC_TMP);
+	}
 
 	return rc;
 }
