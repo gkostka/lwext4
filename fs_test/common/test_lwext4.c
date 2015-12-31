@@ -130,9 +130,9 @@ void test_lwext4_block_stats(void)
 	printf("bdev->bread_ctr = %" PRIu32 "\n", bd->bdif->bread_ctr);
 	printf("bdev->bwrite_ctr = %" PRIu32 "\n", bd->bdif->bwrite_ctr);
 
-	printf("bcache->ref_blocks = %" PRIu32 "\n", bc->ref_blocks);
-	printf("bcache->max_ref_blocks = %" PRIu32 "\n", bc->max_ref_blocks);
-	printf("bcache->lru_ctr = %" PRIu32 "\n", bc->lru_ctr);
+	printf("bcache->ref_blocks = %" PRIu32 "\n", bd->bc->ref_blocks);
+	printf("bcache->max_ref_blocks = %" PRIu32 "\n", bd->bc->max_ref_blocks);
+	printf("bcache->lru_ctr = %" PRIu32 "\n", bd->bc->lru_ctr);
 
 	printf("\n");
 

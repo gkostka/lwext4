@@ -239,6 +239,11 @@ int ext4_bcache_alloc(struct ext4_bcache *bc, struct ext4_block *b,
 	/* One more buffer in bcache now. :-) */
 	bc->ref_blocks++;
 
+	/*Calc ref blocks max depth*/
+	if (bc->max_ref_blocks < bc->ref_blocks)
+		bc->max_ref_blocks = bc->ref_blocks;
+
+
 	ext4_bcache_inc_ref(buf);
 	/* Assign new value to LRU id and increment LRU counter
 	 * by 1*/
