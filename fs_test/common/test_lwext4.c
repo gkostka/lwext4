@@ -289,17 +289,27 @@ void test_lwext4_cleanup(void)
 	long int start;
 	long int stop;
 	long int diff;
+	int r;
 
 	printf("\ncleanup:\n");
-	ext4_fremove("/mp/hello.txt");
+	r = ext4_fremove("/mp/hello.txt");
+	if (r != EOK && r != ENOENT) {
+		printf("ext4_fremove error: rc = %d\n", r);
+	}
 
 	printf("remove /mp/test1\n");
-	ext4_fremove("/mp/test1");
+	r = ext4_fremove("/mp/test1");
+	if (r != EOK && r != ENOENT) {
+		printf("ext4_fremove error: rc = %d\n", r);
+	}
 
 	printf("remove /mp/dir1\n");
 	io_timings_clear();
 	start = get_ms();
-	ext4_dir_rm("/mp/dir1");
+	r = ext4_dir_rm("/mp/dir1");
+	if (r != EOK && r != ENOENT) {
+		printf("ext4_fremove ext4_dir_rm: rc = %d\n", r);
+	}
 	stop = get_ms();
 	diff = stop - start;
 	printf("cleanup: time: %d ms\n", (int)diff);
