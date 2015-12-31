@@ -73,6 +73,9 @@ static bool sbstat = false;
 /**@brief   Indicates that input is windows partition.*/
 static bool winpart = false;
 
+/**@brief   Verbose mode*/
+static bool verbose = 0;
+
 /**@brief   Block device handle.*/
 static struct ext4_blockdev *bd;
 
@@ -168,9 +171,10 @@ static bool parse_opt(int argc, char **argv)
 	    {"bstat", no_argument, 0, 'b'},
 	    {"sbstat", no_argument, 0, 't'},
 	    {"wpart", no_argument, 0, 'w'},
+	    {"verbose", no_argument, 0, 'v'},
 	    {0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "i:s:c:q:d:lbtw",
+	while (-1 != (c = getopt_long(argc, argv, "i:s:c:q:d:lbtwv",
 				      long_options, &option_index))) {
 
 		switch (c) {
@@ -201,6 +205,9 @@ static bool parse_opt(int argc, char **argv)
 		case 'w':
 			winpart = true;
 			break;
+		case 'v':
+			verbose = true;
+			break;
 		default:
 			printf("%s", usage);
 			return false;
@@ -214,6 +221,7 @@ int main(int argc, char **argv)
 	if (!parse_opt(argc, argv))
 		return EXIT_FAILURE;
 
+	printf("ext4_generic\n");
 	printf("test conditions:\n");
 	printf("\timput name: %s\n", input_name);
 	printf("\trw size: %d\n", rw_szie);
@@ -225,6 +233,8 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+	if (verbose)
+		ext4_dmask_set(DEBUG_ALL);
 
 	if (cache_mode)
 		bc = NULL;
