@@ -30,7 +30,7 @@
 #include "ext4_blockdev.h"
 #include "ext4_fs.h"
 #include "ext4_super.h"
-#include "ext4_crc32c.h"
+#include "ext4_crc32.h"
 #include "ext4_balloc.h"
 #include "ext4_debug.h"
 

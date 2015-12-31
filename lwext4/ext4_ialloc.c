@@ -43,7 +43,7 @@
 #include "ext4_types.h"
 #include "ext4_ialloc.h"
 #include "ext4_super.h"
-#include "ext4_crc32c.h"
+#include "ext4_crc32.h"
 #include "ext4_fs.h"
 #include "ext4_blockdev.h"
 #include "ext4_block_group.h"

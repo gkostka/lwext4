@@ -41,7 +41,7 @@
 
 #include "ext4_config.h"
 #include "ext4_super.h"
-#include "ext4_crc32c.h"
+#include "ext4_crc32.h"
 
 uint32_t ext4_block_group_cnt(struct ext4_sblock *s)
 {

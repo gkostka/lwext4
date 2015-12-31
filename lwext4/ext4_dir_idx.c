@@ -41,7 +41,7 @@
 #include "ext4_fs.h"
 #include "ext4_super.h"
 #include "ext4_inode.h"
-#include "ext4_crc32c.h"
+#include "ext4_crc32.h"
 #include "ext4_hash.h"
 
 #include <string.h>
