@@ -118,6 +118,209 @@ RB_GENERATE_INTERNAL(jbd_block, jbd_block_rec, block_rec_node,
 #define jbd_alloc_revoke_entry() calloc(1, sizeof(struct revoke_entry))
 #define jbd_free_revoke_entry(addr) free(addr)
 
+static int jbd_has_csum(struct jbd_sb *jbd_sb)
+{
+	if (JBD_HAS_INCOMPAT_FEATURE(jbd_sb, JBD_FEATURE_INCOMPAT_CSUM_V2))
+		return 2;
+
+	if (JBD_HAS_INCOMPAT_FEATURE(jbd_sb, JBD_FEATURE_INCOMPAT_CSUM_V3))
+		return 3;
+
+	return 0;
+}
+
+#if CONFIG_META_CSUM_ENABLE
+static uint32_t jbd_sb_csum(struct jbd_sb *jbd_sb)
+{
+	uint32_t checksum = 0;
+
+	if (jbd_has_csum(jbd_sb)) {
+		uint32_t orig_checksum = jbd_sb->checksum;
+		jbd_set32(jbd_sb, checksum, 0);
+		/* Calculate crc32c checksum against tho whole superblock */
+		checksum = ext4_crc32c(EXT4_CRC32_INIT, jbd_sb,
+				JBD_SUPERBLOCK_SIZE);
+		jbd_sb->checksum = orig_checksum;
+	}
+	return checksum;
+}
+#else
+#define jbd_sb_csum(...) 0
+#endif
+
+static void jbd_sb_csum_set(struct jbd_sb *jbd_sb)
+{
+	if (!jbd_has_csum(jbd_sb))
+		return;
+
+	jbd_set32(jbd_sb, checksum, jbd_sb_csum(jbd_sb));
+}
+
+#if CONFIG_META_CSUM_ENABLE
+static bool
+jbd_verify_sb_csum(struct jbd_sb *jbd_sb)
+{
+	if (!jbd_has_csum(jbd_sb))
+		return true;
+
+	return jbd_sb_csum(jbd_sb) == jbd_get32(jbd_sb, checksum);
+}
+#else
+#define jbd_verify_sb_csum(...) true
+#endif
+
+#if CONFIG_META_CSUM_ENABLE
+static uint32_t jbd_meta_csum(struct jbd_fs *jbd_fs,
+			      struct jbd_bhdr *bhdr)
+{
+	uint32_t checksum = 0;
+
+	if (jbd_has_csum(&jbd_fs->sb)) {
+		uint32_t block_size = jbd_get32(&jbd_fs->sb, blocksize);
+		struct jbd_block_tail *tail =
+			(struct jbd_block_tail *)((char *)bhdr + block_size -
+				sizeof(struct jbd_block_tail));
+		uint32_t orig_checksum = tail->checksum;
+		tail->checksum = 0;
+
+		/* First calculate crc32c checksum against fs uuid */
+		checksum = ext4_crc32c(EXT4_CRC32_INIT, jbd_fs->sb.uuid,
+				       sizeof(jbd_fs->sb.uuid));
+		/* Calculate crc32c checksum against tho whole block */
+		checksum = ext4_crc32(checksum, bhdr,
+				block_size);
+		tail->checksum = orig_checksum;
+	}
+	return checksum;
+}
+#else
+#define jbd_meta_csum(...) 0
+#endif
+
+static void jbd_meta_csum_set(struct jbd_fs *jbd_fs,
+			      struct jbd_bhdr *bhdr)
+{
+	uint32_t block_size = jbd_get32(&jbd_fs->sb, blocksize);
+	struct jbd_block_tail *tail = (struct jbd_block_tail *)
+				((char *)bhdr + block_size -
+				sizeof(struct jbd_block_tail));
+	if (!jbd_has_csum(&jbd_fs->sb))
+		return;
+
+	tail->checksum = to_be32(jbd_meta_csum(jbd_fs, bhdr));
+}
+
+#if CONFIG_META_CSUM_ENABLE
+static bool
+jbd_verify_meta_csum(struct jbd_fs *jbd_fs,
+		     struct jbd_bhdr *bhdr)
+{
+	uint32_t block_size = jbd_get32(&jbd_fs->sb, blocksize);
+	struct jbd_block_tail *tail = (struct jbd_block_tail *)
+				((char *)bhdr + block_size -
+				sizeof(struct jbd_block_tail));
+	if (!jbd_has_csum(&jbd_fs->sb))
+		return true;
+
+	return jbd_meta_csum(jbd_fs, bhdr) == to_be32(tail->checksum);
+}
+#else
+#define jbd_verify_meta_csum(...) true
+#endif
+
+#if CONFIG_META_CSUM_ENABLE
+static uint32_t jbd_commit_csum(struct jbd_fs *jbd_fs,
+			      struct jbd_commit_header *header)
+{
+	uint32_t checksum = 0;
+
+	if (jbd_has_csum(&jbd_fs->sb)) {
+		uint32_t orig_checksum_type = header->chksum_type,
+			 orig_checksum_size = header->chksum_size,
+			 orig_checksum = header->chksum[0];
+		uint32_t block_size = jbd_get32(&jbd_fs->sb, blocksize);
+		header->chksum_type = 0;
+		header->chksum_size = 0;
+		header->chksum[0] = 0;
+
+		/* First calculate crc32c checksum against fs uuid */
+		checksum = ext4_crc32c(EXT4_CRC32_INIT, jbd_fs->sb.uuid,
+				       sizeof(jbd_fs->sb.uuid));
+		/* Calculate crc32c checksum against tho whole block */
+		checksum = ext4_crc32(checksum, header,
+				block_size);
+
+		header->chksum_type = orig_checksum_type;
+		header->chksum_size = orig_checksum_size;
+		header->chksum[0] = orig_checksum;
+	}
+	return checksum;
+}
+#else
+#define jbd_commit_csum(...) 0
+#endif
+
+static void jbd_commit_csum_set(struct jbd_fs *jbd_fs,
+			      struct jbd_commit_header *header)
+{
+	if (!jbd_has_csum(&jbd_fs->sb))
+		return;
+
+	header->chksum_type = 0;
+	header->chksum_size = 0;
+	header->chksum[0] = jbd_commit_csum(jbd_fs, header);
+}
+
+#if CONFIG_META_CSUM_ENABLE
+static bool jbd_verify_commit_csum(struct jbd_fs *jbd_fs,
+				   struct jbd_commit_header *header)
+{
+	if (!jbd_has_csum(&jbd_fs->sb))
+		return true;
+
+	return header->chksum[0] == to_be32(jbd_commit_csum(jbd_fs,
+					    header));
+}
+#else
+#define jbd_verify_commit_csum(...) true
+#endif
+
+#if CONFIG_META_CSUM_ENABLE
+static uint32_t jbd_block_csum(struct jbd_fs *jbd_fs, const void *buf)
+{
+	uint32_t checksum = 0;
+
+	if (jbd_has_csum(&jbd_fs->sb)) {
+		uint32_t block_size = jbd_get32(&jbd_fs->sb, blocksize);
+		/* First calculate crc32c checksum against fs uuid */
+		checksum = ext4_crc32c(EXT4_CRC32_INIT, jbd_fs->sb.uuid,
+				       sizeof(jbd_fs->sb.uuid));
+		/* Calculate crc32c checksum against tho whole block */
+		checksum = ext4_crc32(checksum, buf,
+				block_size);
+	}
+	return checksum;
+}
+#else
+#define jbd_block_csum(...) 0
+#endif
+
+static void jbd_block_tag_csum_set(struct jbd_fs *jbd_fs, void *__tag,
+				   uint32_t checksum)
+{
+	int ver = jbd_has_csum(&jbd_fs->sb);
+	if (!ver)
+		return;
+
+	if (ver == 2) {
+		struct jbd_block_tag *tag = __tag;
+		tag->checksum = (uint16_t)to_be32(checksum);
+	} else {
+		struct jbd_block_tag3 *tag = __tag;
+		tag->checksum = to_be32(checksum);
+	}
+}
+
 /**@brief  Write jbd superblock to disk.
  * @param  jbd_fs jbd filesystem
  * @param  s jbd superblock
@@ -132,6 +335,7 @@ static int jbd_sb_write(struct jbd_fs *jbd_fs, struct jbd_sb *s)
 	if (rc != EOK)
 		return rc;
 
+	jbd_sb_csum_set(s);
 	offset = fblock * ext4_sb_get_block_size(&fs->sb);
 	return ext4_block_writebytes(fs->bdev, offset, s,
 				     EXT4_SUPERBLOCK_SIZE);
@@ -169,7 +373,7 @@ static bool jbd_verify_sb(struct jbd_sb *sb)
 	    jbd_get32(header, blocktype) != JBD_SUPERBLOCK_V2)
 		return false;
 
-	return true;
+	return jbd_verify_sb_csum(sb);
 }
 
 /**@brief  Write back dirty jbd superblock to disk.
@@ -373,6 +577,9 @@ struct tag_info {
 
 	/**@brief  Is this the last tag? */
 	bool last_tag;
+
+	/**@brief  crc32c checksum. */
+	uint32_t checksum;
 };
 
 /**@brief  Extract information from a block tag.
@@ -493,6 +700,8 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 			jbd_set32(tag, flags,
 				  jbd_get32(tag, flags) | JBD_FLAG_SAME_UUID);
 
+		jbd_block_tag_csum_set(jbd_fs, __tag, tag_info->checksum);
+
 		if (tag_info->last_tag)
 			jbd_set32(tag, flags,
 				  jbd_get32(tag, flags) | JBD_FLAG_LAST_TAG);
@@ -516,6 +725,8 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 		} else
 			jbd_set16(tag, flags,
 				  jbd_get16(tag, flags) | JBD_FLAG_SAME_UUID);
+
+		jbd_block_tag_csum_set(jbd_fs, __tag, tag_info->checksum);
 
 		if (tag_info->last_tag)
 			jbd_set16(tag, flags,
@@ -845,6 +1056,14 @@ static int jbd_iterate_log(struct jbd_fs *jbd_fs,
 
 		switch (jbd_get32(header, blocktype)) {
 		case JBD_DESCRIPTOR_BLOCK:
+			if (!jbd_verify_meta_csum(jbd_fs, header)) {
+				ext4_dbg(DEBUG_JBD,
+					DBG_WARN "Descriptor block checksum failed."
+						"Journal block: %" PRIu32"\n",
+						this_block);
+				log_end = true;
+				break;
+			}
 			ext4_dbg(DEBUG_JBD, "Descriptor block: %" PRIu32", "
 					    "trans_id: %" PRIu32"\n",
 					    this_block, this_trans_id);
@@ -862,6 +1081,15 @@ static int jbd_iterate_log(struct jbd_fs *jbd_fs,
 
 			break;
 		case JBD_COMMIT_BLOCK:
+			if (!jbd_verify_commit_csum(jbd_fs,
+					(struct jbd_commit_header *)header)) {
+				ext4_dbg(DEBUG_JBD,
+					DBG_WARN "Commit block checksum failed."
+						"Journal block: %" PRIu32"\n",
+						this_block);
+				log_end = true;
+				break;
+			}
 			ext4_dbg(DEBUG_JBD, "Commit block: %" PRIu32", "
 					    "trans_id: %" PRIu32"\n",
 					    this_block, this_trans_id);
@@ -871,6 +1099,14 @@ static int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			this_trans_id++;
 			break;
 		case JBD_REVOKE_BLOCK:
+			if (!jbd_verify_meta_csum(jbd_fs, header)) {
+				ext4_dbg(DEBUG_JBD,
+					DBG_WARN "Revoke block checksum failed."
+						"Journal block: %" PRIu32"\n",
+						this_block);
+				log_end = true;
+				break;
+			}
 			ext4_dbg(DEBUG_JBD, "Revoke block: %" PRIu32", "
 					    "trans_id: %" PRIu32"\n",
 					    this_block, this_trans_id);
@@ -1375,6 +1611,7 @@ static int jbd_trans_write_commit_block(struct jbd_trans *trans)
 	jbd_set32(&header->header, blocktype, JBD_COMMIT_BLOCK);
 	jbd_set32(&header->header, sequence, trans->trans_id);
 
+	jbd_commit_csum_set(journal->jbd_fs, header);
 	ext4_bcache_set_dirty(commit_block.buf);
 	rc = jbd_block_set(journal->jbd_fs, &commit_block);
 	if (rc != EOK)
@@ -1424,6 +1661,7 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 	TAILQ_FOREACH_SAFE(jbd_buf, &trans->buf_queue, buf_node, tmp) {
 		struct tag_info tag_info;
 		bool uuid_exist = false;
+		uint32_t checksum;
 		if (!ext4_bcache_test_flag(jbd_buf->block.buf,
 					   BC_DIRTY)) {
 			/* The buffer has not been modified, just release
@@ -1439,6 +1677,8 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 			free(jbd_buf);
 			continue;
 		}
+		checksum = jbd_block_csum(journal->jbd_fs,
+					  jbd_buf->block.data);
 again:
 		if (!desc_iblock) {
 			struct jbd_bhdr *bhdr;
@@ -1461,6 +1701,9 @@ again:
 			tag_tbl_size = journal->block_size -
 				sizeof(struct jbd_bhdr);
 
+			if (jbd_has_csum(&journal->jbd_fs->sb))
+				tag_tbl_size -= sizeof(struct jbd_block_tail);
+
 			if (!trans->start_iblock)
 				trans->start_iblock = desc_iblock;
 
@@ -1471,6 +1714,7 @@ again:
 			tag_info.last_tag = true;
 		else
 			tag_info.last_tag = false;
+		tag_info.checksum = checksum;
 
 		if (uuid_exist)
 			memcpy(tag_info.uuid, journal->jbd_fs->sb.uuid,
@@ -1481,6 +1725,8 @@ again:
 				tag_tbl_size,
 				&tag_info);
 		if (rc != EOK) {
+			jbd_meta_csum_set(journal->jbd_fs,
+					(struct jbd_bhdr *)desc_block.data);
 			jbd_block_set(journal->jbd_fs, &desc_block);
 			desc_iblock = 0;
 			goto again;
@@ -1506,8 +1752,11 @@ again:
 
 		i++;
 	}
-	if (rc == EOK && desc_iblock)
+	if (rc == EOK && desc_iblock) {
+		jbd_meta_csum_set(journal->jbd_fs,
+				(struct jbd_bhdr *)desc_block.data);
 		jbd_block_set(journal->jbd_fs, &desc_block);
+	}
 
 	return rc;
 }
@@ -1557,6 +1806,9 @@ again:
 			tag_tbl_size = journal->block_size -
 				sizeof(struct jbd_revoke_header);
 
+			if (jbd_has_csum(&journal->jbd_fs->sb))
+				tag_tbl_size -= sizeof(struct jbd_block_tail);
+
 			if (!trans->start_iblock)
 				trans->start_iblock = desc_iblock;
 
@@ -1565,6 +1817,8 @@ again:
 		if (tag_tbl_size < record_len) {
 			jbd_set32(header, count,
 				  journal->block_size - tag_tbl_size);
+			jbd_meta_csum_set(journal->jbd_fs,
+					(struct jbd_bhdr *)desc_block.data);
 			jbd_block_set(journal->jbd_fs, &desc_block);
 			desc_iblock = 0;
 			header = NULL;
@@ -1589,6 +1843,8 @@ again:
 			jbd_set32(header, count,
 				  journal->block_size - tag_tbl_size);
 
+		jbd_meta_csum_set(journal->jbd_fs,
+				(struct jbd_bhdr *)desc_block.data);
 		jbd_block_set(journal->jbd_fs, &desc_block);
 	}
 
