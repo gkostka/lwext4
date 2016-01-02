@@ -291,7 +291,8 @@ static bool jbd_verify_commit_csum(struct jbd_fs *jbd_fs,
  *       JBD_FEATURE_COMPAT_CHECKSUM is enabled.
  */
 static uint32_t jbd_block_csum(struct jbd_fs *jbd_fs, const void *buf,
-			       uint32_t csum)
+			       uint32_t csum,
+			       uint32_t sequence)
 {
 	uint32_t checksum = 0;
 
@@ -300,6 +301,9 @@ static uint32_t jbd_block_csum(struct jbd_fs *jbd_fs, const void *buf,
 		/* First calculate crc32c checksum against fs uuid */
 		checksum = ext4_crc32c(EXT4_CRC32_INIT, jbd_fs->sb.uuid,
 				       sizeof(jbd_fs->sb.uuid));
+		/* Then calculate crc32c checksum against sequence no. */
+		checksum = ext4_crc32c(checksum, &sequence,
+				sizeof(uint32_t));
 		/* Calculate crc32c checksum against tho whole block */
 		checksum = ext4_crc32c(checksum, buf,
 				block_size);
@@ -1697,7 +1701,8 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 		}
 		checksum = jbd_block_csum(journal->jbd_fs,
 					  jbd_buf->block.data,
-					  checksum);
+					  checksum,
+					  trans->trans_id);
 again:
 		if (!desc_iblock) {
 			struct jbd_bhdr *bhdr;
