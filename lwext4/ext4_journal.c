@@ -286,7 +286,12 @@ static bool jbd_verify_commit_csum(struct jbd_fs *jbd_fs,
 #endif
 
 #if CONFIG_META_CSUM_ENABLE
-static uint32_t jbd_block_csum(struct jbd_fs *jbd_fs, const void *buf)
+/*
+ * NOTE: We only make use of @csum parameter when
+ *       JBD_FEATURE_COMPAT_CHECKSUM is enabled.
+ */
+static uint32_t jbd_block_csum(struct jbd_fs *jbd_fs, const void *buf,
+			       uint32_t csum)
 {
 	uint32_t checksum = 0;
 
@@ -297,6 +302,12 @@ static uint32_t jbd_block_csum(struct jbd_fs *jbd_fs, const void *buf)
 				       sizeof(jbd_fs->sb.uuid));
 		/* Calculate crc32c checksum against tho whole block */
 		checksum = ext4_crc32c(checksum, buf,
+				block_size);
+	} else if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
+				     JBD_FEATURE_COMPAT_CHECKSUM)) {
+		uint32_t block_size = jbd_get32(&jbd_fs->sb, blocksize);
+		/* Calculate crc32c checksum against tho whole block */
+		checksum = ext4_crc32(csum, buf,
 				block_size);
 	}
 	return checksum;
@@ -1370,6 +1381,7 @@ jbd_journal_new_trans(struct jbd_journal *journal)
 	/* We will assign a trans_id to this transaction,
 	 * once it has been committed.*/
 	trans->journal = journal;
+	trans->data_csum = EXT4_CRC32_INIT;
 	trans->error = EOK;
 	TAILQ_INIT(&trans->buf_queue);
 	return trans;
@@ -1611,6 +1623,12 @@ static int jbd_trans_write_commit_block(struct jbd_trans *trans)
 	jbd_set32(&header->header, blocktype, JBD_COMMIT_BLOCK);
 	jbd_set32(&header->header, sequence, trans->trans_id);
 
+	if (JBD_HAS_INCOMPAT_FEATURE(&journal->jbd_fs->sb,
+				JBD_FEATURE_COMPAT_CHECKSUM)) {
+		jbd_set32(header, chksum_type, JBD_CRC32_CHKSUM);
+		jbd_set32(header, chksum_size, JBD_CRC32_CHKSUM_SIZE);
+		jbd_set32(header, chksum[0], trans->data_csum);
+	}
 	jbd_commit_csum_set(journal->jbd_fs, header);
 	ext4_bcache_set_dirty(commit_block.buf);
 	rc = jbd_block_set(journal->jbd_fs, &commit_block);
@@ -1635,6 +1653,7 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 	struct jbd_buf *jbd_buf, *tmp;
 	struct ext4_block desc_block, data_block;
 	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
+	uint32_t checksum = EXT4_CRC32_INIT;
 
 	/* Try to remove any non-dirty buffers from the tail of
 	 * buf_queue. */
@@ -1661,7 +1680,6 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 	TAILQ_FOREACH_SAFE(jbd_buf, &trans->buf_queue, buf_node, tmp) {
 		struct tag_info tag_info;
 		bool uuid_exist = false;
-		uint32_t checksum;
 		if (!ext4_bcache_test_flag(jbd_buf->block.buf,
 					   BC_DIRTY)) {
 			/* The buffer has not been modified, just release
@@ -1678,7 +1696,8 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 			continue;
 		}
 		checksum = jbd_block_csum(journal->jbd_fs,
-					  jbd_buf->block.data);
+					  jbd_buf->block.data,
+					  checksum);
 again:
 		if (!desc_iblock) {
 			struct jbd_bhdr *bhdr;
@@ -1714,6 +1733,7 @@ again:
 			tag_info.last_tag = true;
 		else
 			tag_info.last_tag = false;
+
 		tag_info.checksum = checksum;
 
 		if (uuid_exist)
@@ -1755,6 +1775,7 @@ again:
 	if (rc == EOK && desc_iblock) {
 		jbd_meta_csum_set(journal->jbd_fs,
 				(struct jbd_bhdr *)desc_block.data);
+		trans->data_csum = checksum;
 		jbd_block_set(journal->jbd_fs, &desc_block);
 	}
 

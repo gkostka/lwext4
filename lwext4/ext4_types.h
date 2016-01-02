@@ -1123,6 +1123,7 @@ struct jbd_trans {
 	uint32_t start_iblock;
 	int alloc_blocks;
 	int data_cnt;
+	uint32_t data_csum;
 	int written_cnt;
 	int error;
 
