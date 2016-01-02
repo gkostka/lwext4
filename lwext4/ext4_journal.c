@@ -187,7 +187,7 @@ static uint32_t jbd_meta_csum(struct jbd_fs *jbd_fs,
 		checksum = ext4_crc32c(EXT4_CRC32_INIT, jbd_fs->sb.uuid,
 				       sizeof(jbd_fs->sb.uuid));
 		/* Calculate crc32c checksum against tho whole block */
-		checksum = ext4_crc32(checksum, bhdr,
+		checksum = ext4_crc32c(checksum, bhdr,
 				block_size);
 		tail->checksum = orig_checksum;
 	}
@@ -247,7 +247,7 @@ static uint32_t jbd_commit_csum(struct jbd_fs *jbd_fs,
 		checksum = ext4_crc32c(EXT4_CRC32_INIT, jbd_fs->sb.uuid,
 				       sizeof(jbd_fs->sb.uuid));
 		/* Calculate crc32c checksum against tho whole block */
-		checksum = ext4_crc32(checksum, header,
+		checksum = ext4_crc32c(checksum, header,
 				block_size);
 
 		header->chksum_type = orig_checksum_type;
@@ -296,7 +296,7 @@ static uint32_t jbd_block_csum(struct jbd_fs *jbd_fs, const void *buf)
 		checksum = ext4_crc32c(EXT4_CRC32_INIT, jbd_fs->sb.uuid,
 				       sizeof(jbd_fs->sb.uuid));
 		/* Calculate crc32c checksum against tho whole block */
-		checksum = ext4_crc32(checksum, buf,
+		checksum = ext4_crc32c(checksum, buf,
 				block_size);
 	}
 	return checksum;
