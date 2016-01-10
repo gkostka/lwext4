@@ -704,6 +704,56 @@ static bool ext4_parse_flags(const char *flags, uint32_t *file_flags)
 	return false;
 }
 
+static int ext4_trunc_inode(struct ext4_mountpoint *mp,
+			    struct ext4_inode_ref *inode_ref, uint64_t new_size)
+{
+	int r = EOK;
+	struct ext4_fs *const fs = &mp->fs;
+	uint64_t inode_size = ext4_inode_get_size(&fs->sb, inode_ref->inode);
+	uint32_t index = inode_ref->index;
+
+
+	while (inode_size > new_size + CONFIG_MAX_TRUNCATE_SIZE) {
+
+		inode_size -= CONFIG_MAX_TRUNCATE_SIZE;
+		ext4_trans_start(mp);
+		r = ext4_fs_truncate_inode(inode_ref, inode_size);
+		if (r != EOK)
+			return r;
+
+		r = ext4_fs_put_inode_ref(inode_ref);
+		if (r != EOK)
+			ext4_trans_abort(mp);
+		else
+			ext4_trans_stop(mp);
+
+		r = ext4_fs_get_inode_ref(fs, index, inode_ref);
+		if (r != EOK)
+			return r;
+	}
+
+	if (inode_size > new_size) {
+
+		inode_size = new_size;
+		ext4_trans_start(mp);
+		r = ext4_fs_truncate_inode(inode_ref, inode_size);
+		if (r != EOK)
+			return r;
+
+		r = ext4_fs_put_inode_ref(inode_ref);
+		if (r != EOK)
+			ext4_trans_abort(mp);
+		else
+			ext4_trans_stop(mp);
+
+		r = ext4_fs_get_inode_ref(fs, index, inode_ref);
+		if (r != EOK)
+			return r;
+	}
+
+	return r;
+}
+
 /*
  * NOTICE: if filetype is equal to EXT4_DIRENTRY_UNKNOWN,
  * any filetype of the target dir entry will be accepted.
@@ -855,7 +905,7 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 	if (is_goal) {
 
 		if ((f->flags & O_TRUNC) && (imode == EXT4_INODE_MODE_FILE)) {
-			r = ext4_fs_truncate_inode(&ref, 0);
+			r = ext4_trunc_inode(mp, &ref, 0);
 			if (r != EOK) {
 				ext4_fs_put_inode_ref(&ref);
 				return r;
@@ -1237,7 +1287,7 @@ int ext4_fremove(const char *path)
 		/*Turncate*/
 		ext4_block_cache_write_back(mp->fs.bdev, 1);
 		/*Truncate may be IO heavy. Do it writeback cache mode.*/
-		r = ext4_fs_truncate_inode(&child, 0);
+		r = ext4_trunc_inode(mp, &child, 0);
 		ext4_block_cache_write_back(mp->fs.bdev, 0);
 
 		if (r != EOK)
@@ -1388,7 +1438,7 @@ static int ext4_ftruncate_no_lock(ext4_file *f, uint64_t size)
 	if (r != EOK)
 		goto Finish;
 
-	r = ext4_fs_truncate_inode(&ref, size);
+	r = ext4_trunc_inode(f->mp, &ref, size);
 	if (r != EOK)
 		goto Finish;
 
@@ -2511,7 +2561,7 @@ int ext4_dir_rm(const char *path)
 				}
 
 				/* Truncate */
-				r = ext4_fs_truncate_inode(&child, 0);
+				r = ext4_trunc_inode(mp, &child, 0);
 				if (r != EOK) {
 					ext4_fs_put_inode_ref(&child);
 					goto End;
@@ -2604,7 +2654,7 @@ End:
 			ext4_inode_set_links_cnt(act.inode, 0);
 			act.dirty = true;
 			/*Turncate*/
-			r = ext4_fs_truncate_inode(&act, 0);
+			r = ext4_trunc_inode(mp, &act, 0);
 			if (r != EOK) {
 				ext4_fs_put_inode_ref(&parent);
 				ext4_fs_put_inode_ref(&act);
