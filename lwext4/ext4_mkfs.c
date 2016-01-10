@@ -626,6 +626,8 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	if (r != EOK)
 		return r;
 
+	bd->fs = fs;
+
 	if (info->len == 0)
 		info->len = bd->bdif->ph_bcnt * bd->bdif->ph_bsize;
 
