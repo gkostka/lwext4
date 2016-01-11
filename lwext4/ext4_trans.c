@@ -108,7 +108,9 @@ int ext4_trans_try_revoke_block(struct ext4_blockdev *bdev,
 	if (fs->jbd_journal && fs->curr_trans) {
 		struct jbd_trans *trans = fs->curr_trans;
 		r = jbd_trans_try_revoke_block(trans, lba);
-	}
+	} else if (fs->jbd_journal)
+		r = ext4_block_flush_lba(fs->bdev, lba);
+
 	return r;
 }
 
