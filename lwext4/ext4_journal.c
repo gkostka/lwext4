@@ -74,6 +74,9 @@ struct recover_info {
 	/**@brief  Used as internal argument.*/
 	uint32_t this_trans_id;
 
+	/**@brief  No of transactions went through.*/
+	uint32_t trans_cnt;
+
 	/**@brief  RB-Tree storing revoke entries.*/
 	RB_HEAD(jbd_revoke, revoke_entry) revoke_root;
 };
@@ -1025,6 +1028,10 @@ static int jbd_iterate_log(struct jbd_fs *jbd_fs,
 	/* We start iterating valid blocks in the whole journal.*/
 	start_trans_id = this_trans_id = jbd_get32(sb, sequence);
 	start_block = this_block = jbd_get32(sb, start);
+	if (action == ACTION_SCAN)
+		info->trans_cnt = 0;
+	else if (!info->trans_cnt)
+		log_end = true;
 
 	ext4_dbg(DEBUG_JBD, "Start of journal at trans id: %" PRIu32 "\n",
 			    start_trans_id);
@@ -1112,6 +1119,7 @@ static int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			 * we may now proceed to the next transaction.
 			 */
 			this_trans_id++;
+			info->trans_cnt++;
 			break;
 		case JBD_REVOKE_BLOCK:
 			if (!jbd_verify_meta_csum(jbd_fs, header)) {
@@ -1217,6 +1225,7 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 	uint32_t features_incompatible =
 			ext4_get32(&jbd_fs->inode_ref.fs->sb,
 				   features_incompatible);
+	struct ext4_block block = EXT4_BLOCK_ZERO();
 	features_incompatible |= EXT4_FINCOM_RECOVER;
 	ext4_set32(&jbd_fs->inode_ref.fs->sb,
 			features_incompatible,
@@ -1233,6 +1242,21 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 	journal->alloc_trans_id = 1;
 
 	journal->block_size = jbd_get32(&jbd_fs->sb, blocksize);
+
+	r = jbd_block_get_noread(jbd_fs,
+			 &block,
+			 journal->start);
+	if (r != EOK) {
+		memset(journal, 0, sizeof(struct jbd_journal));
+		return r;
+	}
+	memset(block.data, 0, journal->block_size);
+	ext4_bcache_set_dirty(block.buf);
+	r = jbd_block_set(jbd_fs, &block);
+	if (r != EOK) {
+		memset(journal, 0, sizeof(struct jbd_journal));
+		return r;
+	}
 
 	TAILQ_INIT(&journal->trans_queue);
 	TAILQ_INIT(&journal->cp_queue);
