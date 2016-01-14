@@ -1098,10 +1098,12 @@ struct jbd_fs {
 };
 
 struct jbd_buf {
+	uint64_t jbd_lba;
 	struct ext4_block block;
 	struct jbd_trans *trans;
 	struct jbd_block_rec *block_rec;
 	TAILQ_ENTRY(jbd_buf) buf_node;
+	TAILQ_ENTRY(jbd_buf) dirty_buf_node;
 };
 
 struct jbd_revoke_rec {
@@ -1115,6 +1117,7 @@ struct jbd_block_rec {
 	struct jbd_trans *trans;
 	RB_ENTRY(jbd_block_rec) block_rec_node;
 	LIST_ENTRY(jbd_block_rec) tbrec_node;
+	TAILQ_HEAD(jbd_buf_dirty, jbd_buf) dirty_buf_queue;
 };
 
 struct jbd_trans {

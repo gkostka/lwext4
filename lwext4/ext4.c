@@ -705,51 +705,72 @@ static bool ext4_parse_flags(const char *flags, uint32_t *file_flags)
 }
 
 static int ext4_trunc_inode(struct ext4_mountpoint *mp,
-			    struct ext4_inode_ref *inode_ref, uint64_t new_size)
+			    uint32_t index, uint64_t new_size)
 {
 	int r = EOK;
 	struct ext4_fs *const fs = &mp->fs;
-	uint64_t inode_size = ext4_inode_get_size(&fs->sb, inode_ref->inode);
-	uint32_t index = inode_ref->index;
+	struct ext4_inode_ref inode_ref;
+	uint64_t inode_size;
+	bool has_trans = mp->fs.jbd_journal && mp->fs.curr_trans;
+	r = ext4_fs_get_inode_ref(fs, index, &inode_ref);
+	if (r != EOK)
+		return r;
 
+	inode_size = ext4_inode_get_size(&fs->sb, inode_ref.inode);
+	ext4_fs_put_inode_ref(&inode_ref);
+	if (has_trans)
+		ext4_trans_stop(mp);
 
 	while (inode_size > new_size + CONFIG_MAX_TRUNCATE_SIZE) {
 
 		inode_size -= CONFIG_MAX_TRUNCATE_SIZE;
+
 		ext4_trans_start(mp);
-		r = ext4_fs_truncate_inode(inode_ref, inode_size);
-		if (r != EOK)
-			return r;
-
-		r = ext4_fs_put_inode_ref(inode_ref);
-		if (r != EOK)
+		r = ext4_fs_get_inode_ref(fs, index, &inode_ref);
+		if (r != EOK) {
 			ext4_trans_abort(mp);
-		else
-			ext4_trans_stop(mp);
-
-		r = ext4_fs_get_inode_ref(fs, index, inode_ref);
+			break;
+		}
+		r = ext4_fs_truncate_inode(&inode_ref, inode_size);
 		if (r != EOK)
-			return r;
+			ext4_fs_put_inode_ref(&inode_ref);
+		else
+			r = ext4_fs_put_inode_ref(&inode_ref);
+
+		if (r != EOK) {
+			ext4_trans_abort(mp);
+			goto Finish;
+		} else
+			ext4_trans_stop(mp);
 	}
 
 	if (inode_size > new_size) {
 
 		inode_size = new_size;
-		ext4_trans_start(mp);
-		r = ext4_fs_truncate_inode(inode_ref, inode_size);
-		if (r != EOK)
-			return r;
 
-		r = ext4_fs_put_inode_ref(inode_ref);
+		ext4_trans_start(mp);
+		r = ext4_fs_get_inode_ref(fs, index, &inode_ref);
+		if (r != EOK) {
+			ext4_trans_abort(mp);
+			goto Finish;
+		}
+		r = ext4_fs_truncate_inode(&inode_ref, inode_size);
+		if (r != EOK)
+			ext4_fs_put_inode_ref(&inode_ref);
+		else
+			r = ext4_fs_put_inode_ref(&inode_ref);
+
 		if (r != EOK)
 			ext4_trans_abort(mp);
 		else
 			ext4_trans_stop(mp);
 
-		r = ext4_fs_get_inode_ref(fs, index, inode_ref);
-		if (r != EOK)
-			return r;
 	}
+
+Finish:
+
+	if (has_trans)
+		ext4_trans_start(mp);
 
 	return r;
 }
@@ -795,6 +816,9 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 
 	if (parent_inode)
 		*parent_inode = ref.index;
+
+	if (flags & O_CREAT)
+		ext4_trans_start(mp);
 
 	len = ext4_path_check(path, &is_goal);
 	while (1) {
@@ -905,7 +929,7 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 	if (is_goal) {
 
 		if ((f->flags & O_TRUNC) && (imode == EXT4_INODE_MODE_FILE)) {
-			r = ext4_trunc_inode(mp, &ref, 0);
+			r = ext4_trunc_inode(mp, ref.index, 0);
 			if (r != EOK) {
 				ext4_fs_put_inode_ref(&ref);
 				return r;
@@ -923,6 +947,14 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 	}
 
 	r = ext4_fs_put_inode_ref(&ref);
+	if (flags & O_CREAT) {
+		if (r == EOK)
+			ext4_trans_stop(mp);
+		else
+			ext4_trans_abort(mp);
+
+	}
+
 	return r;
 }
 
@@ -1270,6 +1302,29 @@ int ext4_fremove(const char *path)
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
+	/* We do not allow opening files here. */
+	if (ext4_inode_type(&mp->fs.sb, child.inode) ==
+	    EXT4_INODE_MODE_DIRECTORY) {
+		ext4_fs_put_inode_ref(&parent);
+		ext4_fs_put_inode_ref(&child);
+		ext4_trans_abort(mp);
+		EXT4_MP_UNLOCK(mp);
+		return r;
+	}
+
+	/*Link count will be zero, the inode should be freed. */
+	if (ext4_inode_get_links_cnt(child.inode) == 1) {
+		ext4_block_cache_write_back(mp->fs.bdev, 1);
+		r = ext4_trunc_inode(mp, child.index, 0);
+		if (r != EOK) {
+			ext4_fs_put_inode_ref(&parent);
+			ext4_fs_put_inode_ref(&child);
+			ext4_trans_abort(mp);
+			EXT4_MP_UNLOCK(mp);
+			return r;
+		}
+		ext4_block_cache_write_back(mp->fs.bdev, 0);
+	}
 
 	/*Set path*/
 	path += name_off;
@@ -1284,14 +1339,6 @@ int ext4_fremove(const char *path)
 	/*Link count is zero, the inode should be freed. */
 	if (!ext4_inode_get_links_cnt(child.inode)) {
 		ext4_inode_set_del_time(child.inode, -1L);
-		/*Turncate*/
-		ext4_block_cache_write_back(mp->fs.bdev, 1);
-		/*Truncate may be IO heavy. Do it writeback cache mode.*/
-		r = ext4_trunc_inode(mp, &child, 0);
-		ext4_block_cache_write_back(mp->fs.bdev, 0);
-
-		if (r != EOK)
-			goto Finish;
 
 		r = ext4_fs_free_inode(&child);
 		if (r != EOK)
@@ -1360,16 +1407,10 @@ int ext4_fopen(ext4_file *f, const char *path, const char *flags)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
-	ext4_trans_start(mp);
 
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
 	r = ext4_generic_open(f, path, flags, true, 0, 0);
 	ext4_block_cache_write_back(mp->fs.bdev, 0);
-
-	if (r != EOK)
-		ext4_trans_abort(mp);
-	else
-		ext4_trans_stop(mp);
 
 	EXT4_MP_UNLOCK(mp);
 	return r;
@@ -1387,16 +1428,10 @@ int ext4_fopen2(ext4_file *f, const char *path, int flags)
         filetype = EXT4_DE_REG_FILE;
 
 	EXT4_MP_LOCK(mp);
-	ext4_trans_start(mp);
 
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
 	r = ext4_generic_open2(f, path, flags, filetype, NULL, NULL);
 	ext4_block_cache_write_back(mp->fs.bdev, 0);
-
-	if (r != EOK)
-		ext4_trans_abort(mp);
-	else
-		ext4_trans_stop(mp);
 
 	EXT4_MP_UNLOCK(mp);
 	return r;
@@ -1438,7 +1473,7 @@ static int ext4_ftruncate_no_lock(ext4_file *f, uint64_t size)
 	if (r != EOK)
 		goto Finish;
 
-	r = ext4_trunc_inode(f->mp, &ref, size);
+	r = ext4_trunc_inode(f->mp, ref.index, size);
 	if (r != EOK)
 		goto Finish;
 
@@ -2463,25 +2498,18 @@ int ext4_dir_rm(const char *path)
 	ext4_file f;
 
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
-	struct ext4_inode_ref act;
-	struct ext4_inode_ref child;
-	struct ext4_dir_iter it;
+	struct ext4_inode_ref act, parent;
 
 	uint32_t name_off;
-	uint32_t inode_up;
-	uint32_t inode_current;
-	uint32_t depth = 1;
+	uint32_t inode_up, inode_current;
 
-	bool has_children;
+	bool has_children = false;
 	bool is_goal;
-	bool dir_end;
 
 	if (!mp)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
-
-	struct ext4_fs *const fs = &mp->fs;
 
 	/*Check if exist.*/
 	r = ext4_generic_open(&f, path, "r", false, &inode_up, &name_off);
@@ -2498,188 +2526,74 @@ int ext4_dir_rm(const char *path)
 
 	ext4_block_cache_write_back(mp->fs.bdev, 1);
 
-	do {
+	/*Load parent.*/
+	r = ext4_fs_get_inode_ref(&f.mp->fs, inode_up,
+			&parent);
+	if (r != EOK)
+		goto Finish;
+	r = ext4_fs_get_inode_ref(&f.mp->fs, inode_current,
+			&act);
+	if (r != EOK) {
+		ext4_fs_put_inode_ref(&parent);
+		goto Finish;
+	}
+	r = ext4_has_children(&has_children, &act);
+	if (r != EOK) {
+		ext4_fs_put_inode_ref(&parent);
+		ext4_fs_put_inode_ref(&act);
+		goto Finish;
+	}
+	if (has_children) {
+		r = ENOTEMPTY;
+		ext4_fs_put_inode_ref(&parent);
+		ext4_fs_put_inode_ref(&act);
+		goto Finish;
+	}
 
-		uint64_t act_curr_pos = 0;
-		has_children = false;
-		dir_end = false;
+	ext4_trans_start(mp);
 
-		while (r == EOK && !has_children && !dir_end) {
-
-			/*Load directory node.*/
-			r = ext4_fs_get_inode_ref(fs, inode_current, &act);
-			if (r != EOK) {
-				break;
-			}
-
-			/*Initialize iterator.*/
-			r = ext4_dir_iterator_init(&it, &act, act_curr_pos);
-			if (r != EOK) {
-				ext4_fs_put_inode_ref(&act);
-				break;
-			}
-
-			if (!it.curr) {
-				dir_end = true;
-				goto End;
-			}
-
-			ext4_trans_start(mp);
-
-			/*Get up directory inode when ".." entry*/
-			if ((it.curr->name_len == 2) &&
-			    ext4_is_dots(it.curr->name, it.curr->name_len)) {
-				inode_up = ext4_dir_en_get_inode(it.curr);
-			}
-
-			/*If directory or file entry,  but not "." ".." entry*/
-			if (!ext4_is_dots(it.curr->name, it.curr->name_len)) {
-
-				/*Get child inode reference do unlink
-				 * directory/file.*/
-				uint32_t cinode;
-				cinode = ext4_dir_en_get_inode(it.curr);
-				r = ext4_fs_get_inode_ref(fs, cinode, &child);
-				if (r != EOK)
-					goto End;
-
-				/*If directory with no leaf children*/
-				r = ext4_has_children(&has_children, &child);
-				if (r != EOK) {
-					ext4_fs_put_inode_ref(&child);
-					goto End;
-				}
-
-				if (has_children) {
-					/*Has directory children. Go into this
-					 * directory.*/
-					inode_up = inode_current;
-					inode_current = cinode;
-					depth++;
-					ext4_fs_put_inode_ref(&child);
-					goto End;
-				}
-
-				/* Truncate */
-				r = ext4_trunc_inode(mp, &child, 0);
-				if (r != EOK) {
-					ext4_fs_put_inode_ref(&child);
-					goto End;
-				}
-
-				/*No children in child directory or file. Just
-				 * unlink.*/
-				r = ext4_unlink(f.mp, &act, &child,
-						(char *)it.curr->name,
-						it.curr->name_len);
-				if (r != EOK) {
-					ext4_fs_put_inode_ref(&child);
-					goto End;
-				}
-
-				ext4_inode_set_del_time(child.inode, -1L);
-				ext4_inode_set_links_cnt(child.inode, 0);
-				child.dirty = true;
-
-				r = ext4_fs_free_inode(&child);
-				if (r != EOK) {
-					ext4_fs_put_inode_ref(&child);
-					goto End;
-				}
-
-				r = ext4_fs_put_inode_ref(&child);
-				if (r != EOK)
-					goto End;
-
-			}
-
-			r = ext4_dir_iterator_next(&it);
-			if (r != EOK)
-				goto End;
-
-			act_curr_pos = it.curr_off;
-End:
-			ext4_dir_iterator_fini(&it);
-			if (r == EOK)
-				r = ext4_fs_put_inode_ref(&act);
-			else
-				ext4_fs_put_inode_ref(&act);
-
-			if (r != EOK)
-				ext4_trans_abort(mp);
-			else
-				ext4_trans_stop(mp);
-		}
-
-		if (dir_end) {
-			/*Directory iterator reached last entry*/
-			depth--;
-			if (depth)
-				inode_current = inode_up;
-
-		}
-
-	} while (depth);
-
-	/*Last unlink*/
-	if (r == EOK && !depth) {
-		/*Load parent.*/
-		struct ext4_inode_ref parent;
-		r = ext4_fs_get_inode_ref(&f.mp->fs, inode_up,
-				&parent);
-		if (r != EOK)
-			goto Finish;
-		r = ext4_fs_get_inode_ref(&f.mp->fs, inode_current,
-				&act);
-		if (r != EOK) {
-			ext4_fs_put_inode_ref(&act);
-			goto Finish;
-		}
-
-		ext4_trans_start(mp);
-
-		/* In this place all directories should be
-		 * unlinked.
-		 * Last unlink from root of current directory*/
-		r = ext4_unlink(f.mp, &parent, &act,
-				(char *)path, len);
+	if (ext4_inode_get_links_cnt(act.inode) == 2) {
+		/*Truncate*/
+		r = ext4_fs_truncate_inode(&act, 0);
 		if (r != EOK) {
 			ext4_fs_put_inode_ref(&parent);
 			ext4_fs_put_inode_ref(&act);
 			goto Finish;
 		}
-
-		if (ext4_inode_get_links_cnt(act.inode) == 2) {
-			ext4_inode_set_del_time(act.inode, -1L);
-			ext4_inode_set_links_cnt(act.inode, 0);
-			act.dirty = true;
-			/*Turncate*/
-			r = ext4_trunc_inode(mp, &act, 0);
-			if (r != EOK) {
-				ext4_fs_put_inode_ref(&parent);
-				ext4_fs_put_inode_ref(&act);
-				goto Finish;
-			}
-
-			r = ext4_fs_free_inode(&act);
-			if (r != EOK) {
-				ext4_fs_put_inode_ref(&parent);
-				ext4_fs_put_inode_ref(&act);
-				goto Finish;
-			}
-		}
-
-		r = ext4_fs_put_inode_ref(&parent);
-		if (r != EOK)
-			goto Finish;
-
-		r = ext4_fs_put_inode_ref(&act);
-	Finish:
-		if (r != EOK)
-			ext4_trans_abort(mp);
-		else
-			ext4_trans_stop(mp);
 	}
+
+	 /* Unlink from root of current directory*/
+	r = ext4_unlink(f.mp, &parent, &act,
+			(char *)path, len);
+	if (r != EOK) {
+		ext4_fs_put_inode_ref(&parent);
+		ext4_fs_put_inode_ref(&act);
+		goto Finish;
+	}
+
+	if (ext4_inode_get_links_cnt(act.inode) == 2) {
+		ext4_inode_set_del_time(act.inode, -1L);
+		ext4_inode_set_links_cnt(act.inode, 0);
+		act.dirty = true;
+
+		r = ext4_fs_free_inode(&act);
+		if (r != EOK) {
+			ext4_fs_put_inode_ref(&parent);
+			ext4_fs_put_inode_ref(&act);
+			goto Finish;
+		}
+	}
+
+	r = ext4_fs_put_inode_ref(&parent);
+	if (r != EOK)
+		goto Finish;
+
+	r = ext4_fs_put_inode_ref(&act);
+Finish:
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
 
 	ext4_block_cache_write_back(mp->fs.bdev, 0);
 	EXT4_MP_UNLOCK(mp);
