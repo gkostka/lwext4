@@ -844,9 +844,8 @@ static int ext4_ext_correct_indexes(struct ext4_inode_ref *inode_ref,
 	eh = path[depth].header;
 	ex = path[depth].extent;
 
-	if (ex == NULL || eh == NULL) {
+	if (ex == NULL || eh == NULL)
 		return EIO;
-	}
 
 	if (depth == 0) {
 		/* there is no tree at all */
@@ -858,9 +857,6 @@ static int ext4_ext_correct_indexes(struct ext4_inode_ref *inode_ref,
 		return EOK;
 	}
 
-	/*
-	 * TODO: we need correction if border is smaller than current one
-	 */
 	k = depth - 1;
 	border = path[depth].extent->first_block;
 	path[k].index->first_block = border;
