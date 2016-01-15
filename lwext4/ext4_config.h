@@ -133,11 +133,6 @@ extern "C" {
 #define CONFIG_HAVE_OWN_OFLAGS 1
 #endif
 
-/**@brief   Use full extent implemrntation*/
-#ifndef CONFIG_EXTENT_FULL
-#define CONFIG_EXTENT_FULL 1
-#endif
-
 /**@brief Maximum single truncate size. Transactions must be limited to reduce
  *        number of allocetions for single transaction*/
 #ifndef CONFIG_MAX_TRUNCATE_SIZE
