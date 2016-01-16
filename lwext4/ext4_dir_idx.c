@@ -344,15 +344,25 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 {
 	/* Load block 0, where will be index root located */
 	ext4_fsblk_t fblock;
-	uint32_t iblock;
+	uint32_t iblock = 0;
+	bool need_append =
+		(ext4_inode_get_size(&dir->fs->sb, dir->inode)
+			< EXT4_DIR_DX_INIT_BCNT)
+		? true : false;
 	struct ext4_sblock *sb = &dir->fs->sb;
 	uint32_t block_size = ext4_sb_get_block_size(&dir->fs->sb);
+	struct ext4_block block;
 
-	int rc = ext4_fs_append_inode_dblk(dir, &fblock, &iblock);
+	int rc;
+
+	if (!need_append)
+		rc = ext4_fs_init_inode_dblk_idx(dir, iblock, &fblock);
+	else
+		rc = ext4_fs_append_inode_dblk(dir, &fblock, &iblock);
+
 	if (rc != EOK)
 		return rc;
 
-	struct ext4_block block;
 	rc = ext4_trans_block_get_noread(dir->fs->bdev, &block, fblock);
 	if (rc != EOK)
 		return rc;
@@ -396,7 +406,12 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	ext4_dir_dx_climit_set_limit(climit, root_limit);
 
 	/* Append new block, where will be new entries inserted in the future */
-	rc = ext4_fs_append_inode_dblk(dir, &fblock, &iblock);
+	iblock++;
+	if (!need_append)
+		rc = ext4_fs_init_inode_dblk_idx(dir, iblock, &fblock);
+	else
+		rc = ext4_fs_append_inode_dblk(dir, &fblock, &iblock);
+
 	if (rc != EOK) {
 		ext4_block_set(dir->fs->bdev, &block);
 		return rc;
