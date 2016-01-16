@@ -834,6 +834,39 @@ Finish:
 	return r;
 }
 
+static int ext4_trunc_dir(struct ext4_mountpoint *mp,
+			  struct ext4_inode_ref *parent,
+			  struct ext4_inode_ref *dir)
+{
+	int r = EOK;
+	bool is_dir = ext4_inode_is_type(&mp->fs.sb, dir->inode,
+			EXT4_INODE_MODE_DIRECTORY);
+	uint32_t block_size = ext4_sb_get_block_size(&mp->fs.sb);
+	if (!is_dir)
+		return EINVAL;
+
+#if CONFIG_DIR_INDEX_ENABLE
+	/* Initialize directory index if supported */
+	if (ext4_sb_feature_com(&mp->fs.sb, EXT4_FCOM_DIR_INDEX)) {
+		r = ext4_dir_dx_init(dir, parent);
+		if (r != EOK)
+			return r;
+
+		r = ext4_trunc_inode(mp, dir->index,
+				     EXT4_DIR_DX_INIT_BCNT * block_size);
+		if (r != EOK)
+			return r;
+	} else
+#endif
+	{
+		r = ext4_trunc_inode(mp, dir->index, block_size);
+		if (r != EOK)
+			return r;
+	}
+
+	return ext4_fs_truncate_inode(dir, 0);
+}
+
 /*
  * NOTICE: if filetype is equal to EXT4_DIRENTRY_UNKNOWN,
  * any filetype of the target dir entry will be accepted.
@@ -2632,6 +2665,7 @@ int ext4_dir_rm(const char *path)
 				/*Get child inode reference do unlink
 				 * directory/file.*/
 				uint32_t cinode;
+				uint32_t inode_type;
 				cinode = ext4_dir_en_get_inode(it.curr);
 				r = ext4_fs_get_inode_ref(fs, cinode, &child);
 				if (r != EOK)
@@ -2653,9 +2687,15 @@ int ext4_dir_rm(const char *path)
 					ext4_fs_put_inode_ref(&child);
 					goto End;
 				}
+				inode_type = ext4_inode_type(&mp->fs.sb,
+						child.inode);
 
 				/* Truncate */
-				r = ext4_fs_truncate_inode(&child, 0);
+				if (inode_type != EXT4_INODE_MODE_DIRECTORY)
+					r = ext4_trunc_inode(mp, child.index, 0);
+				else
+					r = ext4_trunc_dir(mp, &act, &child);
+
 				if (r != EOK) {
 					ext4_fs_put_inode_ref(&child);
 					goto End;
@@ -2750,8 +2790,8 @@ End:
 			ext4_inode_set_del_time(act.inode, -1L);
 			ext4_inode_set_links_cnt(act.inode, 0);
 			act.dirty = true;
-			/*Turncate*/
-			r = ext4_fs_truncate_inode(&act, 0);
+			/*Truncate*/
+			r = ext4_trunc_dir(mp, &parent, &act);
 			if (r != EOK) {
 				ext4_fs_put_inode_ref(&parent);
 				ext4_fs_put_inode_ref(&act);

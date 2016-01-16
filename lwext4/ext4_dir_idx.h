@@ -52,6 +52,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+#define EXT4_DIR_DX_INIT_BCNT 2
+
 /**@brief Initialize index structure of new directory.
  * @param dir Pointer to directory i-node
  * @param dir Pointer to parent directory i-node
