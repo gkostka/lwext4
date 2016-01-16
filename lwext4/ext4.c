@@ -2654,6 +2654,9 @@ End:
 
 		}
 
+		if (r != EOK)
+			break;
+
 	} while (depth);
 
 	/*Last unlink*/
