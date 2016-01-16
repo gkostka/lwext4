@@ -1266,17 +1266,48 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 	return jbd_write_sb(jbd_fs);
 }
 
+static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
+			  struct ext4_buf *buf __unused,
+			  int res,
+			  void *arg);
+
 static void jbd_journal_flush_trans(struct jbd_trans *trans)
 {
 	struct jbd_buf *jbd_buf, *tmp;
 	struct jbd_journal *journal = trans->journal;
 	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
+	void *tmp_data = malloc(journal->block_size);
+	if (!tmp_data)
+		return;
+
 	TAILQ_FOREACH_SAFE(jbd_buf, &trans->buf_queue, buf_node,
 			tmp) {
 		struct ext4_buf *buf = jbd_buf->block_rec->buf;
-		if (buf)
-			ext4_block_flush_buf(fs->bdev, buf);
+		/* The buffer in memory is still dirty. */
+		if (buf) {
+			if (jbd_buf->block_rec->trans != trans) {
+				int r;
+				struct ext4_block jbd_block = EXT4_BLOCK_ZERO();
+				struct jbd_buf *orig_arg = buf->end_write_arg;
+				ext4_assert(ext4_block_get(fs->bdev,
+							&jbd_block,
+							jbd_buf->jbd_lba) == EOK);
+				memcpy(tmp_data, jbd_block.data,
+						journal->block_size);
+				ext4_block_set(fs->bdev, &jbd_block);
+				r = ext4_blocks_set_direct(fs->bdev, tmp_data,
+						buf->lba, 1);
+				jbd_trans_end_write(fs->bdev->bc, buf, r, jbd_buf);
+				buf->end_write = jbd_trans_end_write;
+				buf->end_write_arg = orig_arg;
+				orig_arg->block_rec->buf = buf;
+			} else
+				ext4_block_flush_buf(fs->bdev, buf);
+
+		}
 	}
+
+	free(tmp_data);
 }
 
 static void
@@ -1415,11 +1446,6 @@ jbd_journal_new_trans(struct jbd_journal *journal)
 	TAILQ_INIT(&trans->buf_queue);
 	return trans;
 }
-
-static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
-			  struct ext4_buf *buf __unused,
-			  int res,
-			  void *arg);
 
 /**@brief  gain access to it before making any modications.
  * @param  journal current journal session
