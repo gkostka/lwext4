@@ -429,33 +429,39 @@ int ext4_fsymlink(const char *target, const char *path);
 int ext4_readlink(const char *path, char *buf, size_t bufsize, size_t *rcnt);
 
 /**@brief Set extended attribute
- * @param path to entry
- *
- * TODO: write detailed description
- */
+ * @param path to file/directory
+ * @param name name of the entry to add
+ * @param name_len length of @name in bytes
+ * @param data data of the entry to add
+ * @param data_size size of data to add
+ * @param replace whether existing entries should be replaced
+ * @return standard error code*/
 int ext4_setxattr(const char *path, const char *name, size_t name_len,
 		  const void *data, size_t data_size, bool replace);
 
 /**@brief Get extended attribute
- * @param path to entry
- *
- * TODO: write detailed description
- */
+ * @param path to file/directory
+ * @param name name of the entry to get
+ * @param name_len length of @name in bytes
+ * @param data data of the entry to get
+ * @param data_size size of data to get
+ * @return standard error code*/
 int ext4_getxattr(const char *path, const char *name, size_t name_len,
 		  void *buf, size_t buf_size, size_t *data_size);
 
 /**@brief List extended attributes
- * @param path to entry
- *
- * TODO: write detailed description
- */
+ * @param path to file/directory
+ * @param list list to hold the name of entries
+ * @param size size of @list in bytes
+ * @param ret_size used bytes of @list
+ * @return standard error code*/
 int ext4_listxattr(const char *path, char *list, size_t size, size_t *ret_size);
 
 /**@brief Remove extended attribute
- * @param path to entry
- *
- * TODO: write detailed description
- */
+ * @param path to file/directory
+ * @param name name of the entry to remove
+ * @param name_len length of @name in bytes
+ * @return standard error code*/
 int ext4_removexattr(const char *path, const char *name, size_t name_len);
 
 
