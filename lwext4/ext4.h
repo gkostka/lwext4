@@ -498,14 +498,6 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d);
  * @param   d directory handle*/
 void ext4_dir_entry_rewind(ext4_dir *d);
 
-/**@brief   Test journal functionality
- * @param   mount_point mount point, for example
- *          -   /
- *          -   /my_partition/
- *          -   /my_second_partition/
- *
- * @return standard error code */
-int ext4_test_journal(const char *mount_point);
 
 #ifdef __cplusplus
 }
