@@ -464,10 +464,11 @@ static struct ext4_mountpoint *ext4_get_mount(const char *path)
 		if (!strncmp(_mp[i].name, path, strlen(_mp[i].name)))
 			return &_mp[i];
 	}
-	return 0;
+	return NULL;
 }
 
-int ext4_journal_start(const char *mount_point)
+__unused
+static int __ext4_journal_start(const char *mount_point)
 {
 	int r = EOK;
 	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
@@ -493,7 +494,8 @@ Finish:
 	return r;
 }
 
-int ext4_journal_stop(const char *mount_point)
+__unused
+static int __ext4_journal_stop(const char *mount_point)
 {
 	int r = EOK;
 	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
@@ -525,7 +527,8 @@ Finish:
 	return r;
 }
 
-int ext4_recover(const char *mount_point)
+__unused
+static int __ext4_recover(const char *mount_point)
 {
 	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
 	if (!mp)
@@ -558,7 +561,8 @@ Finish:
 	return r;
 }
 
-static int ext4_trans_start(struct ext4_mountpoint *mp)
+__unused
+static int __ext4_trans_start(struct ext4_mountpoint *mp)
 {
 	int r = EOK;
 	if (mp->fs.jbd_journal && !mp->fs.curr_trans) {
@@ -575,7 +579,8 @@ Finish:
 	return r;
 }
 
-static int ext4_trans_stop(struct ext4_mountpoint *mp)
+__unused
+static int __ext4_trans_stop(struct ext4_mountpoint *mp)
 {
 	int r = EOK;
 	if (mp->fs.jbd_journal && mp->fs.curr_trans) {
@@ -587,7 +592,8 @@ static int ext4_trans_stop(struct ext4_mountpoint *mp)
 	return r;
 }
 
-static void ext4_trans_abort(struct ext4_mountpoint *mp)
+__unused
+static void __ext4_trans_abort(struct ext4_mountpoint *mp)
 {
 	if (mp->fs.jbd_journal && mp->fs.curr_trans) {
 		struct jbd_journal *journal = mp->fs.jbd_journal;
@@ -596,6 +602,59 @@ static void ext4_trans_abort(struct ext4_mountpoint *mp)
 		mp->fs.curr_trans = NULL;
 	}
 }
+
+int ext4_journal_start(const char *mount_point __unused)
+{
+	int r = EOK;
+#if CONFIG_JOURNALING_ENABLE
+	r = __ext4_journal_start(mount_point);
+#endif
+	return r;
+}
+
+int ext4_journal_stop(const char *mount_point __unused)
+{
+	int r = EOK;
+#if CONFIG_JOURNALING_ENABLE
+	r = __ext4_journal_stop(mount_point);
+#endif
+	return r;
+}
+
+int ext4_recover(const char *mount_point __unused)
+{
+	int r = EOK;
+#if CONFIG_JOURNALING_ENABLE
+	r = __ext4_recover(mount_point);
+#endif
+	return r;
+}
+
+static int ext4_trans_start(struct ext4_mountpoint *mp __unused)
+{
+	int r = EOK;
+#if CONFIG_JOURNALING_ENABLE
+	r = __ext4_trans_start(mp);
+#endif
+	return r;
+}
+
+static int ext4_trans_stop(struct ext4_mountpoint *mp __unused)
+{
+	int r = EOK;
+#if CONFIG_JOURNALING_ENABLE
+	r = __ext4_trans_stop(mp);
+#endif
+	return r;
+}
+
+static void ext4_trans_abort(struct ext4_mountpoint *mp __unused)
+{
+#if CONFIG_JOURNALING_ENABLE
+	__ext4_trans_abort(mp);
+#endif
+}
+
 
 int ext4_mount_point_stats(const char *mount_point,
 			   struct ext4_mount_stats *stats)
@@ -2827,6 +2886,7 @@ void ext4_dir_entry_rewind(ext4_dir *d)
 	d->next_off = 0;
 }
 
+#if CONFIG_JOURNALING_ENABLE
 int ext4_test_journal(const char *mount_point)
 {
 	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
@@ -2925,7 +2985,7 @@ Finish:
 	EXT4_MP_UNLOCK(mp);
 	return r;
 }
-
+#endif
 /**
  * @}
  */

@@ -83,6 +83,11 @@ extern "C" {
 
 /*****************************************************************************/
 
+/**@brief  Enable/disable journaling*/
+#ifndef CONFIG_JOURNALING_ENABLE
+#define CONFIG_JOURNALING_ENABLE 1
+#endif
+
 /**@brief   Enable directory indexing comb sort*/
 #ifndef CONFIG_DIR_INDEX_COMB_SORT
 #define CONFIG_DIR_INDEX_COMB_SORT 1

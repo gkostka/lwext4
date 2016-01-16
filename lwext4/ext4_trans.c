@@ -31,7 +31,7 @@
  * @{
  */
 /**
- * @file  ext4.h
+ * @file  ext4_trans.c
  * @brief Ext4 transaction buffer operations.
  */
 
@@ -39,21 +39,24 @@
 #include "ext4_types.h"
 #include "ext4_journal.h"
 
-static int ext4_trans_get_write_access(struct ext4_fs *fs,
-				struct ext4_block *block)
+static int ext4_trans_get_write_access(struct ext4_fs *fs __unused,
+				struct ext4_block *block __unused)
 {
 	int r = EOK;
+#if CONFIG_JOURNALING_ENABLE
 	if (fs->jbd_journal && fs->curr_trans) {
 		struct jbd_journal *journal = fs->jbd_journal;
 		struct jbd_trans *trans = fs->curr_trans;
 		r = jbd_trans_get_access(journal, trans, block);
 	}
+#endif
 	return r;
 }
 
 int ext4_trans_set_block_dirty(struct ext4_buf *buf)
 {
 	int r = EOK;
+#if CONFIG_JOURNALING_ENABLE
 	struct ext4_fs *fs = buf->bc->bdev->fs;
 	struct ext4_block block = {
 		.lb_id = buf->lba,
@@ -63,10 +66,10 @@ int ext4_trans_set_block_dirty(struct ext4_buf *buf)
 
 	if (fs->jbd_journal && fs->curr_trans) {
 		struct jbd_trans *trans = fs->curr_trans;
-		r = jbd_trans_set_block_dirty(trans, &block);
-	} else
-		ext4_bcache_set_dirty(buf);
-
+		return jbd_trans_set_block_dirty(trans, &block);
+	}
+#endif
+	ext4_bcache_set_dirty(buf);
 	return r;
 }
 
@@ -100,17 +103,19 @@ int ext4_trans_block_get(struct ext4_blockdev *bdev,
 	return r;
 }
 
-int ext4_trans_try_revoke_block(struct ext4_blockdev *bdev,
-			       uint64_t lba)
+int ext4_trans_try_revoke_block(struct ext4_blockdev *bdev __unused,
+			        uint64_t lba __unused)
 {
 	int r = EOK;
+#if CONFIG_JOURNALING_ENABLE
 	struct ext4_fs *fs = bdev->fs;
 	if (fs->jbd_journal && fs->curr_trans) {
 		struct jbd_trans *trans = fs->curr_trans;
 		r = jbd_trans_try_revoke_block(trans, lba);
-	} else if (fs->jbd_journal)
+	} else if (fs->jbd_journal) {
 		r = ext4_block_flush_lba(fs->bdev, lba);
-
+	}
+#endif
 	return r;
 }
 
