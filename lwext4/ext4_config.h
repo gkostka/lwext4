@@ -136,7 +136,7 @@ extern "C" {
 /**@brief Maximum single truncate size. Transactions must be limited to reduce
  *        number of allocetions for single transaction*/
 #ifndef CONFIG_MAX_TRUNCATE_SIZE
-#define CONFIG_MAX_TRUNCATE_SIZE (16 * 1024 * 1024)
+#define CONFIG_MAX_TRUNCATE_SIZE (16ul * 1024ul * 1024ul)
 #endif
 
 #ifdef __cplusplus
