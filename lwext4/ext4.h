@@ -157,11 +157,9 @@ typedef struct ext4_dir {
 
 /**@brief   Register a block device to a name.
  *          @warning Block device has to be filled by
- *          @ref EXT4_BLOCKDEV_STATIC_INSTANCE. Block cache may be created
- *          @ref EXT4_BCACHE_STATIC_INSTANCE.
- *          Block cache may by created automatically when bc parameter is 0.
+ *          Block cache may by created automatically when bc parameter is NULL.
  * @param   bd block device
- * @param   bd block device cache (0 = automatic cache mode)
+ * @param   bd block device cache
  * @param   dev_name register name
  * @param   standard error code*/
 int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,

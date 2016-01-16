@@ -58,9 +58,6 @@ static int rw_count = 10;
 /**@brief   Directory test count*/
 static int dir_cnt = 0;
 
-/**@brief   Static or dynamic cache mode*/
-static bool cache_mode = true;
-
 /**@brief   Cleanup after test.*/
 static bool cleanup_flag = false;
 
@@ -79,11 +76,8 @@ static bool verbose = 0;
 /**@brief   Block device handle.*/
 static struct ext4_blockdev *bd;
 
-/**@brief   Static cache instance*/
-EXT4_BCACHE_STATIC_INSTANCE(_lwext4_cache, CONFIG_BLOCK_DEV_CACHE_SIZE, 1024);
-
 /**@brief   Block cache handle.*/
-static struct ext4_bcache *bc = &_lwext4_cache;
+static struct ext4_bcache *bc;
 
 static const char *usage = "                                    \n\
 Welcome in ext4 generic demo.                                   \n\
@@ -92,7 +86,6 @@ Usage:                                                          \n\
 [-i] --input    - input file         (default = ext2)           \n\
 [-w] --rw_size  - single R/W size    (default = 1024 * 1024)    \n\
 [-c] --rw_count - R/W count          (default = 10)             \n\
-[-a] --cache  - 0 static, 1 dynamic  (default = 1)              \n\
 [-d] --dirs   - directory test count (default = 0)              \n\
 [-l] --clean  - clean up after test                             \n\
 [-b] --bstat  - block device stats                              \n\
@@ -165,7 +158,6 @@ static bool parse_opt(int argc, char **argv)
 	    {"input", required_argument, 0, 'i'},
 	    {"rw_size", required_argument, 0, 's'},
 	    {"rw_count", required_argument, 0, 'c'},
-	    {"cache", required_argument, 0, 'a'},
 	    {"dirs", required_argument, 0, 'd'},
 	    {"clean", no_argument, 0, 'l'},
 	    {"bstat", no_argument, 0, 'b'},
@@ -187,9 +179,6 @@ static bool parse_opt(int argc, char **argv)
 			break;
 		case 'c':
 			rw_count = atoi(optarg);
-			break;
-		case 'a':
-			cache_mode = atoi(optarg);
 			break;
 		case 'd':
 			dir_cnt = atoi(optarg);
@@ -231,7 +220,6 @@ int main(int argc, char **argv)
 	printf("\timput name: %s\n", input_name);
 	printf("\trw size: %d\n", rw_szie);
 	printf("\trw count: %d\n", rw_count);
-	printf("\tcache mode: %s\n", cache_mode ? "dynamic" : "static");
 
 	if (!open_filedev()) {
 		printf("open_filedev error\n");
@@ -240,9 +228,6 @@ int main(int argc, char **argv)
 
 	if (verbose)
 		ext4_dmask_set(DEBUG_ALL);
-
-	if (cache_mode)
-		bc = NULL;
 
 	if (!test_lwext4_mount(bd, bc))
 		return EXIT_FAILURE;
