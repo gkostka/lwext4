@@ -1326,7 +1326,7 @@ static int ext4_fs_get_inode_dblk_idx_internal(struct ext4_inode_ref *inode_ref,
 
 		ext4_fsblk_t current_fsblk;
 		int rc = ext4_extent_get_blocks(inode_ref, iblock, 1,
-				&current_fsblk,	extent_create, NULL);
+				&current_fsblk, extent_create, NULL);
 		if (rc != EOK)
 			return rc;
 
