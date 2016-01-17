@@ -1374,9 +1374,6 @@ int jbd_journal_stop(struct jbd_journal *journal)
 	struct jbd_fs *jbd_fs = journal->jbd_fs;
 	uint32_t features_incompatible;
 
-	/* Commit all the transactions to the journal.*/
-	jbd_journal_commit_all(journal);
-
 	/* Make sure that journalled content have reached
 	 * the disk.*/
 	jbd_journal_purge_cp_trans(journal, true);
@@ -2024,18 +2021,6 @@ again:
 	return rc;
 }
 
-/**@brief  Submit the transaction to transaction queue.
- * @param  journal current journal session
- * @param  trans transaction*/
-void
-jbd_journal_submit_trans(struct jbd_journal *journal,
-			 struct jbd_trans *trans)
-{
-	TAILQ_INSERT_TAIL(&journal->trans_queue,
-			  trans,
-			  trans_node);
-}
-
 /**@brief  Put references of block descriptors in a transaction.
  * @param  journal current journal session
  * @param  trans transaction*/
@@ -2166,29 +2151,6 @@ Finish:
 		jbd_journal_free_trans(journal, trans, true);
 	}
 	return rc;
-}
-
-/**@brief  Commit one transaction on transaction queue
- *         to the journal.
- * @param  journal current journal session.*/
-void jbd_journal_commit_one(struct jbd_journal *journal)
-{
-	struct jbd_trans *trans;
-
-	if ((trans = TAILQ_FIRST(&journal->trans_queue))) {
-		TAILQ_REMOVE(&journal->trans_queue, trans, trans_node);
-		jbd_journal_commit_trans(journal, trans);
-	}
-}
-
-/**@brief  Commit all the transactions on transaction queue
- *         to the journal.
- * @param  journal current journal session.*/
-void jbd_journal_commit_all(struct jbd_journal *journal)
-{
-	while (!TAILQ_EMPTY(&journal->trans_queue)) {
-		jbd_journal_commit_one(journal);
-	}
 }
 
 /**

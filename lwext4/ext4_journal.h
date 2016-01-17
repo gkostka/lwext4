@@ -69,10 +69,6 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 			    bool abort);
 int jbd_journal_commit_trans(struct jbd_journal *journal,
 			     struct jbd_trans *trans);
-void jbd_journal_submit_trans(struct jbd_journal *journal,
-			      struct jbd_trans *trans);
-void jbd_journal_commit_one(struct jbd_journal *journal);
-void jbd_journal_commit_all(struct jbd_journal *journal);
 
 #ifdef __cplusplus
 }
