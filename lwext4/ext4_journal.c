@@ -1287,7 +1287,6 @@ static void jbd_journal_flush_trans(struct jbd_trans *trans)
 			if (jbd_buf->block_rec->trans != trans) {
 				int r;
 				struct ext4_block jbd_block = EXT4_BLOCK_ZERO();
-				struct jbd_buf *orig_arg = buf->end_write_arg;
 				ext4_assert(ext4_block_get(fs->bdev,
 							&jbd_block,
 							jbd_buf->jbd_lba) == EOK);
@@ -1297,9 +1296,6 @@ static void jbd_journal_flush_trans(struct jbd_trans *trans)
 				r = ext4_blocks_set_direct(fs->bdev, tmp_data,
 						buf->lba, 1);
 				jbd_trans_end_write(fs->bdev->bc, buf, r, jbd_buf);
-				buf->end_write = jbd_trans_end_write;
-				buf->end_write_arg = orig_arg;
-				orig_arg->block_rec->buf = buf;
 			} else
 				ext4_block_flush_buf(fs->bdev, buf);
 
@@ -1797,6 +1793,8 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 			jbd_buf,
 			dirty_buf_node);
 
+		jbd_buf->block.buf->end_write = NULL;
+		jbd_buf->block.buf->end_write_arg = NULL;
 		jbd_trans_finish_callback(journal,
 				trans,
 				jbd_buf->block_rec,
@@ -1808,8 +1806,6 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 				jbd_buf->block_rec, trans);
 		trans->data_cnt--;
 
-		jbd_buf->block.buf->end_write = NULL;
-		jbd_buf->block.buf->end_write_arg = NULL;
 		ext4_block_set(fs->bdev, &jbd_buf->block);
 		TAILQ_REMOVE(&trans->buf_queue, jbd_buf, buf_node);
 		free(jbd_buf);
@@ -1824,6 +1820,8 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 					jbd_buf,
 					dirty_buf_node);
 
+			jbd_buf->block.buf->end_write = NULL;
+			jbd_buf->block.buf->end_write_arg = NULL;
 			jbd_trans_finish_callback(journal,
 					trans,
 					jbd_buf->block_rec,
@@ -1835,8 +1833,6 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 					jbd_buf->block_rec, trans);
 			trans->data_cnt--;
 
-			jbd_buf->block.buf->end_write = NULL;
-			jbd_buf->block.buf->end_write_arg = NULL;
 			ext4_block_set(fs->bdev, &jbd_buf->block);
 			TAILQ_REMOVE(&trans->buf_queue, jbd_buf, buf_node);
 			free(jbd_buf);
@@ -2044,6 +2040,7 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 {
 	struct jbd_buf *jbd_buf = arg;
 	struct jbd_trans *trans = jbd_buf->trans;
+	struct jbd_block_rec *block_rec = jbd_buf->block_rec;
 	struct jbd_journal *journal = trans->journal;
 	bool first_in_queue =
 		trans == TAILQ_FIRST(&journal->cp_queue);
@@ -2051,19 +2048,22 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 		trans->error = res;
 
 	TAILQ_REMOVE(&trans->buf_queue, jbd_buf, buf_node);
-	TAILQ_REMOVE(&jbd_buf->block_rec->dirty_buf_queue,
+	TAILQ_REMOVE(&block_rec->dirty_buf_queue,
 			jbd_buf,
 			dirty_buf_node);
+
 	jbd_trans_finish_callback(journal,
 			trans,
 			jbd_buf->block_rec,
 			false);
-	jbd_buf->block_rec->buf = NULL;
-	free(jbd_buf);
+	if (block_rec->trans == trans) {
+		block_rec->buf = NULL;
+		/* Clear the end_write and end_write_arg fields. */
+		buf->end_write = NULL;
+		buf->end_write_arg = NULL;
+	}
 
-	/* Clear the end_write and end_write_arg fields. */
-	buf->end_write = NULL;
-	buf->end_write_arg = NULL;
+	free(jbd_buf);
 
 	trans->written_cnt++;
 	if (trans->written_cnt == trans->data_cnt) {
