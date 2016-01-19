@@ -1800,7 +1800,7 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 		jbd_trans_finish_callback(journal,
 				trans,
 				jbd_buf->block_rec,
-				false);
+				true);
 
 		/* The buffer has not been modified, just release
 		 * that jbd_buf. */
@@ -1827,7 +1827,7 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 			jbd_trans_finish_callback(journal,
 					trans,
 					jbd_buf->block_rec,
-					false);
+					true);
 
 			/* The buffer has not been modified, just release
 			 * that jbd_buf. */
