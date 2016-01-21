@@ -191,6 +191,8 @@ void ext4_bcache_invalidate_lba(struct ext4_bcache *bc,
 		if (ext4_bcache_test_flag(buf, BC_DIRTY))
 			ext4_bcache_remove_dirty_node(bc, buf);
 
+		buf->end_write = NULL;
+		buf->end_write_arg = NULL;
 		ext4_bcache_clear_dirty(buf);
 	}
 }
@@ -214,6 +216,7 @@ ext4_bcache_find_get(struct ext4_bcache *bc, struct ext4_block *b,
 
 		ext4_bcache_inc_ref(buf);
 
+		b->lb_id = lba;
 		b->buf = buf;
 		b->data = buf->data;
 	}
