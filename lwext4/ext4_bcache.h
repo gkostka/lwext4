@@ -135,6 +135,9 @@ struct ext4_bcache {
 	/**@brief   The blockdev binded to this block cache*/
 	struct ext4_blockdev *bdev;
 
+	/**@brief   The cache should not be shaked */
+	bool dont_shake;
+
 	/**@brief   A tree holding all bufs*/
 	RB_HEAD(ext4_buf_lba, ext4_buf) lba_root;
 

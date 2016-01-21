@@ -144,19 +144,23 @@ int ext4_block_flush_buf(struct ext4_blockdev *bdev, struct ext4_buf *buf)
 	if (ext4_bcache_test_flag(buf, BC_DIRTY) &&
 	    ext4_bcache_test_flag(buf, BC_UPTODATE)) {
 		r = ext4_blocks_set_direct(bdev, buf->data, buf->lba, 1);
-
 		if (r) {
-			if (buf->end_write)
+			if (buf->end_write) {
+				bc->dont_shake = true;
 				buf->end_write(bc, buf, r, buf->end_write_arg);
+				bc->dont_shake = false;
+			}
 
 			return r;
 		}
 
 		ext4_bcache_remove_dirty_node(bc, buf);
 		ext4_bcache_clear_flag(buf, BC_DIRTY);
-		if (buf->end_write)
+		if (buf->end_write) {
+			bc->dont_shake = true;
 			buf->end_write(bc, buf, r, buf->end_write_arg);
-
+			bc->dont_shake = false;
+		}
 	}
 	return EOK;
 }
@@ -176,22 +180,26 @@ int ext4_block_flush_lba(struct ext4_blockdev *bdev, uint64_t lba)
 
 int ext4_block_cache_shake(struct ext4_blockdev *bdev)
 {
+	int r = EOK;
 	struct ext4_buf *buf;
+	if (bdev->bc->dont_shake)
+		return EOK;
+
 	while (!RB_EMPTY(&bdev->bc->lru_root) &&
 		ext4_bcache_is_full(bdev->bc)) {
 
 		buf = ext4_buf_lowest_lru(bdev->bc);
 		ext4_assert(buf);
 		if (ext4_bcache_test_flag(buf, BC_DIRTY)) {
-			int r = ext4_block_flush_buf(bdev, buf);
+			r = ext4_block_flush_buf(bdev, buf);
 			if (r != EOK)
-				return r;
+				break;
 
 		}
 
 		ext4_bcache_drop_buf(bdev->bc, buf);
 	}
-	return EOK;
+	return r;
 }
 
 int ext4_block_get_noread(struct ext4_blockdev *bdev, struct ext4_block *b,
