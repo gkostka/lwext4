@@ -1281,11 +1281,11 @@ static inline uint16_t reorder16(uint16_t n)
 	while (0)
 
 #ifdef __GNUC__
-#ifndef __unused
-#define __unused __attribute__ ((__unused__))
+ #ifndef __unused
+ #define __unused __attribute__ ((__unused__))
+ #endif
 #else
-#define __unused
-#endif
+ #define __unused
 #endif
 
 #ifndef offsetof
