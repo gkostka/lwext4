@@ -57,6 +57,8 @@ extern "C" {
 
 #define UUID_SIZE 16
 
+#pragma pack(push, 1)
+
 /*
  * Structure of the super block
  */
@@ -167,7 +169,9 @@ struct ext4_sblock {
 	uint32_t lpf_ino;		/* Location of the lost+found inode */
 	uint32_t padding[100];	/* Padding to the end of the block */
 	uint32_t checksum;		/* crc32c(superblock) */
-} __attribute__((packed));
+};
+
+#pragma pack(pop)
 
 #define EXT4_SUPERBLOCK_MAGIC 0xEF53
 #define EXT4_SUPERBLOCK_SIZE 1024
@@ -374,6 +378,8 @@ struct ext4_block_group_ref {
 #define EXT4_INODE_INDIRECT_BLOCK_COUNT                                        \
 	(EXT4_INODE_BLOCKS - EXT4_INODE_DIRECT_BLOCK_COUNT)
 
+#pragma pack(push, 1)
+
 /*
  * Structure of an inode on the disk
  */
@@ -412,7 +418,7 @@ struct ext4_inode {
 			uint16_t gid_high;
 			uint32_t author;
 		} hurd2;
-	} __attribute__((packed)) osd2;
+	} osd2;
 
 	uint16_t extra_isize;
 	uint16_t checksum_hi;	/* crc32c(uuid+inum+inode) BE */
@@ -423,7 +429,9 @@ struct ext4_inode {
 	uint32_t
 	    crtime_extra;    /* Extra file creation time (nsec << 2 | epoch) */
 	uint32_t version_hi; /* High 32 bits for 64-bit version */
-} __attribute__((packed));
+};
+
+#pragma pack(pop)
 
 #define EXT4_INODE_MODE_FIFO 0x1000
 #define EXT4_INODE_MODE_CHARDEV 0x2000
@@ -491,10 +499,12 @@ enum { EXT4_DE_UNKNOWN = 0,
 
 #define EXT4_DIRENTRY_DIR_CSUM 0xDE
 
+#pragma pack(push, 1)
+
 union ext4_dir_en_internal {
 	uint8_t name_length_high; /* Higher 8 bits of name length */
 	uint8_t inode_type;       /* Type of referenced inode (in rev >= 0.5) */
-} __attribute__((packed));
+};
 
 /**
  * Linked list directory entry structure
@@ -507,7 +517,7 @@ struct ext4_dir_en {
 	union ext4_dir_en_internal in;
 
 	uint8_t name[EXT4_DIRECTORY_FILENAME_LEN]; /* Entry name */
-} __attribute__((packed));
+};
 
 struct ext4_dir_iter {
 	struct ext4_inode_ref *inode_ref;
@@ -593,6 +603,8 @@ struct ext4_dir_entry_tail {
 	uint32_t checksum;		/* crc32c(uuid+inum+dirblock) */
 };
 
+#pragma pack(pop)
+
 #define EXT4_DIRENT_TAIL(block, blocksize) \
 	((struct ext4_dir_entry_tail *)(((char *)(block)) + ((blocksize) - \
 					sizeof(struct ext4_dir_entry_tail))))
@@ -628,6 +640,9 @@ struct ext4_dir_entry_tail {
 	((ex)->block_count |= to_le16(EXT4_EXT_UNWRITTEN_MASK))
 #define EXT4_EXT_SET_WRITTEN(ex) \
 	((ex)->block_count &= ~(to_le16(EXT4_EXT_UNWRITTEN_MASK)))
+
+#pragma pack(push, 1)
+
 /*
  * This is the extent tail on-disk structure.
  * All other extent structures are 12 bytes long.  It turns out that
@@ -678,6 +693,8 @@ struct ext4_extent_header {
 	uint16_t depth;             /* Has tree real underlying blocks? */
 	uint32_t generation;    /* generation of the tree */
 };
+
+#pragma pack(pop)
 
 
 /*
@@ -807,6 +824,8 @@ struct ext4_hash_info {
 #define EXT4_XATTR_INDEX_RICHACL		8
 #define EXT4_XATTR_INDEX_ENCRYPTION		9
 
+#pragma pack(push, 1)
+
 struct ext4_xattr_header {
 	uint32_t h_magic;	/* magic number for identification */
 	uint32_t h_refcount;	/* reference count */
@@ -815,11 +834,11 @@ struct ext4_xattr_header {
 	uint32_t h_checksum;	/* crc32c(uuid+id+xattrblock) */
 				/* id = inum if refcount=1, blknum otherwise */
 	uint32_t h_reserved[3];	/* zero right now */
-} __attribute__((packed));
+};
 
 struct ext4_xattr_ibody_header {
 	uint32_t h_magic;	/* magic number for identification */
-} __attribute__((packed));
+};
 
 struct ext4_xattr_entry {
 	uint8_t e_name_len;	/* length of name */
@@ -828,7 +847,9 @@ struct ext4_xattr_entry {
 	uint32_t e_value_block;	/* disk block attribute is stored on (n/i) */
 	uint32_t e_value_size;	/* size of attribute value */
 	uint32_t e_hash;		/* hash value of name and value */
-} __attribute__((packed));
+};
+
+#pragma pack(pop)
 
 struct ext4_xattr_item {
 	/* This attribute should be stored in inode body */
@@ -915,6 +936,8 @@ struct ext4_xattr_ref {
 #define JBD_SUPERBLOCK_V2	4
 #define JBD_REVOKE_BLOCK	5
 
+#pragma pack(push, 1)
+
 /*
  * Standard header for all descriptor blocks:
  */
@@ -923,6 +946,8 @@ struct jbd_bhdr {
 	uint32_t		blocktype;
 	uint32_t		sequence;
 };
+
+#pragma pack(pop)
 
 /*
  * Checksum types.
@@ -935,6 +960,9 @@ struct jbd_bhdr {
 #define JBD_CRC32_CHKSUM_SIZE 4
 
 #define JBD_CHECKSUM_BYTES (32 / sizeof(uint32_t))
+
+#pragma pack(push, 1)
+
 /*
  * Commit block header for storing transactional checksums:
  *
@@ -953,6 +981,7 @@ struct jbd_bhdr {
  *
  * Checksum v1, v2, and v3 are mutually exclusive features.
  */
+
 struct jbd_commit_header {
 	struct jbd_bhdr header;
 	uint8_t chksum_type;
@@ -980,11 +1009,15 @@ struct jbd_block_tag {
 	uint32_t		blocknr_high; /* most-significant high 32bits. */
 };
 
+#pragma pack(pop)
+
 /* Definitions for the journal tag flags word: */
 #define JBD_FLAG_ESCAPE		1	/* on-disk block is escaped */
 #define JBD_FLAG_SAME_UUID	2	/* block has same uuid as previous */
 #define JBD_FLAG_DELETED	4	/* block deleted by this transaction */
 #define JBD_FLAG_LAST_TAG	8	/* last tag in this descriptor block */
+
+#pragma pack(push, 1)
 
 /* Tail of descriptor block, for checksumming */
 struct jbd_block_tail {
@@ -1005,8 +1038,12 @@ struct jbd_revoke_tail {
 	uint32_t		checksum;
 };
 
+#pragma pack(pop)
+
 #define JBD_USERS_MAX 48
 #define JBD_USERS_SIZE (UUID_SIZE * JBD_USERS_MAX)
+
+#pragma pack(push, 1)
 
 /*
  * The journal superblock.  All fields are in big-endian byte order.
@@ -1058,6 +1095,8 @@ struct jbd_sb {
 
 /* 0x0400 */
 };
+
+#pragma pack(pop)
 
 #define JBD_SUPERBLOCK_SIZE sizeof(struct jbd_sb)
 
@@ -1244,6 +1283,8 @@ static inline uint16_t reorder16(uint16_t n)
 #ifdef __GNUC__
 #ifndef __unused
 #define __unused __attribute__ ((__unused__))
+#else
+#define __unused
 #endif
 #endif
 

@@ -44,6 +44,8 @@
 
 #define MBR_SIGNATURE 0xAA55
 
+#pragma pack(push, 1)
+
 struct ext4_part_entry {
 	uint8_t status;
 	uint8_t chs1[3];
@@ -51,14 +53,15 @@ struct ext4_part_entry {
 	uint8_t chs2[3];
 	uint32_t first_lba;
 	uint32_t sectors;
-} __attribute__((packed));
+};
 
 struct ext4_mbr {
 	uint8_t bootstrap[446];
 	struct ext4_part_entry part_entry[4];
 	uint16_t signature;
-} __attribute__((packed));
+};
 
+#pragma pack(pop)
 
 int ext4_mbr_scan(struct ext4_blockdev *parent, struct ext4_mbr_bdevs *bdevs)
 {
