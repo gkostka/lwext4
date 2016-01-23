@@ -165,7 +165,7 @@ int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
 	struct ext4_bgroup *bg = bg_ref.block_group;
 
 	/* Load i-node bitmap */
-	uint32_t bitmap_block_addr =
+	ext4_fsblk_t bitmap_block_addr =
 	    ext4_bg_get_inode_bitmap(bg, sb);
 
 	struct ext4_block b;
@@ -257,7 +257,7 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *idx, bool is_dir)
 		/* Check if this block group is good candidate for allocation */
 		if (free_inodes > 0) {
 			/* Load block with bitmap */
-			uint32_t bmp_blk_add = ext4_bg_get_inode_bitmap(bg, sb);
+			ext4_fsblk_t bmp_blk_add = ext4_bg_get_inode_bitmap(bg, sb);
 
 			struct ext4_block b;
 			rc = ext4_trans_block_get(fs->bdev, &b, bmp_blk_add);
