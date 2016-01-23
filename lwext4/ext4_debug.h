@@ -175,7 +175,7 @@ uint32_t ext4_dmask_get(void);
 #define ext4_assert(_v) assert(_v)
 #endif
 #else
-#define ext4_assert(_v)
+#define ext4_assert(_v) ((void)(_v))
 #endif
 
 #ifdef __cplusplus
