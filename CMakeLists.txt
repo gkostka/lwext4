@@ -48,8 +48,11 @@ add_subdirectory(blockdev)
 #Library build
 add_subdirectory(lwext4)
 #Detect all possible warnings for lwext4 target
-set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "-Wall -Wextra -pedantic")
-
+if (NOT CMAKE_COMPILER_IS_GNUCC)
+    set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "")
+else()
+    set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "-Wall -Wextra -pedantic")
+endif()
 
 #DISTRIBUTION
 set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
