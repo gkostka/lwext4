@@ -74,7 +74,7 @@ static int filedev_open(struct ext4_blockdev *bdev)
 		return EFAULT;
 
 	_filedev.part_offset = 0;
-	_filedev.part_size = ftell(dev_file);
+	_filedev.part_size = ftello(dev_file);
 	_filedev.bdif->ph_bcnt = _filedev.part_size / _filedev.bdif->ph_bsize;
 
 	return EOK;
