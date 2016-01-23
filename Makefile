@@ -77,8 +77,13 @@ arm-sim:
 	cd build_arm-sim && cmake -G"Unix Makefiles"         \
 	$(COMMON_DEFINITIONS)                                \
 	-DCMAKE_TOOLCHAIN_FILE=../toolchain/arm-sim.cmake ..
-	
-all: generic bf518 cortex-m3 cortex-m4 generic
+
+lib_only:
+	rm -R -f build_lib_only
+	mkdir build_lib_only
+	cd build_lib_only && cmake $(COMMON_DEFINITIONS) -DLIB_ONLY=TRUE ..
+
+all: generic bf518 cortex-m3 cortex-m4 lib_only
 
 
 clean:
