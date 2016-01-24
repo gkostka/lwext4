@@ -701,7 +701,7 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 				     JBD_FEATURE_INCOMPAT_CSUM_V3)) {
 		struct jbd_block_tag3 *tag = __tag;
 		memset(tag, 0, sizeof(struct jbd_block_tag3));
-		jbd_set32(tag, blocknr, tag_info->block);
+		jbd_set32(tag, blocknr, (uint32_t)tag_info->block);
 		if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 					     JBD_FEATURE_INCOMPAT_64BIT))
 			jbd_set32(tag, blocknr_high, tag_info->block >> 32);
@@ -727,7 +727,7 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 	} else {
 		struct jbd_block_tag *tag = __tag;
 		memset(tag, 0, sizeof(struct jbd_block_tag));
-		jbd_set32(tag, blocknr, tag_info->block);
+		jbd_set32(tag, blocknr, (uint32_t)tag_info->block);
 		if (JBD_HAS_INCOMPAT_FEATURE(&jbd_fs->sb,
 					     JBD_FEATURE_INCOMPAT_64BIT))
 			jbd_set32(tag, blocknr_high, tag_info->block >> 32);
@@ -1997,7 +1997,7 @@ again:
 		} else {
 			uint32_t *blocks =
 				(uint32_t *)blocks_entry;
-			*blocks = to_be32(rec->lba);
+			*blocks = to_be32((uint32_t)rec->lba);
 		}
 		blocks_entry += record_len;
 		tag_tbl_size -= record_len;

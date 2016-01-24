@@ -1647,10 +1647,11 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 	f->fsize = ext4_inode_get_size(sb, ref.inode);
 
 	block_size = ext4_sb_get_block_size(sb);
-	size = size > (f->fsize - f->fpos) ? (f->fsize - f->fpos) : size;
+	size = ((uint64_t)size > (f->fsize - f->fpos))
+		? ((size_t)(f->fsize - f->fpos)) : size;
 
-	iblock_idx = (f->fpos) / block_size;
-	iblock_last = (f->fpos + size) / block_size;
+	iblock_idx = (uint32_t)((f->fpos) / block_size);
+	iblock_last = (uint32_t)((f->fpos + size) / block_size);
 	unalg = (f->fpos) % block_size;
 
 	/*If the size of symlink is smaller than 60 bytes*/
@@ -1662,8 +1663,8 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 		char *content = (char *)ref.inode->blocks;
 		if (f->fpos < f->fsize) {
 			size_t len = size;
-			if (unalg + size > f->fsize)
-				len = f->fsize - unalg;
+			if (unalg + size > (uint32_t)f->fsize)
+				len = (uint32_t)f->fsize - unalg;
 			memcpy(buf, content + unalg, len);
 			if (rcnt)
 				*rcnt = len;
@@ -1808,9 +1809,9 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 	f->fsize = ext4_inode_get_size(sb, ref.inode);
 	block_size = ext4_sb_get_block_size(sb);
 
-	iblock_last = (f->fpos + size) / block_size;
-	iblk_idx = (f->fpos) / block_size;
-	ifile_blocks = (f->fsize + block_size - 1) / block_size;
+	iblock_last = (uint32_t)((f->fpos + size) / block_size);
+	iblk_idx = (uint32_t)(f->fpos / block_size);
+	ifile_blocks = (uint32_t)((f->fsize + block_size - 1) / block_size);
 
 	unalg = (f->fpos) % block_size;
 

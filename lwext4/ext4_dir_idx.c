@@ -962,7 +962,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	while ((void *)de < (void *)(old_data_block->data + block_size)) {
 		/* Read only valid entries */
 		if (ext4_dir_en_get_inode(de) && de->name_len) {
-			uint8_t len = ext4_dir_en_get_name_len(sb, de);
+			uint16_t len = ext4_dir_en_get_name_len(sb, de);
 			rc = ext4_dir_dx_hash_string(&hinfo_tmp, len,
 						     (char *)de->name);
 			if (rc != EOK) {

@@ -590,7 +590,7 @@ ext4_xattr_set_inode_entry(struct ext4_xattr_item *item,
 			   struct ext4_xattr_ibody_header *ibody_header,
 			   struct ext4_xattr_entry *entry, void *ibody_data_ptr)
 {
-	entry->e_name_len = to_le32(item->name_len);
+	entry->e_name_len = (uint8_t)item->name_len;
 	entry->e_name_index = item->name_index;
 	entry->e_value_offs =
 	    (char *)ibody_data_ptr - (char *)EXT4_XATTR_IFIRST(ibody_header);
@@ -603,7 +603,7 @@ static void ext4_xattr_set_block_entry(struct ext4_xattr_item *item,
 				       struct ext4_xattr_entry *block_entry,
 				       void *block_data_ptr)
 {
-	block_entry->e_name_len = to_le32(item->name_len);
+	block_entry->e_name_len = (uint8_t)item->name_len;
 	block_entry->e_name_index = item->name_index;
 	block_entry->e_value_offs =
 	    (char *)block_data_ptr - (char *)block_header;

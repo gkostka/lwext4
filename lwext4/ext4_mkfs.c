@@ -105,12 +105,12 @@ static uint32_t compute_blocks_per_group(struct ext4_mkfs_info *info)
 
 static uint32_t compute_inodes(struct ext4_mkfs_info *info)
 {
-	return DIV_ROUND_UP(info->len, info->block_size) / 4;
+	return (uint32_t)DIV_ROUND_UP(info->len, info->block_size) / 4;
 }
 
 static uint32_t compute_inodes_per_group(struct ext4_mkfs_info *info)
 {
-	uint32_t blocks = DIV_ROUND_UP(info->len, info->block_size);
+	uint32_t blocks = (uint32_t)DIV_ROUND_UP(info->len, info->block_size);
 	uint32_t block_groups = DIV_ROUND_UP(blocks, info->blocks_per_group);
 	uint32_t inodes = DIV_ROUND_UP(info->inodes, block_groups);
 	inodes = EXT4_ALIGN(inodes, (info->block_size / info->inode_size));
@@ -126,7 +126,8 @@ static uint32_t compute_inodes_per_group(struct ext4_mkfs_info *info)
 
 static uint32_t compute_journal_blocks(struct ext4_mkfs_info *info)
 {
-	uint32_t journal_blocks = DIV_ROUND_UP(info->len, info->block_size) / 64;
+	uint32_t journal_blocks = (uint32_t)DIV_ROUND_UP(info->len,
+						 info->block_size) / 64;
 	if (journal_blocks < 1024)
 		journal_blocks = 1024;
 	if (journal_blocks > 32768)
@@ -149,7 +150,7 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 	aux_info->len_blocks = info->len / info->block_size;
 	aux_info->inode_table_blocks = DIV_ROUND_UP(info->inodes_per_group *
 			info->inode_size, info->block_size);
-	aux_info->groups = DIV_ROUND_UP(aux_info->len_blocks -
+	aux_info->groups = (uint32_t)DIV_ROUND_UP(aux_info->len_blocks -
 			aux_info->first_data_block, info->blocks_per_group);
 	aux_info->blocks_per_ind = info->block_size / sizeof(uint32_t);
 	aux_info->blocks_per_dind =
@@ -297,7 +298,7 @@ static void fill_bgroups(struct fs_aux_info *aux_info,
 {
 	uint32_t i;
 
-	uint64_t bg_free_blk = 0;
+	uint32_t bg_free_blk = 0;
 	uint64_t sb_free_blk = 0;
 
 	for (i = 0; i < aux_info->groups; i++) {

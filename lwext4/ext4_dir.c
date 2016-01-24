@@ -217,7 +217,7 @@ static int ext4_dir_iterator_seek(struct ext4_dir_iter *it, uint64_t pos)
 	/* Compute next block address */
 	uint32_t block_size = ext4_sb_get_block_size(sb);
 	uint64_t current_blk_idx = it->curr_off / block_size;
-	uint32_t next_blk_idx = pos / block_size;
+	uint32_t next_blk_idx = (uint32_t)(pos / block_size);
 
 	/*
 	 * If we don't have a block or are moving across block boundary,
@@ -316,7 +316,7 @@ void ext4_dir_write_entry(struct ext4_sblock *sb, struct ext4_dir_en *en,
 	/* Set basic attributes */
 	ext4_dir_en_set_inode(en, child->index);
 	ext4_dir_en_set_entry_len(en, entry_len);
-	ext4_dir_en_set_name_len(sb, en, name_len);
+	ext4_dir_en_set_name_len(sb, en, (uint16_t)name_len);
 
 	/* Write name */
 	memcpy(en->name, name, name_len);
@@ -353,8 +353,8 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 	uint32_t iblock = 0;
 	ext4_fsblk_t fblock = 0;
 	uint32_t block_size = ext4_sb_get_block_size(sb);
-	uint32_t inode_size = ext4_inode_get_size(sb, parent->inode);
-	uint32_t total_blocks = inode_size / block_size;
+	uint64_t inode_size = ext4_inode_get_size(sb, parent->inode);
+	uint32_t total_blocks = (uint32_t)(inode_size / block_size);
 
 	/* Find block, where is space for new entry and try to add */
 	bool success = false;
@@ -462,8 +462,8 @@ int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 	uint32_t iblock;
 	ext4_fsblk_t fblock;
 	uint32_t block_size = ext4_sb_get_block_size(sb);
-	uint32_t inode_size = ext4_inode_get_size(sb, parent->inode);
-	uint32_t total_blocks = inode_size / block_size;
+	uint64_t inode_size = ext4_inode_get_size(sb, parent->inode);
+	uint32_t total_blocks = (uint32_t)(inode_size / block_size);
 
 	/* Walk through all data blocks */
 	for (iblock = 0; iblock < total_blocks; ++iblock) {

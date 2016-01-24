@@ -48,7 +48,7 @@ uint32_t ext4_block_group_cnt(struct ext4_sblock *s)
 	uint64_t blocks_count = ext4_sb_get_blocks_cnt(s);
 	uint32_t blocks_per_group = ext4_get32(s, blocks_per_group);
 
-	uint32_t block_groups_count = blocks_count / blocks_per_group;
+	uint32_t block_groups_count = (uint32_t)(blocks_count / blocks_per_group);
 
 	if (blocks_count % blocks_per_group)
 		block_groups_count++;
@@ -65,7 +65,7 @@ uint32_t ext4_blocks_in_group_cnt(struct ext4_sblock *s, uint32_t bgid)
 	if (bgid < block_group_count - 1)
 		return blocks_per_group;
 
-	return (total_blocks - ((block_group_count - 1) * blocks_per_group));
+	return (uint32_t)(total_blocks - ((block_group_count - 1) * blocks_per_group));
 }
 
 uint32_t ext4_inodes_in_group_cnt(struct ext4_sblock *s, uint32_t bgid)

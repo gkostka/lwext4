@@ -79,7 +79,7 @@ static inline void ext4_bg_set_block_bitmap(struct ext4_bgroup *bg,
 					    struct ext4_sblock *s, uint64_t blk)
 {
 
-	bg->block_bitmap_lo = to_le32(blk);
+	bg->block_bitmap_lo = to_le32((uint32_t)blk);
 	if (ext4_sb_get_desc_size(s) > EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE)
 		bg->block_bitmap_hi = to_le32(blk >> 32);
 
@@ -111,7 +111,7 @@ static inline uint64_t ext4_bg_get_inode_bitmap(struct ext4_bgroup *bg,
 static inline void ext4_bg_set_inode_bitmap(struct ext4_bgroup *bg,
 					    struct ext4_sblock *s, uint64_t blk)
 {
-	bg->inode_bitmap_lo = to_le32(blk);
+	bg->inode_bitmap_lo = to_le32((uint32_t)blk);
 	if (ext4_sb_get_desc_size(s) > EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE)
 		bg->inode_bitmap_hi = to_le32(blk >> 32);
 
@@ -145,7 +145,7 @@ static inline void
 ext4_bg_set_inode_table_first_block(struct ext4_bgroup *bg,
 				    struct ext4_sblock *s, uint64_t blk)
 {
-	bg->inode_table_first_block_lo = to_le32(blk);
+	bg->inode_table_first_block_lo = to_le32((uint32_t)blk);
 	if (ext4_sb_get_desc_size(s) > EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE)
 		bg->inode_table_first_block_hi = to_le32(blk >> 32);
 }

@@ -58,7 +58,7 @@ uint32_t ext4_balloc_get_bgid_of_block(struct ext4_sblock *s,
 	if (ext4_get32(s, first_data_block) && baddr)
 		baddr--;
 
-	return baddr / ext4_get32(s, blocks_per_group);
+	return (uint32_t)(baddr / ext4_get32(s, blocks_per_group));
 }
 
 /**@brief Compute the starting block address of a block group

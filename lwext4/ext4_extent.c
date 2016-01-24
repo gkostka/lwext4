@@ -170,9 +170,9 @@ static void ext4_ext_free_blocks(struct ext4_inode_ref *inode_ref,
 	ext4_balloc_free_blocks(inode_ref, block, count);
 }
 
-static size_t ext4_ext_space_block(struct ext4_inode_ref *inode_ref)
+static uint16_t ext4_ext_space_block(struct ext4_inode_ref *inode_ref)
 {
-	size_t size;
+	uint16_t size;
 	uint32_t block_size = ext4_sb_get_block_size(&inode_ref->fs->sb);
 
 	size = (block_size - sizeof(struct ext4_extent_header)) /
@@ -184,9 +184,9 @@ static size_t ext4_ext_space_block(struct ext4_inode_ref *inode_ref)
 	return size;
 }
 
-static size_t ext4_ext_space_block_idx(struct ext4_inode_ref *inode_ref)
+static uint16_t ext4_ext_space_block_idx(struct ext4_inode_ref *inode_ref)
 {
-	size_t size;
+	uint16_t size;
 	uint32_t block_size = ext4_sb_get_block_size(&inode_ref->fs->sb);
 
 	size = (block_size - sizeof(struct ext4_extent_header)) /
@@ -198,9 +198,9 @@ static size_t ext4_ext_space_block_idx(struct ext4_inode_ref *inode_ref)
 	return size;
 }
 
-static size_t ext4_ext_space_root(struct ext4_inode_ref *inode_ref)
+static uint16_t ext4_ext_space_root(struct ext4_inode_ref *inode_ref)
 {
-	size_t size;
+	uint16_t size;
 
 	size = sizeof(inode_ref->inode->blocks);
 	size -= sizeof(struct ext4_extent_header);
@@ -212,9 +212,9 @@ static size_t ext4_ext_space_root(struct ext4_inode_ref *inode_ref)
 	return size;
 }
 
-static size_t ext4_ext_space_root_idx(struct ext4_inode_ref *inode_ref)
+static uint16_t ext4_ext_space_root_idx(struct ext4_inode_ref *inode_ref)
 {
-	size_t size;
+	uint16_t size;
 
 	size = sizeof(inode_ref->inode->blocks);
 	size -= sizeof(struct ext4_extent_header);
@@ -226,10 +226,10 @@ static size_t ext4_ext_space_root_idx(struct ext4_inode_ref *inode_ref)
 	return size;
 }
 
-static size_t ext4_ext_max_entries(struct ext4_inode_ref *inode_ref,
+static uint16_t ext4_ext_max_entries(struct ext4_inode_ref *inode_ref,
 				   uint32_t depth)
 {
-	size_t max;
+	uint16_t max;
 
 	if (depth == ext_depth(inode_ref->inode)) {
 		if (depth == 0)
@@ -1730,7 +1730,7 @@ static int ext4_ext_zero_unwritten_range(struct ext4_inode_ref *inode_ref,
 	return err;
 }
 
-int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock,
+int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_lblk_t iblock,
 			uint32_t max_blocks, ext4_fsblk_t *result, bool create,
 			uint32_t *blocks_count)
 {
@@ -1740,7 +1740,8 @@ int ext4_extent_get_blocks(struct ext4_inode_ref *inode_ref, ext4_fsblk_t iblock
 	int err = EOK;
 	int32_t depth;
 	uint32_t allocated = 0;
-	ext4_fsblk_t next, newblock;
+	ext4_lblk_t next;
+	ext4_fsblk_t newblock;
 
 	if (result)
 		*result = 0;
