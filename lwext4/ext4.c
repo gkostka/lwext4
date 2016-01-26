@@ -1989,7 +1989,7 @@ uint64_t ext4_fsize(ext4_file *f)
 int ext4_chmod(const char *path, uint32_t mode)
 {
 	int r;
-	uint32_t ino;
+	uint32_t ino, orig_mode;
 	ext4_file f;
 	struct ext4_sblock *sb;
 	struct ext4_inode_ref inode_ref;
@@ -2017,7 +2017,10 @@ int ext4_chmod(const char *path, uint32_t mode)
 		return r;
 	}
 
-	ext4_inode_set_mode(sb, inode_ref.inode, mode);
+	orig_mode = ext4_inode_get_mode(sb, inode_ref.inode);
+	orig_mode &= ~0xFFF;
+	orig_mode |= mode & 0xFFF;
+	ext4_inode_set_mode(sb, inode_ref.inode, orig_mode);
 	inode_ref.dirty = true;
 
 	r = ext4_fs_put_inode_ref(&inode_ref);
