@@ -41,8 +41,8 @@
 extern "C" {
 #endif
 
-#ifdef CONFIG_HAVE_OWN_CFG
-#include <config.h>
+#if !CONFIG_USE_DEFAULT_CFG
+#include "generated/ext4_config.h"
 #endif
 
 /*****************************************************************************/
