@@ -1,0 +1,83 @@
+--- include/ext4_oflags.h	2016-01-25 09:51:20.615385376 +0000
++++ include/ext4_oflags.h	2016-01-25 09:19:09.420384455 +0000
+@@ -45,51 +45,37 @@ extern "C" {
+ 
+ #if CONFIG_HAVE_OWN_OFLAGS
+ 
+- #ifndef O_RDONLY
+- #define O_RDONLY 00
+- #endif
+-
+- #ifndef O_WRONLY
+- #define O_WRONLY 01
+- #endif
+-
+- #ifndef O_RDWR
+- #define O_RDWR 02
+- #endif
+-
+- #ifndef O_CREAT
+- #define O_CREAT 0100
+- #endif
+-
+- #ifndef O_EXCL
+- #define O_EXCL 0200
+- #endif
+-
+- #ifndef O_TRUNC
+- #define O_TRUNC 01000
+- #endif
+-
+- #ifndef O_APPEND
+- #define O_APPEND 02000
+- #endif
++ #define LWEXT4_O_RDONLY 00
++ #define LWEXT4_O_WRONLY 01
++ #define LWEXT4_O_RDWR 02
++ #define LWEXT4_O_CREAT 0100
++ #define LWEXT4_O_EXCL 0200
++ #define LWEXT4_O_TRUNC 01000
++ #define LWEXT4_O_APPEND 02000
+ 
+ /********************************FILE SEEK FLAGS*****************************/
+ 
+- #ifndef SEEK_SET
+- #define SEEK_SET 0
+- #endif
+-
+- #ifndef SEEK_CUR
+- #define SEEK_CUR 1
+- #endif
+-
+- #ifndef SEEK_END
+- #define SEEK_END 2
+- #endif
++ #define LWEXT4_SEEK_SET 0
++ #define LWEXT4_SEEK_CUR 1
++ #define LWEXT4_SEEK_END 2
+ 
+ #else
++
+  #include <unistd.h>
+  #include <fcntl.h>
++
++ #define LWEXT4_O_RDONLY O_RDONLY
++ #define LWEXT4_O_WRONLY O_WRONLY
++ #define LWEXT4_O_RDWR O_RDWR
++ #define LWEXT4_O_CREAT O_CREAT
++ #define LWEXT4_O_EXCL O_EXCL
++ #define LWEXT4_O_TRUNC O_TRUNC
++ #define LWEXT4_O_APPEND O_APPEND
++
++ #define LWEXT4_SEEK_SET SEEK_SET
++ #define LWEXT4_SEEK_CUR SEEK_CUR
++ #define LWEXT4_SEEK_END SEEK_END
++
+ #endif
+ 
+ #ifdef __cplusplus
+@@ -101,3 +87,4 @@ extern "C" {
+ /**
+  * @}
+  */
++

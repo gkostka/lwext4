@@ -1,0 +1,124 @@
+--- include/ext4_errno.h	2016-01-25 09:51:20.605385376 +0000
++++ include/ext4_errno.h	2016-01-25 09:19:09.410384455 +0000
+@@ -43,47 +43,95 @@ extern "C" {
+ #include "ext4_config.h"
+ 
+ #if !CONFIG_HAVE_OWN_ERRNO
++
+ #include <errno.h>
+-#else
+-#define EPERM 1      /* Operation not permitted */
+-#define ENOENT 2     /* No such file or directory */
+-#define EIO 5        /* I/O error */
+-#define ENXIO 6      /* No such device or address */
+-#define E2BIG 7      /* Argument list too long */
+-#define ENOMEM 12    /* Out of memory */
+-#define EACCES 13    /* Permission denied */
+-#define EFAULT 14    /* Bad address */
+-#define EEXIST 17    /* File exists */
+-#define ENODEV 19    /* No such device */
+-#define ENOTDIR 20   /* Not a directory */
+-#define EISDIR 21    /* Is a directory */
+-#define EINVAL 22    /* Invalid argument */
+-#define EFBIG 27     /* File too large */
+-#define ENOSPC 28    /* No space left on device */
+-#define EROFS 30     /* Read-only file system */
+-#define EMLINK 31    /* Too many links */
+-#define ERANGE 34    /* Math result not representable */
+-#define ENOTEMPTY 39 /* Directory not empty */
+-#define ENODATA 61   /* No data available */
+-#define ENOTSUP 95   /* Not supported */
+-#endif
++
++#define LWEXT4_EPERM EPERM      /* Operation not permitted */
++#define LWEXT4_ENOENT ENOENT     /* No such file or directory */
++#define LWEXT4_EIO EIO        /* I/O error */
++#define LWEXT4_ENXIO ENXIO      /* No such device or address */
++#define LWEXT4_E2BIG E2BIG      /* Argument list too long */
++#define LWEXT4_ENOMEM ENOMEM    /* Out of memory */
++#define LWEXT4_EACCES EACCES    /* Permission denied */
++#define LWEXT4_EFAULT EFAULT    /* Bad address */
++#define LWEXT4_EEXIST EEXIST    /* File exists */
++#define LWEXT4_ENODEV ENODEV    /* No such device */
++#define LWEXT4_ENOTDIR ENOTDIR   /* Not a directory */
++#define LWEXT4_EISDIR EISDIR    /* Is a directory */
++#define LWEXT4_EINVAL EINVAL    /* Invalid argument */
++#define LWEXT4_EFBIG EFBIG     /* File too large */
++#define LWEXT4_ENOSPC ENOSPC    /* No space left on device */
++#define LWEXT4_EROFS EROFS     /* Read-only file system */
++#define LWEXT4_EMLINK EMLINK    /* Too many links */
++#define LWEXT4_ERANGE ERANGE    /* Math result not representable */
++#define LWEXT4_ENOTEMPTY ENOTEMPTY /* Directory not empty */
+ 
+ #ifndef ENODATA
+  #ifdef ENOATTR
+- #define ENODATA ENOATTR
++ #define LWEXT4_ENODATA ENOATTR
+  #else
+- #define ENODATA 61
++ #define LWEXT4_ENODATA 61
+  #endif
++#else
++#define LWEXT4_ENODATA ENODATA
+ #endif
+ 
+ #ifndef ENOTSUP
+-#define ENOTSUP 95
++#define LWEXT4_ENOTSUP 95
++#else
++#define LWEXT4_ENOTSUP ENOTSUP
+ #endif
+ 
+ #ifndef EOK
+ #define EOK 0
+ #endif
+ 
++#define LWEXT4_EOK EOK
++
++#else /* CONFIG_HAVE_OWN_ERRNO */
++
++#define LWEXT4_EOK 0
++#define LWEXT4_EPERM 1      /* Operation not permitted */
++#define LWEXT4_ENOENT 2     /* No such file or directory */
++#define LWEXT4_ESRCH 3      /* No such process */
++#define LWEXT4_EINTR 4      /* Interrupted system call */
++#define LWEXT4_EIO 5        /* I/O error */
++#define LWEXT4_ENXIO 6      /* No such device or address */
++#define LWEXT4_E2BIG 7      /* Argument list too long */
++#define LWEXT4_ENOEXEC 8    /* Exec format error */
++#define LWEXT4_EBADF 9      /* Bad file number */
++#define LWEXT4_ECHILD 10    /* No child processes */
++#define LWEXT4_EAGAIN 11    /* Try again */
++#define LWEXT4_ENOMEM 12    /* Out of memory */
++#define LWEXT4_EACCES 13    /* Permission denied */
++#define LWEXT4_EFAULT 14    /* Bad address */
++#define LWEXT4_ENOTBLK 15   /* Block device required */
++#define LWEXT4_EBUSY 16     /* Device or resource busy */
++#define LWEXT4_EEXIST 17    /* File exists */
++#define LWEXT4_EXDEV 18     /* Cross-device link */
++#define LWEXT4_ENODEV 19    /* No such device */
++#define LWEXT4_ENOTDIR 20   /* Not a directory */
++#define LWEXT4_EISDIR 21    /* Is a directory */
++#define LWEXT4_EINVAL 22    /* Invalid argument */
++#define LWEXT4_ENFILE 23    /* File table overflow */
++#define LWEXT4_EMFILE 24    /* Too many open files */
++#define LWEXT4_ENOTTY 25    /* Not a typewriter */
++#define LWEXT4_ETXTBSY 26   /* Text file busy */
++#define LWEXT4_EFBIG 27     /* File too large */
++#define LWEXT4_ENOSPC 28    /* No space left on device */
++#define LWEXT4_ESPIPE 29    /* Illegal seek */
++#define LWEXT4_EROFS 30     /* Read-only file system */
++#define LWEXT4_EMLINK 31    /* Too many links */
++#define LWEXT4_EPIPE 32     /* Broken pipe */
++#define LWEXT4_EDOM 33      /* Math argument out of domain of func */
++#define LWEXT4_ERANGE 34    /* Math result not representable */
++#define LWEXT4_ENOTEMPTY 39 /* Directory not empty */
++#define LWEXT4_ENODATA 61   /* No data available */
++#define LWEXT4_ENOTSUP 95   /* Not supported */
++
++#endif /* CONFIG_HAVE_OWN_ERRNO */
++
++
+ #ifdef __cplusplus
+ }
+ #endif
