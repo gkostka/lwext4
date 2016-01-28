@@ -2,7 +2,7 @@ project(lwext4 C)
 cmake_minimum_required(VERSION 2.8)
 
 
-include_directories(lwext4)
+include_directories(include)
 include_directories(blockdev/filedev)
 include_directories(blockdev/filedev_win)
 
@@ -46,7 +46,7 @@ endif()
 add_subdirectory(blockdev)
 
 #Library build
-add_subdirectory(lwext4)
+add_subdirectory(src)
 #Detect all possible warnings for lwext4 target
 if (NOT CMAKE_COMPILER_IS_GNUCC)
     set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "")
