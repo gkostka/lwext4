@@ -66,6 +66,8 @@ int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev,
 
 	fs->bdev = bdev;
 
+	fs->read_only = read_only;
+
 	r = ext4_sb_read(fs->bdev, &fs->sb);
 	if (r != EOK)
 		return r;
@@ -82,7 +84,7 @@ int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev,
 		return r;
 
 	if (read_only)
-		fs->read_only = true;
+		fs->read_only = read_only;
 
 	/* Compute limits for indirect block levels */
 	uint32_t blocks_id = bsize / sizeof(uint32_t);
