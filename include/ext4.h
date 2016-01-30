@@ -122,9 +122,12 @@ int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
  *          -   /
  *          -   /my_partition/
  *          -   /my_second_partition/
+ * @param   read_only mount as read-only mode.
  *
  * @return standard error code */
-int ext4_mount(const char *dev_name, const char *mount_point);
+int ext4_mount(const char *dev_name,
+	       const char *mount_point,
+	       bool read_only);
 
 /**@brief   Umount operation.
  * @param   mount_point mount name

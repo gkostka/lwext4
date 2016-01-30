@@ -93,9 +93,11 @@ static inline ext4_fsblk_t ext4_fs_first_bg_block_no(struct ext4_sblock *s,
 /**@brief Initialize filesystem and read all needed data.
  * @param fs Filesystem instance to be initialized
  * @param bdev Identifier if device with the filesystem
+ * @param read_only Mark the filesystem as read-only.
  * @return Error code
  */
-int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev);
+int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev,
+		 bool read_only);
 
 /**@brief Destroy filesystem instance (used by unmount operation).
  * @param fs Filesystem to be destroyed

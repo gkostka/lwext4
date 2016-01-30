@@ -419,7 +419,7 @@ int _mount(char *p)
 	if (verbose)
 		ext4_dmask_set(DEBUG_ALL);
 
-	rc = ext4_mount(dev_name, mount_point);
+	rc = ext4_mount(dev_name, mount_point, false);
 	if (rc != EOK)
 		return rc;
 

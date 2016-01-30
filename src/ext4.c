@@ -329,7 +329,8 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
 
 /****************************************************************************/
 
-int ext4_mount(const char *dev_name, const char *mount_point)
+int ext4_mount(const char *dev_name, const char *mount_point,
+	       bool read_only)
 {
 	ext4_assert(mount_point && dev_name);
 	int r;
@@ -375,7 +376,7 @@ int ext4_mount(const char *dev_name, const char *mount_point)
 	if (r != EOK)
 		return r;
 
-	r = ext4_fs_init(&mp->fs, bd);
+	r = ext4_fs_init(&mp->fs, bd, read_only);
 	if (r != EOK) {
 		ext4_block_fini(bd);
 		return r;
@@ -475,6 +476,9 @@ static int __ext4_journal_start(const char *mount_point)
 	if (!mp)
 		return ENOENT;
 
+	if (mp->fs.read_only)
+		return EOK;
+
 	if (ext4_sb_feature_com(&mp->fs.sb,
 				EXT4_FCOM_HAS_JOURNAL)) {
 		r = jbd_get_fs(&mp->fs, &mp->jbd_fs);
@@ -501,6 +505,9 @@ static int __ext4_journal_stop(const char *mount_point)
 	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
 	if (!mp)
 		return ENOENT;
+
+	if (mp->fs.read_only)
+		return EOK;
 
 	if (ext4_sb_feature_com(&mp->fs.sb,
 				EXT4_FCOM_HAS_JOURNAL)) {
@@ -893,6 +900,9 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 	struct ext4_fs *const fs = &mp->fs;
 	struct ext4_sblock *const sb = &mp->fs.sb;
 
+	if (fs->read_only && flags & O_CREAT)
+		return EROFS;
+
 	f->flags = flags;
 
 	/*Skip mount point*/
@@ -1218,6 +1228,9 @@ int ext4_flink(const char *path, const char *hardlink_path)
 	if (!mp)
 		return ENOENT;
 
+	if (mp->fs.read_only)
+		return EROFS;
+
 	/* Will that happen? Anyway return EINVAL for such case. */
 	if (mp != target_mp)
 		return EINVAL;
@@ -1275,6 +1288,9 @@ int ext4_frename(const char *path, const char *new_path)
 
 	if (!mp)
 		return ENOENT;
+
+	if (mp->fs.read_only)
+		return EROFS;
 
 	EXT4_MP_LOCK(mp);
 	ext4_trans_start(mp);
@@ -1366,6 +1382,9 @@ int ext4_fremove(const char *path)
 
 	if (!mp)
 		return ENOENT;
+
+	if (mp->fs.read_only)
+		return EROFS;
 
 	EXT4_MP_LOCK(mp);
 	ext4_trans_start(mp);
@@ -1590,6 +1609,9 @@ int ext4_ftruncate(ext4_file *f, uint64_t size)
 	int r;
 	ext4_assert(f && f->mp);
 
+	if (f->mp->fs.read_only)
+		return EROFS;
+
 	if (f->flags & O_RDONLY)
 		return EPERM;
 
@@ -1622,6 +1644,9 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 	struct ext4_inode_ref ref;
 
 	ext4_assert(f && f->mp);
+
+	if (f->mp->fs.read_only)
+		return EROFS;
 
 	if (f->flags & O_WRONLY)
 		return EPERM;
@@ -1782,6 +1807,9 @@ int ext4_fwrite(ext4_file *f, const void *buf, size_t size, size_t *wcnt)
 	int r, rr = EOK;
 
 	ext4_assert(f && f->mp);
+
+	if (f->mp->fs.read_only)
+		return EROFS;
 
 	if (f->flags & O_RDONLY)
 		return EPERM;
@@ -1998,6 +2026,9 @@ int ext4_chmod(const char *path, uint32_t mode)
 	if (!mp)
 		return ENOENT;
 
+	if (mp->fs.read_only)
+		return EROFS;
+
 	EXT4_MP_LOCK(mp);
 	ext4_trans_start(mp);
 
@@ -2044,6 +2075,9 @@ int ext4_chown(const char *path, uint32_t uid, uint32_t gid)
 	if (!mp)
 		return ENOENT;
 
+	if (mp->fs.read_only)
+		return EROFS;
+
 	EXT4_MP_LOCK(mp);
 	ext4_trans_start(mp);
 
@@ -2087,6 +2121,9 @@ int ext4_file_set_atime(const char *path, uint32_t atime)
 	if (!mp)
 		return ENOENT;
 
+	if (mp->fs.read_only)
+		return EROFS;
+
 	EXT4_MP_LOCK(mp);
 	ext4_trans_start(mp);
 
@@ -2129,6 +2166,9 @@ int ext4_file_set_mtime(const char *path, uint32_t mtime)
 	if (!mp)
 		return ENOENT;
 
+	if (mp->fs.read_only)
+		return EROFS;
+
 	EXT4_MP_LOCK(mp);
 	ext4_trans_start(mp);
 
@@ -2170,6 +2210,9 @@ int ext4_file_set_ctime(const char *path, uint32_t ctime)
 
 	if (!mp)
 		return ENOENT;
+
+	if (mp->fs.read_only)
+		return EROFS;
 
 	EXT4_MP_LOCK(mp);
 	ext4_trans_start(mp);
@@ -2279,6 +2322,9 @@ int ext4_fsymlink(const char *target, const char *path)
 	if (!mp)
 		return ENOENT;
 
+	if (mp->fs.read_only)
+		return EROFS;
+
 	filetype = EXT4_DE_SYMLINK;
 
 	EXT4_MP_LOCK(mp);
@@ -2355,6 +2401,9 @@ int ext4_setxattr(const char *path, const char *name, size_t name_len,
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
 	if (!mp)
 		return ENOENT;
+
+	if (mp->fs.read_only)
+		return EROFS;
 
 	dissected_name = ext4_extract_xattr_name(name, name_len,
 				&name_index, &dissected_len);
@@ -2545,6 +2594,9 @@ int ext4_removexattr(const char *path, const char *name, size_t name_len)
 	if (!mp)
 		return ENOENT;
 
+	if (mp->fs.read_only)
+		return EROFS;
+
 	dissected_name = ext4_extract_xattr_name(name, name_len,
 						&name_index, &dissected_len);
 	if (!dissected_len)
@@ -2609,6 +2661,9 @@ int ext4_dir_rm(const char *path)
 
 	if (!mp)
 		return ENOENT;
+
+	if (mp->fs.read_only)
+		return EROFS;
 
 	EXT4_MP_LOCK(mp);
 
@@ -2837,6 +2892,9 @@ int ext4_dir_mk(const char *path)
 
 	if (!mp)
 		return ENOENT;
+
+	if (mp->fs.read_only)
+		return EROFS;
 
 	EXT4_MP_LOCK(mp);
 	ext4_trans_start(mp);

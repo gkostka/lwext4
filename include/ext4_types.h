@@ -303,6 +303,8 @@ struct ext4_sblock {
 #endif
 
 struct ext4_fs {
+	bool read_only;
+
 	struct ext4_blockdev *bdev;
 	struct ext4_sblock sb;
 

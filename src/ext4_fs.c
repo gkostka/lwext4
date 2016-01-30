@@ -55,12 +55,12 @@
 
 #include <string.h>
 
-int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev)
+int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev,
+		 bool read_only)
 {
 	int r, i;
 	uint16_t tmp;
 	uint32_t bsize;
-	bool read_only = false;
 
 	ext4_assert(fs && bdev);
 
@@ -82,7 +82,7 @@ int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev)
 		return r;
 
 	if (read_only)
-		return ENOTSUP;
+		fs->read_only = true;
 
 	/* Compute limits for indirect block levels */
 	uint32_t blocks_id = bsize / sizeof(uint32_t);
@@ -104,14 +104,16 @@ int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev)
 				"last umount error: superblock fs_error flag\n");
 
 
-	/* Mark system as mounted */
-	ext4_set16(&fs->sb, state, EXT4_SUPERBLOCK_STATE_ERROR_FS);
-	r = ext4_sb_write(fs->bdev, &fs->sb);
-	if (r != EOK)
-		return r;
+	if (!fs->read_only) {
+		/* Mark system as mounted */
+		ext4_set16(&fs->sb, state, EXT4_SUPERBLOCK_STATE_ERROR_FS);
+		r = ext4_sb_write(fs->bdev, &fs->sb);
+		if (r != EOK)
+			return r;
 
-	/*Update mount count*/
-	ext4_set16(&fs->sb, mount_count, ext4_get16(&fs->sb, mount_count) + 1);
+		/*Update mount count*/
+		ext4_set16(&fs->sb, mount_count, ext4_get16(&fs->sb, mount_count) + 1);
+	}
 
 	return r;
 }
@@ -123,7 +125,10 @@ int ext4_fs_fini(struct ext4_fs *fs)
 	/*Set superblock state*/
 	ext4_set16(&fs->sb, state, EXT4_SUPERBLOCK_STATE_VALID_FS);
 
-	return ext4_sb_write(fs->bdev, &fs->sb);
+	if (!fs->read_only)
+		return ext4_sb_write(fs->bdev, &fs->sb);
+
+	return EOK;
 }
 
 static void ext4_fs_debug_features_inc(uint32_t features_incompatible)

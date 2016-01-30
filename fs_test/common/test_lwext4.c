@@ -336,7 +336,7 @@ bool test_lwext4_mount(struct ext4_blockdev *bdev, struct ext4_bcache *bcache)
 		return false;
 	}
 
-	r = ext4_mount("ext4_fs", "/mp/");
+	r = ext4_mount("ext4_fs", "/mp/", false);
 	if (r != EOK) {
 		printf("ext4_mount: rc = %d\n", r);
 		return false;
