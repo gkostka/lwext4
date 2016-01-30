@@ -1645,9 +1645,6 @@ int ext4_fread(ext4_file *f, void *buf, size_t size, size_t *rcnt)
 
 	ext4_assert(f && f->mp);
 
-	if (f->mp->fs.read_only)
-		return EROFS;
-
 	if (f->flags & O_WRONLY)
 		return EPERM;
 
