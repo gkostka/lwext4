@@ -50,7 +50,7 @@ extern "C" {
 
 
 struct ext4_mkfs_info {
-	int64_t len;
+	uint64_t len;
 	uint32_t block_size;
 	uint32_t blocks_per_group;
 	uint32_t inodes_per_group;
