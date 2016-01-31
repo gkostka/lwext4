@@ -47,6 +47,7 @@ extern "C" {
 #endif
 
 #include "ext4_config.h"
+#include "ext4_types.h"
 
 #include <stdint.h>
 

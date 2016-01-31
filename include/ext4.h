@@ -46,9 +46,11 @@ extern "C" {
 #include <stddef.h>
 
 #include "ext4_config.h"
+#include "ext4_types.h"
 #include "ext4_errno.h"
 #include "ext4_oflags.h"
-#include "ext4_types.h"
+#include "ext4_debug.h"
+
 #include "ext4_blockdev.h"
 
 /********************************OS LOCK INFERFACE***************************/

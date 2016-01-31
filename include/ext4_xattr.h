@@ -43,6 +43,40 @@ extern "C" {
 
 #include "ext4_config.h"
 #include "ext4_types.h"
+#include "misc/tree.h"
+#include "misc/queue.h"
+
+struct ext4_xattr_item {
+	/* This attribute should be stored in inode body */
+	bool in_inode;
+
+	uint8_t name_index;
+	char  *name;
+	size_t name_len;
+	void  *data;
+	size_t data_size;
+
+	RB_ENTRY(ext4_xattr_item) node;
+};
+
+struct ext4_xattr_ref {
+	bool block_loaded;
+	struct ext4_block block;
+	struct ext4_inode_ref *inode_ref;
+	bool   dirty;
+	size_t ea_size;
+	struct ext4_fs *fs;
+
+	void *iter_arg;
+	struct ext4_xattr_item *iter_from;
+
+	RB_HEAD(ext4_xattr_tree,
+		ext4_xattr_item) root;
+};
+
+#define EXT4_XATTR_ITERATE_CONT 0
+#define EXT4_XATTR_ITERATE_STOP 1
+#define EXT4_XATTR_ITERATE_PAUSE 2
 
 int ext4_fs_get_xattr_ref(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 			  struct ext4_xattr_ref *ref);

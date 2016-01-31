@@ -43,11 +43,12 @@ extern "C" {
 
 #include "ext4_config.h"
 #include "ext4_types.h"
+
 #include "ext4_blockdev.h"
+#include "ext4_fs.h"
 
 #include <stdbool.h>
 #include <stdint.h>
-
 
 struct ext4_mkfs_info {
 	uint64_t len;
@@ -65,6 +66,7 @@ struct ext4_mkfs_info {
 	uint8_t journal;
 	const char *label;
 };
+
 
 int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info);
 

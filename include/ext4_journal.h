@@ -43,6 +43,74 @@ extern "C" {
 
 #include "ext4_config.h"
 #include "ext4_types.h"
+#include "misc/queue.h"
+#include "misc/tree.h"
+
+struct jbd_fs {
+	/* If journal block device is used, bdev will be non-null */
+	struct ext4_blockdev *bdev;
+	struct ext4_inode_ref inode_ref;
+	struct jbd_sb sb;
+
+	bool dirty;
+};
+
+struct jbd_buf {
+	uint64_t jbd_lba;
+	struct ext4_block block;
+	struct jbd_trans *trans;
+	struct jbd_block_rec *block_rec;
+	TAILQ_ENTRY(jbd_buf) buf_node;
+	TAILQ_ENTRY(jbd_buf) dirty_buf_node;
+};
+
+struct jbd_revoke_rec {
+	ext4_fsblk_t lba;
+	LIST_ENTRY(jbd_revoke_rec) revoke_node;
+};
+
+struct jbd_block_rec {
+	ext4_fsblk_t lba;
+	struct ext4_buf *buf;
+	struct jbd_trans *trans;
+	RB_ENTRY(jbd_block_rec) block_rec_node;
+	LIST_ENTRY(jbd_block_rec) tbrec_node;
+	TAILQ_HEAD(jbd_buf_dirty, jbd_buf) dirty_buf_queue;
+};
+
+struct jbd_trans {
+	uint32_t trans_id;
+
+	uint32_t start_iblock;
+	int alloc_blocks;
+	int data_cnt;
+	uint32_t data_csum;
+	int written_cnt;
+	int error;
+
+	struct jbd_journal *journal;
+
+	TAILQ_HEAD(jbd_trans_buf, jbd_buf) buf_queue;
+	LIST_HEAD(jbd_revoke_list, jbd_revoke_rec) revoke_list;
+	LIST_HEAD(jbd_trans_block_rec, jbd_block_rec) tbrec_list;
+	TAILQ_ENTRY(jbd_trans) trans_node;
+};
+
+struct jbd_journal {
+	uint32_t first;
+	uint32_t start;
+	uint32_t last;
+	uint32_t trans_id;
+	uint32_t alloc_trans_id;
+
+	uint32_t block_size;
+
+	TAILQ_HEAD(jbd_trans_queue, jbd_trans) trans_queue;
+	TAILQ_HEAD(jbd_cp_queue, jbd_trans) cp_queue;
+	RB_HEAD(jbd_block, jbd_block_rec) block_rec_root;
+
+	struct jbd_fs *jbd_fs;
+};
 
 int jbd_get_fs(struct ext4_fs *fs,
 	       struct jbd_fs *jbd_fs);

@@ -49,6 +49,9 @@ extern "C" {
 #include "ext4_config.h"
 #include "ext4_types.h"
 
+#include "ext4_fs.h"
+#include "ext4_dir.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 

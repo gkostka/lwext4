@@ -42,8 +42,6 @@ extern "C" {
 
 #include "ext4_config.h"
 #include "ext4_bcache.h"
-#include "ext4_trans.h"
-#include "ext4_debug.h"
 
 #include <stdbool.h>
 #include <stdint.h>

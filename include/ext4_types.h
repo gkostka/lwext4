@@ -53,6 +53,13 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
+/*
+ * Types of blocks.
+ */
+typedef uint32_t ext4_lblk_t;
+typedef uint64_t ext4_fsblk_t;
+
+
 #define EXT4_CHECKSUM_CRC32C 1
 
 #define UUID_SIZE 16
@@ -302,21 +309,6 @@ struct ext4_sblock {
                      EXT4_FRO_COM_QUOTA)
 #endif
 
-struct ext4_fs {
-	bool read_only;
-
-	struct ext4_blockdev *bdev;
-	struct ext4_sblock sb;
-
-	uint64_t inode_block_limits[4];
-	uint64_t inode_blocks_per_level[4];
-
-	uint32_t last_inode_bg_id;
-
-	struct jbd_fs *jbd_fs;
-	struct jbd_journal *jbd_journal;
-	struct jbd_trans *curr_trans;
-};
 
 /* Inode table/bitmap not in use */
 #define EXT4_BLOCK_GROUP_INODE_UNINIT 0x0001
@@ -355,13 +347,6 @@ struct ext4_bgroup {
 	uint32_t reserved;	     /* Padding */
 };
 
-struct ext4_block_group_ref {
-	struct ext4_block block;
-	struct ext4_bgroup *block_group;
-	struct ext4_fs *fs;
-	uint32_t index;
-	bool dirty;
-};
 
 #define EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE 32
 #define EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE 64
@@ -699,29 +684,6 @@ struct ext4_extent_header {
 #pragma pack(pop)
 
 
-/*
- * Types of blocks.
- */
-typedef uint32_t ext4_lblk_t;
-typedef uint64_t ext4_fsblk_t;
-
-/*
- * Array of ext4_ext_path contains path to some extent.
- * Creation/lookup routines use it for traversal/splitting/etc.
- * Truncate uses it to simulate recursive walking.
- */
-struct ext4_extent_path {
-	ext4_fsblk_t p_block;
-	struct ext4_block block;
-	int32_t depth;
-	int32_t maxdepth;
-	struct ext4_extent_header *header;
-	struct ext4_extent_index *index;
-	struct ext4_extent *extent;
-
-};
-
-
 #define EXT4_EXTENT_MAGIC 0xF30A
 
 #define EXT4_EXTENT_FIRST(header)                                              \
@@ -800,12 +762,6 @@ struct ext4_extent_path {
 
 #define EXT2_HTREE_EOF 0x7FFFFFFFUL
 
-struct ext4_hash_info {
-	uint32_t hash;
-	uint32_t minor_hash;
-	uint32_t hash_version;
-	const uint32_t *seed;
-};
 
 /* Extended Attribute(EA) */
 
@@ -852,38 +808,6 @@ struct ext4_xattr_entry {
 };
 
 #pragma pack(pop)
-
-struct ext4_xattr_item {
-	/* This attribute should be stored in inode body */
-	bool in_inode;
-
-	uint8_t name_index;
-	char  *name;
-	size_t name_len;
-	void  *data;
-	size_t data_size;
-
-	RB_ENTRY(ext4_xattr_item) node;
-};
-
-struct ext4_xattr_ref {
-	bool block_loaded;
-	struct ext4_block block;
-	struct ext4_inode_ref *inode_ref;
-	bool   dirty;
-	size_t ea_size;
-	struct ext4_fs *fs;
-
-	void *iter_arg;
-	struct ext4_xattr_item *iter_from;
-
-	RB_HEAD(ext4_xattr_tree,
-		ext4_xattr_item) root;
-};
-
-#define EXT4_XATTR_ITERATE_CONT 0
-#define EXT4_XATTR_ITERATE_STOP 1
-#define EXT4_XATTR_ITERATE_PAUSE 2
 
 #define EXT4_GOOD_OLD_INODE_SIZE	128
 
@@ -1129,171 +1053,11 @@ struct jbd_sb {
 					 JBD_FEATURE_INCOMPAT_CSUM_V2|\
 					 JBD_FEATURE_INCOMPAT_CSUM_V3)
 
-struct jbd_fs {
-	/* If journal block device is used, bdev will be non-null */
-	struct ext4_blockdev *bdev;
-	struct ext4_inode_ref inode_ref;
-	struct jbd_sb sb;
-
-	bool dirty;
-};
-
-struct jbd_buf {
-	uint64_t jbd_lba;
-	struct ext4_block block;
-	struct jbd_trans *trans;
-	struct jbd_block_rec *block_rec;
-	TAILQ_ENTRY(jbd_buf) buf_node;
-	TAILQ_ENTRY(jbd_buf) dirty_buf_node;
-};
-
-struct jbd_revoke_rec {
-	ext4_fsblk_t lba;
-	LIST_ENTRY(jbd_revoke_rec) revoke_node;
-};
-
-struct jbd_block_rec {
-	ext4_fsblk_t lba;
-	struct ext4_buf *buf;
-	struct jbd_trans *trans;
-	RB_ENTRY(jbd_block_rec) block_rec_node;
-	LIST_ENTRY(jbd_block_rec) tbrec_node;
-	TAILQ_HEAD(jbd_buf_dirty, jbd_buf) dirty_buf_queue;
-};
-
-struct jbd_trans {
-	uint32_t trans_id;
-
-	uint32_t start_iblock;
-	int alloc_blocks;
-	int data_cnt;
-	uint32_t data_csum;
-	int written_cnt;
-	int error;
-
-	struct jbd_journal *journal;
-
-	TAILQ_HEAD(jbd_trans_buf, jbd_buf) buf_queue;
-	LIST_HEAD(jbd_revoke_list, jbd_revoke_rec) revoke_list;
-	LIST_HEAD(jbd_trans_block_rec, jbd_block_rec) tbrec_list;
-	TAILQ_ENTRY(jbd_trans) trans_node;
-};
-
-struct jbd_journal {
-	uint32_t first;
-	uint32_t start;
-	uint32_t last;
-	uint32_t trans_id;
-	uint32_t alloc_trans_id;
-
-	uint32_t block_size;
-
-	TAILQ_HEAD(jbd_trans_queue, jbd_trans) trans_queue;
-	TAILQ_HEAD(jbd_cp_queue, jbd_trans) cp_queue;
-	RB_HEAD(jbd_block, jbd_block_rec) block_rec_root;
-
-	struct jbd_fs *jbd_fs;
-};
-
 /*****************************************************************************/
 
 #define EXT4_CRC32_INIT (0xFFFFFFFFUL)
 
 /*****************************************************************************/
-
-static inline uint64_t reorder64(uint64_t n)
-{
-	return  ((n & 0xff) << 56) |
-		((n & 0xff00) << 40) |
-		((n & 0xff0000) << 24) |
-		((n & 0xff000000LL) << 8) |
-		((n & 0xff00000000LL) >> 8) |
-		((n & 0xff0000000000LL) >> 24) |
-		((n & 0xff000000000000LL) >> 40) |
-		((n & 0xff00000000000000LL) >> 56);
-}
-
-static inline uint32_t reorder32(uint32_t n)
-{
-	return  ((n & 0xff) << 24) |
-		((n & 0xff00) << 8) |
-		((n & 0xff0000) >> 8) |
-		((n & 0xff000000) >> 24);
-}
-
-static inline uint16_t reorder16(uint16_t n)
-{
-	return  ((n & 0xff) << 8) |
-		((n & 0xff00) >> 8);
-}
-
-#ifdef CONFIG_BIG_ENDIAN
-#define to_le64(_n) reorder64(_n)
-#define to_le32(_n) reorder32(_n)
-#define to_le16(_n) reorder16(_n)
-
-#define to_be64(_n) _n
-#define to_be32(_n) _n
-#define to_be16(_n) _n
-
-#else
-#define to_le64(_n) _n
-#define to_le32(_n) _n
-#define to_le16(_n) _n
-
-#define to_be64(_n) reorder64(_n)
-#define to_be32(_n) reorder32(_n)
-#define to_be16(_n) reorder16(_n)
-#endif
-
-/****************************Access macros to ext4 structures*****************/
-
-#define ext4_get32(s, f) to_le32((s)->f)
-#define ext4_get16(s, f) to_le16((s)->f)
-#define ext4_get8(s, f) (s)->f
-
-#define ext4_set32(s, f, v)                                                    \
-	do {                                                                   \
-		(s)->f = to_le32(v);                                           \
-	} while (0)
-#define ext4_set16(s, f, v)                                                    \
-	do {                                                                   \
-		(s)->f = to_le16(v);                                           \
-	} while (0)
-#define ext4_set8                                                              \
-	(s, f, v) do { (s)->f = (v); }                                         \
-	while (0)
-
-/****************************Access macros to jbd2 structures*****************/
-
-#define jbd_get32(s, f) to_be32((s)->f)
-#define jbd_get16(s, f) to_be16((s)->f)
-#define jbd_get8(s, f) (s)->f
-
-#define jbd_set32(s, f, v)                                                    \
-	do {                                                                   \
-		(s)->f = to_be32(v);                                           \
-	} while (0)
-#define jbd_set16(s, f, v)                                                    \
-	do {                                                                   \
-		(s)->f = to_be16(v);                                           \
-	} while (0)
-#define jbd_set8                                                              \
-	(s, f, v) do { (s)->f = (v); }                                         \
-	while (0)
-
-#ifdef __GNUC__
- #ifndef __unused
- #define __unused __attribute__ ((__unused__))
- #endif
-#else
- #define __unused
-#endif
-
-#ifndef offsetof
-#define offsetof(type, field) 		\
-	((size_t)(&(((type *)0)->field)))
-#endif
 
 #ifdef __cplusplus
 }

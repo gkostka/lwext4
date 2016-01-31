@@ -48,9 +48,35 @@ extern "C" {
 
 #include "ext4_config.h"
 #include "ext4_types.h"
+#include "ext4_misc.h"
 
 #include <stdint.h>
 #include <stdbool.h>
+
+struct ext4_fs {
+	bool read_only;
+
+	struct ext4_blockdev *bdev;
+	struct ext4_sblock sb;
+
+	uint64_t inode_block_limits[4];
+	uint64_t inode_blocks_per_level[4];
+
+	uint32_t last_inode_bg_id;
+
+	struct jbd_fs *jbd_fs;
+	struct jbd_journal *jbd_journal;
+	struct jbd_trans *curr_trans;
+};
+
+struct ext4_block_group_ref {
+	struct ext4_block block;
+	struct ext4_bgroup *block_group;
+	struct ext4_fs *fs;
+	uint32_t index;
+	bool dirty;
+};
+
 
 /**@brief Convert block address to relative index in block group.
  * @param sb Superblock pointer

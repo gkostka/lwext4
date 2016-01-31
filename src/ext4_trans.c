@@ -37,6 +37,11 @@
 
 #include "ext4_config.h"
 #include "ext4_types.h"
+#include "ext4_misc.h"
+#include "ext4_errno.h"
+#include "ext4_debug.h"
+
+#include "ext4_fs.h"
 #include "ext4_journal.h"
 
 static int ext4_trans_get_write_access(struct ext4_fs *fs __unused,

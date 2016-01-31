@@ -50,6 +50,23 @@ extern "C" {
 #include "ext4_inode.h"
 
 
+/*
+ * Array of ext4_ext_path contains path to some extent.
+ * Creation/lookup routines use it for traversal/splitting/etc.
+ * Truncate uses it to simulate recursive walking.
+ */
+struct ext4_extent_path {
+	ext4_fsblk_t p_block;
+	struct ext4_block block;
+	int32_t depth;
+	int32_t maxdepth;
+	struct ext4_extent_header *header;
+	struct ext4_extent_index *index;
+	struct ext4_extent *extent;
+
+};
+
+
 /**@brief Get logical number of the block covered by extent.
  * @param extent Extent to load number from
  * @return Logical number of the first block covered by extent */
