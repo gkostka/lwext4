@@ -44,6 +44,11 @@ extern "C" {
 
 #include <stdint.h>
 
+/**************************************************************/
+
+#define EXT4_DIV_ROUND_UP(x, y) (((x) + (y) - 1)/(y))
+#define EXT4_ALIGN(x, y) ((y) * EXT4_DIV_ROUND_UP((x), (y)))
+
 /****************************Endian conversion*****************/
 
 static inline uint64_t reorder64(uint64_t n)

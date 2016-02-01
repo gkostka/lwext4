@@ -53,9 +53,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define DIV_ROUND_UP(x, y) (((x) + (y) - 1)/(y))
-#define EXT4_ALIGN(x, y) ((y) * DIV_ROUND_UP((x), (y)))
-
 struct fs_aux_info {
 	struct ext4_sblock *sb;
 	struct ext4_bgroup *bg_desc;
@@ -109,14 +106,14 @@ static uint32_t compute_blocks_per_group(struct ext4_mkfs_info *info)
 
 static uint32_t compute_inodes(struct ext4_mkfs_info *info)
 {
-	return (uint32_t)DIV_ROUND_UP(info->len, info->block_size) / 4;
+	return (uint32_t)EXT4_DIV_ROUND_UP(info->len, info->block_size) / 4;
 }
 
 static uint32_t compute_inodes_per_group(struct ext4_mkfs_info *info)
 {
-	uint32_t blocks = (uint32_t)DIV_ROUND_UP(info->len, info->block_size);
-	uint32_t block_groups = DIV_ROUND_UP(blocks, info->blocks_per_group);
-	uint32_t inodes = DIV_ROUND_UP(info->inodes, block_groups);
+	uint32_t blocks = (uint32_t)EXT4_DIV_ROUND_UP(info->len, info->block_size);
+	uint32_t block_groups = EXT4_DIV_ROUND_UP(blocks, info->blocks_per_group);
+	uint32_t inodes = EXT4_DIV_ROUND_UP(info->inodes, block_groups);
 	inodes = EXT4_ALIGN(inodes, (info->block_size / info->inode_size));
 
 	/* After properly rounding up the number of inodes/group,
@@ -130,7 +127,7 @@ static uint32_t compute_inodes_per_group(struct ext4_mkfs_info *info)
 
 static uint32_t compute_journal_blocks(struct ext4_mkfs_info *info)
 {
-	uint32_t journal_blocks = (uint32_t)DIV_ROUND_UP(info->len,
+	uint32_t journal_blocks = (uint32_t)EXT4_DIV_ROUND_UP(info->len,
 						 info->block_size) / 64;
 	if (journal_blocks < 1024)
 		journal_blocks = 1024;
@@ -152,9 +149,9 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 {
 	aux_info->first_data_block = (info->block_size > 1024) ? 0 : 1;
 	aux_info->len_blocks = info->len / info->block_size;
-	aux_info->inode_table_blocks = DIV_ROUND_UP(info->inodes_per_group *
+	aux_info->inode_table_blocks = EXT4_DIV_ROUND_UP(info->inodes_per_group *
 			info->inode_size, info->block_size);
-	aux_info->groups = (uint32_t)DIV_ROUND_UP(aux_info->len_blocks -
+	aux_info->groups = (uint32_t)EXT4_DIV_ROUND_UP(aux_info->len_blocks -
 			aux_info->first_data_block, info->blocks_per_group);
 	aux_info->blocks_per_ind = info->block_size / sizeof(uint32_t);
 	aux_info->blocks_per_dind =
@@ -163,7 +160,7 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 			aux_info->blocks_per_dind * aux_info->blocks_per_dind;
 
 	aux_info->bg_desc_blocks =
-		DIV_ROUND_UP(aux_info->groups * info->dsc_size,
+		EXT4_DIV_ROUND_UP(aux_info->groups * info->dsc_size,
 			info->block_size);
 
 	aux_info->default_i_flags = EXT4_INODE_FLAG_NOATIME;
