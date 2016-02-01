@@ -55,7 +55,14 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+struct ext4_dir_idx_block {
+	struct ext4_block b;
+	struct ext4_dir_idx_entry *entries;
+	struct ext4_dir_idx_entry *position;
+};
+
 #define EXT4_DIR_DX_INIT_BCNT 2
+
 
 /**@brief Initialize index structure of new directory.
  * @param dir Pointer to directory i-node

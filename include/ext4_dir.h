@@ -54,6 +54,19 @@ extern "C" {
 
 #include <stdint.h>
 
+struct ext4_dir_iter {
+	struct ext4_inode_ref *inode_ref;
+	struct ext4_block curr_blk;
+	uint64_t curr_off;
+	struct ext4_dir_en *curr;
+};
+
+struct ext4_dir_search_result {
+	struct ext4_block block;
+	struct ext4_dir_en *dentry;
+};
+
+
 /**@brief Get i-node number from directory entry.
  * @param de Directory entry
  * @return I-node number

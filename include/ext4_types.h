@@ -464,13 +464,6 @@ struct ext4_inode {
 
 #define EXT4_INODE_ROOT_INDEX 2
 
-struct ext4_inode_ref {
-	struct ext4_block block;
-	struct ext4_inode *inode;
-	struct ext4_fs *fs;
-	uint32_t index;
-	bool dirty;
-};
 
 #define EXT4_DIRECTORY_FILENAME_LEN 255
 
@@ -504,18 +497,6 @@ struct ext4_dir_en {
 	union ext4_dir_en_internal in;
 
 	uint8_t name[EXT4_DIRECTORY_FILENAME_LEN]; /* Entry name */
-};
-
-struct ext4_dir_iter {
-	struct ext4_inode_ref *inode_ref;
-	struct ext4_block curr_blk;
-	uint64_t curr_off;
-	struct ext4_dir_en *curr;
-};
-
-struct ext4_dir_search_result {
-	struct ext4_block block;
-	struct ext4_dir_en *dentry;
 };
 
 /* Structures for indexed directory */
@@ -562,12 +543,6 @@ struct ext4_fake_dir_entry {
 struct ext4_dir_idx_node {
 	struct ext4_fake_dir_entry fake;
 	struct ext4_dir_idx_entry entries[];
-};
-
-struct ext4_dir_idx_block {
-	struct ext4_block b;
-	struct ext4_dir_idx_entry *entries;
-	struct ext4_dir_idx_entry *position;
 };
 
 /*

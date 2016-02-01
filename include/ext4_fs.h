@@ -77,6 +77,14 @@ struct ext4_block_group_ref {
 	bool dirty;
 };
 
+struct ext4_inode_ref {
+	struct ext4_block block;
+	struct ext4_inode *inode;
+	struct ext4_fs *fs;
+	uint32_t index;
+	bool dirty;
+};
+
 
 /**@brief Convert block address to relative index in block group.
  * @param sb Superblock pointer
