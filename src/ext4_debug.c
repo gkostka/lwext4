@@ -41,7 +41,6 @@
 #include "ext4_debug.h"
 
 #include <stdarg.h>
-#include <stdio.h>
 
 static uint32_t debug_mask;
 

@@ -49,7 +49,6 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include <stdio.h>
 #include <inttypes.h>
 
 #ifndef PRIu64
@@ -143,6 +142,8 @@ void ext4_dmask_clr(uint32_t m);
 uint32_t ext4_dmask_get(void);
 
 #if CONFIG_DEBUG_PRINTF
+#include <stdio.h>
+
 /**@brief   Debug printf.*/
 #define ext4_dbg(m, ...)                                                       \
 	do {                                                                   \
@@ -162,6 +163,8 @@ uint32_t ext4_dmask_get(void);
 #if CONFIG_DEBUG_ASSERT
 /**@brief   Debug assertion.*/
 #if CONFIG_HAVE_OWN_ASSERT
+#include <stdio.h>
+
 #define ext4_assert(_v)                                                        \
 	do {                                                                   \
 		if (!(_v)) {                                                   \
