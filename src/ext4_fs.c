@@ -293,12 +293,13 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 	struct ext4_bgroup *bg = bg_ref->block_group;
 	int rc;
 
-	uint32_t i, bit, bit_max;
+	uint32_t bit, bit_max;
 	uint32_t group_blocks;
 	uint16_t inode_size = ext4_get16(sb, inode_size);
 	uint32_t block_size = ext4_sb_get_block_size(sb);
 	uint32_t inodes_per_group = ext4_get32(sb, inodes_per_group);
 
+	ext4_fsblk_t i;
 	ext4_fsblk_t bmp_blk = ext4_bg_get_block_bitmap(bg, sb);
 	ext4_fsblk_t bmp_inode = ext4_bg_get_inode_bitmap(bg, sb);
 	ext4_fsblk_t inode_table = ext4_bg_get_inode_table_first_block(bg, sb);
@@ -1062,7 +1063,7 @@ finish:
  * @return Error code
  */
 static int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
-				uint32_t iblock)
+				ext4_lblk_t iblock)
 {
 	ext4_fsblk_t fblock;
 
@@ -1103,11 +1104,11 @@ static int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
 
 	/* Compute offsets for the topmost level */
 	uint32_t block_offset_in_level =
-	    iblock - fs->inode_block_limits[level - 1];
+		(uint32_t)(iblock - fs->inode_block_limits[level - 1]);
 	ext4_fsblk_t current_block =
 	    ext4_inode_get_indirect_block(inode, level - 1);
 	uint32_t offset_in_block =
-	    block_offset_in_level / fs->inode_blocks_per_level[level - 1];
+	    (uint32_t)(block_offset_in_level / fs->inode_blocks_per_level[level - 1]);
 
 	/*
 	 * Navigate through other levels, until we find the block number
@@ -1149,8 +1150,8 @@ static int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
 
 		/* Visit the next level */
 		block_offset_in_level %= fs->inode_blocks_per_level[level];
-		offset_in_block = block_offset_in_level /
-				  fs->inode_blocks_per_level[level - 1];
+		offset_in_block = (uint32_t)(block_offset_in_level /
+				  fs->inode_blocks_per_level[level - 1]);
 	}
 
 	fblock = current_block;
@@ -1318,7 +1319,7 @@ int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
 }
 
 static int ext4_fs_get_inode_dblk_idx_internal(struct ext4_inode_ref *inode_ref,
-				       uint64_t iblock, ext4_fsblk_t *fblock,
+				       ext4_lblk_t iblock, ext4_fsblk_t *fblock,
 				       bool extent_create,
 				       bool support_unwritten __unused)
 {
@@ -1376,9 +1377,9 @@ static int ext4_fs_get_inode_dblk_idx_internal(struct ext4_inode_ref *inode_ref,
 		return EIO;
 
 	/* Compute offsets for the topmost level */
-	uint32_t blk_off_in_lvl =  iblock - fs->inode_block_limits[l - 1];
+	uint32_t blk_off_in_lvl = (uint32_t)(iblock - fs->inode_block_limits[l - 1]);
 	current_block = ext4_inode_get_indirect_block(inode, l - 1);
-	uint32_t off_in_blk = blk_off_in_lvl / fs->inode_blocks_per_level[l - 1];
+	uint32_t off_in_blk = (uint32_t)(blk_off_in_lvl / fs->inode_blocks_per_level[l - 1]);
 
 	/* Sparse file */
 	if (current_block == 0) {
@@ -1423,7 +1424,7 @@ static int ext4_fs_get_inode_dblk_idx_internal(struct ext4_inode_ref *inode_ref,
 
 		/* Visit the next level */
 		blk_off_in_lvl %= fs->inode_blocks_per_level[l];
-		off_in_blk = blk_off_in_lvl / fs->inode_blocks_per_level[l - 1];
+		off_in_blk = (uint32_t)(blk_off_in_lvl / fs->inode_blocks_per_level[l - 1]);
 	}
 
 	*fblock = current_block;
@@ -1433,7 +1434,7 @@ static int ext4_fs_get_inode_dblk_idx_internal(struct ext4_inode_ref *inode_ref,
 
 
 int ext4_fs_get_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
-			       uint64_t iblock, ext4_fsblk_t *fblock,
+			       ext4_lblk_t iblock, ext4_fsblk_t *fblock,
 			       bool support_unwritten)
 {
 	return ext4_fs_get_inode_dblk_idx_internal(inode_ref, iblock, fblock,
@@ -1441,14 +1442,14 @@ int ext4_fs_get_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
 }
 
 int ext4_fs_init_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
-				uint64_t iblock, ext4_fsblk_t *fblock)
+				ext4_lblk_t iblock, ext4_fsblk_t *fblock)
 {
 	return ext4_fs_get_inode_dblk_idx_internal(inode_ref, iblock, fblock,
 						   true, true);
 }
 
 static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
-				       uint32_t iblock, ext4_fsblk_t fblock)
+				       ext4_lblk_t iblock, ext4_fsblk_t fblock)
 {
 	struct ext4_fs *fs = inode_ref->fs;
 
@@ -1486,10 +1487,10 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 	uint32_t block_size = ext4_sb_get_block_size(&fs->sb);
 
 	/* Compute offsets for the topmost level */
-	uint32_t blk_off_in_lvl =  iblock - fs->inode_block_limits[l - 1];
+	uint32_t blk_off_in_lvl = (uint32_t)(iblock - fs->inode_block_limits[l - 1]);
 	ext4_fsblk_t current_block =
 			ext4_inode_get_indirect_block(inode_ref->inode, l - 1);
-	uint32_t off_in_blk = blk_off_in_lvl / fs->inode_blocks_per_level[l - 1];
+	uint32_t off_in_blk = (uint32_t)(blk_off_in_lvl / fs->inode_blocks_per_level[l - 1]);
 
 	ext4_fsblk_t new_blk;
 
@@ -1606,7 +1607,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 
 		/* Visit the next level */
 		blk_off_in_lvl %= fs->inode_blocks_per_level[l];
-		off_in_blk = blk_off_in_lvl / fs->inode_blocks_per_level[l - 1];
+		off_in_blk = (uint32_t)(blk_off_in_lvl / fs->inode_blocks_per_level[l - 1]);
 	}
 
 	return EOK;
@@ -1614,7 +1615,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 
 
 int ext4_fs_append_inode_dblk(struct ext4_inode_ref *inode_ref,
-			      ext4_fsblk_t *fblock, uint32_t *iblock)
+			      ext4_fsblk_t *fblock, ext4_lblk_t *iblock)
 {
 #if CONFIG_EXTENT_ENABLE
 	/* Handle extents separately */

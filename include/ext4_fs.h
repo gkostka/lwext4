@@ -238,7 +238,7 @@ int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
  * @return Error code
  */
 int ext4_fs_get_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
-				 uint64_t iblock, ext4_fsblk_t *fblock,
+				 ext4_lblk_t iblock, ext4_fsblk_t *fblock,
 				 bool support_unwritten);
 
 /**@brief Initialize a part of unwritten range of the inode.
@@ -248,7 +248,7 @@ int ext4_fs_get_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
  * @return Error code
  */
 int ext4_fs_init_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
-				  uint64_t iblock, ext4_fsblk_t *fblock);
+				  ext4_lblk_t iblock, ext4_fsblk_t *fblock);
 
 /**@brief Append following logical block to the i-node.
  * @param inode_ref I-node to append block to
@@ -257,7 +257,7 @@ int ext4_fs_init_inode_dblk_idx(struct ext4_inode_ref *inode_ref,
  * @return Error code
  */
 int ext4_fs_append_inode_dblk(struct ext4_inode_ref *inode_ref,
-			      ext4_fsblk_t *fblock, uint32_t *iblock);
+			      ext4_fsblk_t *fblock, ext4_lblk_t *iblock);
 
 /**@brief   Increment inode link count.
  * @param   inode none handle

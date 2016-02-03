@@ -182,7 +182,7 @@ int ext4_block_flush_lba(struct ext4_blockdev *bdev, uint64_t lba);
  * @param   bdev block device descriptor
  * @param   lb_size logical block size (in bytes)
  * @return  standard error code*/
-void ext4_block_set_lb_size(struct ext4_blockdev *bdev, uint64_t lb_bsize);
+void ext4_block_set_lb_size(struct ext4_blockdev *bdev, uint32_t lb_bsize);
 
 /**@brief   Block get function (through cache, don't read).
  * @param   bdev block device descriptor
