@@ -1,5 +1,5 @@
 diff --git a/include/ext4_errno.h b/include/ext4_errno.h
-index edf89a9..60a3472 100644
+index edf89a9..a4408c7 100644
 --- a/include/ext4_errno.h
 +++ b/include/ext4_errno.h
 @@ -43,46 +43,74 @@ extern "C" {
@@ -62,47 +62,47 @@ index edf89a9..60a3472 100644
 +
 +#else /* CONFIG_HAVE_OWN_ERRNO */
 +
-+ #define LWEXT4_ERRNO(errno) (LWEXT4_##errno)
++ #define LWEXT4_ERRNO(errno) LWEXT4_##errno
 +
 + enum ext4_errno {
-+ 	LWEXT4_ERRNO(EOK) = 0
-+ 	LWEXT4_ERRNO(EPERM) = 1      /* Operation not permitted */
-+ 	LWEXT4_ERRNO(ENOENT) = 2     /* No such file or directory */
-+ 	LWEXT4_ERRNO(ESRCH) = 3      /* No such process */
-+ 	LWEXT4_ERRNO(EINTR) = 4      /* Interrupted system call */
-+ 	LWEXT4_ERRNO(EIO) = 5        /* I/O error */
-+ 	LWEXT4_ERRNO(ENXIO) = 6      /* No such device or address */
-+ 	LWEXT4_ERRNO(E2BIG) = 7      /* Argument list too long */
-+ 	LWEXT4_ERRNO(ENOEXEC) = 8    /* Exec format error */
-+ 	LWEXT4_ERRNO(EBADF) = 9      /* Bad file number */
-+ 	LWEXT4_ERRNO(ECHILD) = 10    /* No child processes */
-+ 	LWEXT4_ERRNO(EAGAIN) = 11    /* Try again */
-+ 	LWEXT4_ERRNO(ENOMEM) = 12    /* Out of memory */
-+ 	LWEXT4_ERRNO(EACCES) = 13    /* Permission denied */
-+ 	LWEXT4_ERRNO(EFAULT) = 14    /* Bad address */
-+ 	LWEXT4_ERRNO(ENOTBLK) = 15   /* Block device required */
-+ 	LWEXT4_ERRNO(EBUSY) = 16     /* Device or resource busy */
-+ 	LWEXT4_ERRNO(EEXIST) = 17    /* File exists */
-+ 	LWEXT4_ERRNO(EXDEV) = 18     /* Cross-device link */
-+ 	LWEXT4_ERRNO(ENODEV) = 19    /* No such device */
-+ 	LWEXT4_ERRNO(ENOTDIR) = 20   /* Not a directory */
-+ 	LWEXT4_ERRNO(EISDIR) = 21    /* Is a directory */
-+ 	LWEXT4_ERRNO(EINVAL) = 22    /* Invalid argument */
-+ 	LWEXT4_ERRNO(ENFILE) = 23    /* File table overflow */
-+ 	LWEXT4_ERRNO(EMFILE) = 24    /* Too many open files */
-+ 	LWEXT4_ERRNO(ENOTTY) = 25    /* Not a typewriter */
-+ 	LWEXT4_ERRNO(ETXTBSY) = 26   /* Text file busy */
-+ 	LWEXT4_ERRNO(EFBIG) = 27     /* File too large */
-+ 	LWEXT4_ERRNO(ENOSPC) = 28    /* No space left on device */
-+ 	LWEXT4_ERRNO(ESPIPE) = 29    /* Illegal seek */
-+ 	LWEXT4_ERRNO(EROFS) = 30     /* Read-only file system */
-+ 	LWEXT4_ERRNO(EMLINK) = 31    /* Too many links */
-+ 	LWEXT4_ERRNO(EPIPE) = 32     /* Broken pipe */
-+ 	LWEXT4_ERRNO(EDOM) = 33      /* Math argument out of domain of func */
-+ 	LWEXT4_ERRNO(ERANGE) = 34    /* Math result not representable */
-+ 	LWEXT4_ERRNO(ENOTEMPTY) = 39 /* Directory not empty */
-+ 	LWEXT4_ERRNO(ENODATA) = 61   /* No data available */
-+ 	LWEXT4_ERRNO(ENOTSUP) = 95   /* Not supported */
++ 	LWEXT4_ERRNO(EOK) = 0,
++ 	LWEXT4_ERRNO(EPERM) = 1,      /* Operation not permitted */
++ 	LWEXT4_ERRNO(ENOENT) = 2,     /* No such file or directory */
++ 	LWEXT4_ERRNO(ESRCH) = 3,      /* No such process */
++ 	LWEXT4_ERRNO(EINTR) = 4,      /* Interrupted system call */
++ 	LWEXT4_ERRNO(EIO) = 5,        /* I/O error */
++ 	LWEXT4_ERRNO(ENXIO) = 6,      /* No such device or address */
++ 	LWEXT4_ERRNO(E2BIG) = 7,      /* Argument list too long */
++ 	LWEXT4_ERRNO(ENOEXEC) = 8,    /* Exec format error */
++ 	LWEXT4_ERRNO(EBADF) = 9,      /* Bad file number */
++ 	LWEXT4_ERRNO(ECHILD) = 10,    /* No child processes */
++ 	LWEXT4_ERRNO(EAGAIN) = 11,    /* Try again */
++ 	LWEXT4_ERRNO(ENOMEM) = 12,    /* Out of memory */
++ 	LWEXT4_ERRNO(EACCES) = 13,    /* Permission denied */
++ 	LWEXT4_ERRNO(EFAULT) = 14,    /* Bad address */
++ 	LWEXT4_ERRNO(ENOTBLK) = 15,   /* Block device required */
++ 	LWEXT4_ERRNO(EBUSY) = 16,     /* Device or resource busy */
++ 	LWEXT4_ERRNO(EEXIST) = 17,    /* File exists */
++ 	LWEXT4_ERRNO(EXDEV) = 18,     /* Cross-device link */
++ 	LWEXT4_ERRNO(ENODEV) = 19,    /* No such device */
++ 	LWEXT4_ERRNO(ENOTDIR) = 20,   /* Not a directory */
++ 	LWEXT4_ERRNO(EISDIR) = 21,    /* Is a directory */
++ 	LWEXT4_ERRNO(EINVAL) = 22,    /* Invalid argument */
++ 	LWEXT4_ERRNO(ENFILE) = 23,    /* File table overflow */
++ 	LWEXT4_ERRNO(EMFILE) = 24,    /* Too many open files */
++ 	LWEXT4_ERRNO(ENOTTY) = 25,    /* Not a typewriter */
++ 	LWEXT4_ERRNO(ETXTBSY) = 26,   /* Text file busy */
++ 	LWEXT4_ERRNO(EFBIG) = 27,     /* File too large */
++ 	LWEXT4_ERRNO(ENOSPC) = 28,    /* No space left on device */
++ 	LWEXT4_ERRNO(ESPIPE) = 29,    /* Illegal seek */
++ 	LWEXT4_ERRNO(EROFS) = 30,     /* Read-only file system */
++ 	LWEXT4_ERRNO(EMLINK) = 31,    /* Too many links */
++ 	LWEXT4_ERRNO(EPIPE) = 32,     /* Broken pipe */
++ 	LWEXT4_ERRNO(EDOM) = 33,      /* Math argument out of domain of func */
++ 	LWEXT4_ERRNO(ERANGE) = 34,    /* Math result not representable */
++ 	LWEXT4_ERRNO(ENOTEMPTY) = 39, /* Directory not empty */
++ 	LWEXT4_ERRNO(ENODATA) = 61,   /* No data available */
++ 	LWEXT4_ERRNO(ENOTSUP) = 95    /* Not supported */
 + };
 +
 +#endif /* CONFIG_HAVE_OWN_ERRNO */

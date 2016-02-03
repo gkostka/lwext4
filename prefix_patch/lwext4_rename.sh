@@ -33,12 +33,12 @@ for errno in $(cat $USED_ERRNO_FILE);do
 	echo "For $errno"
 	for file in $(find . -name "*.c" | xargs -n 1);do
 		if [[ $(basename $file) != $EXT4_ERRNO_H ]];then
-			sed -i "s/\\<${errno}\\>/${MACRO_NAME}_ERRNO(${errno})/g" $file
+			sed -i "/${MACRO_NAME}_ERRNO(${errno})/b;s/\\<${errno}\\>/${MACRO_NAME}_ERRNO(${errno})/g" $file
 		fi
 	done
 	for file in $(find . -name "*.h" | xargs -n 1);do
 		if [[ $(basename $file) != $EXT4_ERRNO_H ]];then
-			sed -i "s/\\<${errno}\\>/${MACRO_NAME}_ERRNO(${errno})/g" $file
+			sed -i "/${MACRO_NAME}_ERRNO(${errno})/b;s/\\<${errno}\\>/${MACRO_NAME}_ERRNO(${errno})/g" $file
 		fi
 	done
 done
@@ -48,13 +48,13 @@ for oflags in $(cat $USED_OFLAGS_FILE);do
 	for file in $(find . -name "*.c" | xargs -n 1);do
 		if [[ $(dirname $file) != "./blockdev/"* &&  \
 		      $(basename $file) != $EXT4_OFLAGS_H ]];then
-		sed -i "s/\\<${oflags}\\>/${MACRO_NAME}_FLAGS(${oflags})/g" $file
+		sed -i "/${MACRO_NAME}_FLAGS(${oflags})/b;s/\\<${oflags}\\>/${MACRO_NAME}_FLAGS(${oflags})/g" $file
 		fi
 	done
 	for file in $(find . -name "*.h" | xargs -n 1);do
 		if [[ $(dirname $file) != "./blockdev/"* &&  \
 		      $(basename $file) != $EXT4_OFLAGS_H ]];then
-		sed -i "s/\\<${oflags}\\>/${MACRO_NAME}_FLAGS(${oflags})/g" $file
+		sed -i "/${MACRO_NAME}_FLAGS(${oflags})/b;s/\\<${oflags}\\>/${MACRO_NAME}_FLAGS(${oflags})/g" $file
 		fi
 	done
 done

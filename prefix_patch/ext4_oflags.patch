@@ -1,5 +1,5 @@
 diff --git a/include/ext4_oflags.h b/include/ext4_oflags.h
-index 7f7be7e..e99d1af 100644
+index 7f7be7e..87f42ef 100644
 --- a/include/ext4_oflags.h
 +++ b/include/ext4_oflags.h
 @@ -45,51 +45,33 @@ extern "C" {
@@ -33,15 +33,15 @@ index 7f7be7e..e99d1af 100644
 - #ifndef O_APPEND
 - #define O_APPEND 02000
 - #endif
-+ #define LWEXT4_FLAGS(flags) (LWEXT4_##flags)
++ #define LWEXT4_FLAGS(flags) LWEXT4_##flags
 +
 + enum ext4_oflags {
-+ 	LWEXT4_FLAGS(O_RDONLY) = 00
-+ 	LWEXT4_FLAGS(O_WRONLY) = 01
-+ 	LWEXT4_FLAGS(O_RDWR) = 02
-+ 	LWEXT4_FLAGS(O_CREAT) = 0100
-+ 	LWEXT4_FLAGS(O_EXCL) = 0200
-+ 	LWEXT4_FLAGS(O_TRUNC) = 01000
++ 	LWEXT4_FLAGS(O_RDONLY) = 00,
++ 	LWEXT4_FLAGS(O_WRONLY) = 01,
++ 	LWEXT4_FLAGS(O_RDWR) = 02,
++ 	LWEXT4_FLAGS(O_CREAT) = 0100,
++ 	LWEXT4_FLAGS(O_EXCL) = 0200,
++ 	LWEXT4_FLAGS(O_TRUNC) = 01000,
 + 	LWEXT4_FLAGS(O_APPEND) = 02000
 + };
  
@@ -59,8 +59,8 @@ index 7f7be7e..e99d1af 100644
 - #define SEEK_END 2
 - #endif
 + enum ext4_seek_flags {
-+ 	LWEXT4_FLAGS(SEEK_SET) = 0
-+ 	LWEXT4_FLAGS(SEEK_CUR) = 1
++ 	LWEXT4_FLAGS(SEEK_SET) = 0,
++ 	LWEXT4_FLAGS(SEEK_CUR) = 1,
 + 	LWEXT4_FLAGS(SEEK_END) = 2
 + };
  
