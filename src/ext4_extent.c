@@ -1424,12 +1424,15 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 
 	eh->entries_count = to_le16(new_entries);
 	ext4_ext_dirty(inode_ref, path + depth);
-	if (path[depth].extent == EXT_FIRST_EXTENT(eh) && eh->entries_count)
+	if (path[depth].extent == EXT_FIRST_EXTENT(eh) && eh->entries_count) {
 		err = ext4_ext_correct_indexes(inode_ref, path);
+		if (err != EOK)
+			return err;
+	}
 
 	/* if this leaf is free, then we should
 	 * remove it from index block above */
-	if (err == EOK && eh->entries_count == 0 && path[depth].block.lb_id)
+	if (eh->entries_count == 0 && path[depth].block.lb_id)
 		err = ext4_ext_remove_idx(inode_ref, path, depth - 1);
 	else if (depth > 0)
 		path[depth - 1].index++;
