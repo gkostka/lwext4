@@ -7,8 +7,8 @@ ifneq ($(shell test -d .git), 0)
 GIT_SHORT_HASH:= $(shell git rev-parse --short HEAD)
 endif
 
-VERSION_MAJOR = 0
-VERSION_MINOR = 8
+VERSION_MAJOR = 1
+VERSION_MINOR = 0
 VERSION_PATCH = 0
 
 VERSION = $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)-$(GIT_SHORT_HASH)
