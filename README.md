@@ -63,45 +63,20 @@ should not allocate more than CONFIG_BLOCK_DEV CACHE_SIZE.
 
 Supported ext2/3/4 features
 =====
-Features incompatible:
+incompatible:
 ------------
-*  compression: no
-*  filetype: yes
-*  recover: no
-*  journal_dev: no
-*  meta_bg: yes
-*  extents: yes
-*  64bit: yes
-*  mmp: no
-*  flex_bg: yes
-*  ea_inode: no
-*  dirdata: no
-*  bg_meta_csum: no
-*  largedir: no
-*  inline_data: no
+*  filetype, recover, meta_bg, extents, 64bit, flex_bg: **yes**
+*  compression, journal_dev, mmp, ea_inode, dirdata, bg_meta_csum, largedir, inline_data: **no**
 
-Features compatible:
+compatible:
 ------------
-*  dir_prealloc: no
-*  imagic_inodes: no
-*  has_journal: yes (in progress)
-*  ext_attr: yes
-*  resize_inode: no
-*  dir_index: yes
+*  has_journal, ext_attr, dir_index: **yes**
+*  dir_prealloc, imagic_inodes, resize_inode: **no**
 
-Features read-only:
+read-only:
 ------------
-*  sparse_super: yes
-*  large_file: yes
-*  btree_dir: yes
-*  huge_file: yes
-*  gdt_csum: yes
-*  dir_nlink: yes
-*  extra_isize: yes
-*  quota: no
-*  bigalloc: no
-*  metadata_csum: yes
-
+*  sparse_super, large_file, huge_file, gdt_csum, dir_nlink, extra_isize, metadata_csum: **yes**
+*  quota, bigalloc, btree_dir: **no**
 
 Project tree
 =====
