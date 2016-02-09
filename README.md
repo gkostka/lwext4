@@ -5,12 +5,12 @@
 About
 =====
 
-The main goal of the lwext4 project is to provide ext2/3/4 filesystem for microcontrollers. It may be an interesting alternative for traditional MCU filesystem libraries (mostly based on FAT32).
+The main goal of the lwext4 project is to provide ext2/3/4 filesystem for microcontrollers. It may be an interesting alternative for traditional MCU filesystem libraries (mostly based on FAT32). Library has some cool and unique features in microcontrollers world:
+ - directory indexing - fast file find and list operations
+ - extents - fast big file truncate
+ - journaling transactions & recovery - power loss resistance
 
-Lwext4 may be used with SD/MMC card, USB flash drive or other block based memory device. However it is not good for flash memory–based storage devices.
-
-Code is also available on github:
-https://github.com/gkostka/lwext4
+Lwext4 is an excellent choice for SD/MMC card, USB flash drive or other block based memory device. However it is not good for flash memory–based storage devices.
 
 Feel free to contact me:
 kostka.grzegorz@gmail.com
@@ -20,16 +20,17 @@ Credits
 
 The most of the source code of lwext4 was taken from HelenOS:
 * http://helenos.org/
+
 Some features are based on FreeBSD and Linux implementations.
 
 KaHo Ng (https://github.com/ngkaho1234):
 * advanced extents implementation
 * xattr support
 * metadata checksum support
-* journal recovery
+* journal recovery & transactions
 * many bugfixes & improvements
 
-fuse-lwext4 project:
+Lwext4 could be used also as fuse internals. Here is a nice project which uses lwext4 as a filesystem base:
 * https://github.com/ngkaho1234/fuse-lwext4
 
 Features
@@ -43,13 +44,22 @@ Features
 * only C standard library dependency
 * various CPU architectures supported (x86/64, cortex-mX, msp430 ...)
 * small memory footprint
+* flexible configurations
 
-
-Memory footprint (for cortex-m4)
+Memory footprint
 ------------
-* .text:  20KB - 40KB 
-* .data:  8KB         (minimum 8 x 1KB  block cache)
-* .stack: 2KB
+
+Advanced ext4 filesystem features, like extents or journaling require some memory. 
+However most of the memory expensive features could be disabled at compile time.
+Here is a brief summary for cortex-m4 processor:
+
+* .text:  20KB - only ext2 fs support , 50KB - full ext4 fs feature set
+* .data:  8KB - minimum 8 x 1KB  block cache, 12KB - when journaling and extents are enabled
+* .stack: 2KB - is enough (not measured precisely)
+
+Blocks are allocated dynamically. Previous versions of library could work without
+malloc but from 1.0.0 dynamic memory allocation is required. However, block cache
+should not allocate more than CONFIG_BLOCK_DEV CACHE_SIZE.
 
 Supported ext2/3/4 features
 =====
@@ -97,13 +107,14 @@ Project tree
 =====
 *  blockdev         - block devices set, supported blockdev
 *  fs_test          - test suite, mkfs and demo application
-*  lwext4           - internals of the lwext4 library
-*  toolchain        - specific toolchain cmake files
+*  src              - source files
+*  include          - header files
+*  toolchain        - cmake toolchain files
 *  CMakeLists.txt   - CMake config file
 *  ext_images.7z    - compressed ext2/3/4 100MB images
 *  fs_test.mk       - automatic tests definitions
 *  Makefile         - helper makefile to generate cmake and run test suite
-*  readme.mediawiki - readme file
+*  README.md       - readme file
   
 Compile
 =====
@@ -195,11 +206,18 @@ Cross compile standalone library
 =====
 Toolchains needed:
 ------------
-* arm-none-eabi-gcc for cortex-mX
-* avr-gcc for avr
-* bfin-elf-gcc for bfin
-* msp430-gcc for msp430
 
+Lwext4 could be compiled for many targets. Here are an examples for 8/16/32/64 bit architectures.
+* generic for x86 or amd64
+* arm-none-eabi-gcc for ARM cortex-m0/m3/m4 microcontrollers
+* avr-gcc for AVR xmega microcontrollers
+* bfin-elf-gcc for blockfin processors 
+* msp430-gcc for msp430 microcontrollers
+
+Library has been tested only for generic (amd64) & ARM Cortex M architectures.
+For other targets compilation passes (with warnings somewhere) but tests are
+not done yet. Lwext4 code is written with endianes respect. Big endian
+behavior also hasn't been tested yet.
 
 Build bf518 library:
 ------------
