@@ -693,7 +693,7 @@ static int ext4_ext_split_node(struct ext4_inode_ref *inode_ref,
 		/* FIXME: currently we split at the point after the current extent. */
 		newblock = ext4_ext_new_meta_block(inode_ref, path,
 				newext, &ret, 0);
-		if (ret)
+		if (ret != EOK)
 			goto cleanup;
 
 		/*  For write access.*/
@@ -714,7 +714,7 @@ static int ext4_ext_split_node(struct ext4_inode_ref *inode_ref,
 				neh->entries_count = to_le16(to_le16(neh->entries_count) + m);
 				path[i].header->entries_count = to_le16(to_le16(path[i].header->entries_count) - m);
 				ret = ext4_ext_dirty(inode_ref, path + i);
-				if (ret)
+				if (ret != EOK)
 					goto cleanup;
 
 				npath[npath_at].p_block = ext4_ext_pblock(ex);
@@ -747,7 +747,7 @@ static int ext4_ext_split_node(struct ext4_inode_ref *inode_ref,
 				neh->entries_count = to_le16(to_le16(neh->entries_count) + m);
 				path[i].header->entries_count = to_le16(to_le16(path[i].header->entries_count) - m);
 				ret = ext4_ext_dirty(inode_ref, path + i);
-				if (ret)
+				if (ret != EOK)
 					goto cleanup;
 
 			}
@@ -780,7 +780,7 @@ static int ext4_ext_split_node(struct ext4_inode_ref *inode_ref,
 			*ins_right_leaf);
 
 cleanup:
-	if (ret) {
+	if (ret != EOK) {
 		if (newblock)
 			ext4_ext_free_blocks(inode_ref, newblock, 1, 0);
 
@@ -981,7 +981,7 @@ static int ext4_ext_insert_leaf(struct ext4_inode_ref *inode_ref,
 	}
 
 	err = ext4_ext_correct_indexes(inode_ref, path);
-	if (err)
+	if (err != EOK)
 		goto out;
 	err = ext4_ext_dirty(inode_ref, curp);
 
@@ -1099,11 +1099,11 @@ again:
 		/* Do we need to grow the tree? */
 		if (i < 0) {
 			ret = ext4_ext_grow_indepth(inode_ref, 0);
-			if (ret)
+			if (ret != EOK)
 				goto out;
 
 			ret = ext4_find_extent(inode_ref, to_le32(newext->first_block), ppath, 0);
-			if (ret)
+			if (ret != EOK)
 				goto out;
 
 			path = *ppath;
@@ -1126,7 +1126,7 @@ again:
 			ret = ext4_ext_split_node(inode_ref, path, i,
 						  newext, npath,
 						  &ins_right_leaf);
-			if (ret)
+			if (ret != EOK)
 				goto out;
 
 			while (--level >= 0) {
@@ -1144,7 +1144,7 @@ again:
 	}
 
 out:
-	if (ret) {
+	if (ret != EOK) {
 		if (path)
 			ext4_ext_drop_refs(inode_ref, path, 0);
 
@@ -1321,7 +1321,7 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 	int32_t i;
 
 	ret = ext4_find_extent(inode_ref, from, &path, 0);
-	if (ret)
+	if (ret != EOK)
 		goto out;
 
 	if (!path[depth].extent) {
@@ -1401,7 +1401,7 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 			ret = read_extent_tree_block(inode_ref,
 					ext4_idx_pblock(path[i].index),
 					depth - i - 1, &bh, 0);
-			if (ret)
+			if (ret != EOK)
 				goto out;
 
 			path[i].p_block =
