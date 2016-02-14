@@ -660,7 +660,7 @@ static int ext4_ext_insert_index(struct ext4_inode_ref *inode_ref,
 	err = ext4_ext_dirty(inode_ref, curp);
 
 out:
-	if (!err && set_to_ix) {
+	if (err == EOK && set_to_ix) {
 		curp->index = ix;
 		curp->p_block = ext4_idx_pblock(ix);
 	}
@@ -988,7 +988,7 @@ static int ext4_ext_insert_leaf(struct ext4_inode_ref *inode_ref,
 	err = ext4_ext_dirty(inode_ref, curp);
 
 out:
-	if (!err) {
+	if (err == EOK) {
 		curp->extent = ex;
 		curp->p_block = ext4_ext_pblock(ex);
 	}
@@ -1540,7 +1540,7 @@ static int ext4_ext_convert_to_initialized(struct ext4_inode_ref *inode_ref,
 		err = ext4_ext_split_extent_at(inode_ref, ppath, split + blocks,
 					       EXT4_EXT_MARK_UNWRIT1 |
 						   EXT4_EXT_MARK_UNWRIT2);
-		if (!err) {
+		if (err == EOK) {
 			err = ext4_ext_split_extent_at(inode_ref, ppath, split,
 						       EXT4_EXT_MARK_UNWRIT1);
 		}
