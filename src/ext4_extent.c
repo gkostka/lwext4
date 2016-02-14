@@ -1091,7 +1091,7 @@ int ext4_ext_insert_extent(struct ext4_inode_ref *inode_ref,
 			   struct ext4_extent_path **ppath,
 			   struct ext4_extent *newext, int flags)
 {
-	int depth, level, ret = 0;
+	int depth, level = 0, ret = 0;
 	struct ext4_extent_path *path = *ppath;
 	struct ext4_extent_path *npath = NULL;
 	bool ins_right_leaf = false;
