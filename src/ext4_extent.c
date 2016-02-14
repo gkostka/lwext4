@@ -901,18 +901,19 @@ static inline bool ext4_ext_can_append(struct ext4_extent *ex1, struct ext4_exte
 	return 1;
 }
 
-#define EXT_INODE_HDR_NEED_GROW 0x1
-
 static int ext4_ext_insert_leaf(struct ext4_inode_ref *inode_ref,
 				struct ext4_extent_path *path,
 				int at,
 				struct ext4_extent *newext,
-				int flags)
+				int flags,
+				bool *need_split)
 {
 	struct ext4_extent_path *curp = path + at;
 	struct ext4_extent *ex = curp->extent;
 	int len, err, unwritten;
 	struct ext4_extent_header *eh;
+
+	*need_split = false;
 
 	if (curp->extent && to_le32(newext->first_block) == to_le32(curp->extent->first_block))
 		return EIO;
@@ -944,7 +945,8 @@ static int ext4_ext_insert_leaf(struct ext4_inode_ref *inode_ref,
 
 	if (to_le16(curp->header->entries_count)
 			     == to_le16(curp->header->max_entries_count)) {
-		err = EXT_INODE_HDR_NEED_GROW;
+		err = EIO;
+		*need_split = true;
 		goto out;
 	} else {
 		eh = curp->header;
@@ -1084,13 +1086,15 @@ int ext4_ext_insert_extent(struct ext4_inode_ref *inode_ref, struct ext4_extent_
 	struct ext4_extent_path *path = *ppath;
 	struct ext4_extent_path *npath = NULL;
 	bool ins_right_leaf = false;
+	bool need_split;
 
 again:
 	depth = ext_depth(inode_ref->inode);
 	ret = ext4_ext_insert_leaf(inode_ref, path, depth,
 				   newext,
-				   flags);
-	if (ret == EXT_INODE_HDR_NEED_GROW) {
+				   flags,
+				   &need_split);
+	if (ret == EIO && need_split == true) {
 		int i;
 		for (i = depth, level = 0;i >= 0;i--, level++)
 			if (EXT_HAS_FREE_INDEX(path + i))
