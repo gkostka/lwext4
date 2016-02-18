@@ -1630,6 +1630,8 @@ int ext4_fs_append_inode_dblk(struct ext4_inode_ref *inode_ref,
 
 		rc = ext4_extent_get_blocks(inode_ref, *iblock, 1,
 						&current_fsblk, true, NULL);
+		if (rc != EOK)
+			return rc;
 
 		*fblock = current_fsblk;
 		ext4_assert(*fblock);
