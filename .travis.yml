@@ -7,7 +7,7 @@ dist: trusty
 install:
     - uname -a
     - sudo dpkg --add-architecture i386
-    - sudo rm /var/lib/apt/lists/* -vf
+    - sudo rm /var/lib/apt/lists/* -vfr
     - sudo apt-get update -qq
     - sudo apt-get install -qq cmake gcc-multilib libc6:i386 libgcc1:i386
     - wget https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q3-update/+download/gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
