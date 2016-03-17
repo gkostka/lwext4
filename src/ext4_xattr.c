@@ -893,10 +893,15 @@ static const struct xattr_prefix prefix_tbl[] = {
 };
 
 const char *ext4_extract_xattr_name(const char *full_name, size_t full_name_len,
-			      uint8_t *name_index, size_t *name_len)
+			      uint8_t *name_index, size_t *name_len,
+			      bool *found)
 {
 	int i;
 	ext4_assert(name_index);
+	ext4_assert(found);
+
+	*found = false;
+
 	if (!full_name_len) {
 		if (name_len)
 			*name_len = 0;
@@ -908,11 +913,20 @@ const char *ext4_extract_xattr_name(const char *full_name, size_t full_name_len,
 		size_t prefix_len = strlen(prefix_tbl[i].prefix);
 		if (full_name_len >= prefix_len &&
 		    !memcmp(full_name, prefix_tbl[i].prefix, prefix_len)) {
+			bool require_name =
+				prefix_tbl[i].prefix[prefix_len - 1] == '.';
 			*name_index = prefix_tbl[i].name_index;
 			if (name_len)
 				*name_len = full_name_len - prefix_len;
 
-			return full_name + prefix_len;
+			if (!(full_name_len - prefix_len) && require_name)
+				return NULL;
+
+			*found = true;
+			if (require_name)
+				return full_name + prefix_len;
+
+			return NULL;
 		}
 	}
 	if (name_len)

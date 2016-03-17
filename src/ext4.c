@@ -2391,6 +2391,7 @@ Finish:
 int ext4_setxattr(const char *path, const char *name, size_t name_len,
 		  const void *data, size_t data_size, bool replace)
 {
+	bool found;
 	int r = EOK;
 	ext4_file f;
 	uint32_t inode;
@@ -2407,8 +2408,9 @@ int ext4_setxattr(const char *path, const char *name, size_t name_len,
 		return EROFS;
 
 	dissected_name = ext4_extract_xattr_name(name, name_len,
-				&name_index, &dissected_len);
-	if (!dissected_len)
+				&name_index, &dissected_len,
+				&found);
+	if (!found)
 		return EINVAL;
 
 	EXT4_MP_LOCK(mp);
@@ -2448,6 +2450,7 @@ Finish:
 int ext4_getxattr(const char *path, const char *name, size_t name_len,
 		  void *buf, size_t buf_size, size_t *data_size)
 {
+	bool found;
 	int r = EOK;
 	ext4_file f;
 	uint32_t inode;
@@ -2461,8 +2464,9 @@ int ext4_getxattr(const char *path, const char *name, size_t name_len,
 		return ENOENT;
 
 	dissected_name = ext4_extract_xattr_name(name, name_len,
-				&name_index, &dissected_len);
-	if (!dissected_len)
+				&name_index, &dissected_len,
+				&found);
+	if (!found)
 		return EINVAL;
 
 	EXT4_MP_LOCK(mp);
@@ -2583,6 +2587,7 @@ Finish:
 
 int ext4_removexattr(const char *path, const char *name, size_t name_len)
 {
+	bool found;
 	int r = EOK;
 	ext4_file f;
 	uint32_t inode;
@@ -2599,8 +2604,9 @@ int ext4_removexattr(const char *path, const char *name, size_t name_len)
 		return EROFS;
 
 	dissected_name = ext4_extract_xattr_name(name, name_len,
-						&name_index, &dissected_len);
-	if (!dissected_len)
+						&name_index, &dissected_len,
+						&found);
+	if (!found)
 		return EINVAL;
 
 	EXT4_MP_LOCK(mp);

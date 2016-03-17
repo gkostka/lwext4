@@ -101,7 +101,8 @@ void ext4_fs_xattr_iterate(struct ext4_xattr_ref *ref,
 void ext4_fs_xattr_iterate_reset(struct ext4_xattr_ref *ref);
 
 const char *ext4_extract_xattr_name(const char *full_name, size_t full_name_len,
-			      uint8_t *name_index, size_t *name_len);
+			      uint8_t *name_index, size_t *name_len,
+			      bool *found);
 
 const char *ext4_get_xattr_name_prefix(uint8_t name_index,
 				       size_t *ret_prefix_len);
