@@ -194,14 +194,6 @@ For other targets compilation passes (with warnings somewhere) but tests are
 not done yet. Lwext4 code is written with endianes respect. Big endian
 behavior also hasn't been tested yet.
 
-Build bf518 library:
-------------
-```bash
- make bf518
- cd build_bf518
- make lwext4
- ```
-
 Build avrxmega7 library:
 ------------
 ```bash

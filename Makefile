@@ -27,13 +27,7 @@ generic:
 	cd build_generic && cmake -G"Unix Makefiles"          \
 	$(COMMON_DEFINITIONS)                                 \
 	-DCMAKE_TOOLCHAIN_FILE=../toolchain/generic.cmake ..
-	
-bf518:
-	rm -R -f build_bf518
-	mkdir build_bf518
-	cd build_bf518 && cmake -G"Unix Makefiles"            \
-	$(COMMON_DEFINITIONS)                                 \
-	-DCMAKE_TOOLCHAIN_FILE=../toolchain/bf518.cmake ..
+
 
 avrxmega7:
 	rm -R -f build_avrxmega7
