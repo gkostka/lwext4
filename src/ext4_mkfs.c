@@ -357,7 +357,7 @@ static void fill_bgroups(struct fs_aux_info *aux_info,
 static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 			 struct ext4_mkfs_info *info)
 {
-	int r;
+	int r = EOK;
 	uint32_t i;
 	struct ext4_block b;
 	for (i = 0; i < aux_info->groups; i++) {
