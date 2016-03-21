@@ -1774,7 +1774,7 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 			       struct jbd_trans *trans)
 {
 	int rc = EOK, i = 0;
-	int32_t tag_tbl_size;
+	int32_t tag_tbl_size = 0;
 	uint32_t desc_iblock = 0;
 	uint32_t data_iblock = 0;
 	char *tag_start = NULL, *tag_ptr = NULL;
@@ -1939,7 +1939,7 @@ jbd_journal_prepare_revoke(struct jbd_journal *journal,
 			   struct jbd_trans *trans)
 {
 	int rc = EOK, i = 0;
-	int32_t tag_tbl_size;
+	int32_t tag_tbl_size = 0;
 	uint32_t desc_iblock = 0;
 	char *blocks_entry = NULL;
 	struct jbd_revoke_rec *rec, *tmp;
