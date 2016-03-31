@@ -29,3 +29,4 @@ install (TARGETS lwext4-client DESTINATION /usr/bin)
 install (TARGETS lwext4-generic DESTINATION /usr/bin)
 install (TARGETS lwext4-mkfs DESTINATION /usr/bin)
 install (TARGETS lwext4-mbr DESTINATION /usr/bin)
+

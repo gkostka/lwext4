@@ -37,6 +37,7 @@ elseif(LIB_ONLY)
 else()
     #Generic example target
     set(BLOCKDEV_TYPE  linux)
+    set (INSTALL_LIB 1)
     add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=0)
     add_definitions(-DCONFIG_HAVE_OWN_ERRNO=0)
     add_definitions(-DCONFIG_HAVE_OWN_ASSERT=0)
