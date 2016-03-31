@@ -2890,6 +2890,11 @@ End:
 	return r;
 }
 
+int ext4_dir_mv(const char *path, const char *new_path)
+{
+	return ext4_frename(path, new_path);
+}
+
 int ext4_dir_mk(const char *path)
 {
 	int r;

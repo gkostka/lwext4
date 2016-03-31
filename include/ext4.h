@@ -426,6 +426,12 @@ int ext4_removexattr(const char *path, const char *name, size_t name_len);
  * @return  standard error code*/
 int ext4_dir_rm(const char *path);
 
+/**@brief Rename/move directory
+ * @param path source
+ * @param new_path destination
+ * @return  standard error code */
+int ext4_dir_mv(const char *path, const char *new_path);
+
 /**@brief   Create new directory.
  * @param   name new directory name
  * @return  standard error code*/
