@@ -144,6 +144,11 @@ extern "C" {
 #define CONFIG_MAX_TRUNCATE_SIZE (16ul * 1024ul * 1024ul)
 #endif
 
+
+/**@brief Unaligned access switch on/off*/
+#ifndef CONFIG_UNALIGNED_ACCESS
+#define CONFIG_UNALIGNED_ACCESS 1
+#endif
 #ifdef __cplusplus
 }
 #endif

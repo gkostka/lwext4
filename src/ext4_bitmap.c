@@ -59,6 +59,7 @@ void ext4_bmap_bits_free(uint8_t *bmap, uint32_t sbit, uint32_t bcnt)
 	sbit = i;
 	bmap += (sbit >> 3);
 
+#if CONFIG_UNALIGNED_ACCESS
 	while (bcnt >= 32) {
 		*(uint32_t *)bmap = 0;
 		bmap += 4;
@@ -72,6 +73,7 @@ void ext4_bmap_bits_free(uint8_t *bmap, uint32_t sbit, uint32_t bcnt)
 		bcnt -= 16;
 		sbit += 16;
 	}
+#endif
 
 	while (bcnt >= 8) {
 		*bmap = 0;
@@ -110,6 +112,7 @@ int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
 	sbit = i;
 	bmap += (sbit >> 3);
 
+#if CONFIG_UNALIGNED_ACCESS
 	while (bcnt >= 32) {
 		if (*(uint32_t *)bmap != 0xFFFFFFFF)
 			goto finish_it;
@@ -127,8 +130,8 @@ int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
 		bcnt -= 16;
 		sbit += 16;
 	}
-
 finish_it:
+#endif
 	while (bcnt >= 8) {
 		if (*bmap != 0xFF) {
 			for (i = 0; i < 8; ++i) {
