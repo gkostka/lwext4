@@ -147,7 +147,7 @@ extern "C" {
 
 /**@brief Unaligned access switch on/off*/
 #ifndef CONFIG_UNALIGNED_ACCESS
-#define CONFIG_UNALIGNED_ACCESS 1
+#define CONFIG_UNALIGNED_ACCESS 0
 #endif
 #ifdef __cplusplus
 }
