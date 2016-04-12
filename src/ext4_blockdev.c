@@ -217,7 +217,7 @@ int ext4_block_get_noread(struct ext4_blockdev *bdev, struct ext4_block *b,
 		return EIO;
 
 	if (!(lba < bdev->lg_bcnt))
-		return ERANGE;
+		return ENXIO;
 
 	b->lb_id = lba;
 
