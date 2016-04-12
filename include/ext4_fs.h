@@ -94,7 +94,7 @@ struct ext4_inode_ref {
 static inline uint32_t ext4_fs_addr_to_idx_bg(struct ext4_sblock *s,
 						     ext4_fsblk_t baddr)
 {
-	if (ext4_get32(s, first_data_block))
+	if (ext4_get32(s, first_data_block) && baddr)
 		baddr--;
 
 	return baddr % ext4_get32(s, blocks_per_group);
