@@ -1323,7 +1323,8 @@ jbd_journal_skip_pure_revoke(struct jbd_journal *journal,
 
 static void
 jbd_journal_purge_cp_trans(struct jbd_journal *journal,
-			   bool flush)
+			   bool flush,
+			   bool once)
 {
 	struct jbd_trans *trans;
 	while ((trans = TAILQ_FIRST(&journal->cp_queue))) {
@@ -1361,6 +1362,8 @@ jbd_journal_purge_cp_trans(struct jbd_journal *journal,
 			} else
 				jbd_journal_flush_trans(trans);
 		}
+		if (once)
+			break;
 	}
 }
 
@@ -1375,7 +1378,7 @@ int jbd_journal_stop(struct jbd_journal *journal)
 
 	/* Make sure that journalled content have reached
 	 * the disk.*/
-	jbd_journal_purge_cp_trans(journal, true);
+	jbd_journal_purge_cp_trans(journal, true, false);
 
 	/* There should be no block record in this journal
 	 * session. */
@@ -1418,7 +1421,7 @@ static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal,
 	/* If there is no space left, flush all journalled
 	 * blocks to disk first.*/
 	if (journal->last == journal->start)
-		jbd_journal_purge_cp_trans(journal, true);
+		jbd_journal_purge_cp_trans(journal, true, false);
 
 	return start_block;
 }
@@ -2083,7 +2086,7 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 			TAILQ_REMOVE(&journal->cp_queue, trans, trans_node);
 			jbd_journal_free_trans(journal, trans, false);
 
-			jbd_journal_purge_cp_trans(journal, false);
+			jbd_journal_purge_cp_trans(journal, false, true);
 			jbd_journal_write_sb(journal);
 			jbd_write_sb(journal->jbd_fs);
 		}
