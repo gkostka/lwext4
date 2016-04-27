@@ -41,6 +41,8 @@
 #include "ext4_debug.h"
 
 #include "ext4_blockdev.h"
+#include "ext4_fs.h"
+#include "ext4_journal.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -188,6 +190,8 @@ int ext4_block_cache_shake(struct ext4_blockdev *bdev)
 	if (bdev->bc->dont_shake)
 		return EOK;
 
+	bdev->bc->dont_shake = true;
+
 	while (!RB_EMPTY(&bdev->bc->lru_root) &&
 		ext4_bcache_is_full(bdev->bc)) {
 
@@ -202,6 +206,7 @@ int ext4_block_cache_shake(struct ext4_blockdev *bdev)
 
 		ext4_bcache_drop_buf(bdev->bc, buf);
 	}
+	bdev->bc->dont_shake = false;
 	return r;
 }
 

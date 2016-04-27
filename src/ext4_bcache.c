@@ -177,6 +177,19 @@ void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf)
 	bc->ref_blocks--;
 }
 
+void ext4_bcache_invalidate_buf(struct ext4_bcache *bc,
+				struct ext4_buf *buf)
+{
+	buf->end_write = NULL;
+	buf->end_write_arg = NULL;
+
+	/* Clear both dirty and up-to-date flags. */
+	if (ext4_bcache_test_flag(buf, BC_DIRTY))
+		ext4_bcache_remove_dirty_node(bc, buf);
+
+	ext4_bcache_clear_dirty(buf);
+}
+
 void ext4_bcache_invalidate_lba(struct ext4_bcache *bc,
 				uint64_t from,
 				uint32_t cnt)
@@ -187,13 +200,7 @@ void ext4_bcache_invalidate_lba(struct ext4_bcache *bc,
 		if (buf->lba > end)
 			break;
 
-		/* Clear both dirty and up-to-date flags. */
-		if (ext4_bcache_test_flag(buf, BC_DIRTY))
-			ext4_bcache_remove_dirty_node(bc, buf);
-
-		buf->end_write = NULL;
-		buf->end_write_arg = NULL;
-		ext4_bcache_clear_dirty(buf);
+		ext4_bcache_invalidate_buf(bc, buf);
 	}
 }
 

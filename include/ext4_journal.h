@@ -47,7 +47,6 @@ extern "C" {
 #include "misc/tree.h"
 
 struct jbd_fs {
-	/* If journal block device is used, bdev will be non-null */
 	struct ext4_blockdev *bdev;
 	struct ext4_inode_ref inode_ref;
 	struct jbd_sb sb;
@@ -56,7 +55,7 @@ struct jbd_fs {
 };
 
 struct jbd_buf {
-	uint64_t jbd_lba;
+	uint32_t jbd_lba;
 	struct ext4_block block;
 	struct jbd_trans *trans;
 	struct jbd_block_rec *block_rec;
@@ -66,12 +65,11 @@ struct jbd_buf {
 
 struct jbd_revoke_rec {
 	ext4_fsblk_t lba;
-	LIST_ENTRY(jbd_revoke_rec) revoke_node;
+	RB_ENTRY(jbd_revoke_rec) revoke_node;
 };
 
 struct jbd_block_rec {
 	ext4_fsblk_t lba;
-	struct ext4_buf *buf;
 	struct jbd_trans *trans;
 	RB_ENTRY(jbd_block_rec) block_rec_node;
 	LIST_ENTRY(jbd_block_rec) tbrec_node;
@@ -91,7 +89,7 @@ struct jbd_trans {
 	struct jbd_journal *journal;
 
 	TAILQ_HEAD(jbd_trans_buf, jbd_buf) buf_queue;
-	LIST_HEAD(jbd_revoke_list, jbd_revoke_rec) revoke_list;
+	RB_HEAD(jbd_revoke_tree, jbd_revoke_rec) revoke_root;
 	LIST_HEAD(jbd_trans_block_rec, jbd_block_rec) tbrec_list;
 	TAILQ_ENTRY(jbd_trans) trans_node;
 };
@@ -105,7 +103,6 @@ struct jbd_journal {
 
 	uint32_t block_size;
 
-	TAILQ_HEAD(jbd_trans_queue, jbd_trans) trans_queue;
 	TAILQ_HEAD(jbd_cp_queue, jbd_trans) cp_queue;
 	RB_HEAD(jbd_block, jbd_block_rec) block_rec_root;
 
@@ -122,10 +119,8 @@ int jbd_recover(struct jbd_fs *jbd_fs);
 int jbd_journal_start(struct jbd_fs *jbd_fs,
 		      struct jbd_journal *journal);
 int jbd_journal_stop(struct jbd_journal *journal);
-struct jbd_trans *jbd_journal_new_trans(struct jbd_journal *journal);
-int jbd_trans_get_access(struct jbd_journal *journal,
-			 struct jbd_trans *trans,
-			 struct ext4_block *block);
+struct jbd_trans *
+jbd_journal_new_trans(struct jbd_journal *journal);
 int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 			      struct ext4_block *block);
 int jbd_trans_revoke_block(struct jbd_trans *trans,
@@ -137,6 +132,10 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 			    bool abort);
 int jbd_journal_commit_trans(struct jbd_journal *journal,
 			     struct jbd_trans *trans);
+void
+jbd_journal_purge_cp_trans(struct jbd_journal *journal,
+			   bool flush,
+			   bool once);
 
 #ifdef __cplusplus
 }

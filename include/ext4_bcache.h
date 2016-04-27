@@ -239,6 +239,12 @@ struct ext4_buf *ext4_buf_lowest_lru(struct ext4_bcache *bc);
  * @param   buf buffer*/
 void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf);
 
+/**@brief   Invalidate a buffer.
+ * @param   bc block cache descriptor
+ * @param   buf buffer*/
+void ext4_bcache_invalidate_buf(struct ext4_bcache *bc,
+				struct ext4_buf *buf);
+
 /**@brief   Invalidate a range of buffers.
  * @param   bc block cache descriptor
  * @param   from starting lba

@@ -44,20 +44,6 @@
 #include "ext4_fs.h"
 #include "ext4_journal.h"
 
-static int ext4_trans_get_write_access(struct ext4_fs *fs __unused,
-				struct ext4_block *block __unused)
-{
-	int r = EOK;
-#if CONFIG_JOURNALING_ENABLE
-	if (fs->jbd_journal && fs->curr_trans) {
-		struct jbd_journal *journal = fs->jbd_journal;
-		struct jbd_trans *trans = fs->curr_trans;
-		r = jbd_trans_get_access(journal, trans, block);
-	}
-#endif
-	return r;
-}
-
 int ext4_trans_set_block_dirty(struct ext4_buf *buf)
 {
 	int r = EOK;
@@ -86,10 +72,6 @@ int ext4_trans_block_get_noread(struct ext4_blockdev *bdev,
 	if (r != EOK)
 		return r;
 
-	r = ext4_trans_get_write_access(bdev->fs, b);
-	if (r != EOK)
-		ext4_block_set(bdev, b);
-
 	return r;
 }
 
@@ -100,10 +82,6 @@ int ext4_trans_block_get(struct ext4_blockdev *bdev,
 	int r = ext4_block_get(bdev, b, lba);
 	if (r != EOK)
 		return r;
-
-	r = ext4_trans_get_write_access(bdev->fs, b);
-	if (r != EOK)
-		ext4_block_set(bdev, b);
 
 	return r;
 }

@@ -124,6 +124,8 @@ struct ext4_blockdev {
 
 	/**@brief   The filesystem this block device belongs to. */
 	struct ext4_fs *fs;
+
+	void *journal;
 };
 
 /**@brief   Static initialization of the block device.*/
