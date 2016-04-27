@@ -1598,41 +1598,41 @@ jbd_trans_remove_block_rec(struct jbd_journal *journal,
 int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 			      struct ext4_block *block)
 {
-	struct jbd_buf *buf;
-
+	struct jbd_buf *jbd_buf;
 	struct jbd_block_rec *block_rec;
+
 	if (block->buf->end_write == jbd_trans_end_write) {
-		buf = block->buf->end_write_arg;
-		if (buf && buf->trans == trans)
+		jbd_buf = block->buf->end_write_arg;
+		if (jbd_buf && jbd_buf->trans == trans)
 			return EOK;
 	}
-	buf = calloc(1, sizeof(struct jbd_buf));
-	if (!buf)
+	jbd_buf = calloc(1, sizeof(struct jbd_buf));
+	if (!jbd_buf)
 		return ENOMEM;
 
 	if ((block_rec = jbd_trans_insert_block_rec(trans,
 					block->lb_id,
 					block->buf)) == NULL) {
-		free(buf);
+		free(jbd_buf);
 		return ENOMEM;
 	}
 
 	TAILQ_INSERT_TAIL(&block_rec->dirty_buf_queue,
-			buf,
+			jbd_buf,
 			dirty_buf_node);
 
-	buf->block_rec = block_rec;
-	buf->trans = trans;
-	buf->block = *block;
+	jbd_buf->block_rec = block_rec;
+	jbd_buf->trans = trans;
+	jbd_buf->block = *block;
 	ext4_bcache_inc_ref(block->buf);
 
 	/* If the content reach the disk, notify us
 	 * so that we may do a checkpoint. */
 	block->buf->end_write = jbd_trans_end_write;
-	block->buf->end_write_arg = buf;
+	block->buf->end_write_arg = jbd_buf;
 
 	trans->data_cnt++;
-	TAILQ_INSERT_HEAD(&trans->buf_queue, buf, buf_node);
+	TAILQ_INSERT_HEAD(&trans->buf_queue, jbd_buf, buf_node);
 
 	ext4_bcache_set_dirty(block->buf);
 	return EOK;
