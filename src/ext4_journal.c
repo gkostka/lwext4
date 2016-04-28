@@ -96,6 +96,14 @@ struct replay_arg {
 	uint32_t this_trans_id;
 };
 
+/* Make sure we wrap around the log correctly! */
+#define wrap(sb, var)						\
+do {									\
+	if (var >= jbd_get32((sb), maxlen))					\
+		var -= (jbd_get32((sb), maxlen) - jbd_get32((sb), first));	\
+} while (0)
+
+
 static int
 jbd_revoke_entry_cmp(struct revoke_entry *a, struct revoke_entry *b)
 {
@@ -816,6 +824,7 @@ static void jbd_display_block_tags(struct jbd_fs *jbd_fs,
 	uint32_t *iblock = arg;
 	ext4_dbg(DEBUG_JBD, "Block in block_tag: %" PRIu64 "\n", block);
 	(*iblock)++;
+	wrap(&jbd_fs->sb, *iblock);
 	(void)jbd_fs;
 	(void)uuid;
 	return;
@@ -848,6 +857,7 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 	struct ext4_fs *fs = jbd_fs->inode_ref.fs;
 
 	(*this_block)++;
+	wrap(&jbd_fs->sb, *this_block);
 
 	/* We replay this block only if the current transaction id
 	 * is equal or greater than that in revoke entry.*/
@@ -940,12 +950,6 @@ static void jbd_destroy_revoke_tree(struct recover_info *info)
 	}
 }
 
-/* Make sure we wrap around the log correctly! */
-#define wrap(sb, var)						\
-do {									\
-	if (var >= jbd_get32((sb), maxlen))					\
-		var -= (jbd_get32((sb), maxlen) - jbd_get32((sb), first));	\
-} while (0)
 
 #define ACTION_SCAN 0
 #define ACTION_REVOKE 1
