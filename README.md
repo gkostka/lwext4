@@ -13,7 +13,8 @@ The main goal of the lwext4 project is to provide ext2/3/4 filesystem for microc
  - extents - fast big file truncate
  - journaling transactions & recovery - power loss resistance
 
-Lwext4 is an excellent choice for SD/MMC card, USB flash drive or other block based memory device. However it is not good for flash memory–based storage devices.
+Lwext4 is an excellent choice for SD/MMC card, USB flash drive or any other wear
+leveled memory types. However it is not good for raw flash devices.
 
 Feel free to contact me:
 kostka.grzegorz@gmail.com
@@ -189,7 +190,7 @@ Lwext4 could be compiled for many targets. Here are an examples for 8/16/32/64 b
 * generic for x86 or amd64
 * arm-none-eabi-gcc for ARM cortex-m0/m3/m4 microcontrollers
 * avr-gcc for AVR xmega microcontrollers
-* bfin-elf-gcc for blockfin processors 
+* bfin-elf-gcc for blackfin processors
 * msp430-gcc for msp430 microcontrollers
 
 Library has been tested only for generic (amd64) & ARM Cortex M architectures.
