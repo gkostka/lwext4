@@ -48,6 +48,7 @@
 #include "ext4_dir.h"
 #include "ext4_inode.h"
 #include "ext4_super.h"
+#include "ext4_block_group.h"
 #include "ext4_dir_idx.h"
 #include "ext4_xattr.h"
 #include "ext4_journal.h"
@@ -565,7 +566,31 @@ static int __ext4_recover(const char *mount_point)
 		jbd_put_fs(jbd_fs);
 		free(jbd_fs);
 	}
+	if (r == EOK && !mp->fs.read_only) {
+		uint32_t bgid;
+		uint64_t free_blocks_count = 0;
+		uint32_t free_inodes_count = 0;
+		struct ext4_block_group_ref bg_ref;
 
+		/* Update superblock's stats */
+		for (bgid = 0;bgid < ext4_block_group_cnt(&mp->fs.sb);bgid++) {
+			r = ext4_fs_get_block_group_ref(&mp->fs, bgid, &bg_ref);
+			if (r != EOK)
+				goto Finish;
+
+			free_blocks_count +=
+				ext4_bg_get_free_blocks_count(bg_ref.block_group,
+						&mp->fs.sb);
+			free_inodes_count +=
+				ext4_bg_get_free_inodes_count(bg_ref.block_group,
+						&mp->fs.sb);
+
+			ext4_fs_put_block_group_ref(&bg_ref);
+		}
+		ext4_sb_set_free_blocks_cnt(&mp->fs.sb, free_blocks_count);
+		ext4_set32(&mp->fs.sb, free_inodes_count, free_inodes_count);
+		/* We don't need to save the superblock stats immediately. */
+	}
 
 Finish:
 	EXT4_MP_UNLOCK(mp);
