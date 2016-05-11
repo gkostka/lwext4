@@ -856,7 +856,7 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	if (rc != EOK) {
 		ext4_xattr_purge_items(ref);
 		if (xattr_block)
-			ext4_block_set(fs->bdev, &inode_ref->block);
+			ext4_block_set(fs->bdev, &ref->block);
 
 		ref->block_loaded = false;
 		return rc;
