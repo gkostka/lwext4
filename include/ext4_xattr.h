@@ -43,6 +43,7 @@ extern "C" {
 
 #include "ext4_config.h"
 #include "ext4_types.h"
+#include "ext4_inode.h"
 #include "misc/tree.h"
 #include "misc/queue.h"
 
@@ -73,6 +74,40 @@ struct ext4_xattr_ref {
 	RB_HEAD(ext4_xattr_tree,
 		ext4_xattr_item) root;
 };
+
+#define EXT4_XATTR_PAD_BITS		2
+#define EXT4_XATTR_PAD		(1<<EXT4_XATTR_PAD_BITS)
+#define EXT4_XATTR_ROUND		(EXT4_XATTR_PAD-1)
+#define EXT4_XATTR_LEN(name_len) \
+	(((name_len) + EXT4_XATTR_ROUND + \
+	sizeof(struct ext4_xattr_entry)) & ~EXT4_XATTR_ROUND)
+#define EXT4_XATTR_NEXT(entry) \
+	((struct ext4_xattr_entry *)( \
+	 (char *)(entry) + EXT4_XATTR_LEN((entry)->e_name_len)))
+#define EXT4_XATTR_SIZE(size) \
+	(((size) + EXT4_XATTR_ROUND) & ~EXT4_XATTR_ROUND)
+#define EXT4_XATTR_NAME(entry) \
+	((char *)((entry) + 1))
+
+#define EXT4_XATTR_IHDR(sb, raw_inode) \
+	((struct ext4_xattr_ibody_header *) \
+		((char *)raw_inode + \
+		EXT4_GOOD_OLD_INODE_SIZE + \
+		ext4_inode_get_extra_isize(sb, raw_inode)))
+#define EXT4_XATTR_IFIRST(hdr) \
+	((struct ext4_xattr_entry *)((hdr)+1))
+
+#define EXT4_XATTR_BHDR(block) \
+	((struct ext4_xattr_header *)((block)->data))
+#define EXT4_XATTR_ENTRY(ptr) \
+	((struct ext4_xattr_entry *)(ptr))
+#define EXT4_XATTR_BFIRST(block) \
+	EXT4_XATTR_ENTRY(EXT4_XATTR_BHDR(block)+1)
+#define EXT4_XATTR_IS_LAST_ENTRY(entry) \
+	(*(uint32_t *)(entry) == 0)
+
+#define EXT4_ZERO_XATTR_VALUE ((void *)-1)
+
 
 #define EXT4_XATTR_ITERATE_CONT 0
 #define EXT4_XATTR_ITERATE_STOP 1

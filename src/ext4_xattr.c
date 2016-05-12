@@ -272,7 +272,8 @@ static void *ext4_xattr_entry_data(struct ext4_xattr_ref *xattr_ref,
 		struct ext4_xattr_entry *first_entry;
 		int16_t inode_size =
 		    ext4_get16(&xattr_ref->fs->sb, inode_size);
-		header = EXT4_XATTR_IHDR(xattr_ref->inode_ref->inode);
+		header = EXT4_XATTR_IHDR(&xattr_ref->fs->sb,
+				xattr_ref->inode_ref->inode);
 		first_entry = EXT4_XATTR_IFIRST(header);
 
 		ret = ((char *)first_entry + to_le16(entry->e_value_offs));
@@ -346,7 +347,8 @@ static int ext4_xattr_inode_fetch(struct ext4_xattr_ref *xattr_ref)
 	uint16_t extra_isize = ext4_inode_get_extra_isize(&xattr_ref->fs->sb,
 					xattr_ref->inode_ref->inode);
 
-	header = EXT4_XATTR_IHDR(xattr_ref->inode_ref->inode);
+	header = EXT4_XATTR_IHDR(&xattr_ref->fs->sb,
+				 xattr_ref->inode_ref->inode);
 	entry = EXT4_XATTR_IFIRST(header);
 
 	size_rem = inode_size - EXT4_GOOD_OLD_INODE_SIZE -
@@ -635,7 +637,8 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 	inode_size_rem = ext4_xattr_inode_space(xattr_ref);
 	block_size_rem = ext4_xattr_block_space(xattr_ref);
 	if (inode_size_rem > sizeof(struct ext4_xattr_ibody_header)) {
-		ibody_header = EXT4_XATTR_IHDR(xattr_ref->inode_ref->inode);
+		ibody_header = EXT4_XATTR_IHDR(&xattr_ref->fs->sb,
+					       xattr_ref->inode_ref->inode);
 		entry = EXT4_XATTR_IFIRST(ibody_header);
 	}
 
