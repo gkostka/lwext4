@@ -205,16 +205,21 @@ uint32_t ext4_inode_get_generation(struct ext4_inode *inode);
 void ext4_inode_set_generation(struct ext4_inode *inode, uint32_t gen);
 
 /**@brief Get extra I-node size field.
+ * @param sb         Superblock
  * @param inode      I-node
  * @return extra I-node size
  */
-uint16_t ext4_inode_get_extra_isize(struct ext4_inode *inode);
+uint16_t ext4_inode_get_extra_isize(struct ext4_sblock *sb,
+				    struct ext4_inode *inode);
 
 /**@brief Set extra I-node size field.
+ * @param sb         Superblock
  * @param inode      I-node
  * @param size       extra I-node size
  */
-void ext4_inode_set_extra_isize(struct ext4_inode *inode, uint16_t size);
+void ext4_inode_set_extra_isize(struct ext4_sblock *sb,
+				struct ext4_inode *inode,
+				uint16_t size);
 
 /**@brief Get address of block, where are extended attributes located.
  * @param inode I-node
