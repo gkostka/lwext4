@@ -50,6 +50,7 @@ extern "C" {
 struct ext4_xattr_item {
 	/* This attribute should be stored in inode body */
 	bool in_inode;
+	bool is_data;
 
 	uint8_t name_index;
 	char  *name;
@@ -66,6 +67,8 @@ struct ext4_xattr_ref {
 	struct ext4_inode_ref *inode_ref;
 	bool   dirty;
 	size_t ea_size;
+	int32_t block_size_rem;
+	int32_t inode_size_rem;
 	struct ext4_fs *fs;
 
 	void *iter_arg;
