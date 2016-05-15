@@ -778,6 +778,8 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 			if (ret != EOK)
 				goto Finish;
 		}
+		memset(xattr_ref->block.data, 0,
+		       ext4_sb_get_block_size(&xattr_ref->fs->sb));
 		block_header = EXT4_XATTR_BHDR(&xattr_ref->block);
 		block_entry = EXT4_XATTR_BFIRST(&xattr_ref->block);
 		ext4_xattr_set_block_header(xattr_ref);
