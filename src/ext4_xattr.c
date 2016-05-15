@@ -1001,8 +1001,11 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 
 void ext4_fs_put_xattr_ref(struct ext4_xattr_ref *ref)
 {
-	ext4_xattr_write_to_disk(ref);
+	int rc = ext4_xattr_write_to_disk(ref);
 	if (ref->block_loaded) {
+		if (rc != EOK)
+			ext4_bcache_clear_dirty(ref->block.buf);
+
 		ext4_block_set(ref->fs->bdev, &ref->block);
 		ref->block_loaded = false;
 	}
