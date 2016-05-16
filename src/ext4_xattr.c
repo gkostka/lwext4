@@ -446,12 +446,17 @@ ext4_xattr_lookup_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
 static struct ext4_xattr_item *
 ext4_xattr_insert_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
 		       const char *name, size_t name_len, const void *data,
-		       size_t data_size)
+		       size_t data_size,
+		       int *err)
 {
 	struct ext4_xattr_item *item;
 	item = ext4_xattr_item_alloc(name_index, name, name_len);
-	if (!item)
+	if (!item) {
+		if (err)
+			*err = ENOMEM;
+
 		return NULL;
+	}
 
 	if ((xattr_ref->ea_size + EXT4_XATTR_SIZE(data_size) +
 		EXT4_XATTR_LEN(item->name_len)
@@ -465,6 +470,9 @@ ext4_xattr_insert_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
 	    	sizeof(struct ext4_xattr_header))) {
 		ext4_xattr_item_free(item);
 
+		if (err)
+			*err = ENOSPC;
+
 		return NULL;
 	}
 	item->in_inode = true;
@@ -473,13 +481,20 @@ ext4_xattr_insert_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
 	    (int32_t)EXT4_XATTR_LEN(item->name_len) < 0) {
 		if (xattr_ref->block_size_rem -
 		    (int32_t)EXT4_XATTR_SIZE(data_size) -
-		    (int32_t)EXT4_XATTR_LEN(item->name_len) < 0)
+		    (int32_t)EXT4_XATTR_LEN(item->name_len) < 0) {
+			if (err)
+				*err = ENOSPC;
+
 			return NULL;
+		}
 
 		item->in_inode = false;
 	}
 	if (ext4_xattr_item_alloc_data(item, data, data_size) != EOK) {
 		ext4_xattr_item_free(item);
+		if (err)
+			*err = ENOMEM;
+
 		return NULL;
 	}
 	RB_INSERT(ext4_xattr_tree, &xattr_ref->root, item);
@@ -495,6 +510,9 @@ ext4_xattr_insert_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
 			EXT4_XATTR_LEN(item->name_len);
 	}
 	xattr_ref->dirty = true;
+	if (err)
+		*err = EOK;
+
 	return item;
 }
 
@@ -918,9 +936,7 @@ int ext4_fs_set_xattr(struct ext4_xattr_ref *ref, uint8_t name_index,
 			goto Finish;
 		}
 		item = ext4_xattr_insert_item(ref, name_index, name, name_len,
-					      data, data_size);
-		if (!item)
-			ret = ENOMEM;
+					      data, data_size, &ret);
 	}
 Finish:
 	return ret;
