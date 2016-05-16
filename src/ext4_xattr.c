@@ -476,12 +476,12 @@ ext4_xattr_insert_item(struct ext4_xattr_ref *xattr_ref, uint8_t name_index,
 		return NULL;
 	}
 	item->in_inode = true;
-	if (xattr_ref->inode_size_rem -
-	    (int32_t)EXT4_XATTR_SIZE(data_size) -
-	    (int32_t)EXT4_XATTR_LEN(item->name_len) < 0) {
-		if (xattr_ref->block_size_rem -
-		    (int32_t)EXT4_XATTR_SIZE(data_size) -
-		    (int32_t)EXT4_XATTR_LEN(item->name_len) < 0) {
+	if (xattr_ref->inode_size_rem <
+	    EXT4_XATTR_SIZE(data_size) +
+	    EXT4_XATTR_LEN(item->name_len)) {
+		if (xattr_ref->block_size_rem <
+		    EXT4_XATTR_SIZE(data_size) +
+		    EXT4_XATTR_LEN(item->name_len)) {
 			if (err)
 				*err = ENOSPC;
 
@@ -586,22 +586,22 @@ static int ext4_xattr_resize_item(struct ext4_xattr_ref *xattr_ref,
 	 */
 	if (item->in_inode) {
 		if (xattr_ref->inode_size_rem +
-				(int32_t)EXT4_XATTR_SIZE(old_data_size) -
-				(int32_t)EXT4_XATTR_SIZE(new_data_size) < 0) {
-			if (xattr_ref->block_size_rem -
-					(int32_t)EXT4_XATTR_SIZE(new_data_size) -
-					(int32_t)EXT4_XATTR_LEN(item->name_len) < 0)
+				EXT4_XATTR_SIZE(old_data_size) <
+				EXT4_XATTR_SIZE(new_data_size)) {
+			if (xattr_ref->block_size_rem <
+					EXT4_XATTR_SIZE(new_data_size) +
+					EXT4_XATTR_LEN(item->name_len))
 				return ENOSPC;
 
 			to_block = true;
 		}
 	} else {
 		if (xattr_ref->block_size_rem +
-				(int32_t)EXT4_XATTR_SIZE(old_data_size) -
-				(int32_t)EXT4_XATTR_SIZE(new_data_size) < 0) {
-			if (xattr_ref->inode_size_rem -
-					(int32_t)EXT4_XATTR_SIZE(new_data_size) -
-					(int32_t)EXT4_XATTR_LEN(item->name_len) < 0)
+				EXT4_XATTR_SIZE(old_data_size) <
+				EXT4_XATTR_SIZE(new_data_size)) {
+			if (xattr_ref->inode_size_rem <
+					EXT4_XATTR_SIZE(new_data_size) +
+					EXT4_XATTR_LEN(item->name_len))
 				return ENOSPC;
 
 			to_inode = true;
@@ -663,12 +663,16 @@ static void ext4_xattr_purge_items(struct ext4_xattr_ref *xattr_ref)
 		ext4_xattr_item_free(item);
 	}
 	xattr_ref->ea_size = 0;
-	xattr_ref->inode_size_rem = ext4_xattr_inode_space(xattr_ref) -
-		sizeof(struct ext4_xattr_ibody_header);
-	if (xattr_ref->inode_size_rem < 0)
+	if (ext4_xattr_inode_space(xattr_ref) <
+	    sizeof(struct ext4_xattr_ibody_header))
 		xattr_ref->inode_size_rem = 0;
+	else
+		xattr_ref->inode_size_rem =
+			ext4_xattr_inode_space(xattr_ref) -
+			sizeof(struct ext4_xattr_ibody_header);
 
-	xattr_ref->block_size_rem = ext4_xattr_block_space(xattr_ref) -
+	xattr_ref->block_size_rem =
+		ext4_xattr_block_space(xattr_ref) -
 		sizeof(struct ext4_xattr_header);
 }
 
@@ -996,13 +1000,18 @@ int ext4_fs_get_xattr_ref(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	ref->inode_ref = inode_ref;
 	ref->fs = fs;
 
-	ref->inode_size_rem = ext4_xattr_inode_space(ref) -
-		sizeof(struct ext4_xattr_ibody_header);
-	if (ref->inode_size_rem < 0)
+	if (ext4_xattr_inode_space(ref) <
+	    sizeof(struct ext4_xattr_ibody_header))
 		ref->inode_size_rem = 0;
+	else
+		ref->inode_size_rem =
+			ext4_xattr_inode_space(ref) -
+			sizeof(struct ext4_xattr_ibody_header);
 
-	ref->block_size_rem = ext4_xattr_block_space(ref) -
+	ref->block_size_rem =
+		ext4_xattr_block_space(ref) -
 		sizeof(struct ext4_xattr_header);
+
 	rc = ext4_xattr_fetch(ref);
 	if (rc != EOK) {
 		ext4_xattr_purge_items(ref);

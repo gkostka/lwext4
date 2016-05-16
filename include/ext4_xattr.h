@@ -67,8 +67,8 @@ struct ext4_xattr_ref {
 	struct ext4_inode_ref *inode_ref;
 	bool   dirty;
 	size_t ea_size;
-	int32_t block_size_rem;
-	int32_t inode_size_rem;
+	size_t block_size_rem;
+	size_t inode_size_rem;
 	struct ext4_fs *fs;
 
 	void *iter_arg;
