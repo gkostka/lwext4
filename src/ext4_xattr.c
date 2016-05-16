@@ -867,6 +867,7 @@ static int ext4_xattr_write_to_disk(struct ext4_xattr_ref *xattr_ref)
 		memcpy(EXT4_XATTR_NAME(block_entry), item->name,
 		       item->name_len);
 		memcpy(block_data, item->data, item->data_size);
+		ext4_xattr_compute_hash(block_header, block_entry);
 		block_entry = EXT4_XATTR_NEXT(block_entry);
 		block_size_rem -= EXT4_XATTR_SIZE(item->data_size) +
 				  EXT4_XATTR_LEN(item->name_len);
