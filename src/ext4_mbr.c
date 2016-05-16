@@ -126,6 +126,78 @@ int ext4_mbr_scan(struct ext4_blockdev *parent, struct ext4_mbr_bdevs *bdevs)
 	return r;
 }
 
+int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts)
+{
+	int r;
+	uint64_t disk_size = parent->part_size;
+	uint32_t division_sum = parts->division[0] + parts->division[1] +
+				parts->division[2] + parts->division[3];
+
+	if (division_sum > 100)
+		return EINVAL;
+
+	ext4_dbg(DEBUG_MBR, DBG_INFO "ext4_mbr_write\n");
+	r = ext4_block_init(parent);
+	if (r != EOK)
+		return r;
+
+	/*Calculate CHS*/
+	uint32_t k = 16;
+	while ((k < 256) && ((disk_size / k / 63) > 1024))
+		k *= 2;
+
+	if (k == 256)
+		--k;
+
+	const uint32_t cyl_size = 63 * k;
+	const uint32_t cyl_count = disk_size / cyl_size;
+
+	struct ext4_mbr *mbr = (void *)parent->bdif->ph_bbuf;
+	memset(mbr, 0, sizeof(struct ext4_mbr));
+
+
+	uint32_t cyl_it = 0;
+	for (int i = 0; i < 4; ++i) {
+		uint32_t cyl_part = cyl_count * parts->division[i] / 100;
+		if (!cyl_part)
+			continue;
+
+		uint32_t part_start = cyl_it * cyl_size;
+		uint32_t part_size = cyl_part * cyl_size;
+
+		if (i == 0) {
+			part_start += 63;
+			part_size -= 63;
+		}
+
+		uint32_t cyl_end = cyl_part + cyl_it - 1;
+
+		mbr->part_entry[i].status = 0;
+		mbr->part_entry[i].chs1[0] = i ? 0 : 1;;
+		mbr->part_entry[i].chs1[1] = (cyl_it >> 2) + 1;
+		mbr->part_entry[i].chs1[2] = cyl_it;
+		mbr->part_entry[i].type = 0x83;
+		mbr->part_entry[i].chs2[0] = k - 1;
+		mbr->part_entry[i].chs2[1] = (cyl_end >> 2) + 63;
+		mbr->part_entry[i].chs2[2] = cyl_end;
+
+		mbr->part_entry[i].first_lba = part_start;
+		mbr->part_entry[i].sectors = part_size;
+
+		cyl_it += cyl_part;
+	}
+
+	mbr->signature = MBR_SIGNATURE;
+	r = ext4_block_writebytes(parent, 0, parent->bdif->ph_bbuf, 512);
+	if (r != EOK)
+		goto blockdev_fini;
+
+
+	blockdev_fini:
+	ext4_block_fini(parent);
+	return r;
+}
+
 /**
  * @}
  */
