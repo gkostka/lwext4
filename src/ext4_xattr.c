@@ -539,7 +539,7 @@ static int ext4_xattr_resize_item(struct ext4_xattr_ref *xattr_ref,
 	int ret = EOK;
 	bool to_inode = false, to_block = false;
 	size_t old_data_size = item->data_size;
-	int32_t orig_room_size = item->in_inode ?
+	size_t orig_room_size = item->in_inode ?
 		xattr_ref->inode_size_rem :
 		xattr_ref->block_size_rem;
 
