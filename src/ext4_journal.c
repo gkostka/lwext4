@@ -107,7 +107,7 @@ static inline int32_t
 trans_id_diff(uint32_t x, uint32_t y)
 {
 	int32_t diff = x - y;
-	return (diff >= 0);
+	return diff;
 }
 
 static int
