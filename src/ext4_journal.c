@@ -103,6 +103,12 @@ do {									\
 		var -= (jbd_get32((sb), maxlen) - jbd_get32((sb), first));	\
 } while (0)
 
+static inline int32_t
+trans_id_diff(uint32_t x, uint32_t y)
+{
+	int32_t diff = x - y;
+	return (diff >= 0);
+}
 
 static int
 jbd_revoke_entry_cmp(struct revoke_entry *a, struct revoke_entry *b)
@@ -878,7 +884,7 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 	 * is equal or greater than that in revoke entry.*/
 	revoke_entry = jbd_revoke_entry_lookup(info, block);
 	if (revoke_entry &&
-	    arg->this_trans_id < revoke_entry->trans_id)
+	    trans_id_diff(arg->this_trans_id, revoke_entry->trans_id) < 0)
 		return;
 
 	ext4_dbg(DEBUG_JBD,
@@ -1066,7 +1072,7 @@ static int jbd_iterate_log(struct jbd_fs *jbd_fs,
 		 * we will stop when we reach the end of
 		 * the journal.*/
 		if (action != ACTION_SCAN)
-			if (this_trans_id > info->last_trans_id) {
+			if (trans_id_diff(this_trans_id, info->last_trans_id) > 0) {
 				log_end = true;
 				continue;
 			}
@@ -1176,7 +1182,7 @@ static int jbd_iterate_log(struct jbd_fs *jbd_fs,
 	if (r == EOK && action == ACTION_SCAN) {
 		/* We have finished scanning the journal. */
 		info->start_trans_id = start_trans_id;
-		if (this_trans_id > start_trans_id)
+		if (trans_id_diff(this_trans_id, start_trans_id) > 0)
 			info->last_trans_id = this_trans_id - 1;
 		else
 			info->last_trans_id = this_trans_id;
