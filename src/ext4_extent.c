@@ -1215,6 +1215,13 @@ static int ext4_ext_remove_idx(struct ext4_inode_ref *inode_ref,
 		 to_le32(path[i].index->first_block), leaf, 1);
 	ext4_ext_free_blocks(inode_ref, leaf, 1, 0);
 
+	/*
+	 * We may need to correct the paths after the first extents/indexes in
+	 * a node being modified.
+	 *
+	 * We do not need to consider whether there's any extents presenting or
+	 * not, as garbage will be cleared soon.
+	 */
 	while (i > 0) {
 		if (path[i].index != EXT_FIRST_INDEX(path[i].header))
 			break;
@@ -1253,12 +1260,24 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 		new_start = start = to_le32(ex->first_block);
 		len = ext4_ext_get_actual_len(ex);
 		newblock = ext4_ext_pblock(ex);
+		/*
+		 * The 1st case:
+		 *   The position that we start truncation is inside the range of an
+		 *   extent. Here we should calculate the new length of that extent and
+		 *   may start the removal from the next extent.
+		 */
 		if (start < from) {
 			len -= from - start;
 			new_len = from - start;
 			start = from;
 			start_ex++;
 		} else {
+			/*
+			 * The second case:
+			 *   The last block to be truncated is inside the range of an
+			 *   extent. We need to calculate the new length and the new
+			 *   start of the extent.
+			 */
 			if (start + len - 1 > to) {
 				new_len = start + len - 1 - to;
 				len -= new_len;
@@ -1269,7 +1288,15 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 		}
 
 		ext4_ext_remove_blocks(inode_ref, ex, start, start + len - 1);
+		/*
+		 * Set the first block of the extent if it is presented.
+		 */
 		ex->first_block = to_le32(new_start);
+
+		/*
+		 * If the new length of the current extent we are working on is
+		 * zero, remove it.
+		 */
 		if (!new_len)
 			new_entries--;
 		else {
@@ -1286,12 +1313,21 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 	if (ex2 == NULL)
 		ex2 = ex;
 
+	/*
+	 * Move any remaining extents to the starting position of the node.
+	 */
 	if (ex2 <= EXT_LAST_EXTENT(eh))
 		memmove(start_ex, ex2, (EXT_LAST_EXTENT(eh) - ex2 + 1) *
 					   sizeof(struct ext4_extent));
 
 	eh->entries_count = to_le16(new_entries);
 	ext4_ext_dirty(inode_ref, path + depth);
+
+	/*
+	 * If the extent pointer is pointed to the first extent of the node, and
+	 * there's still extents presenting, we may need to correct the indexes
+	 * of the paths.
+	 */
 	if (path[depth].extent == EXT_FIRST_EXTENT(eh) && eh->entries_count) {
 		err = ext4_ext_correct_indexes(inode_ref, path);
 		if (err != EOK)
@@ -1308,6 +1344,9 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 	return err;
 }
 
+/*
+ * Check if there's more to remove at a specific level.
+ */
 static bool ext4_ext_more_to_rm(struct ext4_extent_path *path, ext4_lblk_t to)
 {
 	if (!to_le16(path->header->entries_count))
@@ -1427,6 +1466,9 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 			i++;
 		} else {
 			if (i > 0) {
+				/*
+				 * Garbage entries will finally be cleared here.
+				 */
 				if (!eh->entries_count)
 					ret = ext4_ext_remove_idx(inode_ref,
 								  path, i - 1);
