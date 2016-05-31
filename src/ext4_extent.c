@@ -1260,8 +1260,8 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 			start_ex++;
 		} else {
 			if (start + len - 1 > to) {
-				len -= start + len - 1 - to;
 				new_len = start + len - 1 - to;
+				len -= new_len;
 				new_start = to + 1;
 				newblock += to + 1 - start;
 				ex2 = ex;
