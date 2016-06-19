@@ -388,7 +388,7 @@ int ext4_readlink(const char *path, char *buf, size_t bufsize, size_t *rcnt);
  * @param name_len length of @name in bytes
  * @param data data of the entry to add
  * @param data_size size of data to add
- * @param replace whether existing entries should be replaced
+ * @param replace this boolean is deprecated.
  * @return standard error code*/
 int ext4_setxattr(const char *path, const char *name, size_t name_len,
 		  const void *data, size_t data_size, bool replace);

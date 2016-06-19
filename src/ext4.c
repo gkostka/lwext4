@@ -2414,7 +2414,7 @@ Finish:
 }
 
 int ext4_setxattr(const char *path, const char *name, size_t name_len,
-		  const void *data, size_t data_size, bool replace)
+		  const void *data, size_t data_size, bool replace __unused)
 {
 	bool found;
 	int r = EOK;
