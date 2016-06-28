@@ -2949,6 +2949,7 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
 #define EXT4_DIR_ENTRY_OFFSET_TERM (uint64_t)(-1)
 
 	int r;
+	uint16_t name_length;
 	ext4_direntry *de = 0;
 	struct ext4_inode_ref dir;
 	struct ext4_dir_iter it;
@@ -2971,7 +2972,18 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *d)
 		goto Finish;
 	}
 
-	memcpy(&d->de, it.curr, sizeof(ext4_direntry));
+	memset(&d->de.name, 0, sizeof(d->de.name));
+	name_length = ext4_dir_en_get_name_len(&d->f.mp->fs.sb,
+					       it.curr);
+	memcpy(&d->de.name, it.curr->name, name_length);
+
+	/* Directly copying the content isn't safe for Big-endian targets*/
+	d->de.inode = ext4_dir_en_get_inode(it.curr);
+	d->de.entry_length = ext4_dir_en_get_entry_len(it.curr);
+	d->de.name_length = name_length;
+	d->de.inode_type = ext4_dir_en_get_inode_type(&d->f.mp->fs.sb,
+						      it.curr);
+
 	de = &d->de;
 
 	ext4_dir_iterator_next(&it);

@@ -495,8 +495,7 @@ struct ext4_dir_en {
 	uint8_t name_len;   /* Lower 8 bits of name length */
 
 	union ext4_dir_en_internal in;
-
-	uint8_t name[EXT4_DIRECTORY_FILENAME_LEN]; /* Entry name */
+	uint8_t name[]; /* Entry name */
 };
 
 /* Structures for indexed directory */
