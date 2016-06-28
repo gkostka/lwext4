@@ -1640,9 +1640,11 @@ int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 	rec = RB_FIND(jbd_revoke_tree,
 			&trans->revoke_root,
 			&tmp_rec);
-	if (rec)
+	if (rec) {
 		RB_REMOVE(jbd_revoke_tree, &trans->revoke_root,
 			  rec);
+		free(rec);
+	}
 
 	return EOK;
 }
