@@ -1656,8 +1656,16 @@ int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 int jbd_trans_revoke_block(struct jbd_trans *trans,
 			   ext4_fsblk_t lba)
 {
-	struct jbd_revoke_rec *rec =
-		calloc(1, sizeof(struct jbd_revoke_rec));
+	struct jbd_revoke_rec tmp_rec = {
+		.lba = lba
+	}, *rec;
+	rec = RB_FIND(jbd_revoke_tree,
+		      &trans->revoke_root,
+		      &tmp_rec);
+	if (rec)
+		return EOK;
+
+	rec = calloc(1, sizeof(struct jbd_revoke_rec));
 	if (!rec)
 		return ENOMEM;
 
