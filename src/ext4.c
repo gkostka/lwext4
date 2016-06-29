@@ -2448,9 +2448,23 @@ int ext4_mknod(const char *path, int filetype, uint32_t dev)
 	if (mp->fs.read_only)
 		return EROFS;
 
+	/*
+	 * The filetype shouldn't be normal file, directory or
+	 * unknown.
+	 */
 	if (filetype == EXT4_DE_UNKNOWN ||
 	    filetype == EXT4_DE_REG_FILE ||
-	    filetype == EXT4_DE_DIR)
+	    filetype == EXT4_DE_DIR ||
+	    filetype == EXT4_DE_SYMLINK)
+		return EINVAL;
+
+	/*
+	 * Nor should it be any bogus value.
+	 */
+	if (filetype != EXT4_DE_CHRDEV &&
+	    filetype != EXT4_DE_BLKDEV &&
+	    filetype != EXT4_DE_FIFO &&
+	    filetype != EXT4_DE_SOCK)
 		return EINVAL;
 
 	EXT4_MP_LOCK(mp);
