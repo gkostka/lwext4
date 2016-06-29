@@ -328,6 +328,26 @@ void ext4_inode_set_indirect_block(struct ext4_inode *inode, uint32_t idx,
 	inode->blocks[idx + EXT4_INODE_INDIRECT_BLOCK] = to_le32(block);
 }
 
+uint32_t ext4_inode_get_dev(struct ext4_inode *inode)
+{
+	uint32_t dev_0, dev_1;
+	dev_0 = ext4_inode_get_direct_block(inode, 0);
+	dev_1 = ext4_inode_get_direct_block(inode, 1);
+
+	if (dev_0)
+		return dev_0;
+	else
+		return dev_1;
+}
+
+void ext4_inode_set_dev(struct ext4_inode *inode, uint32_t dev)
+{
+	if (dev & ~0xFFFF)
+		ext4_inode_set_direct_block(inode, 1, dev);
+	else
+		ext4_inode_set_direct_block(inode, 0, dev);
+}
+
 uint32_t ext4_inode_type(struct ext4_sblock *sb, struct ext4_inode *inode)
 {
 	return (ext4_inode_get_mode(sb, inode) & EXT4_INODE_MODE_TYPE_MASK);

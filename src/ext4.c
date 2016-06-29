@@ -2413,6 +2413,72 @@ Finish:
 	return r;
 }
 
+static int ext4_mknod_set(ext4_file *f, uint32_t dev)
+{
+	struct ext4_inode_ref ref;
+	int r;
+
+	ext4_assert(f && f->mp);
+
+	r = ext4_fs_get_inode_ref(&f->mp->fs, f->inode, &ref);
+	if (r != EOK)
+		return r;
+
+	ext4_inode_set_dev(ref.inode, dev);
+
+	ext4_inode_set_size(ref.inode, 0);
+	ref.dirty = true;
+
+	f->fsize = 0;
+	f->fpos = 0;
+
+	r = ext4_fs_put_inode_ref(&ref);
+	return r;
+}
+
+int ext4_mknod(const char *path, int filetype, uint32_t dev)
+{
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	int r;
+	ext4_file f;
+
+	if (!mp)
+		return ENOENT;
+
+	if (mp->fs.read_only)
+		return EROFS;
+
+	if (filetype == EXT4_DE_UNKNOWN ||
+	    filetype == EXT4_DE_REG_FILE ||
+	    filetype == EXT4_DE_DIR)
+		return EINVAL;
+
+	EXT4_MP_LOCK(mp);
+	ext4_trans_start(mp);
+
+	ext4_block_cache_write_back(mp->fs.bdev, 1);
+	r = ext4_generic_open2(&f, path, O_RDWR|O_CREAT, filetype, NULL, NULL);
+	if (r == EOK) {
+		if (filetype == EXT4_DE_CHRDEV ||
+		    filetype == EXT4_DE_BLKDEV)
+			r = ext4_mknod_set(&f, dev);
+	} else
+		goto Finish;
+
+	ext4_fclose(&f);
+
+Finish:
+	ext4_block_cache_write_back(mp->fs.bdev, 0);
+
+	if (r != EOK)
+		ext4_trans_abort(mp);
+	else
+		ext4_trans_stop(mp);
+
+	EXT4_MP_UNLOCK(mp);
+	return r;
+}
+
 int ext4_setxattr(const char *path, const char *name, size_t name_len,
 		  const void *data, size_t data_size, bool replace __unused)
 {

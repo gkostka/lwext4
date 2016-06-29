@@ -373,6 +373,14 @@ int ext4_file_set_ctime(const char *path, uint32_t ctime);
  * @return standard error code*/
 int ext4_fsymlink(const char *target, const char *path);
 
+/**@brief Create special file
+ * @param path path to new file
+ * @param filetype The filetype of the new special file
+ * 	  (that must not be regular file, directory, or unknown type)
+ * @param dev if filetype is char device or block device,
+ * 	  the device number will become the payload in the inode
+ * @return standard error code*/
+int ext4_mknod(const char *path, int filetype, uint32_t dev);
 
 /**@brief Read symbolic link payload
  * @param path to symlink

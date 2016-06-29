@@ -267,6 +267,18 @@ uint32_t ext4_inode_get_indirect_block(struct ext4_inode *inode, uint32_t idx);
 void ext4_inode_set_indirect_block(struct ext4_inode *inode, uint32_t idx,
 				   uint32_t block);
 
+/**@brief Get device number
+ * @param inode  I-node to get device number from
+ * @return Device number
+ */
+uint32_t ext4_inode_get_dev(struct ext4_inode *inode);
+
+/**@brief Set device number
+ * @param inode  I-node to set device number to
+ * @param dev    Device number
+ */
+void ext4_inode_set_dev(struct ext4_inode *inode, uint32_t dev);
+
 /**@brief return the type of i-node
  * @param sb    Superblock
  * @param inode I-node to return the type of
