@@ -180,7 +180,7 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 	if (!aux_info->sb)
 		return ENOMEM;
 
-	aux_info->bg_desc = calloc(aux_info->groups, sizeof(struct ext4_bgroup));
+	aux_info->bg_desc = calloc(1, sizeof(struct ext4_bgroup));
 	if (!aux_info->bg_desc)
 		return ENOMEM;
 
@@ -294,16 +294,20 @@ static void fill_in_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info
 	sb->flags = to_le32(EXT4_SUPERBLOCK_FLAGS_SIGNED_HASH);
 }
 
-static void fill_bgroups(struct fs_aux_info *aux_info,
+
+
+static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 			 struct ext4_mkfs_info *info)
 {
-	uint32_t i;
-
+	int r = EOK;
+	uint32_t i, j;
 	uint32_t bg_free_blk = 0;
 	uint64_t sb_free_blk = 0;
+	struct ext4_block b;
+
+	uint32_t block_size = ext4_sb_get_block_size(aux_info->sb);
 
 	for (i = 0; i < aux_info->groups; i++) {
-
 		uint64_t bg_start_block = aux_info->first_data_block +
 			aux_info->first_data_block + i * info->blocks_per_group;
 		uint32_t blk_off = 0;
@@ -324,85 +328,63 @@ static void fill_bgroups(struct fs_aux_info *aux_info,
 			bg_free_blk -= aux_info->bg_desc_blocks;
 		}
 
-		ext4_bg_set_block_bitmap(&aux_info->bg_desc[i], aux_info->sb,
+		ext4_bg_set_block_bitmap(aux_info->bg_desc, aux_info->sb,
 				bg_start_block + blk_off + 1);
 
-		ext4_bg_set_inode_bitmap(&aux_info->bg_desc[i], aux_info->sb,
+		ext4_bg_set_inode_bitmap(aux_info->bg_desc, aux_info->sb,
 				bg_start_block + blk_off + 2);
 
-		ext4_bg_set_inode_table_first_block(&aux_info->bg_desc[i],
+		ext4_bg_set_inode_table_first_block(aux_info->bg_desc,
 				aux_info->sb,
 				bg_start_block + blk_off + 3);
 
-		ext4_bg_set_free_blocks_count(&aux_info->bg_desc[i],
+		ext4_bg_set_free_blocks_count(aux_info->bg_desc,
 				aux_info->sb, bg_free_blk);
 
-		ext4_bg_set_free_inodes_count(&aux_info->bg_desc[i],
+		ext4_bg_set_free_inodes_count(aux_info->bg_desc,
 				aux_info->sb, aux_info->sb->inodes_per_group);
 
-		ext4_bg_set_used_dirs_count(&aux_info->bg_desc[i], aux_info->sb,
+		ext4_bg_set_used_dirs_count(aux_info->bg_desc, aux_info->sb,
 					    0);
 
-		ext4_bg_set_flag(&aux_info->bg_desc[i],
+		ext4_bg_set_flag(aux_info->bg_desc,
 				EXT4_BLOCK_GROUP_BLOCK_UNINIT |
 				EXT4_BLOCK_GROUP_INODE_UNINIT);
 
 		sb_free_blk += bg_free_blk;
-	}
-
-	ext4_sb_set_free_blocks_cnt(aux_info->sb, sb_free_blk);
-}
 
 
-static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
-			 struct ext4_mkfs_info *info)
-{
-	int r = EOK;
-	uint32_t i;
-	struct ext4_block b;
-	for (i = 0; i < aux_info->groups; i++) {
-		uint64_t bg_start_block = aux_info->first_data_block +
-			+ i * info->blocks_per_group;
-		uint32_t blk_off = 0;
+		for (j = 0; j < aux_info->groups; j++) {
+			uint64_t bg_start_block = aux_info->first_data_block +
+						  j * info->blocks_per_group;
+			uint32_t blk_off = 0;
 
-		blk_off += aux_info->bg_desc_blocks;
-		if (has_superblock(info, i)) {
-			bg_start_block++;
-			blk_off += info->bg_desc_reserve_blocks;
-		}
+			blk_off += aux_info->bg_desc_blocks;
+			if (has_superblock(info, j)) {
+				bg_start_block++;
+				blk_off += info->bg_desc_reserve_blocks;
+			}
 
-		uint32_t block_size = ext4_sb_get_block_size(aux_info->sb);
-		uint32_t dsc_pos = 0;
-		uint32_t dsc_id = 0;
-		uint32_t dsc_size = ext4_sb_get_desc_size(aux_info->sb);
-		uint32_t dsc_blk_cnt = aux_info->bg_desc_blocks;
-		uint64_t dsc_blk = bg_start_block;
 
-		while (dsc_blk_cnt--) {
-			r = ext4_block_get(bd, &b, dsc_blk++);
+			uint32_t dsc_pos = 0;
+			uint32_t dsc_size = ext4_sb_get_desc_size(aux_info->sb);
+			uint64_t dsc_blk = bg_start_block +
+					   i * dsc_size / block_size;
+
+			r = ext4_block_get(bd, &b, dsc_blk);
 			if (r != EOK)
 				return r;
 
-			dsc_pos = 0;
-			while (dsc_pos + dsc_size <= block_size) {
-				memcpy(b.data + dsc_pos,
-				       &aux_info->bg_desc[dsc_id],
-				       dsc_size);
+			dsc_pos = (i * dsc_size) % block_size;
+			memcpy(b.data + dsc_pos,
+					aux_info->bg_desc,
+					dsc_size);
 
-				dsc_pos += dsc_size;
-				dsc_id++;
-
-				if (dsc_id == aux_info->groups)
-					break;
-			}
 
 			ext4_bcache_set_dirty(b.buf);
 			r = ext4_block_set(bd, &b);
 			if (r != EOK)
 				return r;
-
-			if (dsc_id == aux_info->groups)
-				break;
 		}
 
 		r = ext4_block_get_noread(bd, &b, bg_start_block + blk_off + 1);
@@ -423,7 +405,7 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 			return r;
 	}
 
-
+	ext4_sb_set_free_blocks_cnt(aux_info->sb, sb_free_blk);
 	return r;
 }
 
@@ -492,8 +474,6 @@ static int mkfs_initial(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 		goto Finish;
 
 	fill_in_sb(&aux_info, info);
-	fill_bgroups(&aux_info, info);
-
 
 	r = write_bgroups(bd, &aux_info, info);
 	if (r != EOK)
