@@ -220,7 +220,7 @@ static void release_fs_aux_info(struct fs_aux_info *aux_info)
 
 
 /* Fill in the superblock memory buffer based on the filesystem parameters */
-static void fill_in_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info)
+static void fill_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info)
 {
 	struct ext4_sblock *sb = aux_info->sb;
 
@@ -485,7 +485,7 @@ Finish:
 	return r;
 }
 
-static int mkfs_initial(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
+static int mkfs_init(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 {
 	int r;
 	struct fs_aux_info aux_info;
@@ -495,7 +495,7 @@ static int mkfs_initial(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	if (r != EOK)
 		goto Finish;
 
-	fill_in_sb(&aux_info, info);
+	fill_sb(&aux_info, info);
 
 	r = write_bgroups(bd, &aux_info, info);
 	if (r != EOK)
@@ -739,7 +739,7 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	if (r != EOK)
 		goto cache_fini;
 
-	r = mkfs_initial(bd, info);
+	r = mkfs_init(bd, info);
 	if (r != EOK)
 		goto cache_fini;
 
