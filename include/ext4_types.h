@@ -1007,10 +1007,10 @@ struct jbd_sb {
 
 #if CONFIG_USE_USER_MALLOC
 
-#define ext4_malloc  user_malloc
-#define ext4_calloc  user_calloc
-#define ext4_realloc user_realloc
-#define ext4_free    user_free
+#define ext4_malloc  ext4_user_malloc
+#define ext4_calloc  ext4_user_calloc
+#define ext4_realloc ext4_user_realloc
+#define ext4_free    ext4_user_free
 
 #else
 
