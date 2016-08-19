@@ -176,11 +176,11 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 		aux_info->len_blocks -= last_group_size;
 	}
 
-	aux_info->sb = calloc(1, EXT4_SUPERBLOCK_SIZE);
+	aux_info->sb = ext4_calloc(1, EXT4_SUPERBLOCK_SIZE);
 	if (!aux_info->sb)
 		return ENOMEM;
 
-	aux_info->bg_desc_blk = calloc(1, info->block_size);
+	aux_info->bg_desc_blk = ext4_calloc(1, info->block_size);
 	if (!aux_info->bg_desc_blk)
 		return ENOMEM;
 
@@ -213,9 +213,9 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 static void release_fs_aux_info(struct fs_aux_info *aux_info)
 {
 	if (aux_info->sb)
-		free(aux_info->sb);
+		ext4_free(aux_info->sb);
 	if (aux_info->bg_desc_blk)
-		free(aux_info->bg_desc_blk);
+		ext4_free(aux_info->bg_desc_blk);
 }
 
 
@@ -467,7 +467,7 @@ int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 	if (r != EOK)
 		return r;
 
-	sb = malloc(EXT4_SUPERBLOCK_SIZE);
+	sb = ext4_malloc(EXT4_SUPERBLOCK_SIZE);
 	if (!sb)
 		goto Finish;
 
@@ -480,7 +480,7 @@ int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info)
 
 Finish:
 	if (sb)
-		free(sb);
+		ext4_free(sb);
 	ext4_block_fini(bd);
 	return r;
 }

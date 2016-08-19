@@ -1004,6 +1004,24 @@ struct jbd_sb {
 }
 #endif
 
+
+#ifdef USE_OTHER_MALLOC
+
+#define ext4_malloc  pool_malloc
+#define ext4_calloc  pool_calloc
+#define ext4_realloc pool_realloc
+#define ext4_free    pool_free
+
+#else
+
+#define ext4_malloc  malloc
+#define ext4_calloc  calloc
+#define ext4_realloc realloc
+#define ext4_free    free
+
+#endif
+
+
 #endif /* EXT4_TYPES_H_ */
 
 /**

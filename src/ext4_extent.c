@@ -529,14 +529,14 @@ static int ext4_find_extent(struct ext4_inode_ref *inode_ref, ext4_lblk_t block,
 	if (path) {
 		ext4_ext_drop_refs(inode_ref, path, 0);
 		if (depth > path[0].maxdepth) {
-			free(path);
+			ext4_free(path);
 			*orig_path = path = NULL;
 		}
 	}
 	if (!path) {
 		int32_t path_depth = depth + 1;
 		/* account possible depth increase */
-		path = calloc(1, sizeof(struct ext4_extent_path) *
+		path = ext4_calloc(1, sizeof(struct ext4_extent_path) *
 				     (path_depth + 1));
 		if (!path)
 			return ENOMEM;
@@ -592,7 +592,7 @@ static int ext4_find_extent(struct ext4_inode_ref *inode_ref, ext4_lblk_t block,
 
 err:
 	ext4_ext_drop_refs(inode_ref, path, 0);
-	free(path);
+	ext4_free(path);
 	if (orig_path)
 		*orig_path = NULL;
 	return ret;
@@ -1130,7 +1130,7 @@ again:
 		i = depth - (level - 1);
 		/* We split from leaf to the i-th node */
 		if (level > 0) {
-			npath = calloc(1, sizeof(struct ext4_extent_path) *
+			npath = ext4_calloc(1, sizeof(struct ext4_extent_path) *
 					      (level));
 			if (!npath) {
 				ret = ENOMEM;
@@ -1168,7 +1168,7 @@ out:
 		}
 	}
 	if (npath)
-		free(npath);
+		ext4_free(npath);
 
 	return ret;
 }
@@ -1498,7 +1498,7 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 
 out:
 	ext4_ext_drop_refs(inode_ref, path, 0);
-	free(path);
+	ext4_free(path);
 	path = NULL;
 	return ret;
 }
@@ -1792,7 +1792,7 @@ out:
 out2:
 	if (path) {
 		ext4_ext_drop_refs(inode_ref, path, 0);
-		free(path);
+		ext4_free(path);
 	}
 
 	return err;

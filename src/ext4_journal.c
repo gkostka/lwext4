@@ -147,8 +147,8 @@ RB_GENERATE_INTERNAL(jbd_block, jbd_block_rec, block_rec_node,
 RB_GENERATE_INTERNAL(jbd_revoke_tree, jbd_revoke_rec, revoke_node,
 		     jbd_revoke_rec_cmp, static inline)
 
-#define jbd_alloc_revoke_entry() calloc(1, sizeof(struct revoke_entry))
-#define jbd_free_revoke_entry(addr) free(addr)
+#define jbd_alloc_revoke_entry() ext4_calloc(1, sizeof(struct revoke_entry))
+#define jbd_free_revoke_entry(addr) ext4_free(addr)
 
 static int jbd_has_csum(struct jbd_sb *jbd_sb)
 {
@@ -1310,7 +1310,7 @@ static void jbd_journal_flush_trans(struct jbd_trans *trans)
 	struct jbd_buf *jbd_buf, *tmp;
 	struct jbd_journal *journal = trans->journal;
 	struct ext4_fs *fs = journal->jbd_fs->inode_ref.fs;
-	void *tmp_data = malloc(journal->block_size);
+	void *tmp_data = ext4_malloc(journal->block_size);
 	ext4_assert(tmp_data);
 
 	TAILQ_FOREACH_SAFE(jbd_buf, &trans->buf_queue, buf_node,
@@ -1340,7 +1340,7 @@ static void jbd_journal_flush_trans(struct jbd_trans *trans)
 			ext4_block_set(fs->bdev, &block);
 	}
 
-	free(tmp_data);
+	ext4_free(tmp_data);
 }
 
 static void
@@ -1496,7 +1496,7 @@ jbd_trans_insert_block_rec(struct jbd_trans *trans,
 		jbd_trans_change_ownership(block_rec, trans);
 		return block_rec;
 	}
-	block_rec = calloc(1, sizeof(struct jbd_block_rec));
+	block_rec = ext4_calloc(1, sizeof(struct jbd_block_rec));
 	if (!block_rec)
 		return NULL;
 
@@ -1587,7 +1587,7 @@ jbd_trans_remove_block_rec(struct jbd_journal *journal,
 		RB_REMOVE(jbd_block,
 				&journal->block_rec_root,
 				block_rec);
-		free(block_rec);
+		ext4_free(block_rec);
 	}
 }
 
@@ -1609,13 +1609,13 @@ int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 		if (jbd_buf && jbd_buf->trans == trans)
 			return EOK;
 	}
-	jbd_buf = calloc(1, sizeof(struct jbd_buf));
+	jbd_buf = ext4_calloc(1, sizeof(struct jbd_buf));
 	if (!jbd_buf)
 		return ENOMEM;
 
 	if ((block_rec = jbd_trans_insert_block_rec(trans,
 					block->lb_id)) == NULL) {
-		free(jbd_buf);
+		ext4_free(jbd_buf);
 		return ENOMEM;
 	}
 
@@ -1643,7 +1643,7 @@ int jbd_trans_set_block_dirty(struct jbd_trans *trans,
 	if (rec) {
 		RB_REMOVE(jbd_revoke_tree, &trans->revoke_root,
 			  rec);
-		free(rec);
+		ext4_free(rec);
 	}
 
 	return EOK;
@@ -1665,7 +1665,7 @@ int jbd_trans_revoke_block(struct jbd_trans *trans,
 	if (rec)
 		return EOK;
 
-	rec = calloc(1, sizeof(struct jbd_revoke_rec));
+	rec = ext4_calloc(1, sizeof(struct jbd_revoke_rec));
 	if (!rec)
 		return ENOMEM;
 
@@ -1736,19 +1736,19 @@ void jbd_journal_free_trans(struct jbd_journal *journal,
 				abort,
 				false);
 		TAILQ_REMOVE(&trans->buf_queue, jbd_buf, buf_node);
-		free(jbd_buf);
+		ext4_free(jbd_buf);
 	}
 	RB_FOREACH_SAFE(rec, jbd_revoke_tree, &trans->revoke_root,
 			  tmp2) {
 		RB_REMOVE(jbd_revoke_tree, &trans->revoke_root, rec);
-		free(rec);
+		ext4_free(rec);
 	}
 	LIST_FOREACH_SAFE(block_rec, &trans->tbrec_list, tbrec_node,
 			  tmp3) {
 		jbd_trans_remove_block_rec(journal, block_rec, trans);
 	}
 
-	free(trans);
+	ext4_free(trans);
 }
 
 /**@brief  Write commit block for a transaction
@@ -1854,7 +1854,7 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 
 		ext4_block_set(fs->bdev, &jbd_buf->block);
 		TAILQ_REMOVE(&trans->buf_queue, jbd_buf, buf_node);
-		free(jbd_buf);
+		ext4_free(jbd_buf);
 	}
 
 	TAILQ_FOREACH_SAFE(jbd_buf, &trans->buf_queue, buf_node, tmp) {
@@ -1887,7 +1887,7 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 
 			ext4_block_set(fs->bdev, &jbd_buf->block);
 			TAILQ_REMOVE(&trans->buf_queue, jbd_buf, buf_node);
-			free(jbd_buf);
+			ext4_free(jbd_buf);
 			continue;
 		}
 		checksum = jbd_block_csum(journal->jbd_fs,
@@ -2123,7 +2123,7 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 		buf->end_write_arg = NULL;
 	}
 
-	free(jbd_buf);
+	ext4_free(jbd_buf);
 
 	trans->written_cnt++;
 	if (trans->written_cnt == trans->data_cnt) {
@@ -2257,7 +2257,7 @@ struct jbd_trans *
 jbd_journal_new_trans(struct jbd_journal *journal)
 {
 	struct jbd_trans *trans = NULL;
-	trans = calloc(1, sizeof(struct jbd_trans));
+	trans = ext4_calloc(1, sizeof(struct jbd_trans));
 	if (!trans)
 		return NULL;
 
