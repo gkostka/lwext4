@@ -319,6 +319,10 @@ static inline void ext4_bg_clear_flag(struct ext4_bgroup *bg, uint32_t f)
  * @return Computed CRC16*/
 uint16_t ext4_bg_crc16(uint16_t crc, const uint8_t *buffer, size_t len);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* EXT4_BLOCK_GROUP_H_ */
 
 /**
