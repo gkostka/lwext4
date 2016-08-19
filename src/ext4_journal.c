@@ -1763,7 +1763,25 @@ static int jbd_trans_write_commit_block(struct jbd_trans *trans)
 	struct jbd_journal *journal = trans->journal;
 
 	commit_iblock = jbd_journal_alloc_block(journal, trans);
-	rc = jbd_block_get_noread(journal->jbd_fs, &block, commit_iblock);
+	orig_commit_iblock = commit_iblock;
+	commit_iblock++;
+	wrap(&journal->jbd_fs->sb, commit_iblock);
+
+	/* To prevent accidental reference to stale journalling metadata. */
+	if (orig_commit_iblock < commit_iblock) {
+		rc = jbd_block_get_noread(journal->jbd_fs, &block, commit_iblock);
+		if (rc != EOK)
+			return rc;
+
+		memset(block.data, 0, journal->block_size);
+		ext4_bcache_set_dirty(block.buf);
+		ext4_bcache_set_flag(block.buf, BC_TMP);
+		rc = jbd_block_set(journal->jbd_fs, &block);
+		if (rc != EOK)
+			return rc;
+	}
+
+	rc = jbd_block_get_noread(journal->jbd_fs, &block, orig_commit_iblock);
 	if (rc != EOK)
 		return rc;
 
@@ -1782,25 +1800,6 @@ static int jbd_trans_write_commit_block(struct jbd_trans *trans)
 	ext4_bcache_set_dirty(block.buf);
 	ext4_bcache_set_flag(block.buf, BC_TMP);
 	rc = jbd_block_set(journal->jbd_fs, &block);
-	if (rc != EOK)
-		return rc;
-
-	orig_commit_iblock = commit_iblock;
-	commit_iblock++;
-	wrap(&journal->jbd_fs->sb, commit_iblock);
-
-	/* To prevent accidental reference to stale journalling metadata. */
-	if (orig_commit_iblock < commit_iblock) {
-		rc = jbd_block_get_noread(journal->jbd_fs, &block, commit_iblock);
-		if (rc != EOK)
-			return rc;
-
-		memset(block.data, 0, journal->block_size);
-		ext4_bcache_set_dirty(block.buf);
-		ext4_bcache_set_flag(block.buf, BC_TMP);
-		rc = jbd_block_set(journal->jbd_fs, &block);
-	}
-
 	return rc;
 }
 
