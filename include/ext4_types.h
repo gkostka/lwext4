@@ -1004,6 +1004,24 @@ struct jbd_sb {
 }
 #endif
 
+
+#if CONFIG_USE_USER_MALLOC
+
+#define ext4_malloc  user_malloc
+#define ext4_calloc  user_calloc
+#define ext4_realloc user_realloc
+#define ext4_free    user_free
+
+#else
+
+#define ext4_malloc  malloc
+#define ext4_calloc  calloc
+#define ext4_realloc realloc
+#define ext4_free    free
+
+#endif
+
+
 #endif /* EXT4_TYPES_H_ */
 
 /**

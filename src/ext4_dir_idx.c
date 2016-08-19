@@ -939,7 +939,7 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	uint32_t block_size = ext4_sb_get_block_size(&inode_ref->fs->sb);
 
 	/* Allocate buffer for directory entries */
-	uint8_t *entry_buffer = malloc(block_size);
+	uint8_t *entry_buffer = ext4_malloc(block_size);
 	if (entry_buffer == NULL)
 		return ENOMEM;
 
@@ -949,9 +949,9 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	/* Allocate sort entry */
 	struct ext4_dx_sort_entry *sort;
 
-	sort = malloc(max_ecnt * sizeof(struct ext4_dx_sort_entry));
+	sort = ext4_malloc(max_ecnt * sizeof(struct ext4_dx_sort_entry));
 	if (sort == NULL) {
-		free(entry_buffer);
+		ext4_free(entry_buffer);
 		return ENOMEM;
 	}
 
@@ -972,8 +972,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 			rc = ext4_dir_dx_hash_string(&hinfo_tmp, len,
 						     (char *)de->name);
 			if (rc != EOK) {
-				free(sort);
-				free(entry_buffer);
+				ext4_free(sort);
+				ext4_free(entry_buffer);
 				return rc;
 			}
 
@@ -1008,8 +1008,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	uint32_t new_iblock;
 	rc = ext4_fs_append_inode_dblk(inode_ref, &new_fblock, &new_iblock);
 	if (rc != EOK) {
-		free(sort);
-		free(entry_buffer);
+		ext4_free(sort);
+		ext4_free(entry_buffer);
 		return rc;
 	}
 
@@ -1018,8 +1018,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	rc = ext4_trans_block_get_noread(inode_ref->fs->bdev, &new_data_block_tmp,
 				   new_fblock);
 	if (rc != EOK) {
-		free(sort);
-		free(entry_buffer);
+		ext4_free(sort);
+		ext4_free(entry_buffer);
 		return rc;
 	}
 
@@ -1097,8 +1097,8 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 	ext4_trans_set_block_dirty(old_data_block->buf);
 	ext4_trans_set_block_dirty(new_data_block_tmp.buf);
 
-	free(sort);
-	free(entry_buffer);
+	ext4_free(sort);
+	ext4_free(entry_buffer);
 
 	ext4_dir_dx_insert_entry(inode_ref, index_block, new_hash + continued,
 				new_iblock);

@@ -35,6 +35,7 @@
  */
 
 #include "ext4_config.h"
+#include "ext4_types.h"
 #include "ext4_bcache.h"
 #include "ext4_blockdev.h"
 #include "ext4_debug.h"
@@ -120,13 +121,13 @@ ext4_buf_alloc(struct ext4_bcache *bc, uint64_t lba)
 {
 	void *data;
 	struct ext4_buf *buf;
-	data = malloc(bc->itemsize);
+	data = ext4_malloc(bc->itemsize);
 	if (!data)
 		return NULL;
 
-	buf = calloc(1, sizeof(struct ext4_buf));
+	buf = ext4_calloc(1, sizeof(struct ext4_buf));
 	if (!buf) {
-		free(data);
+		ext4_free(data);
 		return NULL;
 	}
 
@@ -138,8 +139,8 @@ ext4_buf_alloc(struct ext4_bcache *bc, uint64_t lba)
 
 static void ext4_buf_free(struct ext4_buf *buf)
 {
-	free(buf->data);
-	free(buf);
+	ext4_free(buf->data);
+	ext4_free(buf);
 }
 
 static struct ext4_buf *

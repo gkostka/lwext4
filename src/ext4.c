@@ -395,12 +395,12 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	if (!bc) {
 		/*Automatic block cache alloc.*/
 		mp->cache_dynamic = 1;
-		bc = malloc(sizeof(struct ext4_bcache));
+		bc = ext4_malloc(sizeof(struct ext4_bcache));
 
 		r = ext4_bcache_init_dynamic(bc, CONFIG_BLOCK_DEV_CACHE_SIZE,
 					     bsize);
 		if (r != EOK) {
-			free(bc);
+			ext4_free(bc);
 			ext4_block_fini(bd);
 			return r;
 		}
@@ -416,7 +416,7 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 		ext4_block_fini(bd);
 		if (mp->cache_dynamic) {
 			ext4_bcache_fini_dynamic(bc);
-			free(bc);
+			ext4_free(bc);
 		}
 		return r;
 	}
@@ -451,7 +451,7 @@ int ext4_umount(const char *mount_point)
 	ext4_bcache_cleanup(mp->fs.bdev->bc);
 	if (mp->cache_dynamic) {
 		ext4_bcache_fini_dynamic(mp->fs.bdev->bc);
-		free(mp->fs.bdev->bc);
+		ext4_free(mp->fs.bdev->bc);
 	}
 	r = ext4_block_fini(mp->fs.bdev);
 Finish:
@@ -549,7 +549,7 @@ static int __ext4_recover(const char *mount_point)
 	int r = ENOTSUP;
 	EXT4_MP_LOCK(mp);
 	if (ext4_sb_feature_com(&mp->fs.sb, EXT4_FCOM_HAS_JOURNAL)) {
-		struct jbd_fs *jbd_fs = calloc(1, sizeof(struct jbd_fs));
+		struct jbd_fs *jbd_fs = ext4_calloc(1, sizeof(struct jbd_fs));
 		if (!jbd_fs) {
 			 r = ENOMEM;
 			 goto Finish;
@@ -558,13 +558,13 @@ static int __ext4_recover(const char *mount_point)
 
 		r = jbd_get_fs(&mp->fs, jbd_fs);
 		if (r != EOK) {
-			free(jbd_fs);
+			ext4_free(jbd_fs);
 			goto Finish;
 		}
 
 		r = jbd_recover(jbd_fs);
 		jbd_put_fs(jbd_fs);
-		free(jbd_fs);
+		ext4_free(jbd_fs);
 	}
 	if (r == EOK && !mp->fs.read_only) {
 		uint32_t bgid;
@@ -2611,7 +2611,7 @@ int ext4_listxattr(const char *path, char *list, size_t size, size_t *ret_size)
 
 	r = ext4_xattr_list(&inode_ref, NULL, &list_len);
 	if (r == EOK && list_len) {
-		xattr_list = malloc(list_len);
+		xattr_list = ext4_malloc(list_len);
 		if (!xattr_list) {
 			ext4_fs_put_inode_ref(&inode_ref);
 			r = ENOMEM;
@@ -2658,7 +2658,7 @@ int ext4_listxattr(const char *path, char *list, size_t size, size_t *ret_size)
 Finish:
 	EXT4_MP_UNLOCK(mp);
 	if (xattr_list)
-		free(xattr_list);
+		ext4_free(xattr_list);
 
 	return r;
 
