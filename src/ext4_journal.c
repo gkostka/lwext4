@@ -884,7 +884,7 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 	 * is equal or greater than that in revoke entry.*/
 	revoke_entry = jbd_revoke_entry_lookup(info, block);
 	if (revoke_entry &&
-	    trans_id_diff(arg->this_trans_id, revoke_entry->trans_id) < 0)
+	    trans_id_diff(arg->this_trans_id, revoke_entry->trans_id) <= 0)
 		return;
 
 	ext4_dbg(DEBUG_JBD,
