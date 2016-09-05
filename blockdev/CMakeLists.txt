@@ -1,9 +1,10 @@
 #Blockdev library
 
-if    (BLOCKDEV_TYPE STREQUAL  linux)
-aux_source_directory(linux BLOCKDEV_SRC)
-elseif    (BLOCKDEV_TYPE STREQUAL  windows)
-aux_source_directory(windows BLOCKDEV_SRC)
+if    (WIN32)
+  aux_source_directory(linux BLOCKDEV_SRC)
+  aux_source_directory(windows BLOCKDEV_SRC)
+elseif    (BLOCKDEV_TYPE STREQUAL  linux)
+  aux_source_directory(linux BLOCKDEV_SRC)
 else()
 endif()
 
