@@ -28,6 +28,13 @@ generic:
 	$(COMMON_DEFINITIONS)                                 \
 	-DCMAKE_TOOLCHAIN_FILE=../toolchain/generic.cmake ..
 
+mingw:
+	rm -R -f build_mingw
+	mkdir build_mingw
+	cd build_mingw && cmake -G"Unix Makefiles"          \
+	$(COMMON_DEFINITIONS)                                 \
+	-DWIN32=1 \
+	-DCMAKE_TOOLCHAIN_FILE=../toolchain/mingw.cmake ..
 
 avrxmega7:
 	rm -R -f build_avrxmega7
