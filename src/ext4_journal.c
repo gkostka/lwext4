@@ -619,6 +619,10 @@ struct tag_info {
 	/**@brief  block number stored in this tag.*/
 	ext4_fsblk_t block;
 
+	/**@brief  Is the first 4 bytes of block equals to
+	 *	   JBD_MAGIC_NUMBER? */
+	bool is_escape;
+
 	/**@brief  whether UUID part exists or not.*/
 	bool uuid_exist;
 
@@ -649,6 +653,7 @@ jbd_extract_block_tag(struct jbd_fs *jbd_fs,
 	tag_info->tag_bytes = tag_bytes;
 	tag_info->uuid_exist = false;
 	tag_info->last_tag = false;
+	tag_info->is_escape = false;
 
 	/* See whether it is possible to hold a valid block tag.*/
 	if (remain_buf_size - tag_bytes < 0)
@@ -664,7 +669,7 @@ jbd_extract_block_tag(struct jbd_fs *jbd_fs,
 				 (uint64_t)jbd_get32(tag, blocknr_high) << 32;
 
 		if (jbd_get32(tag, flags) & JBD_FLAG_ESCAPE)
-			tag_info->block = 0;
+			tag_info->is_escape = true;
 
 		if (!(jbd_get32(tag, flags) & JBD_FLAG_SAME_UUID)) {
 			/* See whether it is possible to hold UUID part.*/
@@ -689,7 +694,7 @@ jbd_extract_block_tag(struct jbd_fs *jbd_fs,
 				 (uint64_t)jbd_get32(tag, blocknr_high) << 32;
 
 		if (jbd_get16(tag, flags) & JBD_FLAG_ESCAPE)
-			tag_info->block = 0;
+			tag_info->is_escape = true;
 
 		if (!(jbd_get16(tag, flags) & JBD_FLAG_SAME_UUID)) {
 			/* See whether it is possible to hold UUID part.*/
@@ -756,6 +761,10 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 			jbd_set32(tag, flags,
 				  jbd_get32(tag, flags) | JBD_FLAG_LAST_TAG);
 
+		if (tag_info->is_escape)
+			jbd_set32(tag, flags,
+				  jbd_get32(tag, flags) | JBD_FLAG_ESCAPE);
+
 	} else {
 		struct jbd_block_tag *tag = __tag;
 		memset(tag, 0, sizeof(struct jbd_block_tag));
@@ -782,6 +791,11 @@ jbd_write_block_tag(struct jbd_fs *jbd_fs,
 			jbd_set16(tag, flags,
 				  jbd_get16(tag, flags) | JBD_FLAG_LAST_TAG);
 
+
+		if (tag_info->is_escape)
+			jbd_set16(tag, flags,
+				  jbd_get16(tag, flags) | JBD_FLAG_ESCAPE);
+
 	}
 	return EOK;
 }
@@ -798,9 +812,8 @@ jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 			void *__tag_start,
 			int32_t tag_tbl_size,
 			void (*func)(struct jbd_fs * jbd_fs,
-					ext4_fsblk_t block,
-					uint8_t *uuid,
-					void *arg),
+				     struct tag_info *tag_info,
+				     void *arg),
 			void *arg)
 {
 	char *tag_start, *tag_ptr;
@@ -826,7 +839,7 @@ jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 			break;
 
 		if (func)
-			func(jbd_fs, tag_info.block, tag_info.uuid, arg);
+			func(jbd_fs, &tag_info, arg);
 
 		/* Stop the iteration when we reach the last tag. */
 		if (tag_info.last_tag)
@@ -838,16 +851,14 @@ jbd_iterate_block_table(struct jbd_fs *jbd_fs,
 }
 
 static void jbd_display_block_tags(struct jbd_fs *jbd_fs,
-				   ext4_fsblk_t block,
-				   uint8_t *uuid,
+				   struct tag_info *tag_info,
 				   void *arg)
 {
 	uint32_t *iblock = arg;
-	ext4_dbg(DEBUG_JBD, "Block in block_tag: %" PRIu64 "\n", block);
+	ext4_dbg(DEBUG_JBD, "Block in block_tag: %" PRIu64 "\n", tag_info->block);
 	(*iblock)++;
 	wrap(&jbd_fs->sb, *iblock);
 	(void)jbd_fs;
-	(void)uuid;
 	return;
 }
 
@@ -863,10 +874,9 @@ jbd_revoke_entry_lookup(struct recover_info *info, ext4_fsblk_t block)
 
 /**@brief  Replay a block in a transaction.
  * @param  jbd_fs jbd filesystem
- * @param  block  block address to be replayed.*/
+ * @param  tag_info tag_info of the logged block.*/
 static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
-				  ext4_fsblk_t block,
-				  uint8_t *uuid __unused,
+				  struct tag_info *tag_info,
 				  void *__arg)
 {
 	int r;
@@ -882,22 +892,22 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 
 	/* We replay this block only if the current transaction id
 	 * is equal or greater than that in revoke entry.*/
-	revoke_entry = jbd_revoke_entry_lookup(info, block);
+	revoke_entry = jbd_revoke_entry_lookup(info, tag_info->block);
 	if (revoke_entry &&
 	    trans_id_diff(arg->this_trans_id, revoke_entry->trans_id) <= 0)
 		return;
 
 	ext4_dbg(DEBUG_JBD,
 		 "Replaying block in block_tag: %" PRIu64 "\n",
-		 block);
+		 tag_info->block);
 
 	r = jbd_block_get(jbd_fs, &journal_block, *this_block);
 	if (r != EOK)
 		return;
 
 	/* We need special treatment for ext4 superblock. */
-	if (block) {
-		r = ext4_block_get_noread(fs->bdev, &ext4_block, block);
+	if (tag_info->block) {
+		r = ext4_block_get_noread(fs->bdev, &ext4_block, tag_info->block);
 		if (r != EOK) {
 			jbd_block_set(jbd_fs, &journal_block);
 			return;
@@ -906,6 +916,10 @@ static void jbd_replay_block_tags(struct jbd_fs *jbd_fs,
 		memcpy(ext4_block.data,
 			journal_block.data,
 			jbd_get32(&jbd_fs->sb, blocksize));
+
+		if (tag_info->is_escape)
+			((struct jbd_bhdr *)ext4_block.data)->magic =
+					to_be32(JBD_MAGIC_NUMBER);
 
 		ext4_bcache_set_dirty(ext4_block.buf);
 		ext4_block_set(fs->bdev, &ext4_block);
@@ -1860,6 +1874,7 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 	TAILQ_FOREACH_SAFE(jbd_buf, &trans->buf_queue, buf_node, tmp) {
 		struct tag_info tag_info;
 		bool uuid_exist = false;
+		bool is_escape = false;
 		struct jbd_revoke_rec tmp_rec = {
 			.lba = jbd_buf->block_rec->lba
 		};
@@ -1894,6 +1909,10 @@ static int jbd_journal_prepare(struct jbd_journal *journal,
 					  jbd_buf->block.data,
 					  checksum,
 					  trans->trans_id);
+		if (((struct jbd_bhdr *)jbd_buf->block.data)->magic ==
+				to_be32(JBD_MAGIC_NUMBER))
+			is_escape = true;
+
 again:
 		if (!desc_iblock) {
 			desc_iblock = jbd_journal_alloc_block(journal, trans);
@@ -1923,6 +1942,7 @@ again:
 		}
 		tag_info.block = jbd_buf->block.lb_id;
 		tag_info.uuid_exist = uuid_exist;
+		tag_info.is_escape = is_escape;
 		if (i == trans->data_cnt - 1)
 			tag_info.last_tag = true;
 		else
