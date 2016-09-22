@@ -1980,6 +1980,9 @@ again:
 		data = data_block.data;
 		memcpy(data, jbd_buf->block.data,
 			journal->block_size);
+		if (is_escape)
+			((struct jbd_bhdr *)data)->magic = 0;
+
 		ext4_bcache_set_dirty(data_block.buf);
 		ext4_bcache_set_flag(data_block.buf, BC_TMP);
 		rc = jbd_block_set(journal->jbd_fs, &data_block);
