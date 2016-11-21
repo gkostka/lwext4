@@ -1157,11 +1157,13 @@ static int jbd_iterate_log(struct jbd_fs *jbd_fs,
 			ext4_dbg(DEBUG_JBD, "Commit block: %" PRIu32", "
 					    "trans_id: %" PRIu32"\n",
 					    this_block, this_trans_id);
-			/* This is the end of a transaction,
+			/*
+			 * This is the end of a transaction,
 			 * we may now proceed to the next transaction.
 			 */
 			this_trans_id++;
-			info->trans_cnt++;
+			if (action == ACTION_SCAN)
+				info->trans_cnt++;
 			break;
 		case JBD_REVOKE_BLOCK:
 			if (!jbd_verify_meta_csum(jbd_fs, header)) {
@@ -1236,6 +1238,7 @@ int jbd_recover(struct jbd_fs *jbd_fs)
 			ext4_get32(&jbd_fs->inode_ref.fs->sb,
 				   features_incompatible);
 		jbd_set32(&jbd_fs->sb, start, 0);
+		jbd_set32(&jbd_fs->sb, sequence, info.last_trans_id);
 		features_incompatible &= ~EXT4_FINCOM_RECOVER;
 		ext4_set32(&jbd_fs->inode_ref.fs->sb,
 			   features_incompatible,
@@ -1267,7 +1270,6 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 	uint32_t features_incompatible =
 			ext4_get32(&jbd_fs->inode_ref.fs->sb,
 				   features_incompatible);
-	struct ext4_block block = EXT4_BLOCK_ZERO();
 	features_incompatible |= EXT4_FINCOM_RECOVER;
 	ext4_set32(&jbd_fs->inode_ref.fs->sb,
 			features_incompatible,
@@ -1280,25 +1282,15 @@ int jbd_journal_start(struct jbd_fs *jbd_fs,
 	journal->first = jbd_get32(&jbd_fs->sb, first);
 	journal->start = journal->first;
 	journal->last = journal->first;
-	journal->trans_id = 1;
-	journal->alloc_trans_id = 1;
+	/*
+	 * To invalidate any stale records we need to start from
+	 * the checkpoint transaction ID of the previous journalling session
+	 * plus 1.
+	 */
+	journal->trans_id = jbd_get32(&jbd_fs->sb, sequence) + 1;
+	journal->alloc_trans_id = journal->trans_id;
 
 	journal->block_size = jbd_get32(&jbd_fs->sb, blocksize);
-
-	r = jbd_block_get_noread(jbd_fs,
-			 &block,
-			 journal->start);
-	if (r != EOK) {
-		memset(journal, 0, sizeof(struct jbd_journal));
-		return r;
-	}
-	memset(block.data, 0, journal->block_size);
-	ext4_bcache_set_dirty(block.buf);
-	r = jbd_block_set(jbd_fs, &block);
-	if (r != EOK) {
-		memset(journal, 0, sizeof(struct jbd_journal));
-		return r;
-	}
 
 	TAILQ_INIT(&journal->cp_queue);
 	RB_INIT(&journal->block_rec_root);
@@ -1773,29 +1765,12 @@ static int jbd_trans_write_commit_block(struct jbd_trans *trans)
 	int rc;
 	struct ext4_block block;
 	struct jbd_commit_header *header;
-	uint32_t commit_iblock, orig_commit_iblock;
+	uint32_t commit_iblock;
 	struct jbd_journal *journal = trans->journal;
 
 	commit_iblock = jbd_journal_alloc_block(journal, trans);
-	orig_commit_iblock = commit_iblock;
-	commit_iblock++;
-	wrap(&journal->jbd_fs->sb, commit_iblock);
 
-	/* To prevent accidental reference to stale journalling metadata. */
-	if (orig_commit_iblock < commit_iblock) {
-		rc = jbd_block_get_noread(journal->jbd_fs, &block, commit_iblock);
-		if (rc != EOK)
-			return rc;
-
-		memset(block.data, 0, journal->block_size);
-		ext4_bcache_set_dirty(block.buf);
-		ext4_bcache_set_flag(block.buf, BC_TMP);
-		rc = jbd_block_set(journal->jbd_fs, &block);
-		if (rc != EOK)
-			return rc;
-	}
-
-	rc = jbd_block_get_noread(journal->jbd_fs, &block, orig_commit_iblock);
+	rc = jbd_block_get_noread(journal->jbd_fs, &block, commit_iblock);
 	if (rc != EOK)
 		return rc;
 
