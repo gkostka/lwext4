@@ -350,14 +350,16 @@ int ext4_block_writebytes(struct ext4_blockdev *bdev, uint64_t off,
 
 	/*Aligned data*/
 	blen = len / bdev->bdif->ph_bsize;
-	r = ext4_bdif_bwrite(bdev, p, block_idx, blen);
-	if (r != EOK)
-		return r;
+	if (blen != 0) {
+		r = ext4_bdif_bwrite(bdev, p, block_idx, blen);
+		if (r != EOK)
+			return r;
 
-	p += bdev->bdif->ph_bsize * blen;
-	len -= bdev->bdif->ph_bsize * blen;
+		p += bdev->bdif->ph_bsize * blen;
+		len -= bdev->bdif->ph_bsize * blen;
 
-	block_idx += blen;
+		block_idx += blen;
+	}
 
 	/*Rest of the data*/
 	if (len) {
@@ -416,14 +418,16 @@ int ext4_block_readbytes(struct ext4_blockdev *bdev, uint64_t off, void *buf,
 	/*Aligned data*/
 	blen = len / bdev->bdif->ph_bsize;
 
-	r = ext4_bdif_bread(bdev, p, block_idx, blen);
-	if (r != EOK)
-		return r;
+	if (blen != 0) {
+		r = ext4_bdif_bread(bdev, p, block_idx, blen);
+		if (r != EOK)
+			return r;
 
-	p += bdev->bdif->ph_bsize * blen;
-	len -= bdev->bdif->ph_bsize * blen;
+		p += bdev->bdif->ph_bsize * blen;
+		len -= bdev->bdif->ph_bsize * blen;
 
-	block_idx += blen;
+		block_idx += blen;
+	}
 
 	/*Rest of the data*/
 	if (len) {
