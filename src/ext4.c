@@ -1387,14 +1387,29 @@ int ext4_get_sblock(const char *mount_point, struct ext4_sblock **sb)
 int ext4_cache_write_back(const char *path, bool on)
 {
 	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	int ret;
 
 	if (!mp)
 		return ENOENT;
 
 	EXT4_MP_LOCK(mp);
-	ext4_block_cache_write_back(mp->fs.bdev, on);
+	ret = ext4_block_cache_write_back(mp->fs.bdev, on);
 	EXT4_MP_UNLOCK(mp);
-	return EOK;
+	return ret;
+}
+
+int ext4_cache_flush(const char *path)
+{
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+	int ret;
+
+	if (!mp)
+		return ENOENT;
+
+	EXT4_MP_LOCK(mp);
+	ret = ext4_block_cache_flush(mp->fs.bdev);
+	EXT4_MP_UNLOCK(mp);
+	return ret;
 }
 
 int ext4_fremove(const char *path)

@@ -234,6 +234,14 @@ int ext4_get_sblock(const char *mount_point, struct ext4_sblock **sb);
  * @return  standard error code */
 int ext4_cache_write_back(const char *path, bool on);
 
+
+/**@brief   Force cache flush.
+ *
+ * @param   path mount point path
+ *
+ * @return  standard error code */
+int ext4_cache_flush(const char *path);
+
 /********************************FILE OPERATIONS*****************************/
 
 /**@brief   Remove file by path.
