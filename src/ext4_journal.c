@@ -1459,10 +1459,12 @@ static uint32_t jbd_journal_alloc_block(struct jbd_journal *journal,
 	trans->alloc_blocks++;
 	wrap(&journal->jbd_fs->sb, journal->last);
 	
-	/* If there is no space left, flush all journalled
-	 * blocks to disk first.*/
-	if (journal->last == journal->start)
-		jbd_journal_purge_cp_trans(journal, true, false);
+	/* If there is no space left, flush just one journalled
+	 * transaction.*/
+	if (journal->last == journal->start) {
+		jbd_journal_purge_cp_trans(journal, true, true);
+		ext4_assert(journal->last != journal->start);
+	}
 
 	return start_block;
 }
