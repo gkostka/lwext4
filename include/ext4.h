@@ -348,32 +348,64 @@ uint64_t ext4_fsize(ext4_file *f);
  * @param path to file/dir/link
  * @param mode new mode bits (for example 0777)
  * @return  standard error code*/
-int ext4_chmod(const char *path, uint32_t mode);
+int ext4_mode_set(const char *path, uint32_t mode);
+
+
+/**@brief Get file/directory/link mode bits
+ * @param path to file/dir/link
+ * @param mode new mode bits (for example 0777)
+ * @return  standard error code*/
+int ext4_mode_get(const char *path, uint32_t *mode);
 
 /**@brief Change file owner and group
  * @param path to file/dir/link
  * @param uid user id
  * @param gid group id
  * @return  standard error code*/
-int ext4_chown(const char *path, uint32_t uid, uint32_t gid);
+int ext4_owner_set(const char *path, uint32_t uid, uint32_t gid);
 
-/**@brief Set file access time
+/**@brief Get file/directory/link owner and group
+ * @param path to file/dir/link
+ * @param uid user id
+ * @param gid group id
+ * @return  standard error code*/
+int ext4_owner_get(const char *path, uint32_t *uid, uint32_t *gid);
+
+/**@brief Set file/directory/link access time
  * @param path to file/dir/link
  * @param atime access timestamp
  * @return  standard error code*/
-int ext4_file_set_atime(const char *path, uint32_t atime);
+int ext4_atime_set(const char *path, uint32_t atime);
 
-/**@brief Set file modify time
+/**@brief Set file/directory/link modify time
  * @param path to file/dir/link
  * @param mtime modify timestamp
  * @return  standard error code*/
-int ext4_file_set_mtime(const char *path, uint32_t mtime);
+int ext4_mtime_set(const char *path, uint32_t mtime);
 
-/**@brief Set file change time
+/**@brief Set file/directory/link change time
  * @param path to file/dir/link
  * @param ctime change timestamp
  * @return  standard error code*/
-int ext4_file_set_ctime(const char *path, uint32_t ctime);
+int ext4_ctime_set(const char *path, uint32_t ctime);
+
+/**@brief Get file/directory/link access time
+ * @param path to file/dir/link
+ * @param atime access timestamp
+ * @return  standard error code*/
+int ext4_atime_get(const char *path, uint32_t *atime);
+
+/**@brief Get file/directory/link modify time
+ * @param path to file/dir/link
+ * @param mtime modify timestamp
+ * @return  standard error code*/
+int ext4_mtime_get(const char *path, uint32_t *mtime);
+
+/**@brief Get file/directory/link change time
+ * @param path to file/dir/link
+ * @param ctime change timestamp
+ * @return  standard error code*/
+int ext4_ctime_get(const char *path, uint32_t *ctime);
 
 /**@brief Create symbolic link
  * @param target destination path
