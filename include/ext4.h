@@ -108,25 +108,38 @@ typedef struct ext4_dir {
 
 /********************************MOUNT OPERATIONS****************************/
 
-/**@brief   Register a block device to a name.
- *          @warning Block device has to be filled by
- *          Block cache may by created automatically when bc parameter is NULL.
- * @param   bd block device
- * @param   bd block device cache
- * @param   dev_name register name
- * @param   standard error code*/
+/**@brief   Register block device.
+ *
+ * @param   bd Block device.
+ * @param   bd Block device cache.
+ * @param   dev_name Block device name.
+ *
+ * @return  Standard error code.*/
 int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
 			 const char *dev_name);
 
+/**@brief   Un-register block device.
+ *
+ * @param   dev_name Block device name.
+ *
+ * @return  Standard error code.*/
+int ext4_device_unregister(const char *dev_name);
+
+/**@brief   Un-register all block devices.
+ *
+ * @return  Standard error code.*/
+int ext4_device_unregister_all(void);
+
 /**@brief   Mount a block device with EXT4 partition to the mount point.
- * @param   dev_name block device name (@ref ext4_device_register)
- * @param   mount_point mount point, for example
+ *
+ * @param   dev_name block Device name (@ref ext4_device_register).
+ * @param   mount_point Mount point, for example:
  *          -   /
  *          -   /my_partition/
  *          -   /my_second_partition/
  * @param   read_only mount as read-only mode.
  *
- * @return standard error code */
+ * @return Standard error code */
 int ext4_mount(const char *dev_name,
 	       const char *mount_point,
 	       bool read_only);

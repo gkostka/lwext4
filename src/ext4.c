@@ -78,7 +78,7 @@ struct ext4_mountpoint {
 	bool mounted;
 
 	/**@brief   Mount point name (@ref ext4_mount)*/
-	char name[32];
+	char name[CONFIG_EXT4_MAX_MP_NAME + 1];
 
 	/**@brief   OS dependent lock/unlock functions.*/
 	const struct ext4_lock *os_locks;
@@ -89,15 +89,18 @@ struct ext4_mountpoint {
 	/**@brief   Dynamic allocation cache flag.*/
 	bool cache_dynamic;
 
+	/**@brief   JBD fs.*/
 	struct jbd_fs jbd_fs;
+
+	/**@brief   Journal.*/
 	struct jbd_journal jbd_journal;
 };
 
 /**@brief   Block devices descriptor.*/
-struct _ext4_devices {
+struct ext4_block_devices {
 
 	/**@brief   Block device name (@ref ext4_device_register)*/
-	char name[32];
+	char name[CONFIG_EXT4_MAX_BLOCKDEV_NAME + 1];
 
 	/**@brief   Block device handle.*/
 	struct ext4_blockdev *bd;
@@ -107,29 +110,55 @@ struct _ext4_devices {
 };
 
 /**@brief   Block devices.*/
-struct _ext4_devices _bdevices[CONFIG_EXT4_BLOCKDEVS_COUNT];
+static struct ext4_block_devices s_bdevices[CONFIG_EXT4_BLOCKDEVS_COUNT];
 
 /**@brief   Mountpoints.*/
-struct ext4_mountpoint _mp[CONFIG_EXT4_MOUNTPOINTS_COUNT];
+static struct ext4_mountpoint s_mp[CONFIG_EXT4_MOUNTPOINTS_COUNT];
 
 int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
 			 const char *dev_name)
 {
-	uint32_t i;
 	ext4_assert(bd && dev_name);
 
-	for (i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
-		if (!_bdevices[i].bd) {
-			strcpy(_bdevices[i].name, dev_name);
-			_bdevices[i].bd = bd;
-			_bdevices[i].bc = bc;
+	if (strlen(dev_name) > CONFIG_EXT4_MAX_BLOCKDEV_NAME)
+		return EINVAL;
+
+	for (size_t i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
+		if (!strcmp(s_bdevices[i].name, dev_name))
+			return EEXIST;
+	}
+
+	for (size_t i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
+		if (!s_bdevices[i].bd) {
+			strcpy(s_bdevices[i].name, dev_name);
+			s_bdevices[i].bd = bd;
+			s_bdevices[i].bc = bc;
 			return EOK;
 		}
-
-		if (!strcmp(_bdevices[i].name, dev_name))
-			return EOK;
 	}
+
 	return ENOSPC;
+}
+
+int ext4_device_unregister(const char *dev_name)
+{
+	ext4_assert(dev_name);
+
+	for (size_t i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
+		if (strcmp(s_bdevices[i].name, dev_name))
+			continue;
+
+		memset(&s_bdevices[i], 0, sizeof(s_bdevices[i]));
+	}
+
+	return ENOENT;
+}
+
+int ext4_device_unregister_all(void)
+{
+	memset(s_bdevices, 0, sizeof(s_bdevices));
+
+	return EOK;
 }
 
 /****************************************************************************/
@@ -337,23 +366,27 @@ static int ext4_unlink(struct ext4_mountpoint *mp,
 int ext4_mount(const char *dev_name, const char *mount_point,
 	       bool read_only)
 {
-	ext4_assert(mount_point && dev_name);
 	int r;
-	int i;
-
 	uint32_t bsize;
 	struct ext4_blockdev *bd = 0;
 	struct ext4_bcache *bc = 0;
 	struct ext4_mountpoint *mp = 0;
 
-	if (mount_point[strlen(mount_point) - 1] != '/')
+	ext4_assert(mount_point && dev_name);
+
+	size_t mp_len = strlen(mount_point);
+
+	if (mp_len > CONFIG_EXT4_MAX_MP_NAME)
+		return EINVAL;
+
+	if (mount_point[mp_len - 1] != '/')
 		return ENOTSUP;
 
-	for (i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
-		if (_bdevices[i].name) {
-			if (!strcmp(dev_name, _bdevices[i].name)) {
-				bd = _bdevices[i].bd;
-				bc = _bdevices[i].bc;
+	for (size_t i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
+		if (s_bdevices[i].name) {
+			if (!strcmp(dev_name, s_bdevices[i].name)) {
+				bd = s_bdevices[i].bd;
+				bc = s_bdevices[i].bc;
 				break;
 			}
 		}
@@ -362,15 +395,15 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	if (!bd)
 		return ENODEV;
 
-	for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
-		if (!_mp[i].mounted) {
-			strcpy(_mp[i].name, mount_point);
-			_mp[i].mounted = 1;
-			mp = &_mp[i];
+	for (size_t i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
+		if (!s_mp[i].mounted) {
+			strcpy(s_mp[i].name, mount_point);
+			s_mp[i].mounted = 1;
+			mp = &s_mp[i];
 			break;
 		}
 
-		if (!strcmp(_mp[i].name, mount_point))
+		if (!strcmp(s_mp[i].name, mount_point))
 			return EOK;
 	}
 
@@ -433,8 +466,8 @@ int ext4_umount(const char *mount_point)
 	struct ext4_mountpoint *mp = 0;
 
 	for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
-		if (!strcmp(_mp[i].name, mount_point)) {
-			mp = &_mp[i];
+		if (!strcmp(s_mp[i].name, mount_point)) {
+			mp = &s_mp[i];
 			break;
 		}
 	}
@@ -464,11 +497,11 @@ static struct ext4_mountpoint *ext4_get_mount(const char *path)
 	int i;
 	for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
 
-		if (!_mp[i].mounted)
+		if (!s_mp[i].mounted)
 			continue;
 
-		if (!strncmp(_mp[i].name, path, strlen(_mp[i].name)))
-			return &_mp[i];
+		if (!strncmp(s_mp[i].name, path, strlen(s_mp[i].name)))
+			return &s_mp[i];
 	}
 	return NULL;
 }
@@ -724,8 +757,8 @@ int ext4_mount_setup_locks(const char *mount_point,
 	struct ext4_mountpoint *mp = 0;
 
 	for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
-		if (!strcmp(_mp[i].name, mount_point)) {
-			mp = &_mp[i];
+		if (!strcmp(s_mp[i].name, mount_point)) {
+			mp = &s_mp[i];
 			break;
 		}
 	}
