@@ -2166,9 +2166,6 @@ int ext4_mode_get(const char *path, uint32_t *mode)
 	if (!mp)
 		return ENOENT;
 
-	if (mp->fs.read_only)
-		return EROFS;
-
 	EXT4_MP_LOCK(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDONLY, EXT4_DE_UNKNOWN, NULL, NULL);
@@ -2197,9 +2194,6 @@ int ext4_owner_get(const char *path, uint32_t *uid, uint32_t *gid)
 
 	if (!mp)
 		return ENOENT;
-
-	if (mp->fs.read_only)
-		return EROFS;
 
 	EXT4_MP_LOCK(mp);
 
@@ -2315,9 +2309,6 @@ int ext4_atime_get(const char *path, uint32_t *atime)
 	if (!mp)
 		return ENOENT;
 
-	if (mp->fs.read_only)
-		return EROFS;
-
 	EXT4_MP_LOCK(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDONLY, EXT4_DE_UNKNOWN, NULL, NULL);
@@ -2347,9 +2338,6 @@ int ext4_mtime_get(const char *path, uint32_t *mtime)
 	if (!mp)
 		return ENOENT;
 
-	if (mp->fs.read_only)
-		return EROFS;
-
 	EXT4_MP_LOCK(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDONLY, EXT4_DE_UNKNOWN, NULL, NULL);
@@ -2378,9 +2366,6 @@ int ext4_ctime_get(const char *path, uint32_t *ctime)
 
 	if (!mp)
 		return ENOENT;
-
-	if (mp->fs.read_only)
-		return EROFS;
 
 	EXT4_MP_LOCK(mp);
 
