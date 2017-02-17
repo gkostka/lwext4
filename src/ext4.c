@@ -86,9 +86,6 @@ struct ext4_mountpoint {
 	/**@brief   Ext4 filesystem internals.*/
 	struct ext4_fs fs;
 
-	/**@brief   Dynamic allocation cache flag.*/
-	bool cache_dynamic;
-
 	/**@brief   JBD fs.*/
 	struct jbd_fs jbd_fs;
 
@@ -99,14 +96,11 @@ struct ext4_mountpoint {
 /**@brief   Block devices descriptor.*/
 struct ext4_block_devices {
 
-	/**@brief   Block device name (@ref ext4_device_register)*/
+	/**@brief   Block device name.*/
 	char name[CONFIG_EXT4_MAX_BLOCKDEV_NAME + 1];
 
 	/**@brief   Block device handle.*/
 	struct ext4_blockdev *bd;
-
-	/**@brief   Block cache handle.*/
-	struct ext4_bcache *bc;
 };
 
 /**@brief   Block devices.*/
@@ -115,7 +109,7 @@ static struct ext4_block_devices s_bdevices[CONFIG_EXT4_BLOCKDEVS_COUNT];
 /**@brief   Mountpoints.*/
 static struct ext4_mountpoint s_mp[CONFIG_EXT4_MOUNTPOINTS_COUNT];
 
-int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
+int ext4_device_register(struct ext4_blockdev *bd,
 			 const char *dev_name)
 {
 	ext4_assert(bd && dev_name);
@@ -132,7 +126,6 @@ int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
 		if (!s_bdevices[i].bd) {
 			strcpy(s_bdevices[i].name, dev_name);
 			s_bdevices[i].bd = bd;
-			s_bdevices[i].bc = bc;
 			return EOK;
 		}
 	}
@@ -368,8 +361,8 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 {
 	int r;
 	uint32_t bsize;
+	struct ext4_bcache *bc;
 	struct ext4_blockdev *bd = 0;
-	struct ext4_bcache *bc = 0;
 	struct ext4_mountpoint *mp = 0;
 
 	ext4_assert(mount_point && dev_name);
@@ -386,7 +379,6 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 		if (s_bdevices[i].name) {
 			if (!strcmp(dev_name, s_bdevices[i].name)) {
 				bd = s_bdevices[i].bd;
-				bc = s_bdevices[i].bc;
 				break;
 			}
 		}
@@ -423,20 +415,13 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	bsize = ext4_sb_get_block_size(&mp->fs.sb);
 	ext4_block_set_lb_size(bd, bsize);
 
-	mp->cache_dynamic = 0;
+	bc = ext4_malloc(sizeof(struct ext4_bcache));
 
-	if (!bc) {
-		/*Automatic block cache alloc.*/
-		mp->cache_dynamic = 1;
-		bc = ext4_malloc(sizeof(struct ext4_bcache));
-
-		r = ext4_bcache_init_dynamic(bc, CONFIG_BLOCK_DEV_CACHE_SIZE,
-					     bsize);
-		if (r != EOK) {
-			ext4_free(bc);
-			ext4_block_fini(bd);
-			return r;
-		}
+	r = ext4_bcache_init_dynamic(bc, CONFIG_BLOCK_DEV_CACHE_SIZE, bsize);
+	if (r != EOK) {
+		ext4_free(bc);
+		ext4_block_fini(bd);
+		return r;
 	}
 
 	if (bsize != bc->itemsize)
@@ -447,10 +432,8 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	if (r != EOK) {
 		ext4_bcache_cleanup(bc);
 		ext4_block_fini(bd);
-		if (mp->cache_dynamic) {
-			ext4_bcache_fini_dynamic(bc);
-			ext4_free(bc);
-		}
+		ext4_bcache_fini_dynamic(bc);
+		ext4_free(bc);
 		return r;
 	}
 	bd->fs = &mp->fs;
@@ -482,10 +465,8 @@ int ext4_umount(const char *mount_point)
 	mp->mounted = 0;
 
 	ext4_bcache_cleanup(mp->fs.bdev->bc);
-	if (mp->cache_dynamic) {
-		ext4_bcache_fini_dynamic(mp->fs.bdev->bc);
-		ext4_free(mp->fs.bdev->bc);
-	}
+	ext4_bcache_fini_dynamic(mp->fs.bdev->bc);
+	ext4_free(mp->fs.bdev->bc);
 	r = ext4_block_fini(mp->fs.bdev);
 Finish:
 	mp->fs.bdev->fs = NULL;

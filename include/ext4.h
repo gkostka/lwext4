@@ -111,11 +111,10 @@ typedef struct ext4_dir {
 /**@brief   Register block device.
  *
  * @param   bd Block device.
- * @param   bd Block device cache.
  * @param   dev_name Block device name.
  *
  * @return  Standard error code.*/
-int ext4_device_register(struct ext4_blockdev *bd, struct ext4_bcache *bc,
+int ext4_device_register(struct ext4_blockdev *bd,
 			 const char *dev_name);
 
 /**@brief   Un-register block device.

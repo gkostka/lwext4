@@ -113,7 +113,7 @@ struct lwext4_op_codes {
 
 /**@brief   Library call wraper.*/
 struct lwext4_call {
-	int (*lwext4_call)(char *p);
+	int (*lwext4_call)(const char *p);
 };
 
 /**@brief  */
@@ -153,64 +153,64 @@ static struct lwext4_op_codes op_codes[] = {
     "stats_check",
 };
 
-int _device_register(char *p);
-int _mount(char *p);
-int _umount(char *p);
-int _mount_point_stats(char *p);
-int _cache_write_back(char *p);
-int _fremove(char *p);
-int _fopen(char *p);
-int _fclose(char *p);
-int _fread(char *p);
-int _fwrite(char *p);
-int _fseek(char *p);
-int _ftell(char *p);
-int _fsize(char *p);
-int _dir_rm(char *p);
-int _dir_mk(char *p);
-int _dir_open(char *p);
-int _dir_close(char *p);
-int _dir_close(char *p);
-int _dir_entry_get(char *p);
+static int device_register(const char *p);
+static int mount(const char *p);
+static int umount(const char *p);
+static int mount_point_stats(const char *p);
+static int cache_write_back(const char *p);
+static int fremove(const char *p);
+static int file_open(const char *p);
+static int file_close(const char *p);
+static int file_read(const char *p);
+static int file_write(const char *p);
+static int file_seek(const char *p);
+static int file_tell(const char *p);
+static int file_size(const char *p);
+static int dir_rm(const char *p);
+static int dir_mk(const char *p);
+static int dir_open(const char *p);
+static int dir_close(const char *p);
+static int dir_close(const char *p);
+static int dir_entry_get(const char *p);
 
-int _multi_fcreate(char *p);
-int _multi_fwrite(char *p);
-int _multi_fread(char *p);
-int _multi_fremove(char *p);
-int _multi_dcreate(char *p);
-int _multi_dremove(char *p);
-int _stats_save(char *p);
-int _stats_check(char *p);
+static int multi_fcreate(const char *p);
+static int multi_fwrite(const char *p);
+static int multi_fread(const char *p);
+static int multi_fremove(const char *p);
+static int multi_dcreate(const char *p);
+static int multi_dremove(const char *p);
+static int stats_save(const char *p);
+static int stats_check(const char *p);
 
 /**@brief  */
 static struct lwext4_call op_call[] = {
-    _device_register,   /*PARAMS(3):   0 cache_mode dev_name   */
-    _mount,		/*PARAMS(2):   dev_name mount_point    */
-    _umount,		/*PARAMS(1):   mount_point             */
-    _mount_point_stats, /*PARAMS(2):   mount_point, 0          */
-    _cache_write_back,  /*PARAMS(2):   mount_point, en         */
-    _fremove,		/*PARAMS(1):   path                    */
-    _fopen,		/*PARAMS(2):   fid path flags          */
-    _fclose,		/*PARAMS(1):   fid                     */
-    _fread,		/*PARAMS(4):   fid 0 len 0             */
-    _fwrite,		/*PARAMS(4):   fid 0 len 0             */
-    _fseek,		/*PARAMS(2):   fid off origin          */
-    _ftell,		/*PARAMS(2):   fid exp                 */
-    _fsize,		/*PARAMS(2):   fid exp                 */
-    _dir_rm,		/*PARAMS(1):   path                    */
-    _dir_mk,		/*PARAMS(1):   path                    */
-    _dir_open,		/*PARAMS(2):   did, path               */
-    _dir_close,		/*PARAMS(1):   did                     */
-    _dir_entry_get,     /*PARAMS(2):   did, exp                */
+    device_register,   /*PARAMS(3):   0 cache_mode dev_name   */
+    mount,		/*PARAMS(2):   dev_name mount_point    */
+    umount,		/*PARAMS(1):   mount_point             */
+    mount_point_stats, /*PARAMS(2):   mount_point, 0          */
+    cache_write_back,  /*PARAMS(2):   mount_point, en         */
+    fremove,		/*PARAMS(1):   path                    */
+    file_open,		/*PARAMS(2):   fid path flags          */
+    file_close,		/*PARAMS(1):   fid                     */
+    file_read,		/*PARAMS(4):   fid 0 len 0             */
+    file_write,		/*PARAMS(4):   fid 0 len 0             */
+    file_seek,		/*PARAMS(2):   fid off origin          */
+    file_tell,		/*PARAMS(2):   fid exp                 */
+    file_size,		/*PARAMS(2):   fid exp                 */
+    dir_rm,		/*PARAMS(1):   path                    */
+    dir_mk,		/*PARAMS(1):   path                    */
+    dir_open,		/*PARAMS(2):   did, path               */
+    dir_close,		/*PARAMS(1):   did                     */
+    dir_entry_get,     /*PARAMS(2):   did, exp                */
 
-    _multi_fcreate, /*PARAMS(3):   path prefix cnt         */
-    _multi_fwrite,  /*PARAMS(4):   path prefix cnt size    */
-    _multi_fread,   /*PARAMS(4):   path prefix cnt size    */
-    _multi_fremove, /*PARAMS(2):   path prefix cnt         */
-    _multi_dcreate, /*PARAMS(3):   path prefix cnt         */
-    _multi_dremove, /*PARAMS(2):   path prefix             */
-    _stats_save,    /*PARAMS(1):   path                    */
-    _stats_check,   /*PARAMS(1):   path                    */
+    multi_fcreate, /*PARAMS(3):   path prefix cnt         */
+    multi_fwrite,  /*PARAMS(4):   path prefix cnt size    */
+    multi_fread,   /*PARAMS(4):   path prefix cnt size    */
+    multi_fremove, /*PARAMS(2):   path prefix cnt         */
+    multi_dcreate, /*PARAMS(3):   path prefix cnt         */
+    multi_dremove, /*PARAMS(2):   path prefix             */
+    stats_save,    /*PARAMS(1):   path                    */
+    stats_check,   /*PARAMS(1):   path                    */
 };
 
 static clock_t get_ms(void)
@@ -221,7 +221,7 @@ static clock_t get_ms(void)
 }
 
 /**@brief  */
-static int exec_op_code(char *opcode)
+static int exec_op_code(const char *opcode)
 {
 	int i;
 	int r = -1;
@@ -380,7 +380,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-int _device_register(char *p)
+static int device_register(const char *p)
 {
 	int dev;
 	int cache_mode;
@@ -402,10 +402,13 @@ int _device_register(char *p)
 		ext4_filedev_filename(ext4_fname);
 		bd = ext4_filedev_get();
 	}
-	return ext4_device_register(bd, 0, dev_name);
+
+	ext4_device_unregister_all();
+
+	return ext4_device_register(bd, dev_name);
 }
 
-int _mount(char *p)
+static int mount(const char *p)
 {
 	char dev_name[32];
 	char mount_point[32];
@@ -436,7 +439,7 @@ int _mount(char *p)
 	return rc;
 }
 
-int _umount(char *p)
+static int umount(const char *p)
 {
 	char mount_point[32];
 	int rc;
@@ -460,7 +463,7 @@ int _umount(char *p)
 	return rc;
 }
 
-int _mount_point_stats(char *p)
+static int mount_point_stats(const char *p)
 {
 	char mount_point[32];
 	int d;
@@ -497,7 +500,7 @@ int _mount_point_stats(char *p)
 	return rc;
 }
 
-int _cache_write_back(char *p)
+static int cache_write_back(const char *p)
 {
 	char mount_point[32];
 	int en;
@@ -510,7 +513,7 @@ int _cache_write_back(char *p)
 	return ext4_cache_write_back(mount_point, en);
 }
 
-int _fremove(char *p)
+static int fremove(const char *p)
 {
 	char path[255];
 
@@ -522,7 +525,7 @@ int _fremove(char *p)
 	return ext4_fremove(path);
 }
 
-int _fopen(char *p)
+static int file_open(const char *p)
 {
 	int fid = MAX_FILES;
 	char path[256];
@@ -547,7 +550,7 @@ int _fopen(char *p)
 	return rc;
 }
 
-int _fclose(char *p)
+static int file_close(const char *p)
 {
 	int fid = MAX_FILES;
 	int rc;
@@ -575,7 +578,7 @@ int _fclose(char *p)
 	return rc;
 }
 
-int _fread(char *p)
+static int file_read(const char *p)
 {
 	int fid = MAX_FILES;
 	int len;
@@ -623,7 +626,7 @@ int _fread(char *p)
 	return rc;
 }
 
-int _fwrite(char *p)
+static int file_write(const const char *p)
 {
 	int fid = MAX_FILES;
 	int d;
@@ -665,7 +668,7 @@ int _fwrite(char *p)
 	return rc;
 }
 
-int _fseek(char *p)
+static int file_seek(const char *p)
 {
 	int fid = MAX_FILES;
 	int off;
@@ -689,7 +692,7 @@ int _fseek(char *p)
 	return ext4_fseek(&file_tab[fid].fd, off, origin);
 }
 
-int _ftell(char *p)
+static int file_tell(const char *p)
 {
 	int fid = MAX_FILES;
 	uint32_t exp_pos;
@@ -717,7 +720,7 @@ int _ftell(char *p)
 	return EOK;
 }
 
-int _fsize(char *p)
+static int file_size(const char *p)
 {
 	int fid = MAX_FILES;
 	uint32_t exp_size;
@@ -745,7 +748,7 @@ int _fsize(char *p)
 	return EOK;
 }
 
-int _dir_rm(char *p)
+static int dir_rm(const char *p)
 {
 	char path[255];
 
@@ -757,7 +760,7 @@ int _dir_rm(char *p)
 	return ext4_dir_rm(path);
 }
 
-int _dir_mk(char *p)
+static int dir_mk(const char *p)
 {
 	char path[255];
 
@@ -769,7 +772,7 @@ int _dir_mk(char *p)
 	return ext4_dir_mk(path);
 }
 
-int _dir_open(char *p)
+static int dir_open(const char *p)
 {
 	int did = MAX_DIRS;
 	char path[255];
@@ -793,7 +796,7 @@ int _dir_open(char *p)
 	return rc;
 }
 
-int _dir_close(char *p)
+static int dir_close(const char *p)
 {
 	int did = MAX_DIRS;
 	int rc;
@@ -821,7 +824,7 @@ int _dir_close(char *p)
 	return rc;
 }
 
-int _dir_entry_get(char *p)
+static int dir_entry_get(const char *p)
 {
 	int did = MAX_DIRS;
 	int exp;
@@ -868,7 +871,7 @@ int _dir_entry_get(char *p)
 	return EOK;
 }
 
-int _multi_fcreate(char *p)
+static int multi_fcreate(const char *p)
 {
 	char path[256];
 	char path1[256];
@@ -894,7 +897,7 @@ int _multi_fcreate(char *p)
 	return rc;
 }
 
-int _multi_fwrite(char *p)
+static int multi_fwrite(const char *p)
 {
 	char path[256];
 	char path1[256];
@@ -937,7 +940,7 @@ int _multi_fwrite(char *p)
 	return rc;
 }
 
-int _multi_fread(char *p)
+static int multi_fread(const char *p)
 {
 	char path[256];
 	char path1[256];
@@ -987,7 +990,7 @@ int _multi_fread(char *p)
 	return rc;
 }
 
-int _multi_fremove(char *p)
+static int multi_fremove(const char *p)
 {
 	char path[256];
 	char path1[256];
@@ -1009,7 +1012,7 @@ int _multi_fremove(char *p)
 	return rc;
 }
 
-int _multi_dcreate(char *p)
+static int multi_dcreate(const char *p)
 {
 	char path[256];
 	char path1[256];
@@ -1031,7 +1034,7 @@ int _multi_dcreate(char *p)
 	return rc;
 }
 
-int _multi_dremove(char *p)
+static int multi_dremove(const char *p)
 {
 	char path[256];
 	char path1[256];
@@ -1055,7 +1058,7 @@ int _multi_dremove(char *p)
 
 struct ext4_mount_stats saved_stats;
 
-int _stats_save(char *p)
+static int stats_save(const char *p)
 {
 	char path[256];
 
@@ -1067,7 +1070,7 @@ int _stats_save(char *p)
 	return ext4_mount_point_stats(path, &saved_stats);
 }
 
-int _stats_check(char *p)
+static int stats_check(const char *p)
 {
 	char path[256];
 	int rc;

@@ -330,7 +330,7 @@ bool test_lwext4_mount(struct ext4_blockdev *bdev, struct ext4_bcache *bcache)
 
 	ext4_dmask_set(DEBUG_ALL);
 
-	r = ext4_device_register(bd, bc ? bc : 0, "ext4_fs");
+	r = ext4_device_register(bd, "ext4_fs");
 	if (r != EOK) {
 		printf("ext4_device_register: rc = %d\n", r);
 		return false;
