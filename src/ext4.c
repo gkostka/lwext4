@@ -475,8 +475,7 @@ Finish:
 
 static struct ext4_mountpoint *ext4_get_mount(const char *path)
 {
-	int i;
-	for (i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
+	for (size_t i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
 
 		if (!s_mp[i].mounted)
 			continue;
@@ -484,6 +483,7 @@ static struct ext4_mountpoint *ext4_get_mount(const char *path)
 		if (!strncmp(s_mp[i].name, path, strlen(s_mp[i].name)))
 			return &s_mp[i];
 	}
+
 	return NULL;
 }
 
@@ -492,6 +492,7 @@ static int __ext4_journal_start(const char *mount_point)
 {
 	int r = EOK;
 	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
+
 	if (!mp)
 		return ENOENT;
 
@@ -522,6 +523,7 @@ static int __ext4_journal_stop(const char *mount_point)
 {
 	int r = EOK;
 	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
+
 	if (!mp)
 		return ENOENT;
 
@@ -557,10 +559,11 @@ __unused
 static int __ext4_recover(const char *mount_point)
 {
 	struct ext4_mountpoint *mp = ext4_get_mount(mount_point);
+	int r = ENOTSUP;
+
 	if (!mp)
 		return ENOENT;
 
-	int r = ENOTSUP;
 	EXT4_MP_LOCK(mp);
 	if (ext4_sb_feature_com(&mp->fs.sb, EXT4_FCOM_HAS_JOURNAL)) {
 		struct jbd_fs *jbd_fs = ext4_calloc(1, sizeof(struct jbd_fs));
@@ -568,7 +571,6 @@ static int __ext4_recover(const char *mount_point)
 			 r = ENOMEM;
 			 goto Finish;
 		}
-
 
 		r = jbd_get_fs(&mp->fs, jbd_fs);
 		if (r != EOK) {
@@ -615,6 +617,7 @@ __unused
 static int __ext4_trans_start(struct ext4_mountpoint *mp)
 {
 	int r = EOK;
+
 	if (mp->fs.jbd_journal && !mp->fs.curr_trans) {
 		struct jbd_journal *journal = mp->fs.jbd_journal;
 		struct jbd_trans *trans;
@@ -633,6 +636,7 @@ __unused
 static int __ext4_trans_stop(struct ext4_mountpoint *mp)
 {
 	int r = EOK;
+
 	if (mp->fs.jbd_journal && mp->fs.curr_trans) {
 		struct jbd_journal *journal = mp->fs.jbd_journal;
 		struct jbd_trans *trans = mp->fs.curr_trans;
