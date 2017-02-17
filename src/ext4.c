@@ -91,6 +91,9 @@ struct ext4_mountpoint {
 
 	/**@brief   Journal.*/
 	struct jbd_journal jbd_journal;
+
+	/**@brief   Block cache.*/
+	struct ext4_bcache bc;
 };
 
 /**@brief   Block devices descriptor.*/
@@ -414,12 +417,10 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 
 	bsize = ext4_sb_get_block_size(&mp->fs.sb);
 	ext4_block_set_lb_size(bd, bsize);
-
-	bc = ext4_malloc(sizeof(struct ext4_bcache));
+	bc = &mp->bc;
 
 	r = ext4_bcache_init_dynamic(bc, CONFIG_BLOCK_DEV_CACHE_SIZE, bsize);
 	if (r != EOK) {
-		ext4_free(bc);
 		ext4_block_fini(bd);
 		return r;
 	}
@@ -433,11 +434,10 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 		ext4_bcache_cleanup(bc);
 		ext4_block_fini(bd);
 		ext4_bcache_fini_dynamic(bc);
-		ext4_free(bc);
 		return r;
 	}
-	bd->fs = &mp->fs;
 
+	bd->fs = &mp->fs;
 	return r;
 }
 
@@ -466,7 +466,7 @@ int ext4_umount(const char *mount_point)
 
 	ext4_bcache_cleanup(mp->fs.bdev->bc);
 	ext4_bcache_fini_dynamic(mp->fs.bdev->bc);
-	ext4_free(mp->fs.bdev->bc);
+
 	r = ext4_block_fini(mp->fs.bdev);
 Finish:
 	mp->fs.bdev->fs = NULL;
