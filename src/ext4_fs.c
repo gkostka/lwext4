@@ -805,13 +805,18 @@ int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref)
 void ext4_fs_inode_blocks_init(struct ext4_fs *fs,
 			       struct ext4_inode_ref *inode_ref)
 {
-	int i;
 	struct ext4_inode *inode = inode_ref->inode;
 
-	for (i = 0; i < EXT4_INODE_BLOCKS; i++)
-		inode->blocks[i] = 0;
+	/* Reset blocks array. For inode which is not directory or file, just
+	 * fill in blocks with 0 */
+	switch (ext4_inode_type(&fs->sb, inode_ref->inode)) {
+	case EXT4_INODE_MODE_FILE:
+	case EXT4_INODE_MODE_DIRECTORY:
+		break;
+	default:
+		return;
+	}
 
-	(void)fs;
 #if CONFIG_EXTENT_ENABLE
 	/* Initialize extents if needed */
 	if (ext4_sb_feature_incom(&fs->sb, EXT4_FINCOM_EXTENTS)) {
@@ -820,6 +825,8 @@ void ext4_fs_inode_blocks_init(struct ext4_fs *fs,
 		/* Initialize extent root header */
 		ext4_extent_tree_init(inode_ref);
 	}
+
+	inode_ref->dirty = true;
 #endif
 }
 
@@ -850,7 +857,6 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 {
 	/* Check if newly allocated i-node will be a directory */
 	bool is_dir;
-	uint32_t type;
 	uint16_t inode_size = ext4_get16(&fs->sb, inode_size);
 
 	is_dir = (filetype == EXT4_DE_DIR);
@@ -919,20 +925,7 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 		ext4_inode_set_extra_isize(&fs->sb, inode, size);
 	}
 
-	/* Reset blocks array. For inode which is not directory or file, just
-	 * fill in blocks with 0 */
-	type = ext4_inode_type(&fs->sb, inode_ref->inode);
-	if (type == EXT4_INODE_MODE_CHARDEV ||
-	    type == EXT4_INODE_MODE_BLOCKDEV ||
-	    type == EXT4_INODE_MODE_SOCKET ||
-	    type == EXT4_INODE_MODE_SOFTLINK) {
-		for (int i = 0; i < EXT4_INODE_BLOCKS; i++)
-			inode->blocks[i] = 0;
-
-	} else {
-		ext4_fs_inode_blocks_init(fs, inode_ref);
-	}
-
+	memset(inode->blocks, 0, sizeof(inode->blocks));
 	inode_ref->dirty = true;
 
 	return EOK;

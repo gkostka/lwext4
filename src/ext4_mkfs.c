@@ -273,6 +273,8 @@ static void fill_sb(struct fs_aux_info *aux_info, struct ext4_mkfs_info *info)
 
 	if (info->feat_compat & EXT4_FCOM_HAS_JOURNAL)
 		sb->journal_inode_number = to_le32(EXT4_JOURNAL_INO);
+
+	sb->journal_backup_type = 1;
 	sb->journal_dev = to_le32(0);
 	sb->last_orphan = to_le32(0);
 	sb->hash_seed[0] = to_le32(0x11111111);
@@ -541,6 +543,8 @@ static int alloc_inodes(struct ext4_fs *fs)
 		case EXT4_GOOD_OLD_FIRST_INO:
 			filetype = EXT4_DE_DIR;
 			break;
+		default:
+			break;
 		}
 
 		r = ext4_fs_alloc_inode(fs, &inode_ref, filetype);
@@ -548,6 +552,14 @@ static int alloc_inodes(struct ext4_fs *fs)
 			return r;
 
 		ext4_inode_set_mode(&fs->sb, inode_ref.inode, 0);
+
+		switch (i) {
+		case EXT4_ROOT_INO:
+		case EXT4_JOURNAL_INO:
+			ext4_fs_inode_blocks_init(fs, &inode_ref);
+			break;
+		}
+
 		ext4_fs_put_inode_ref(&inode_ref);
 	}
 
@@ -621,6 +633,70 @@ static int create_dirs(struct ext4_fs *fs)
 	return r;
 }
 
+static int create_journal_inode(struct ext4_fs *fs,
+				struct ext4_mkfs_info *info)
+{
+	int ret;
+	struct ext4_inode_ref inode_ref;
+	uint64_t blocks_count;
+
+	if (!info->journal)
+		return EOK;
+
+	ret = ext4_fs_get_inode_ref(fs, EXT4_JOURNAL_INO, &inode_ref);
+	if (ret != EOK)
+		return ret;
+
+	struct ext4_inode *inode = inode_ref.inode;
+
+	ext4_inode_set_mode(&fs->sb, inode, EXT4_INODE_MODE_FILE | 0600);
+	ext4_inode_set_links_cnt(inode, 1);
+
+	blocks_count = ext4_inode_get_blocks_count(&fs->sb, inode);
+
+	while (blocks_count++ < info->journal_blocks)
+	{
+		ext4_fsblk_t fblock;
+		ext4_lblk_t iblock;
+		struct ext4_block blk;
+
+		ret = ext4_fs_append_inode_dblk(&inode_ref, &fblock, &iblock);
+		if (ret != EOK)
+			goto Finish;
+
+		if (iblock != 0)
+			continue;
+
+		ret = ext4_block_get(fs->bdev, &blk, fblock);
+		if (ret != EOK)
+			goto Finish;
+
+
+		struct jbd_sb * jbd_sb = (struct jbd_sb * )blk.data;
+		memset(jbd_sb, 0, sizeof(struct jbd_sb));
+
+		jbd_sb->header.magic = to_be32(JBD_MAGIC_NUMBER);
+		jbd_sb->header.blocktype = to_be32(JBD_SUPERBLOCK_V2);
+		jbd_sb->blocksize = to_be32(info->block_size);
+		jbd_sb->maxlen = to_be32(info->journal_blocks);
+		jbd_sb->nr_users = to_be32(1);
+		jbd_sb->first = to_be32(1);
+		jbd_sb->sequence = to_be32(1);
+
+		ext4_bcache_set_dirty(blk.buf);
+		ret = ext4_block_set(fs->bdev, &blk);
+		if (ret != EOK)
+			goto Finish;
+	}
+
+	memcpy(fs->sb.journal_blocks, inode->blocks, sizeof(inode->blocks));
+
+	Finish:
+	ext4_fs_put_inode_ref(&inode_ref);
+
+	return ret;
+}
+
 int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	      struct ext4_mkfs_info *info, int fs_type)
 {
@@ -676,14 +752,19 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 		break;
 	}
 
-	/*TODO: handle this features*/
+	/*TODO: handle this features some day...*/
 	info->feat_incompat &= ~EXT4_FINCOM_META_BG;
 	info->feat_incompat &= ~EXT4_FINCOM_FLEX_BG;
-	info->feat_ro_compat &= ~EXT4_FRO_COM_METADATA_CSUM;
+	info->feat_incompat &= ~EXT4_FINCOM_64BIT;
 
-	/*TODO: handle journal feature & inode*/
-	if (info->journal == 0)
-		info->feat_compat |= 0;
+	info->feat_ro_compat &= ~EXT4_FRO_COM_METADATA_CSUM;
+	info->feat_ro_compat &= ~EXT4_FRO_COM_GDT_CSUM;
+	info->feat_ro_compat &= ~EXT4_FRO_COM_DIR_NLINK;
+	info->feat_ro_compat &= ~EXT4_FRO_COM_EXTRA_ISIZE;
+	info->feat_ro_compat &= ~EXT4_FRO_COM_HUGE_FILE;
+
+	if (info->journal)
+		info->feat_compat |= EXT4_FCOM_HAS_JOURNAL;
 
 	if (info->dsc_size == 0) {
 
@@ -723,8 +804,10 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	ext4_dbg(DEBUG_MKFS, DBG_NONE "Label: %s\n", info->label);
 
 	struct ext4_bcache bc;
+
 	memset(&bc, 0, sizeof(struct ext4_bcache));
 	ext4_block_set_lb_size(bd, info->block_size);
+
 	r = ext4_bcache_init_dynamic(&bc, CONFIG_BLOCK_DEV_CACHE_SIZE,
 				      info->block_size);
 	if (r != EOK)
@@ -756,6 +839,10 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 		goto fs_fini;
 
 	r = create_dirs(fs);
+	if (r != EOK)
+		goto fs_fini;
+
+	r = create_journal_inode(fs, info);
 	if (r != EOK)
 		goto fs_fini;
 

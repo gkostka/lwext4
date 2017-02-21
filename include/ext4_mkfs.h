@@ -63,7 +63,7 @@ struct ext4_mkfs_info {
 	uint16_t feat_incompat;
 	uint32_t bg_desc_reserve_blocks;
 	uint16_t dsc_size;
-	uint8_t journal;
+	bool journal;
 	const char *label;
 };
 

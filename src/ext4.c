@@ -998,6 +998,8 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 			struct ext4_inode_ref child_ref;
 			r = ext4_fs_alloc_inode(fs, &child_ref,
 					is_goal ? ftype : EXT4_DE_DIR);
+
+			ext4_fs_inode_blocks_init(fs, &child_ref);
 			if (r != EOK)
 				break;
 
