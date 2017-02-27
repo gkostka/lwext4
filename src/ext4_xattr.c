@@ -1434,6 +1434,8 @@ int ext4_xattr_set(struct ext4_inode_ref *inode_ref, uint8_t name_index,
 	struct ext4_xattr_info i;
 	bool block_found = false;
 	ext4_fsblk_t orig_xattr_block;
+	size_t extra_isize =
+	    ext4_inode_get_extra_isize(&fs->sb, inode_ref->inode);
 
 	i.name_index = name_index;
 	i.name = name;
@@ -1471,7 +1473,12 @@ int ext4_xattr_set(struct ext4_inode_ref *inode_ref, uint8_t name_index,
 
 	} else {
 	try_insert:
-		ret = ext4_xattr_set_entry(&i, &ibody_finder.s, false);
+		/* Only try to set entry in ibody if inode is sufficiently large */
+		if (extra_isize)
+			ret = ext4_xattr_set_entry(&i, &ibody_finder.s, false);
+		else
+			ret = ENOSPC;
+
 		if (ret == ENOSPC) {
 			if (!block_found) {
 				ret = ext4_xattr_block_set(inode_ref, &i, false);
