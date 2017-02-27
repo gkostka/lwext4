@@ -974,6 +974,13 @@ int ext4_xattr_get(struct ext4_inode_ref *inode_ref, uint8_t name_index,
 		}
 	} else {
 		struct ext4_block block;
+
+		/* Return ENODATA if there is no EA block */
+		if (!xattr_block) {
+			ret = ENODATA;
+			goto out;
+		}
+
 		block_finder.i = i;
 		ret = ext4_trans_block_get(fs->bdev, &block, xattr_block);
 		if (ret != EOK)
