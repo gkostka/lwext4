@@ -920,8 +920,7 @@ int ext4_fs_alloc_inode(struct ext4_fs *fs, struct ext4_inode_ref *inode_ref,
 	ext4_inode_set_flags(inode, 0);
 	ext4_inode_set_generation(inode, 0);
 	if (inode_size > EXT4_GOOD_OLD_INODE_SIZE) {
-		uint16_t off = offsetof(struct ext4_inode, extra_isize);
-		uint16_t size = sizeof(struct ext4_inode) - off;
+		uint16_t size = ext4_get16(&fs->sb, want_extra_isize);
 		ext4_inode_set_extra_isize(&fs->sb, inode, size);
 	}
 
