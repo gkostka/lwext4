@@ -698,19 +698,20 @@ struct ext4_extent_header {
 	((struct ext4_extent_index *)(((char *)(__hdr__)) +                    \
 				    sizeof(struct ext4_extent_header)))
 #define EXT_HAS_FREE_INDEX(__path__)                                           \
-	((__path__)->header->entries_count < (__path__)->header->max_entries_count)
+	(to_le16((__path__)->header->entries_count) <                                \
+				    to_le16((__path__)->header->max_entries_count))
 #define EXT_LAST_EXTENT(__hdr__)                                               \
-	(EXT_FIRST_EXTENT((__hdr__)) + (__hdr__)->entries_count - 1)
+	(EXT_FIRST_EXTENT((__hdr__)) + to_le16((__hdr__)->entries_count) - 1)
 #define EXT_LAST_INDEX(__hdr__)                                                \
-	(EXT_FIRST_INDEX((__hdr__)) + (__hdr__)->entries_count - 1)
+	(EXT_FIRST_INDEX((__hdr__)) + to_le16((__hdr__)->entries_count) - 1)
 #define EXT_MAX_EXTENT(__hdr__)                                                \
-	(EXT_FIRST_EXTENT((__hdr__)) + (__hdr__)->max_entries_count - 1)
+	(EXT_FIRST_EXTENT((__hdr__)) + to_le16((__hdr__)->max_entries_count) - 1)
 #define EXT_MAX_INDEX(__hdr__)                                                 \
-	(EXT_FIRST_INDEX((__hdr__)) + (__hdr__)->max_entries_count - 1)
+	(EXT_FIRST_INDEX((__hdr__)) + to_le16((__hdr__)->max_entries_count) - 1)
 
 #define EXT4_EXTENT_TAIL_OFFSET(hdr)                                           \
 	(sizeof(struct ext4_extent_header) +                                   \
-	 (sizeof(struct ext4_extent) * (hdr)->max_entries_count))
+	 (sizeof(struct ext4_extent) * to_le16((hdr)->max_entries_count)))
 
 /*
  * ext4_ext_next_allocated_block:

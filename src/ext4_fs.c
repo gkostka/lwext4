@@ -431,7 +431,7 @@ static int ext4_fs_init_inode_table(struct ext4_block_group_ref *bg_ref)
 	struct ext4_sblock *sb = &bg_ref->fs->sb;
 	struct ext4_bgroup *bg = bg_ref->block_group;
 
-	uint32_t inode_size = ext4_get32(sb, inode_size);
+	uint32_t inode_size = ext4_get16(sb, inode_size);
 	uint32_t block_size = ext4_sb_get_block_size(sb);
 	uint32_t inodes_per_block = block_size / inode_size;
 	uint32_t inodes_in_group = ext4_inodes_in_group_cnt(sb, bg_ref->index);

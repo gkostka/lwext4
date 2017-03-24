@@ -388,7 +388,7 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 					      bg_free_blk);
 
 		ext4_bg_set_free_inodes_count(bg_desc,
-				aux_info->sb, aux_info->sb->inodes_per_group);
+				aux_info->sb, to_le32(aux_info->sb->inodes_per_group));
 
 		ext4_bg_set_used_dirs_count(bg_desc, aux_info->sb, 0);
 
