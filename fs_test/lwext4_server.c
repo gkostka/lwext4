@@ -393,8 +393,8 @@ static int device_register(const char *p)
 
 #ifdef WIN32
 	if (winpart) {
-		ext4_io_raw_filename(ext4_fname);
-		bd = ext4_io_raw_dev_get();
+		file_windows_name_set(ext4_fname);
+		bd = file_windows_dev_get();
 
 	} else
 #endif

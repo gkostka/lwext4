@@ -47,19 +47,19 @@ static const char *fname = "ext2";
 static HANDLE dev_file;
 
 /**********************BLOCKDEV INTERFACE**************************************/
-static int io_raw_open(struct ext4_blockdev *bdev);
-static int io_raw_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
+static int file_open(struct ext4_blockdev *bdev);
+static int file_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 			uint32_t blk_cnt);
-static int io_raw_bwrite(struct ext4_blockdev *bdev, const void *buf,
+static int file_bwrite(struct ext4_blockdev *bdev, const void *buf,
 			 uint64_t blk_id, uint32_t blk_cnt);
-static int io_raw_close(struct ext4_blockdev *bdev);
+static int file_close(struct ext4_blockdev *bdev);
 
 /******************************************************************************/
-EXT4_BLOCKDEV_STATIC_INSTANCE(_filedev, EXT4_IORAW_BSIZE, 0, io_raw_open,
-			      io_raw_bread, io_raw_bwrite, io_raw_close, 0, 0);
+EXT4_BLOCKDEV_STATIC_INSTANCE(_filedev, EXT4_IORAW_BSIZE, 0, file_open,
+			      file_bread, file_bwrite, file_close, 0, 0);
 
 /******************************************************************************/
-static int io_raw_open(struct ext4_blockdev *bdev)
+static int file_open(struct ext4_blockdev *bdev)
 {
 	char path[64];
 	DISK_GEOMETRY pdg;
@@ -101,7 +101,7 @@ static int io_raw_open(struct ext4_blockdev *bdev)
 
 /******************************************************************************/
 
-static int io_raw_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
+static int file_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 			uint32_t blk_cnt)
 {
 	long hipart = blk_id >> (32 - 9);
@@ -125,7 +125,7 @@ static int io_raw_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 }
 
 /******************************************************************************/
-static int io_raw_bwrite(struct ext4_blockdev *bdev, const void *buf,
+static int file_bwrite(struct ext4_blockdev *bdev, const void *buf,
 			 uint64_t blk_id, uint32_t blk_cnt)
 {
 	long hipart = blk_id >> (32 - 9);
@@ -149,16 +149,22 @@ static int io_raw_bwrite(struct ext4_blockdev *bdev, const void *buf,
 }
 
 /******************************************************************************/
-static int io_raw_close(struct ext4_blockdev *bdev)
+static int file_close(struct ext4_blockdev *bdev)
 {
 	CloseHandle(dev_file);
 	return EOK;
 }
 
 /******************************************************************************/
-struct ext4_blockdev *ext4_io_raw_dev_get(void) { return &_filedev; }
+struct ext4_blockdev *file_windows_dev_get(void)
+{
+	return &_filedev;
+}
 /******************************************************************************/
-void ext4_io_raw_filename(const char *n) { fname = n; }
+void file_windows_name_set(const char *n)
+{
+	fname = n;
+}
 
 /******************************************************************************/
 #endif

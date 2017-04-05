@@ -77,8 +77,8 @@ static bool open_linux(void)
 static bool open_windows(void)
 {
 #ifdef WIN32
-	ext4_io_raw_filename(input_name);
-	bd = ext4_io_raw_dev_get();
+	file_windows_name_set(input_name);
+	bd = file_windows_dev_get();
 	if (!bd) {
 		printf("open_winpartition: fail\n");
 		return false;
