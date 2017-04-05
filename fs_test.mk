@@ -584,6 +584,16 @@ fsck_images:
 	sudo fsck.ext3 ext_images/ext3 -v -f
 	sudo fsck.ext4 ext_images/ext4 -v -f
 
+images_small:
+	rm -rf ext_images
+	mkdir ext_images
+	dd if=/dev/zero of=ext_images/ext2 bs=1M count=128
+	dd if=/dev/zero of=ext_images/ext3 bs=1M count=128
+	dd if=/dev/zero of=ext_images/ext4 bs=1M count=128
+	sudo mkfs.ext2 ext_images/ext2
+	sudo mkfs.ext3 ext_images/ext3
+	sudo mkfs.ext4 ext_images/ext4
+
 images_big:
 	rm -rf ext_images
 	mkdir ext_images
@@ -644,7 +654,7 @@ test_ext4_small:
 	make test_set_small
 	make server_kill
 	
-test: unpack_images test_ext2_small test_ext3_small test_ext4_small
+test: images_small test_ext2_small test_ext3_small test_ext4_small
 	
 	
 
