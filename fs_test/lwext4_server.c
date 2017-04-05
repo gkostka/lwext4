@@ -50,7 +50,7 @@
 
 #include <ext4.h>
 #include "../blockdev/linux/ext4_filedev.h"
-#include "../blockdev/windows/io_raw.h"
+#include "../blockdev/windows/file_windows.h"
 
 
 static int winsock_init(void);

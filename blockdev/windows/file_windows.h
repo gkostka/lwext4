@@ -25,8 +25,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef IO_RAW_H_
-#define IO_RAW_H_
+#ifndef FILE_WINDOWS_H_
+#define FILE_WINDOWS_H_
 
 #include <ext4_config.h>
 #include <ext4_blockdev.h>
@@ -35,10 +35,10 @@
 #include <stdbool.h>
 
 /**@brief   IO raw blockdev get.*/
-struct ext4_blockdev *ext4_io_raw_dev_get(void);
+struct ext4_blockdev *file_windows_dev_get(void);
 
 /**@brief   Set filrname to open.*/
-void ext4_io_raw_filename(const char *n);
+void file_windows_name_set(const char *n);
 
 
-#endif /* IO_RAW_H_ */
+#endif /* FILE_WINDOWS_H_ */

@@ -40,7 +40,7 @@
 #include <ext4.h>
 #include <ext4_mkfs.h>
 #include "../blockdev/linux/ext4_filedev.h"
-#include "../blockdev/windows/io_raw.h"
+#include "../blockdev/windows/file_windows.h"
 
 /**@brief   Input stream name.*/
 const char *input_name = NULL;
