@@ -39,7 +39,7 @@
 
 #include <ext4.h>
 #include <ext4_mkfs.h>
-#include "../blockdev/linux/ext4_filedev.h"
+#include "../blockdev/linux/file_dev.h"
 #include "../blockdev/windows/file_windows.h"
 
 /**@brief   Input stream name.*/
@@ -75,8 +75,8 @@ Usage:                                                          \n\
 
 static bool open_linux(void)
 {
-	ext4_filedev_filename(input_name);
-	bd = ext4_filedev_get();
+	file_dev_name_set(input_name);
+	bd = file_dev_get();
 	if (!bd) {
 		printf("open_filedev: fail\n");
 		return false;

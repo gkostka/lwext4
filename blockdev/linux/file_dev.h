@@ -25,8 +25,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef EXT4_FILEDEV_H_
-#define EXT4_FILEDEV_H_
+#ifndef FILE_DEV_H_
+#define FILE_DEV_H_
 
 #include <ext4_config.h>
 #include <ext4_blockdev.h>
@@ -35,9 +35,9 @@
 #include <stdbool.h>
 
 /**@brief   File blockdev get.*/
-struct ext4_blockdev *ext4_filedev_get(void);
+struct ext4_blockdev *file_dev_get(void);
 
 /**@brief   Set filename to open.*/
-void ext4_filedev_filename(const char *n);
+void file_dev_name_set(const char *n);
 
-#endif /* EXT4_FILEDEV_H_ */
+#endif /* FILE_DEV_H_ */

@@ -49,7 +49,7 @@
 #endif
 
 #include <ext4.h>
-#include "../blockdev/linux/ext4_filedev.h"
+#include "../blockdev/linux/file_dev.h"
 #include "../blockdev/windows/file_windows.h"
 
 
@@ -399,8 +399,8 @@ static int device_register(const char *p)
 	} else
 #endif
 	{
-		ext4_filedev_filename(ext4_fname);
-		bd = ext4_filedev_get();
+		file_dev_name_set(ext4_fname);
+		bd = file_dev_get();
 	}
 
 	ext4_device_unregister_all();

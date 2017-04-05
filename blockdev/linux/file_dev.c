@@ -48,19 +48,19 @@ static FILE *dev_file;
 #define DROP_LINUXCACHE_BUFFERS 0
 
 /**********************BLOCKDEV INTERFACE**************************************/
-static int filedev_open(struct ext4_blockdev *bdev);
-static int filedev_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
+static int file_dev_open(struct ext4_blockdev *bdev);
+static int file_dev_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 			 uint32_t blk_cnt);
-static int filedev_bwrite(struct ext4_blockdev *bdev, const void *buf,
+static int file_dev_bwrite(struct ext4_blockdev *bdev, const void *buf,
 			  uint64_t blk_id, uint32_t blk_cnt);
-static int filedev_close(struct ext4_blockdev *bdev);
+static int file_dev_close(struct ext4_blockdev *bdev);
 
 /******************************************************************************/
-EXT4_BLOCKDEV_STATIC_INSTANCE(_filedev, EXT4_FILEDEV_BSIZE, 0, filedev_open,
-		filedev_bread, filedev_bwrite, filedev_close, 0, 0);
+EXT4_BLOCKDEV_STATIC_INSTANCE(file_dev, EXT4_FILEDEV_BSIZE, 0, file_dev_open,
+		file_dev_bread, file_dev_bwrite, file_dev_close, 0, 0);
 
 /******************************************************************************/
-static int filedev_open(struct ext4_blockdev *bdev)
+static int file_dev_open(struct ext4_blockdev *bdev)
 {
 	dev_file = fopen(fname, "r+b");
 
@@ -73,16 +73,16 @@ static int filedev_open(struct ext4_blockdev *bdev)
 	if (fseeko(dev_file, 0, SEEK_END))
 		return EFAULT;
 
-	_filedev.part_offset = 0;
-	_filedev.part_size = ftello(dev_file);
-	_filedev.bdif->ph_bcnt = _filedev.part_size / _filedev.bdif->ph_bsize;
+	file_dev.part_offset = 0;
+	file_dev.part_size = ftello(dev_file);
+	file_dev.bdif->ph_bcnt = file_dev.part_size / file_dev.bdif->ph_bsize;
 
 	return EOK;
 }
 
 /******************************************************************************/
 
-static int filedev_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
+static int file_dev_bread(struct ext4_blockdev *bdev, void *buf, uint64_t blk_id,
 			 uint32_t blk_cnt)
 {
 	if (fseeko(dev_file, blk_id * bdev->bdif->ph_bsize, SEEK_SET))
@@ -109,7 +109,7 @@ static void drop_cache(void)
 }
 
 /******************************************************************************/
-static int filedev_bwrite(struct ext4_blockdev *bdev, const void *buf,
+static int file_dev_bwrite(struct ext4_blockdev *bdev, const void *buf,
 			  uint64_t blk_id, uint32_t blk_cnt)
 {
 	if (fseeko(dev_file, blk_id * bdev->bdif->ph_bsize, SEEK_SET))
@@ -123,15 +123,20 @@ static int filedev_bwrite(struct ext4_blockdev *bdev, const void *buf,
 	return EOK;
 }
 /******************************************************************************/
-static int filedev_close(struct ext4_blockdev *bdev)
+static int file_dev_close(struct ext4_blockdev *bdev)
 {
 	fclose(dev_file);
 	return EOK;
 }
 
 /******************************************************************************/
-struct ext4_blockdev *ext4_filedev_get(void) { return &_filedev; }
+struct ext4_blockdev *file_dev_get(void)
+{
+	return &file_dev;
+}
 /******************************************************************************/
-void ext4_filedev_filename(const char *n) { fname = n; }
-
+void file_dev_name_set(const char *n)
+{
+	fname = n;
+}
 /******************************************************************************/

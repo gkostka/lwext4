@@ -38,7 +38,7 @@
 #include <sys/time.h>
 
 #include <ext4.h>
-#include "../blockdev/linux/ext4_filedev.h"
+#include "../blockdev/linux/file_dev.h"
 #include "../blockdev/windows/file_windows.h"
 #include "common/test_lwext4.h"
 
@@ -118,8 +118,8 @@ uint64_t tim_get_us(void)
 
 static bool open_linux(void)
 {
-	ext4_filedev_filename(input_name);
-	bd = ext4_filedev_get();
+	file_dev_name_set(input_name);
+	bd = file_dev_get();
 	if (!bd) {
 		printf("open_filedev: fail\n");
 		return false;
