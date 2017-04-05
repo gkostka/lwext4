@@ -41,8 +41,8 @@
 extern "C" {
 #endif
 
-#include "ext4_config.h"
-#include "ext4_errno.h"
+#include <ext4_config.h>
+#include <ext4_errno.h>
 
 #if !CONFIG_HAVE_OWN_ASSERT
 #include <assert.h>

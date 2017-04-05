@@ -41,9 +41,9 @@
 extern "C" {
 #endif
 
-#include "ext4_config.h"
-#include "ext4_types.h"
-#include "ext4_inode.h"
+#include <ext4_config.h>
+#include <ext4_types.h>
+#include <ext4_inode.h>
 
 struct ext4_xattr_info {
 	uint8_t name_index;

@@ -34,13 +34,13 @@
  * @brief Master boot record parser
  */
 
-#include "ext4_config.h"
-#include "ext4_types.h"
-#include "ext4_misc.h"
-#include "ext4_errno.h"
-#include "ext4_debug.h"
+#include <ext4_config.h>
+#include <ext4_types.h>
+#include <ext4_misc.h>
+#include <ext4_errno.h>
+#include <ext4_debug.h>
 
-#include "ext4_mbr.h"
+#include <ext4_mbr.h>
 
 #include <inttypes.h>
 #include <string.h>

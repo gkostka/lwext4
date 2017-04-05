@@ -40,8 +40,8 @@
 extern "C" {
 #endif
 
-#include "ext4_config.h"
-#include "ext4_bcache.h"
+#include <ext4_config.h>
+#include <ext4_bcache.h>
 
 #include <stdbool.h>
 #include <stdint.h>

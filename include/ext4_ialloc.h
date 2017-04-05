@@ -46,8 +46,8 @@
 extern "C" {
 #endif
 
-#include "ext4_config.h"
-#include "ext4_types.h"
+#include <ext4_config.h>
+#include <ext4_types.h>
 
 /**@brief Calculate and set checksum of inode bitmap.
  * @param sb superblock pointer.

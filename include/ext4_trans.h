@@ -41,8 +41,8 @@
 extern "C" {
 #endif
 
-#include "ext4_config.h"
-#include "ext4_types.h"
+#include <ext4_config.h>
+#include <ext4_types.h>
 
 
 /**@brief   Mark a buffer dirty and add it to the current transaction.

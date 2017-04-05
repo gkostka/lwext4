@@ -41,12 +41,12 @@
 extern "C" {
 #endif
 
-#include "ext4_config.h"
+#include <ext4_config.h>
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "misc/tree.h"
-#include "misc/queue.h"
+#include <misc/tree.h>
+#include <misc/queue.h>
 
 #define EXT4_BLOCK_ZERO() 	\
 	{.lb_id = 0, .data = 0}
