@@ -90,10 +90,6 @@ all: generic bf518 cortex-m3 cortex-m4 lib_only
 clean:
 	rm -R -f build_*
 	rm -R -f ext_images
-	
-unpack_images:
-	rm -R -f ext_images
-	7z x ext_images.7z
 
 	
 include fs_test.mk
