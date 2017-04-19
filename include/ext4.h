@@ -395,6 +395,22 @@ uint64_t ext4_fsize(ext4_file *file);
 int ext4_raw_inode_fill(const char *path, uint32_t *ret_ino,
 			struct ext4_inode *inode);
 
+/**@brief Check if inode exists.
+ *
+ * @param path    Parh to file/dir/link.
+ * @param type    Inode type.
+ *                @ref EXT4_DIRENTRY_UNKNOWN
+ *                @ref EXT4_DE_REG_FILE
+ *                @ref EXT4_DE_DIR
+ *                @ref EXT4_DE_CHRDEV
+ *                @ref EXT4_DE_BLKDEV
+ *                @ref EXT4_DE_FIFO
+ *                @ref EXT4_DE_SOCK
+ *                @ref EXT4_DE_SYMLINK
+ *
+ * @return  Standard error code.*/
+int ext4_inode_exist(const char *path, int type);
+
 /**@brief Change file/directory/link mode bits.
  *
  * @param path Path to file/dir/link.

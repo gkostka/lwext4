@@ -2110,6 +2110,22 @@ int ext4_raw_inode_fill(const char *path, uint32_t *ret_ino,
 	return r;
 }
 
+int ext4_inode_exist(const char *path, int type)
+{
+	int r;
+	ext4_file f;
+	struct ext4_mountpoint *mp = ext4_get_mount(path);
+
+	if (!mp)
+		return ENOENT;
+
+	EXT4_MP_LOCK(mp);
+	r = ext4_generic_open2(&f, path, O_RDONLY, type, NULL, NULL);
+	EXT4_MP_UNLOCK(mp);
+
+	return r;
+}
+
 int ext4_mode_set(const char *path, uint32_t mode)
 {
 	int r;
