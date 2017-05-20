@@ -38,6 +38,16 @@ KaHo Ng (https://github.com/ngkaho1234):
 Lwext4 could be used also as fuse internals. Here is a nice project which uses lwext4 as a filesystem base:
 * https://github.com/ngkaho1234/fuse-lwext4
 
+Some of the source files are licensed under GPLv2. It makes whole
+lwext4 GPLv2 licensed. To use library as a BSD3, GPLv2 licensed source
+files must be removed first. At this point there are two files
+licensed under GPLv2:
+* ext4_xattr.c
+* ext4_extents.c
+
+All other modules and headers are BSD-3-Clause licensed code.
+
+
 Features
 =====
 
