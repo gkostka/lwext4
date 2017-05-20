@@ -88,6 +88,16 @@ extern "C" {
 #define CONFIG_JOURNALING_ENABLE 1
 #endif
 
+/**@brief  Enable/disable xattr*/
+#ifndef CONFIG_XATTR_ENABLE
+#define CONFIG_XATTR_ENABLE 1
+#endif
+
+/**@brief  Enable/disable extents*/
+#ifndef CONFIG_EXTENTS_ENABLE
+#define CONFIG_EXTENTS_ENABLE 1
+#endif
+
 /**@brief   Include error codes from ext4_errno or standard library.*/
 #ifndef CONFIG_HAVE_OWN_ERRNO
 #define CONFIG_HAVE_OWN_ERRNO 0

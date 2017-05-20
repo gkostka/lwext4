@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)
  *
- *
  * HelenOS:
  * Copyright (c) 2012 Martin Sucha
  * Copyright (c) 2012 Frantisek Princ

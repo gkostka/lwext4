@@ -35,6 +35,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if CONFIG_XATTR_ENABLE
+
 /**
  * @file  ext4_xattr.c
  * @brief Extended Attribute Manipulation
@@ -1554,6 +1556,8 @@ int ext4_xattr_set(struct ext4_inode_ref *inode_ref, uint8_t name_index,
 out:
 	return ret;
 }
+
+#endif
 
 /**
  * @}

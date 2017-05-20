@@ -27,6 +27,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#if CONFIG_EXTENTS_ENABLE
 /*
  * used by extent splitting.
  */
@@ -2136,3 +2137,4 @@ out2:
 
 	return err;
 }
+#endif
