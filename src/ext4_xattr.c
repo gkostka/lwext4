@@ -1,29 +1,11 @@
 /*
- * Copyright (c) 2015 Grzegorz Kostka (kostka.grzegorz@gmail.com)
- * Copyright (c) 2015 Kaho Ng (ngkaho1234@gmail.com)
+ * Copyright (c) 2017 Grzegorz Kostka (kostka.grzegorz@gmail.com)
+ * Copyright (c) 2017 Kaho Ng (ngkaho1234@gmail.com)
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * - Redistributions of source code must retain the above copyright
- *   notice, this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright
- *   notice, this list of conditions and the following disclaimer in the
- *   documentation and/or other materials provided with the distribution.
- * - The name of the author may not be used to endorse or promote products
- *   derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  */
 
 /** @addtogroup lwext4
@@ -57,6 +39,79 @@
  * @file  ext4_xattr.c
  * @brief Extended Attribute Manipulation
  */
+
+/* Extended Attribute(EA) */
+
+/* Magic value in attribute blocks */
+#define EXT4_XATTR_MAGIC        0xEA020000
+
+/* Maximum number of references to one attribute block */
+#define EXT4_XATTR_REFCOUNT_MAX     1024
+
+/* Name indexes */
+#define EXT4_XATTR_INDEX_USER           1
+#define EXT4_XATTR_INDEX_POSIX_ACL_ACCESS   2
+#define EXT4_XATTR_INDEX_POSIX_ACL_DEFAULT  3
+#define EXT4_XATTR_INDEX_TRUSTED        4
+#define EXT4_XATTR_INDEX_LUSTRE         5
+#define EXT4_XATTR_INDEX_SECURITY           6
+#define EXT4_XATTR_INDEX_SYSTEM         7
+#define EXT4_XATTR_INDEX_RICHACL        8
+#define EXT4_XATTR_INDEX_ENCRYPTION     9
+
+#define EXT4_XATTR_PAD_BITS 2
+#define EXT4_XATTR_PAD (1 << EXT4_XATTR_PAD_BITS)
+#define EXT4_XATTR_ROUND (EXT4_XATTR_PAD - 1)
+#define EXT4_XATTR_LEN(name_len)                                               \
+    (((name_len) + EXT4_XATTR_ROUND + sizeof(struct ext4_xattr_entry)) &   \
+     ~EXT4_XATTR_ROUND)
+#define EXT4_XATTR_NEXT(entry)                                                 \
+    ((struct ext4_xattr_entry *)((char *)(entry) +                         \
+                     EXT4_XATTR_LEN((entry)->e_name_len)))
+#define EXT4_XATTR_SIZE(size) (((size) + EXT4_XATTR_ROUND) & ~EXT4_XATTR_ROUND)
+#define EXT4_XATTR_NAME(entry) ((char *)((entry) + 1))
+
+#define EXT4_XATTR_IHDR(sb, raw_inode)                                         \
+    ((struct ext4_xattr_ibody_header *)((char *)raw_inode +                \
+                        EXT4_GOOD_OLD_INODE_SIZE +         \
+                        ext4_inode_get_extra_isize(        \
+                        sb, raw_inode)))
+#define EXT4_XATTR_IFIRST(hdr) ((struct ext4_xattr_entry *)((hdr) + 1))
+
+#define EXT4_XATTR_BHDR(block) ((struct ext4_xattr_header *)((block)->data))
+#define EXT4_XATTR_ENTRY(ptr) ((struct ext4_xattr_entry *)(ptr))
+#define EXT4_XATTR_BFIRST(block) EXT4_XATTR_ENTRY(EXT4_XATTR_BHDR(block) + 1)
+#define EXT4_XATTR_IS_LAST_ENTRY(entry) (*(uint32_t *)(entry) == 0)
+
+#define EXT4_ZERO_XATTR_VALUE ((void *)-1)
+
+#pragma pack(push, 1)
+
+struct ext4_xattr_header {
+    uint32_t h_magic;   /* magic number for identification */
+    uint32_t h_refcount;    /* reference count */
+    uint32_t h_blocks;  /* number of disk blocks used */
+    uint32_t h_hash;        /* hash value of all attributes */
+    uint32_t h_checksum;    /* crc32c(uuid+id+xattrblock) */
+                /* id = inum if refcount=1, blknum otherwise */
+    uint32_t h_reserved[3]; /* zero right now */
+};
+
+struct ext4_xattr_ibody_header {
+    uint32_t h_magic;   /* magic number for identification */
+};
+
+struct ext4_xattr_entry {
+    uint8_t e_name_len; /* length of name */
+    uint8_t e_name_index;   /* attribute name index */
+    uint16_t e_value_offs;  /* offset in disk block of value */
+    uint32_t e_value_block; /* disk block attribute is stored on (n/i) */
+    uint32_t e_value_size;  /* size of attribute value */
+    uint32_t e_hash;        /* hash value of name and value */
+};
+
+#pragma pack(pop)
+
 
 #define NAME_HASH_SHIFT 5
 #define VALUE_HASH_SHIFT 16

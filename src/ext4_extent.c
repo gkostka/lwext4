@@ -1,29 +1,11 @@
 /*
- * Copyright (c) 2015 Grzegorz Kostka (kostka.grzegorz@gmail.com)
- * Copyright (c) 2015 Kaho Ng (ngkaho1234@gmail.com)
+ * Copyright (c) 2017 Grzegorz Kostka (kostka.grzegorz@gmail.com)
+ * Copyright (c) 2017 Kaho Ng (ngkaho1234@gmail.com)
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * - Redistributions of source code must retain the above copyright
- *   notice, this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright
- *   notice, this list of conditions and the following disclaimer in the
- *   documentation and/or other materials provided with the distribution.
- * - The name of the author may not be used to endorse or promote products
- *   derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  */
 
 #include <ext4_config.h>
@@ -53,6 +35,363 @@
 #define EXT4_EXT_DATA_VALID1 0x08  /* first half contains valid data */
 #define EXT4_EXT_DATA_VALID2 0x10  /* second half contains valid data */
 #define EXT4_EXT_NO_COMBINE 0x20   /* do not combine two extents */
+
+#define EXT4_EXT_UNWRITTEN_MASK (1L << 15)
+
+#define EXT4_EXT_MAX_LEN_WRITTEN (1L << 15)
+#define EXT4_EXT_MAX_LEN_UNWRITTEN \
+    (EXT4_EXT_MAX_LEN_WRITTEN - 1)
+
+#define EXT4_EXT_GET_LEN(ex) to_le16((ex)->block_count)
+#define EXT4_EXT_GET_LEN_UNWRITTEN(ex) \
+    (EXT4_EXT_GET_LEN(ex) &= ~(EXT4_EXT_UNWRITTEN_MASK))
+#define EXT4_EXT_SET_LEN(ex, count) \
+    ((ex)->block_count = to_le16(count))
+
+#define EXT4_EXT_IS_UNWRITTEN(ex) \
+    (EXT4_EXT_GET_LEN(ex) > EXT4_EXT_MAX_LEN_WRITTEN)
+#define EXT4_EXT_SET_UNWRITTEN(ex) \
+    ((ex)->block_count |= to_le16(EXT4_EXT_UNWRITTEN_MASK))
+#define EXT4_EXT_SET_WRITTEN(ex) \
+    ((ex)->block_count &= ~(to_le16(EXT4_EXT_UNWRITTEN_MASK)))
+
+/*
+ * Array of ext4_ext_path contains path to some extent.
+ * Creation/lookup routines use it for traversal/splitting/etc.
+ * Truncate uses it to simulate recursive walking.
+ */
+struct ext4_extent_path {
+    ext4_fsblk_t p_block;
+    struct ext4_block block;
+    int32_t depth;
+    int32_t maxdepth;
+    struct ext4_extent_header *header;
+    struct ext4_extent_index *index;
+    struct ext4_extent *extent;
+};
+
+
+#pragma pack(push, 1)
+
+/*
+ * This is the extent tail on-disk structure.
+ * All other extent structures are 12 bytes long.  It turns out that
+ * block_size % 12 >= 4 for at least all powers of 2 greater than 512, which
+ * covers all valid ext4 block sizes.  Therefore, this tail structure can be
+ * crammed into the end of the block without having to rebalance the tree.
+ */
+struct ext4_extent_tail
+{
+    uint32_t et_checksum; /* crc32c(uuid+inum+extent_block) */
+};
+
+/*
+ * This is the extent on-disk structure.
+ * It's used at the bottom of the tree.
+ */
+struct ext4_extent {
+    uint32_t first_block; /* First logical block extent covers */
+    uint16_t block_count; /* Number of blocks covered by extent */
+    uint16_t start_hi;    /* High 16 bits of physical block */
+    uint32_t start_lo;    /* Low 32 bits of physical block */
+};
+
+/*
+ * This is index on-disk structure.
+ * It's used at all the levels except the bottom.
+ */
+struct ext4_extent_index {
+    uint32_t first_block; /* Index covers logical blocks from 'block' */
+
+    /**
+     * Pointer to the physical block of the next
+     * level. leaf or next index could be there
+     * high 16 bits of physical block
+     */
+    uint32_t leaf_lo;
+    uint16_t leaf_hi;
+    uint16_t padding;
+};
+
+/*
+ * Each block (leaves and indexes), even inode-stored has header.
+ */
+struct ext4_extent_header {
+    uint16_t magic;
+    uint16_t entries_count;     /* Number of valid entries */
+    uint16_t max_entries_count; /* Capacity of store in entries */
+    uint16_t depth;             /* Has tree real underlying blocks? */
+    uint32_t generation;    /* generation of the tree */
+};
+
+#pragma pack(pop)
+
+
+#define EXT4_EXTENT_MAGIC 0xF30A
+
+#define EXT4_EXTENT_FIRST(header)                                              \
+    ((struct ext4_extent *)(((char *)(header)) +                           \
+                sizeof(struct ext4_extent_header)))
+
+#define EXT4_EXTENT_FIRST_INDEX(header)                                        \
+    ((struct ext4_extent_index *)(((char *)(header)) +                     \
+                      sizeof(struct ext4_extent_header)))
+
+/*
+ * EXT_INIT_MAX_LEN is the maximum number of blocks we can have in an
+ * initialized extent. This is 2^15 and not (2^16 - 1), since we use the
+ * MSB of ee_len field in the extent datastructure to signify if this
+ * particular extent is an initialized extent or an uninitialized (i.e.
+ * preallocated).
+ * EXT_UNINIT_MAX_LEN is the maximum number of blocks we can have in an
+ * uninitialized extent.
+ * If ee_len is <= 0x8000, it is an initialized extent. Otherwise, it is an
+ * uninitialized one. In other words, if MSB of ee_len is set, it is an
+ * uninitialized extent with only one special scenario when ee_len = 0x8000.
+ * In this case we can not have an uninitialized extent of zero length and
+ * thus we make it as a special case of initialized extent with 0x8000 length.
+ * This way we get better extent-to-group alignment for initialized extents.
+ * Hence, the maximum number of blocks we can have in an *initialized*
+ * extent is 2^15 (32768) and in an *uninitialized* extent is 2^15-1 (32767).
+ */
+#define EXT_INIT_MAX_LEN (1L << 15)
+#define EXT_UNWRITTEN_MAX_LEN (EXT_INIT_MAX_LEN - 1)
+
+#define EXT_EXTENT_SIZE sizeof(struct ext4_extent)
+#define EXT_INDEX_SIZE sizeof(struct ext4_extent_idx)
+
+#define EXT_FIRST_EXTENT(__hdr__)                                              \
+    ((struct ext4_extent *)(((char *)(__hdr__)) +                          \
+                sizeof(struct ext4_extent_header)))
+#define EXT_FIRST_INDEX(__hdr__)                                               \
+    ((struct ext4_extent_index *)(((char *)(__hdr__)) +                    \
+                    sizeof(struct ext4_extent_header)))
+#define EXT_HAS_FREE_INDEX(__path__)                                           \
+    (to_le16((__path__)->header->entries_count) <                                \
+                    to_le16((__path__)->header->max_entries_count))
+#define EXT_LAST_EXTENT(__hdr__)                                               \
+    (EXT_FIRST_EXTENT((__hdr__)) + to_le16((__hdr__)->entries_count) - 1)
+#define EXT_LAST_INDEX(__hdr__)                                                \
+    (EXT_FIRST_INDEX((__hdr__)) + to_le16((__hdr__)->entries_count) - 1)
+#define EXT_MAX_EXTENT(__hdr__)                                                \
+    (EXT_FIRST_EXTENT((__hdr__)) + to_le16((__hdr__)->max_entries_count) - 1)
+#define EXT_MAX_INDEX(__hdr__)                                                 \
+    (EXT_FIRST_INDEX((__hdr__)) + to_le16((__hdr__)->max_entries_count) - 1)
+
+#define EXT4_EXTENT_TAIL_OFFSET(hdr)                                           \
+    (sizeof(struct ext4_extent_header) +                                   \
+     (sizeof(struct ext4_extent) * to_le16((hdr)->max_entries_count)))
+
+
+/**@brief Get logical number of the block covered by extent.
+ * @param extent Extent to load number from
+ * @return Logical number of the first block covered by extent */
+static inline uint32_t ext4_extent_get_first_block(struct ext4_extent *extent)
+{
+    return to_le32(extent->first_block);
+}
+
+/**@brief Set logical number of the first block covered by extent.
+ * @param extent Extent to set number to
+ * @param iblock Logical number of the first block covered by extent */
+static inline void ext4_extent_set_first_block(struct ext4_extent *extent,
+        uint32_t iblock)
+{
+    extent->first_block = to_le32(iblock);
+}
+
+/**@brief Get number of blocks covered by extent.
+ * @param extent Extent to load count from
+ * @return Number of blocks covered by extent */
+static inline uint16_t ext4_extent_get_block_count(struct ext4_extent *extent)
+{
+    if (EXT4_EXT_IS_UNWRITTEN(extent))
+        return EXT4_EXT_GET_LEN_UNWRITTEN(extent);
+    else
+        return EXT4_EXT_GET_LEN(extent);
+}
+/**@brief Set number of blocks covered by extent.
+ * @param extent Extent to load count from
+ * @param count  Number of blocks covered by extent
+ * @param unwritten Whether the extent is unwritten or not */
+static inline void ext4_extent_set_block_count(struct ext4_extent *extent,
+                           uint16_t count, bool unwritten)
+{
+    EXT4_EXT_SET_LEN(extent, count);
+    if (unwritten)
+        EXT4_EXT_SET_UNWRITTEN(extent);
+}
+
+/**@brief Get physical number of the first block covered by extent.
+ * @param extent Extent to load number
+ * @return Physical number of the first block covered by extent */
+static inline uint64_t ext4_extent_get_start(struct ext4_extent *extent)
+{
+    return ((uint64_t)to_le16(extent->start_hi)) << 32 |
+           ((uint64_t)to_le32(extent->start_lo));
+}
+
+
+/**@brief Set physical number of the first block covered by extent.
+ * @param extent Extent to load number
+ * @param fblock Physical number of the first block covered by extent */
+static inline void ext4_extent_set_start(struct ext4_extent *extent, uint64_t fblock)
+{
+    extent->start_lo = to_le32((fblock << 32) >> 32);
+    extent->start_hi = to_le16((uint16_t)(fblock >> 32));
+}
+
+
+/**@brief Get logical number of the block covered by extent index.
+ * @param index Extent index to load number from
+ * @return Logical number of the first block covered by extent index */
+static inline uint32_t
+ext4_extent_index_get_first_block(struct ext4_extent_index *index)
+{
+    return to_le32(index->first_block);
+}
+
+/**@brief Set logical number of the block covered by extent index.
+ * @param index  Extent index to set number to
+ * @param iblock Logical number of the first block covered by extent index */
+static inline void
+ext4_extent_index_set_first_block(struct ext4_extent_index *index,
+                  uint32_t iblock)
+{
+    index->first_block = to_le32(iblock);
+}
+
+/**@brief Get physical number of block where the child node is located.
+ * @param index Extent index to load number from
+ * @return Physical number of the block with child node */
+static inline uint64_t
+ext4_extent_index_get_leaf(struct ext4_extent_index *index)
+{
+    return ((uint64_t)to_le16(index->leaf_hi)) << 32 |
+           ((uint64_t)to_le32(index->leaf_lo));
+}
+
+/**@brief Set physical number of block where the child node is located.
+ * @param index  Extent index to set number to
+ * @param fblock Ohysical number of the block with child node */
+static inline void ext4_extent_index_set_leaf(struct ext4_extent_index *index,
+                          uint64_t fblock)
+{
+    index->leaf_lo = to_le32((fblock << 32) >> 32);
+    index->leaf_hi = to_le16((uint16_t)(fblock >> 32));
+}
+
+/**@brief Get magic value from extent header.
+ * @param header Extent header to load value from
+ * @return Magic value of extent header */
+static inline uint16_t
+ext4_extent_header_get_magic(struct ext4_extent_header *header)
+{
+    return to_le16(header->magic);
+}
+
+/**@brief Set magic value to extent header.
+ * @param header Extent header to set value to
+ * @param magic  Magic value of extent header */
+static inline void ext4_extent_header_set_magic(struct ext4_extent_header *header,
+                        uint16_t magic)
+{
+    header->magic = to_le16(magic);
+}
+
+/**@brief Get number of entries from extent header
+ * @param header Extent header to get value from
+ * @return Number of entries covered by extent header */
+static inline uint16_t
+ext4_extent_header_get_entries_count(struct ext4_extent_header *header)
+{
+    return to_le16(header->entries_count);
+}
+
+/**@brief Set number of entries to extent header
+ * @param header Extent header to set value to
+ * @param count  Number of entries covered by extent header */
+static inline void
+ext4_extent_header_set_entries_count(struct ext4_extent_header *header,
+                     uint16_t count)
+{
+    header->entries_count = to_le16(count);
+}
+
+/**@brief Get maximum number of entries from extent header
+ * @param header Extent header to get value from
+ * @return Maximum number of entries covered by extent header */
+static inline uint16_t
+ext4_extent_header_get_max_entries_count(struct ext4_extent_header *header)
+{
+    return to_le16(header->max_entries_count);
+}
+
+/**@brief Set maximum number of entries to extent header
+ * @param header    Extent header to set value to
+ * @param max_count Maximum number of entries covered by extent header */
+static inline void
+ext4_extent_header_set_max_entries_count(struct ext4_extent_header *header,
+                          uint16_t max_count)
+{
+    header->max_entries_count = to_le16(max_count);
+}
+
+/**@brief Get depth of extent subtree.
+ * @param header Extent header to get value from
+ * @return Depth of extent subtree */
+static inline uint16_t
+ext4_extent_header_get_depth(struct ext4_extent_header *header)
+{
+    return to_le16(header->depth);
+}
+
+/**@brief Set depth of extent subtree.
+ * @param header Extent header to set value to
+ * @param depth  Depth of extent subtree */
+static inline void
+ext4_extent_header_set_depth(struct ext4_extent_header *header, uint16_t depth)
+{
+    header->depth = to_le16(depth);
+}
+
+/**@brief Get generation from extent header
+ * @param header Extent header to get value from
+ * @return Generation */
+static inline uint32_t
+ext4_extent_header_get_generation(struct ext4_extent_header *header)
+{
+    return to_le32(header->generation);
+}
+
+/**@brief Set generation to extent header
+ * @param header     Extent header to set value to
+ * @param generation Generation */
+static inline void
+ext4_extent_header_set_generation(struct ext4_extent_header *header,
+                       uint32_t generation)
+{
+    header->generation = to_le32(generation);
+}
+
+void ext4_extent_tree_init(struct ext4_inode_ref *inode_ref)
+{
+    /* Initialize extent root header */
+    struct ext4_extent_header *header =
+            ext4_inode_get_extent_header(inode_ref->inode);
+    ext4_extent_header_set_depth(header, 0);
+    ext4_extent_header_set_entries_count(header, 0);
+    ext4_extent_header_set_generation(header, 0);
+    ext4_extent_header_set_magic(header, EXT4_EXTENT_MAGIC);
+
+    uint16_t max_entries = (EXT4_INODE_BLOCKS * sizeof(uint32_t) -
+            sizeof(struct ext4_extent_header)) /
+                    sizeof(struct ext4_extent);
+
+    ext4_extent_header_set_max_entries_count(header, max_entries);
+    inode_ref->dirty  = true;
+}
+
 
 static struct ext4_extent_tail *
 find_ext4_extent_tail(struct ext4_extent_header *eh)
