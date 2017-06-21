@@ -336,7 +336,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
 
 	uint32_t i;
 	for (i = 0;i < blk_cnt;i++) {
-		rc = ext4_trans_try_revoke_block(fs->bdev, first + i);
+		rc = ext4_trans_try_revoke_block(fs->bdev, start_block + i);
 		if (rc != EOK)
 			return rc;
 
