@@ -235,6 +235,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
 {
 	int rc = EOK;
 	uint32_t blk_cnt = count;
+	ext4_fsblk_t start_block = first;
 	struct ext4_fs *fs = inode_ref->fs;
 	struct ext4_sblock *sb = &fs->sb;
 
@@ -341,7 +342,7 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
 
 	}
 
-	ext4_bcache_invalidate_lba(fs->bdev->bc, first, count);
+	ext4_bcache_invalidate_lba(fs->bdev->bc, start_block, blk_cnt);
 	/*All blocks should be released*/
 	ext4_assert(count == 0);
 
