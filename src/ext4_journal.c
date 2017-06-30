@@ -2141,7 +2141,7 @@ static void jbd_trans_end_write(struct ext4_bcache *bc __unused,
 			TAILQ_REMOVE(&journal->cp_queue, trans, trans_node);
 			jbd_journal_free_trans(journal, trans, false);
 
-			jbd_journal_purge_cp_trans(journal, false, true);
+			jbd_journal_purge_cp_trans(journal, false, false);
 			jbd_journal_write_sb(journal);
 			jbd_write_sb(journal->jbd_fs);
 		}
