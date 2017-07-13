@@ -227,13 +227,13 @@ int ext4_get_sblock(const char *mount_point, struct ext4_sblock **sb);
  * @warning Default model of cache is write trough. It means that when You do:
  *
  *          ext4_fopen(...);
- *          ext4_fwrie(...);
+ *          ext4_fwrite(...);
  *                           < --- data is flushed to physical drive
  *
  *          When you do:
  *          ext4_cache_write_back(..., 1);
  *          ext4_fopen(...);
- *          ext4_fwrie(...);
+ *          ext4_fwrite(...);
  *                           < --- data is NOT flushed to physical drive
  *          ext4_cache_write_back(..., 0);
  *                           < --- when write back mode is disabled all

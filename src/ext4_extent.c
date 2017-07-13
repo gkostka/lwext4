@@ -45,7 +45,7 @@
 
 #define EXT4_EXT_GET_LEN(ex) to_le16((ex)->block_count)
 #define EXT4_EXT_GET_LEN_UNWRITTEN(ex) \
-    (EXT4_EXT_GET_LEN(ex) &= ~(EXT4_EXT_UNWRITTEN_MASK))
+    (EXT4_EXT_GET_LEN(ex) & ~(EXT4_EXT_UNWRITTEN_MASK))
 #define EXT4_EXT_SET_LEN(ex, count) \
     ((ex)->block_count = to_le16(count))
 
