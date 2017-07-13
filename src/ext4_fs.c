@@ -456,7 +456,7 @@ static int ext4_fs_init_inode_table(struct ext4_block_group_ref *bg_ref)
 		memset(b.data, 0, block_size);
 		ext4_trans_set_block_dirty(b.buf);
 
-		ext4_block_set(bg_ref->fs->bdev, &b);
+		rc = ext4_block_set(bg_ref->fs->bdev, &b);
 		if (rc != EOK)
 			return rc;
 	}
