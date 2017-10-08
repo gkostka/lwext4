@@ -1331,9 +1331,10 @@ static void jbd_journal_flush_trans(struct jbd_trans *trans)
 		      jbd_buf->block_rec->trans == trans)) {
 			int r;
 			struct ext4_block jbd_block = EXT4_BLOCK_ZERO();
-			ext4_assert(jbd_block_get(journal->jbd_fs,
+			r = jbd_block_get(journal->jbd_fs,
 						&jbd_block,
-						jbd_buf->jbd_lba) == EOK);
+						jbd_buf->jbd_lba);
+			ext4_assert(r == EOK);
 			memcpy(tmp_data, jbd_block.data,
 					journal->block_size);
 			ext4_block_set(fs->bdev, &jbd_block);
@@ -1554,12 +1555,15 @@ jbd_trans_finish_callback(struct jbd_journal *journal,
 				jbd_buf_dirty);
 		if (jbd_buf) {
 			if (!revoke) {
-				ext4_assert(ext4_block_get_noread(fs->bdev,
+				int r;
+				r = ext4_block_get_noread(fs->bdev,
 							&block,
-							block_rec->lba) == EOK);
-				ext4_assert(jbd_block_get(journal->jbd_fs,
+							block_rec->lba);
+				ext4_assert(r == EOK);
+				r = jbd_block_get(journal->jbd_fs,
 							&jbd_block,
-							jbd_buf->jbd_lba) == EOK);
+							jbd_buf->jbd_lba);
+				ext4_assert(r == EOK);
 				memcpy(block.data, jbd_block.data,
 						journal->block_size);
 
