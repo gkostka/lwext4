@@ -379,11 +379,9 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 		return ENOTSUP;
 
 	for (size_t i = 0; i < CONFIG_EXT4_BLOCKDEVS_COUNT; ++i) {
-		if (s_bdevices[i].name) {
-			if (!strcmp(dev_name, s_bdevices[i].name)) {
-				bd = s_bdevices[i].bd;
-				break;
-			}
+		if (!strcmp(dev_name, s_bdevices[i].name)) {
+			bd = s_bdevices[i].bd;
+			break;
 		}
 	}
 
