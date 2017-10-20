@@ -368,7 +368,7 @@ int ext4_fwrite(ext4_file *file, const void *buf, size_t size, size_t *wcnt);
  *              @ref SEEK_END
  *
  * @return  Standard error code.*/
-int ext4_fseek(ext4_file *file, uint64_t offset, uint32_t origin);
+int ext4_fseek(ext4_file *file, int64_t offset, uint32_t origin);
 
 /**@brief   Get file position.
  *
