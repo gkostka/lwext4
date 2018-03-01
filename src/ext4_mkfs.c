@@ -709,7 +709,7 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	bd->fs = fs;
 
 	if (info->len == 0)
-		info->len = bd->bdif->ph_bcnt * bd->bdif->ph_bsize;
+		info->len = bd->part_size;
 
 	if (info->block_size == 0)
 		info->block_size = 4096; /*Set block size to default value*/
