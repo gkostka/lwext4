@@ -97,6 +97,9 @@ struct ext4_blockdev_iface {
 
 	/**@brief   Physical write counter*/
 	uint32_t bwrite_ctr;
+
+	/**@brief   User data pointer*/
+	void* p_user;
 };
 
 /**@brief   Definition of the simple block device.*/
