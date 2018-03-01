@@ -129,7 +129,7 @@ int ext4_mbr_scan(struct ext4_blockdev *parent, struct ext4_mbr_bdevs *bdevs)
 int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts)
 {
 	int r;
-	uint64_t disk_size = parent->part_size;
+	uint64_t disk_size;
 	uint32_t division_sum = parts->division[0] + parts->division[1] +
 				parts->division[2] + parts->division[3];
 
@@ -140,6 +140,8 @@ int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts)
 	r = ext4_block_init(parent);
 	if (r != EOK)
 		return r;
+
+	disk_size = parent->part_size;
 
 	/*Calculate CHS*/
 	uint32_t k = 16;
@@ -167,7 +169,7 @@ int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts)
 
 		if (i == 0) {
 			part_start += 63;
-			part_size -= 63;
+			part_size -= 63 * parent->bdif->ph_bsize;
 		}
 
 		uint32_t cyl_end = cyl_part + cyl_it - 1;
@@ -182,7 +184,7 @@ int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts)
 		mbr->part_entry[i].chs2[2] = cyl_end;
 
 		mbr->part_entry[i].first_lba = part_start;
-		mbr->part_entry[i].sectors = part_size;
+		mbr->part_entry[i].sectors = part_size / parent->bdif->ph_bsize;
 
 		cyl_it += cyl_part;
 	}
