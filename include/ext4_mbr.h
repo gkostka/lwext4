@@ -60,7 +60,7 @@ struct ext4_mbr_parts {
 	uint8_t division[4];
 };
 
-int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts);
+int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts, uint32_t disk_id);
 
 #ifdef __cplusplus
 }
