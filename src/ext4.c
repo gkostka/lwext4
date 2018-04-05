@@ -994,10 +994,10 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 			r = ext4_fs_alloc_inode(fs, &child_ref,
 					is_goal ? ftype : EXT4_DE_DIR);
 
-			ext4_fs_inode_blocks_init(fs, &child_ref);
 			if (r != EOK)
 				break;
 
+			ext4_fs_inode_blocks_init(fs, &child_ref);
 
 			/*Link with root dir.*/
 			r = ext4_link(mp, &ref, &child_ref, path, len, false);
