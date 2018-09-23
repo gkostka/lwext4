@@ -1230,7 +1230,7 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 }
 
 int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
-			  struct ext4_inode_ref *child, const char *name)
+			  struct ext4_inode_ref *child, const char *name, uint32_t name_len)
 {
 	int rc2 = EOK;
 	int r;
@@ -1257,7 +1257,6 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	}
 
 	/* Initialize hinfo structure (mainly compute hash) */
-	uint32_t name_len = strlen(name);
 	struct ext4_hash_info hinfo;
 	r = ext4_dir_hinfo_init(&hinfo, &root_blk, &fs->sb, name_len, name);
 	if (r != EOK) {
