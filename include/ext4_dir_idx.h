@@ -91,7 +91,7 @@ int ext4_dir_dx_find_entry(struct ext4_dir_search_result *result,
  * @return Error code
  */
 int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
-			  struct ext4_inode_ref *child, const char *name);
+			  struct ext4_inode_ref *child, const char *name, uint32_t name_len);
 
 /**@brief Add new entry to indexed directory
  * @param dir           Directory i-node
