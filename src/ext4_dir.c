@@ -351,7 +351,7 @@ int ext4_dir_add_entry(struct ext4_inode_ref *parent, const char *name,
 	/* Index adding (if allowed) */
 	if ((ext4_sb_feature_com(sb, EXT4_FCOM_DIR_INDEX)) &&
 	    (ext4_inode_has_flag(parent->inode, EXT4_INODE_FLAG_INDEX))) {
-		r = ext4_dir_dx_add_entry(parent, child, name);
+		r = ext4_dir_dx_add_entry(parent, child, name, name_len);
 
 		/* Check if index is not corrupted */
 		if (r != EXT4_ERR_BAD_DX_DIR) {
