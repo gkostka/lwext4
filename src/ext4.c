@@ -2474,15 +2474,16 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 		memcpy(ref.inode->blocks, buf, size);
 		ext4_inode_clear_flag(ref.inode, EXT4_INODE_FLAG_EXTENTS);
 	} else {
+		uint64_t off;
 		ext4_fs_inode_blocks_init(&f->mp->fs, &ref);
 		r = ext4_fs_append_inode_dblk(&ref, &fblock, &sblock);
 		if (r != EOK)
 			goto Finish;
 
-		r = ext4_block_writebytes(f->mp->fs.bdev, 0, buf, size);
+		off = fblock * block_size;
+		r = ext4_block_writebytes(f->mp->fs.bdev, off, buf, size);
 		if (r != EOK)
 			goto Finish;
-
 	}
 
 	/*Stop write back cache mode*/
