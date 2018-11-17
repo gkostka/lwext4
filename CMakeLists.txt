@@ -2,6 +2,7 @@ project(lwext4 C)
 cmake_minimum_required(VERSION 2.8)
 
 
+include_directories(include)
 include_directories(${PROJECT_BINARY_DIR}/include)
 include_directories(blockdev/filedev)
 include_directories(blockdev/filedev_win)
@@ -83,12 +84,6 @@ if (NOT CMAKE_COMPILER_IS_GNUCC)
 else()
     set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "-Wall -Wextra -pedantic")
 endif()
-
-#Config file generation
-file(
-    COPY include
-    DESTINATION .
-)
 
 #DISTRIBUTION
 set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
