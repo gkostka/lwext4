@@ -267,9 +267,9 @@ static uint32_t jbd_commit_csum(struct jbd_fs *jbd_fs,
 	uint32_t checksum = 0;
 
 	if (jbd_has_csum(&jbd_fs->sb)) {
-		uint32_t orig_checksum_type = header->chksum_type,
-			 orig_checksum_size = header->chksum_size,
-			 orig_checksum = header->chksum[0];
+		uint8_t orig_checksum_type = header->chksum_type,
+			 orig_checksum_size = header->chksum_size;
+		uint32_t orig_checksum = header->chksum[0];
 		uint32_t block_size = jbd_get32(&jbd_fs->sb, blocksize);
 		header->chksum_type = 0;
 		header->chksum_size = 0;
@@ -1788,8 +1788,8 @@ static int jbd_trans_write_commit_block(struct jbd_trans *trans)
 
 	if (JBD_HAS_INCOMPAT_FEATURE(&journal->jbd_fs->sb,
 				JBD_FEATURE_COMPAT_CHECKSUM)) {
-		jbd_set32(header, chksum_type, JBD_CRC32_CHKSUM);
-		jbd_set32(header, chksum_size, JBD_CRC32_CHKSUM_SIZE);
+		header->chksum_type = JBD_CRC32_CHKSUM;
+		header->chksum_size = JBD_CRC32_CHKSUM_SIZE;
 		jbd_set32(header, chksum[0], trans->data_csum);
 	}
 	jbd_commit_csum_set(journal->jbd_fs, header);
