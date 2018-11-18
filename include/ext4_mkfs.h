@@ -58,9 +58,9 @@ struct ext4_mkfs_info {
 	uint32_t inode_size;
 	uint32_t inodes;
 	uint32_t journal_blocks;
-	uint16_t feat_ro_compat;
-	uint16_t feat_compat;
-	uint16_t feat_incompat;
+	uint32_t feat_ro_compat;
+	uint32_t feat_compat;
+	uint32_t feat_incompat;
 	uint32_t bg_desc_reserve_blocks;
 	uint16_t dsc_size;
 	uint8_t uuid[UUID_SIZE];
