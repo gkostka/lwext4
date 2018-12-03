@@ -626,7 +626,7 @@ static int file_read(const char *p)
 	return rc;
 }
 
-static int file_write(const const char *p)
+static int file_write(const char *p)
 {
 	int fid = MAX_FILES;
 	int d;
