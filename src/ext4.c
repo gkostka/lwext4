@@ -435,7 +435,7 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	}
 
 	bd->fs = &mp->fs;
-    mp->mounted = 1;
+	mp->mounted = 1;
 	return r;
 }
 
