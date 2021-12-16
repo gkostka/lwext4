@@ -437,8 +437,10 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 			ext4_balloc_set_bitmap_csum(sb, bg, b.data);
 			ext4_trans_set_block_dirty(b.buf);
 			r = ext4_block_set(inode_ref->fs->bdev, &b);
-			if (r != EOK)
+			if (r != EOK) {
+				ext4_fs_put_block_group_ref(&bg_ref);
 				return r;
+			}
 
 			alloc = ext4_fs_bg_idx_to_addr(sb, tmp_idx, bg_id);
 			goto success;
@@ -452,8 +454,10 @@ int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,
 		ext4_balloc_set_bitmap_csum(sb, bg_ref.block_group, b.data);
 		ext4_trans_set_block_dirty(b.buf);
 		r = ext4_block_set(inode_ref->fs->bdev, &b);
-		if (r != EOK)
+		if (r != EOK) {
+			ext4_fs_put_block_group_ref(&bg_ref);
 			return r;
+		}
 
 		alloc = ext4_fs_bg_idx_to_addr(sb, rel_blk_idx, bg_id);
 		goto success;
