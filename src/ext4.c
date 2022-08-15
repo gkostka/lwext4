@@ -145,6 +145,7 @@ int ext4_device_unregister(const char *dev_name)
 			continue;
 
 		memset(&s_bdevices[i], 0, sizeof(s_bdevices[i]));
+		return EOK;
 	}
 
 	return ENOENT;
