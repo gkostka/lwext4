@@ -54,7 +54,7 @@
 #include <ext4_inode.h>
 
 /**@brief Compute number of block group from block address.
- * @param sb superblock pointer.
+ * @param s superblock pointer.
  * @param baddr Absolute address of block.
  * @return Block group index
  */
@@ -68,7 +68,7 @@ uint32_t ext4_balloc_get_bgid_of_block(struct ext4_sblock *s,
 }
 
 /**@brief Compute the starting block address of a block group
- * @param sb   superblock pointer.
+ * @param s   superblock pointer.
  * @param bgid block group index
  * @return Block address
  */

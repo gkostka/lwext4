@@ -66,7 +66,7 @@ struct ext4_dir_idx_block {
 
 /**@brief Initialize index structure of new directory.
  * @param dir Pointer to directory i-node
- * @param dir Pointer to parent directory i-node
+ * @param parent Pointer to parent directory i-node
  * @return Error code
  */
 int ext4_dir_dx_init(struct ext4_inode_ref *dir,

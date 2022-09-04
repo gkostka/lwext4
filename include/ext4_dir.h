@@ -108,7 +108,7 @@ static inline uint16_t ext4_dir_en_get_entry_len(struct ext4_dir_en *de)
 
 /**@brief Set directory entry length.
  * @param de     Directory entry
- * @param length Entry length
+ * @param l Entry length
  */
 static inline void ext4_dir_en_set_entry_len(struct ext4_dir_en *de, uint16_t l)
 {
@@ -135,7 +135,7 @@ static inline uint16_t ext4_dir_en_get_name_len(struct ext4_sblock *sb,
 /**@brief Set directory entry name length.
  * @param sb     Superblock
  * @param de     Directory entry
- * @param length Entry name length
+ * @param len Entry name length
  */
 static inline void ext4_dir_en_set_name_len(struct ext4_sblock *sb,
 					    struct ext4_dir_en *de,
@@ -165,7 +165,7 @@ static inline uint8_t ext4_dir_en_get_inode_type(struct ext4_sblock *sb,
 /**@brief Set i-node type of directory entry.
  * @param sb   Superblock
  * @param de   Directory entry
- * @param type I-node type (file, dir, etc.)
+ * @param t I-node type (file, dir, etc.)
  */
 
 static inline void ext4_dir_en_set_inode_type(struct ext4_sblock *sb,

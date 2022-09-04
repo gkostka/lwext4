@@ -61,7 +61,7 @@ static inline uint64_t ext4_sb_get_blocks_cnt(struct ext4_sblock *s)
 
 /**@brief   Blocks count set  in superblock.
  * @param   s superblock descriptor
- * @return  count of blocks*/
+ * @param   cnt count of blocks*/
 static inline void ext4_sb_set_blocks_cnt(struct ext4_sblock *s, uint64_t cnt)
 {
 	s->blocks_count_lo = to_le32((cnt << 32) >> 32);

@@ -159,7 +159,7 @@ uint16_t ext4_inode_get_links_cnt(struct ext4_inode *inode);
 
 /**@brief Set number of links to i-node.
  * @param inode I-node to set number of links to
- * @param count Number of links to i-node
+ * @param cnt Number of links to i-node
  */
 void ext4_inode_set_links_cnt(struct ext4_inode *inode, uint16_t cnt);
 
@@ -174,7 +174,7 @@ uint64_t ext4_inode_get_blocks_count(struct ext4_sblock *sb,
 /**@brief Set number of 512-bytes blocks used for i-node.
  * @param sb    Superblock
  * @param inode I-node
- * @param count Number of 512-bytes blocks
+ * @param cnt Number of 512-bytes blocks
  * @return Error code
  */
 int ext4_inode_set_blocks_count(struct ext4_sblock *sb,
@@ -200,7 +200,7 @@ uint32_t ext4_inode_get_generation(struct ext4_inode *inode);
 
 /**@brief Set file generation (used by NFS).
  * @param inode      I-node
- * @param generation File generation
+ * @param gen File generation
  */
 void ext4_inode_set_generation(struct ext4_inode *inode, uint32_t gen);
 
@@ -232,7 +232,7 @@ uint64_t ext4_inode_get_file_acl(struct ext4_inode *inode,
 /**@brief Set address of block, where are extended attributes located.
  * @param inode    I-node
  * @param sb       Superblock
- * @param file_acl Block address
+ * @param acl Block address
  */
 void ext4_inode_set_file_acl(struct ext4_inode *inode, struct ext4_sblock *sb,
 			     uint64_t acl);
@@ -247,7 +247,7 @@ uint32_t ext4_inode_get_direct_block(struct ext4_inode *inode, uint32_t idx);
 /**@brief Set block address of specified direct block.
  * @param inode  I-node to set block address to
  * @param idx    Index of logical block
- * @param fblock Physical block address
+ * @param block Physical block address
  */
 void ext4_inode_set_direct_block(struct ext4_inode *inode, uint32_t idx,
 				 uint32_t block);
@@ -262,7 +262,7 @@ uint32_t ext4_inode_get_indirect_block(struct ext4_inode *inode, uint32_t idx);
 /**@brief Set block address of specified indirect block.
  * @param inode  I-node to set block address to
  * @param idx    Index of indirect block
- * @param fblock Physical block address
+ * @param block Physical block address
  */
 void ext4_inode_set_indirect_block(struct ext4_inode *inode, uint32_t idx,
 				   uint32_t block);
@@ -297,20 +297,20 @@ bool ext4_inode_is_type(struct ext4_sblock *sb, struct ext4_inode *inode,
 
 /**@brief Check if i-node has specified flag.
  * @param inode I-node to check flags of
- * @param flag  Flag to check
+ * @param f  Flag to check
  * @return Result of check operation
  */
 bool ext4_inode_has_flag(struct ext4_inode *inode, uint32_t f);
 
 /**@brief Remove specified flag from i-node.
  * @param inode      I-node to clear flag on
- * @param clear_flag Flag to be cleared
+ * @param f Flag to be cleared
  */
 void ext4_inode_clear_flag(struct ext4_inode *inode, uint32_t f);
 
 /**@brief Set specified flag to i-node.
  * @param inode    I-node to set flag on
- * @param set_flag Flag to be set
+ * @param f Flag to be set
  */
 void ext4_inode_set_flag(struct ext4_inode *inode, uint32_t f);
 

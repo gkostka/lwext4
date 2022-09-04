@@ -54,7 +54,7 @@ extern "C" {
 #include <stdbool.h>
 
 /**@brief Compute number of block group from block address.
- * @param sb superblock pointer.
+ * @param s superblock pointer.
  * @param baddr Absolute address of block.
  * @return Block group index
  */
@@ -62,7 +62,7 @@ uint32_t ext4_balloc_get_bgid_of_block(struct ext4_sblock *s,
 				       ext4_fsblk_t baddr);
 
 /**@brief Compute the starting block address of a block group
- * @param sb   superblock pointer.
+ * @param s   superblock pointer.
  * @param bgid block group index
  * @return Block address
  */
@@ -95,7 +95,6 @@ int ext4_balloc_free_blocks(struct ext4_inode_ref *inode_ref,
 
 /**@brief   Allocate block procedure.
  * @param   inode_ref inode reference
- * @param   goal
  * @param   baddr allocated block address
  * @return  standard error code*/
 int ext4_balloc_alloc_block(struct ext4_inode_ref *inode_ref,

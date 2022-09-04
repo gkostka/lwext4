@@ -73,7 +73,6 @@ static inline uint64_t ext4_bg_get_block_bitmap(struct ext4_bgroup *bg,
  * @param bg pointer to block group
  * @param s pointer to superblock
  * @param blk block to set
- * @return Address of block with block bitmap
  */
 static inline void ext4_bg_set_block_bitmap(struct ext4_bgroup *bg,
 					    struct ext4_sblock *s, uint64_t blk)
@@ -106,7 +105,6 @@ static inline uint64_t ext4_bg_get_inode_bitmap(struct ext4_bgroup *bg,
  * @param bg Pointer to block group
  * @param s Pointer to superblock
  * @param blk block to set
- * @return Address of block with i-node bitmap
  */
 static inline void ext4_bg_set_inode_bitmap(struct ext4_bgroup *bg,
 					    struct ext4_sblock *s, uint64_t blk)
@@ -139,7 +137,6 @@ ext4_bg_get_inode_table_first_block(struct ext4_bgroup *bg,
  * @param bg Pointer to block group
  * @param s Pointer to superblock
  * @param blk block to set
- * @return Address of first block of i-node table
  */
 static inline void
 ext4_bg_set_inode_table_first_block(struct ext4_bgroup *bg,
@@ -152,7 +149,7 @@ ext4_bg_set_inode_table_first_block(struct ext4_bgroup *bg,
 
 /**@brief Get number of free blocks in block group.
  * @param bg Pointer to block group
- * @param sb Pointer to superblock
+ * @param s Pointer to superblock
  * @return Number of free blocks in block group
  */
 static inline uint32_t ext4_bg_get_free_blocks_count(struct ext4_bgroup *bg,
@@ -282,7 +279,7 @@ static inline void ext4_bg_set_checksum(struct ext4_bgroup *bg, uint16_t crc)
 
 /**@brief Check if block group has a flag.
  * @param bg Pointer to block group
- * @param flag Flag to be checked
+ * @param f Flag to be checked
  * @return True if flag is set to 1
  */
 static inline bool ext4_bg_has_flag(struct ext4_bgroup *bg, uint32_t f)
@@ -292,7 +289,7 @@ static inline bool ext4_bg_has_flag(struct ext4_bgroup *bg, uint32_t f)
 
 /**@brief Set flag of block group.
  * @param bg Pointer to block group
- * @param flag Flag to be set
+ * @param f Flag to be set
  */
 static inline void ext4_bg_set_flag(struct ext4_bgroup *bg, uint32_t f)
 {
@@ -303,7 +300,7 @@ static inline void ext4_bg_set_flag(struct ext4_bgroup *bg, uint32_t f)
 
 /**@brief Clear flag of block group.
  * @param bg Pointer to block group
- * @param flag Flag to be cleared
+ * @param f Flag to be cleared
  */
 static inline void ext4_bg_clear_flag(struct ext4_bgroup *bg, uint32_t f)
 {
