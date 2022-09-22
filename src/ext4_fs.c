@@ -817,7 +817,7 @@ void ext4_fs_inode_blocks_init(struct ext4_fs *fs,
 		return;
 	}
 
-#if CONFIG_EXTENT_ENABLE
+#if CONFIG_EXTENT_ENABLE && CONFIG_EXTENTS_ENABLE
 	/* Initialize extents if needed */
 	if (ext4_sb_feature_incom(&fs->sb, EXT4_FINCOM_EXTENTS)) {
 		ext4_inode_set_flag(inode, EXT4_INODE_FLAG_EXTENTS);
@@ -936,7 +936,7 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
 	uint32_t offset;
 	uint32_t suboff;
 	int rc;
-#if CONFIG_EXTENT_ENABLE
+#if CONFIG_EXTENT_ENABLE && CONFIG_EXTENTS_ENABLE
 	/* For extents must be data block destroyed by other way */
 	if ((ext4_sb_feature_incom(&fs->sb, EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
@@ -1224,7 +1224,7 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 	uint32_t new_blocks_cnt = (uint32_t)((new_size + block_size - 1) / block_size);
 	uint32_t old_blocks_cnt = (uint32_t)((old_size + block_size - 1) / block_size);
 	uint32_t diff_blocks_cnt = old_blocks_cnt - new_blocks_cnt;
-#if CONFIG_EXTENT_ENABLE
+#if CONFIG_EXTENT_ENABLE && CONFIG_EXTENTS_ENABLE
 	if ((ext4_sb_feature_incom(sb, EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
 
@@ -1359,7 +1359,7 @@ static int ext4_fs_get_inode_dblk_idx_internal(struct ext4_inode_ref *inode_ref,
 	ext4_fsblk_t current_block;
 
 	(void)extent_create;
-#if CONFIG_EXTENT_ENABLE
+#if CONFIG_EXTENT_ENABLE && CONFIG_EXTENTS_ENABLE
 	/* Handle i-node using extents */
 	if ((ext4_sb_feature_incom(&fs->sb, EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
@@ -1478,7 +1478,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 {
 	struct ext4_fs *fs = inode_ref->fs;
 
-#if CONFIG_EXTENT_ENABLE
+#if CONFIG_EXTENT_ENABLE && CONFIG_EXTENTS_ENABLE
 	/* Handle inode using extents */
 	if ((ext4_sb_feature_incom(&fs->sb, EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
@@ -1642,7 +1642,7 @@ static int ext4_fs_set_inode_data_block_index(struct ext4_inode_ref *inode_ref,
 int ext4_fs_append_inode_dblk(struct ext4_inode_ref *inode_ref,
 			      ext4_fsblk_t *fblock, ext4_lblk_t *iblock)
 {
-#if CONFIG_EXTENT_ENABLE
+#if CONFIG_EXTENT_ENABLE && CONFIG_EXTENTS_ENABLE
 	/* Handle extents separately */
 	if ((ext4_sb_feature_incom(&inode_ref->fs->sb, EXT4_FINCOM_EXTENTS)) &&
 	    (ext4_inode_has_flag(inode_ref->inode, EXT4_INODE_FLAG_EXTENTS))) {
