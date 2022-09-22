@@ -1270,7 +1270,6 @@ ext4_fsblk_t ext4_fs_inode_to_goal_block(struct ext4_inode_ref *inode_ref)
 
 /**@brief Compute 'goal' for allocation algorithm (For blockmap).
  * @param inode_ref Reference to inode, to allocate block for
- * @param goal
  * @return error code
  */
 int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,

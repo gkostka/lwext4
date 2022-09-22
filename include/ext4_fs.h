@@ -87,7 +87,7 @@ struct ext4_inode_ref {
 
 
 /**@brief Convert block address to relative index in block group.
- * @param sb Superblock pointer
+ * @param s Superblock pointer
  * @param baddr Block number to convert
  * @return Relative number of block
  */
@@ -187,7 +187,7 @@ void ext4_fs_inode_blocks_init(struct ext4_fs *fs,
 int ext4_fs_put_inode_ref(struct ext4_inode_ref *ref);
 
 /**@brief Convert filetype to inode mode.
- * @param filetype
+ * @param filetype File type
  * @return inode mode
  */
 uint32_t ext4_fs_correspond_inode_mode(int filetype);
@@ -222,7 +222,6 @@ ext4_fsblk_t ext4_fs_inode_to_goal_block(struct ext4_inode_ref *inode_ref);
 
 /**@brief Compute 'goal' for allocation algorithm (For blockmap).
  * @param inode_ref Reference to inode, to allocate block for
- * @param goal
  * @return error code
  */
 int ext4_fs_indirect_find_goal(struct ext4_inode_ref *inode_ref,
@@ -260,12 +259,12 @@ int ext4_fs_append_inode_dblk(struct ext4_inode_ref *inode_ref,
 			      ext4_fsblk_t *fblock, ext4_lblk_t *iblock);
 
 /**@brief   Increment inode link count.
- * @param   inode none handle
+ * @param   inode_ref none handle
  */
 void ext4_fs_inode_links_count_inc(struct ext4_inode_ref *inode_ref);
 
 /**@brief   Decrement inode link count.
- * @param   inode none handle
+ * @param   inode_ref none handle
  */
 void ext4_fs_inode_links_count_dec(struct ext4_inode_ref *inode_ref);
 

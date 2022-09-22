@@ -640,7 +640,7 @@ struct tag_info {
 /**@brief  Extract information from a block tag.
  * @param  __tag pointer to the block tag
  * @param  tag_bytes block tag size of this jbd filesystem
- * @param  remaining size in buffer containing the block tag
+ * @param  remain_buf_size size in buffer containing the block tag
  * @param  tag_info information of this tag.
  * @return  EOK when succeed, otherwise return EINVAL.*/
 static int
@@ -717,7 +717,7 @@ jbd_extract_block_tag(struct jbd_fs *jbd_fs,
 
 /**@brief  Write information to a block tag.
  * @param  __tag pointer to the block tag
- * @param  remaining size in buffer containing the block tag
+ * @param  remain_buf_size size in buffer containing the block tag
  * @param  tag_info information of this tag.
  * @return  EOK when succeed, otherwise return EINVAL.*/
 static int
@@ -994,7 +994,7 @@ static void jbd_destroy_revoke_tree(struct recover_info *info)
 /**@brief  Add entries in a revoke block to revoke tree.
  * @param  jbd_fs jbd filesystem
  * @param  header revoke block header
- * @param  recover_info  journal replay info*/
+ * @param  info  journal replay info*/
 static void jbd_build_revoke_tree(struct jbd_fs *jbd_fs,
 				  struct jbd_bhdr *header,
 				  struct recover_info *info)
@@ -1055,7 +1055,7 @@ static void jbd_replay_descriptor_block(struct jbd_fs *jbd_fs,
 
 /**@brief  The core routine of journal replay.
  * @param  jbd_fs jbd filesystem
- * @param  recover_info  journal replay info
+ * @param  info  journal replay info
  * @param  action action needed to be taken
  * @return standard error code*/
 static int jbd_iterate_log(struct jbd_fs *jbd_fs,
@@ -1720,8 +1720,7 @@ int jbd_trans_try_revoke_block(struct jbd_trans *trans,
 /**@brief  Free a transaction
  * @param  journal current journal session
  * @param  trans transaction
- * @param  abort discard all the modifications on the block?
- * @return standard error code*/
+ * @param  abort discard all the modifications on the block?*/
 void jbd_journal_free_trans(struct jbd_journal *journal,
 			    struct jbd_trans *trans,
 			    bool abort)

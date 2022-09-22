@@ -57,7 +57,7 @@ struct ext4_hash_info {
  * @param   name entry name
  * @param   len entry name length
  * @param   hash_seed (from superblock)
- * @param   hash version (from superblock)
+ * @param   hash_version version (from superblock)
  * @param   hash_minor output value
  * @param   hash_major output value
  * @return  standard error code*/

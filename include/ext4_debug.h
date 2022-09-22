@@ -130,11 +130,11 @@ static inline const char *ext4_dmask_id2str(uint32_t m)
 #define DBG_ERROR "[error] "
 
 /**@brief   Global mask debug set.
- * @brief   m new debug mask.*/
+ * @param   m new debug mask.*/
 void ext4_dmask_set(uint32_t m);
 
 /**@brief   Global mask debug clear.
- * @brief   m new debug mask.*/
+ * @param   m new debug mask.*/
 void ext4_dmask_clr(uint32_t m);
 
 /**@brief   Global debug mask get.

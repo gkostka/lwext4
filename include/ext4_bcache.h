@@ -248,8 +248,7 @@ void ext4_bcache_invalidate_buf(struct ext4_bcache *bc,
 /**@brief   Invalidate a range of buffers.
  * @param   bc block cache descriptor
  * @param   from starting lba
- * @param   cnt block counts
- * @param   buf buffer*/
+ * @param   cnt block counts*/
 void ext4_bcache_invalidate_lba(struct ext4_bcache *bc,
 				uint64_t from,
 				uint32_t cnt);

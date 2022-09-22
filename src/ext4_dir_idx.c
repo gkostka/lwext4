@@ -54,7 +54,7 @@
 #include <stdlib.h>
 
 /**@brief Get hash version used in directory index.
- * @param root_info Pointer to root info structure of index
+ * @param ri Pointer to root info structure of index
  * @return Hash algorithm version
  */
 static inline uint8_t
@@ -64,7 +64,7 @@ ext4_dir_dx_rinfo_get_hash_version(struct ext4_dir_idx_rinfo *ri)
 }
 
 /**@brief Set hash version, that will be used in directory index.
- * @param root_info Pointer to root info structure of index
+ * @param ri Pointer to root info structure of index
  * @param v Hash algorithm version
  */
 static inline void
@@ -74,7 +74,7 @@ ext4_dir_dx_rinfo_set_hash_version(struct ext4_dir_idx_rinfo *ri, uint8_t v)
 }
 
 /**@brief Get length of root_info structure in bytes.
- * @param root_info Pointer to root info structure of index
+ * @param ri Pointer to root info structure of index
  * @return Length of the structure
  */
 static inline uint8_t
@@ -84,8 +84,8 @@ ext4_dir_dx_rinfo_get_info_length(struct ext4_dir_idx_rinfo *ri)
 }
 
 /**@brief Set length of root_info structure in bytes.
- * @param root_info   Pointer to root info structure of index
- * @param info_length Length of the structure
+ * @param ri   Pointer to root info structure of index
+ * @param len Length of the structure
  */
 static inline void
 ext4_dir_dx_root_info_set_info_length(struct ext4_dir_idx_rinfo *ri,
@@ -95,7 +95,7 @@ ext4_dir_dx_root_info_set_info_length(struct ext4_dir_idx_rinfo *ri,
 }
 
 /**@brief Get number of indirect levels of HTree.
- * @param root_info Pointer to root info structure of index
+ * @param ri Pointer to root info structure of index
  * @return Height of HTree (actually only 0 or 1)
  */
 static inline uint8_t
@@ -105,8 +105,8 @@ ext4_dir_dx_rinfo_get_indirect_levels(struct ext4_dir_idx_rinfo *ri)
 }
 
 /**@brief Set number of indirect levels of HTree.
- * @param root_info Pointer to root info structure of index
- * @param lvl Height of HTree (actually only 0 or 1)
+ * @param ri Pointer to root info structure of index
+ * @param l Height of HTree (actually only 0 or 1)
  */
 static inline void
 ext4_dir_dx_rinfo_set_indirect_levels(struct ext4_dir_idx_rinfo *ri, uint8_t l)
@@ -834,7 +834,6 @@ cleanup:
  *         It can compare two entries by hash value.
  * @param arg1  First entry
  * @param arg2  Second entry
- * @param dummy Unused parameter, can be NULL
  *
  * @return Classic compare result
  *         (0: equal, -1: arg1 < arg2, 1: arg1 > arg2)
@@ -1067,9 +1066,9 @@ static int ext4_dir_dx_split_data(struct ext4_inode_ref *inode_ref,
 }
 
 /**@brief  Split index node and maybe some parent nodes in the tree hierarchy.
- * @param inode_ref Directory i-node
- * @param dx_blocks Array with path from root to leaf node
- * @param dx_block  Leaf block to be split if needed
+ * @param ino_ref Directory i-node
+ * @param dx_blks Array with path from root to leaf node
+ * @param dxb  Leaf block to be split if needed
  * @return Error code
  */
 static int
