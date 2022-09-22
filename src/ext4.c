@@ -391,7 +391,6 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	for (size_t i = 0; i < CONFIG_EXT4_MOUNTPOINTS_COUNT; ++i) {
 		if (!s_mp[i].mounted) {
 			strcpy(s_mp[i].name, mount_point);
-			s_mp[i].mounted = 1;
 			mp = &s_mp[i];
 			break;
 		}
@@ -436,6 +435,7 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	}
 
 	bd->fs = &mp->fs;
+	mp->mounted = 1;
 	return r;
 }
 
