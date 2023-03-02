@@ -416,7 +416,7 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	bsize = ext4_sb_get_block_size(&mp->fs.sb);
 	ext4_block_set_lb_size(bd, bsize);
 	bc = &mp->bc;
-
+if (file->flags & O_RDONLY)
 	r = ext4_bcache_init_dynamic(bc, CONFIG_BLOCK_DEV_CACHE_SIZE, bsize);
 	if (r != EOK) {
 		ext4_block_fini(bd);
@@ -1846,7 +1846,7 @@ int ext4_fwrite(ext4_file *file, const void *buf, size_t size, size_t *wcnt)
 
 	ext4_assert(file && file->mp);
 
-	if (file->mp->fs.read_only)
+	if (!((file->flags & O_WRONLY) || (file->flags & O_RDWR)))
 		return EROFS;
 
 	if (file->flags & O_RDONLY)
