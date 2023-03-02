@@ -1849,7 +1849,7 @@ int ext4_fwrite(ext4_file *file, const void *buf, size_t size, size_t *wcnt)
 	if (file->mp->fs.read_only)
 		return EROFS;
 
-	if (file->flags & O_RDONLY)
+	if (!((file->flags & O_WRONLY) || (file->flags & O_RDWR)))
 		return EPERM;
 
 	if (!size)
