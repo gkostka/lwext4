@@ -146,13 +146,13 @@ int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts, u
 
 	/*Calculate CHS*/
 	uint32_t k = 16;
-	while ((k < 256) && ((disk_size / k / 63) > 1024))
+	while ((k < 256) && ((disk_size / parent->bdif->ph_bsize / k / 63) > 1024))
 		k *= 2;
 
 	if (k == 256)
 		--k;
 
-	const uint32_t cyl_size = 63 * k;
+	const uint32_t cyl_size = parent->bdif->ph_bsize * 63 * k;
 	const uint32_t cyl_count = disk_size / cyl_size;
 
 	struct ext4_mbr *mbr = (void *)parent->bdif->ph_bbuf;
@@ -178,12 +178,12 @@ int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts, u
 
 		mbr->part_entry[i].status = 0;
 		mbr->part_entry[i].chs1[0] = i ? 0 : 1;;
-		mbr->part_entry[i].chs1[1] = (cyl_it >> 2) + 1;
-		mbr->part_entry[i].chs1[2] = cyl_it;
+		mbr->part_entry[i].chs1[1] = ((cyl_it >> 2) & 0xC0) + 1;
+		mbr->part_entry[i].chs1[2] = cyl_it & 0xFF;
 		mbr->part_entry[i].type = 0x83;
 		mbr->part_entry[i].chs2[0] = k - 1;
-		mbr->part_entry[i].chs2[1] = (cyl_end >> 2) + 63;
-		mbr->part_entry[i].chs2[2] = cyl_end;
+		mbr->part_entry[i].chs2[1] = ((cyl_end >> 2) & 0xC0) + 63;
+		mbr->part_entry[i].chs2[2] = cyl_end & 0xFF;
 
 		mbr->part_entry[i].first_lba = part_start;
 		mbr->part_entry[i].sectors = part_size / parent->bdif->ph_bsize;
