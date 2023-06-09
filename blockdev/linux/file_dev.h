@@ -40,4 +40,10 @@ struct ext4_blockdev *file_dev_get(void);
 /**@brief   Set filename to open.*/
 void file_dev_name_set(const char *n);
 
+/**@brief   Set partition offset .*/
+void file_dev_part_offset_set(const uint64_t n);
+
+/**@brief   Set partition size .*/
+void file_dev_part_size_set(const uint64_t n);
+
 #endif /* FILE_DEV_H_ */
