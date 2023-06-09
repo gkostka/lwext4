@@ -39,6 +39,12 @@
 /**@brief   Default filename.*/
 static const char *fname = "ext2";
 
+/**@brief   Default partition offset.*/
+static uint64_t part_offset = 0;
+
+/**@brief   Default partition. Zero means the rest of the file.*/
+static uint64_t part_size = 0;
+
 /**@brief   Image block size.*/
 #define EXT4_FILEDEV_BSIZE 512
 
@@ -73,8 +79,12 @@ static int file_dev_open(struct ext4_blockdev *bdev)
 	if (fseeko(dev_file, 0, SEEK_END))
 		return EFAULT;
 
-	file_dev.part_offset = 0;
-	file_dev.part_size = ftello(dev_file);
+	file_dev.part_offset = part_offset;
+	if (part_size) {
+		file_dev.part_size = part_size;
+	} else {
+		file_dev.part_size = ftello(dev_file) - part_offset;
+	}
 	file_dev.bdif->ph_bcnt = file_dev.part_size / file_dev.bdif->ph_bsize;
 
 	return EOK;
@@ -138,5 +148,15 @@ struct ext4_blockdev *file_dev_get(void)
 void file_dev_name_set(const char *n)
 {
 	fname = n;
+}
+/******************************************************************************/
+void file_dev_part_offset_set(const uint64_t n)
+{
+	part_offset = n;
+}
+/******************************************************************************/
+void file_dev_part_size_set(const uint64_t n)
+{
+	part_size = n;
 }
 /******************************************************************************/
