@@ -44,6 +44,11 @@
 
 #include "ext4_crc32.h"
 
+#if defined(__ARM_FEATURE_CRC32)
+#include <arm_acle.h>
+#endif
+
+#if !defined(__ARM_FEATURE_CRC32)
 static const uint32_t crc32_tab[] = {
 	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
 	0xe963a535, 0x9e6495a3,	0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -171,15 +176,34 @@ static inline uint32_t crc32(uint32_t crc, const void *buf, uint32_t size,
 
 	return (crc);
 }
+#endif
 
 uint32_t ext4_crc32(uint32_t crc, const void *buf, uint32_t size)
 {
+#if defined(__ARM_FEATURE_CRC32)
+	const uint8_t *p = (const uint8_t *)buf;
+
+	while (size--)
+		crc = __crc32b(crc, *p++);
+
+	return (crc);
+#else
 	return crc32(crc, buf, size, crc32_tab);
+#endif
 }
 
 uint32_t ext4_crc32c(uint32_t crc, const void *buf, uint32_t size)
 {
+#if defined(__ARM_FEATURE_CRC32)
+	const uint8_t *p = (const uint8_t *)buf;
+
+	while (size--)
+		crc = __crc32cb(crc, *p++);
+
+	return (crc);
+#else
 	return crc32(crc, buf, size, crc32c_tab);
+#endif
 }
 
 /**
