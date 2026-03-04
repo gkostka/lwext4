@@ -165,6 +165,12 @@ void ext4_bcache_drop_buf(struct ext4_bcache *bc, struct ext4_buf *buf)
 		ext4_dbg(DEBUG_BCACHE, DBG_WARN "Buffer is still referenced. "
 				"lba: %" PRIu64 ", refctr: %" PRIu32 "\n",
 				buf->lba, buf->refctr);
+
+		/* Try to remove block anyway to avoid double free
+		 * Needs to be tested carefuly! Potentially not safe!
+		 */
+		buf->refctr = 0;
+		RB_REMOVE(ext4_buf_lru, &bc->lru_root, buf);
 	} else
 		RB_REMOVE(ext4_buf_lru, &bc->lru_root, buf);
 

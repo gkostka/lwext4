@@ -414,6 +414,10 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	}
 
 	bsize = ext4_sb_get_block_size(&mp->fs.sb);
+	/* Standard size 4KiB, max block size 64KiB  (bounds 1KiB - 64KiB) */
+	if(bsize < 1024 || bsize > 0x10000)
+		return ENOTSUP;
+
 	ext4_block_set_lb_size(bd, bsize);
 	bc = &mp->bc;
 

@@ -123,6 +123,9 @@ static inline void ext4_dir_en_set_entry_len(struct ext4_dir_en *de, uint16_t l)
 static inline uint16_t ext4_dir_en_get_name_len(struct ext4_sblock *sb,
 						struct ext4_dir_en *de)
 {
+	if(de == NULL)
+		return 0;
+
 	uint16_t v = de->name_len;
 
 	if ((ext4_get32(sb, rev_level) == 0) &&

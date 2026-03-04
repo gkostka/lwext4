@@ -886,8 +886,16 @@ static int ext4_find_extent(struct ext4_inode_ref *inode_ref, ext4_lblk_t block,
 	path[0].block = bh;
 
 	i = depth;
+
+	uint16_t max_entries = to_le16(ext4_ext_max_entries(inode_ref, depth));
+
 	/* walk through the tree */
 	while (i) {
+		max_entries = to_le16(ext4_ext_max_entries(inode_ref, i));
+		if(max_entries < path[ppos].header->entries_count) {
+			ret = EIO;
+			goto err;
+		}
 		ext4_ext_binsearch_idx(path + ppos, block);
 		path[ppos].p_block = ext4_idx_pblock(path[ppos].index);
 		path[ppos].depth = i;
@@ -918,6 +926,14 @@ static int ext4_find_extent(struct ext4_inode_ref *inode_ref, ext4_lblk_t block,
 	path[ppos].depth = i;
 	path[ppos].extent = NULL;
 	path[ppos].index = NULL;
+
+	depth = i;
+	max_entries = to_le16(ext4_ext_max_entries(inode_ref, depth));
+
+	if(max_entries < path[ppos].header->entries_count) {
+		ret = EIO;
+		goto err;
+	}
 
 	/* find extent */
 	ext4_ext_binsearch(path + ppos, block);

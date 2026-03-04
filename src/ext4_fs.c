@@ -329,6 +329,10 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 	} else { /* For META_BG_BLOCK_GROUPS */
 		bit_max += ext4_bg_num_gdb(sb, bg_ref->index);
 	}
+
+	if((bit_max >> 3) > block_size)
+		return ENXIO;
+
 	for (bit = 0; bit < bit_max; bit++)
 		ext4_bmap_bit_set(block_bitmap.data, bit);
 
@@ -398,8 +402,13 @@ static int ext4_fs_init_inode_bitmap(struct ext4_block_group_ref *bg_ref)
 		return rc;
 
 	/* Initialize all bitmap bits to zero */
+	/* MAX block size 64Kib standard 4KiB (bounds 1KiB - 64KiB) */
 	uint32_t block_size = ext4_sb_get_block_size(sb);
 	uint32_t inodes_per_group = ext4_get32(sb, inodes_per_group);
+
+	/* b.data has size of block_size when mount, so check */
+	if(((inodes_per_group + 7) / 8) > block_size)
+		return EFAULT;
 
 	memset(b.data, 0, (inodes_per_group + 7) / 8);
 
