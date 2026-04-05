@@ -494,6 +494,22 @@ int ext4_mtime_get(const char *path, uint32_t *mtime);
  * @return  standard error code*/
 int ext4_ctime_get(const char *path, uint32_t *ctime);
 
+/**@brief Set file/directory/link creation time (crtime).
+ *
+ * @param path   Path to file/dir/link.
+ * @param crtime Creation timestamp.
+ *
+ * @return  Standard error code.*/
+int ext4_crtime_set(const char *path, uint32_t crtime);
+
+/**@brief Get file/directory/link creation time (crtime).
+ *
+ * @param path   Path to file/dir/link.
+ * @param crtime Creation timestamp.
+ *
+ * @return  Standard error code.*/
+int ext4_crtime_get(const char *path, uint32_t *crtime);
+
 /**@brief Create symbolic link.
  *
  * @param target Destination entry path.
