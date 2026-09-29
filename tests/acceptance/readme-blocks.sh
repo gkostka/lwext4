@@ -137,7 +137,7 @@ check)
 	exit $status
 	;;
 *)
-	sed -n '4,22s/^# \{0,1\}//p' "$0" >&2
+	sed -n '/^set -eu/q; 4,$s/^# \{0,1\}//p' "$0" >&2
 	exit 2
 	;;
 esac
