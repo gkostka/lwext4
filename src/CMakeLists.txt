@@ -11,7 +11,7 @@ else()
 endif()
 
 if  (DEFINED SIZE)
-    add_custom_target(lib_size ALL DEPENDS lwext4 COMMAND ${SIZE} liblwext4.a)
+    add_custom_target(lib_size ALL DEPENDS lwext4 COMMAND ${SIZE} $<TARGET_FILE:lwext4>)
 else()
 
 endif()
