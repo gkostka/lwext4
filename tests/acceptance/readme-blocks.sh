@@ -16,10 +16,12 @@
 #
 # "run" executes each block with "bash -ex" in one shell per block (so "cd"
 # inside a block works as documented). The only rewrite is for "sudo": CI
-# runs unprivileged, so "sudo " is dropped and DESTDIR (honoured by the
-# CMake generated "make install") points at a staging directory whose bin
-# directory is put first in PATH. The installed tools are therefore what the
-# later blocks run.
+# runs unprivileged, so "sudo " is replaced by DESTDIR=<staging directory>
+# (honoured by the CMake generated "make install") for that one command, and
+# the staging directory's bin directory is put first in PATH. The installed
+# tools are therefore what the later blocks run. DESTDIR is not exported to
+# the other commands: it would also redirect every other install, e.g. the
+# ones the CTest suite makes into its own scratch prefixes.
 set -eu
 
 ACC_DIR=$(cd "$(dirname "$0")" && pwd)
@@ -82,10 +84,10 @@ run_block()
 	echo "=== README block $key"
 	printf '%s\n' "$script" | sed 's/^/    | /'
 	# shellcheck disable=SC2016
-	script=$(printf '%s\n' "$script" | sed 's/^sudo //')
+	script=$(printf '%s\n' "$script" |
+		sed "s|^sudo |DESTDIR='$README_DESTDIR' |")
 	(
 		cd "$TOP_DIR"
-		export DESTDIR="$README_DESTDIR"
 		PATH="$README_DESTDIR/usr/local/bin:$PATH:/sbin:/usr/sbin"
 		export PATH
 		bash -ex -c "$script"

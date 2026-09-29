@@ -24,9 +24,9 @@ ci/run.sh readme-avr           # AVR build
 [readme-blocks.sh](readme-blocks.sh) extracts the fenced code blocks from
 README.md and runs them unmodified with `bash -ex`, one shell per block. A
 block's key is the slug of its heading plus its number under that heading.
-The only rewrite: CI is unprivileged, so `sudo` is dropped and `DESTDIR`
-points `make install` at a staging directory whose `bin` comes first in
-`PATH` (the later blocks run the installed tools). `readme-blocks.sh check`
+The only rewrite: CI is unprivileged, so `sudo` is replaced by a `DESTDIR`
+that points that one `make install` at a staging directory whose `bin` comes
+first in `PATH` (the later blocks run the installed tools). `readme-blocks.sh check`
 (job readme-docs) fails when a README.md block is missing from the table
 below or the table names a block that no longer exists.
 
