@@ -50,7 +50,9 @@ step "licensing: GPLv2 files"
 # there are two files licensed under GPLv2:".
 sed -n '/licensed under GPLv2:/,/^$/s/^\* *//p' README.md | sort >"$WORK/readme-gpl.txt"
 [ -s "$WORK/readme-gpl.txt" ] || die "could not find the GPLv2 file list in README.md"
-(cd src && grep -l 'GNU General Public License' ./*.c ../include/*.h ../include/misc/*.h || :) |
+# A file carries its license as the license text or as an SPDX identifier.
+(cd src && grep -l -e 'GNU General Public License' \
+	-e 'SPDX-License-Identifier: GPL-2.0' ./*.c ../include/*.h ../include/misc/*.h || :) |
 	sed 's|^\./||; s|^\.\./|../|' | sort >"$WORK/actual-gpl.txt"
 diff -u "$WORK/readme-gpl.txt" "$WORK/actual-gpl.txt" ||
 	die "README.md's GPLv2 file list does not match the sources"
@@ -59,10 +61,11 @@ for f in src/*.c include/*.h include/misc/*.h; do
 	case " $(tr '\n' ' ' <"$WORK/actual-gpl.txt") " in
 	*" $(basename "$f") "*) continue ;;
 	esac
-	grep -q 'Redistribution and use in source and binary forms' "$f" ||
-		die "$f carries no BSD-3-Clause license text"
+	grep -q -e 'Redistribution and use in source and binary forms' \
+		-e 'SPDX-License-Identifier: BSD-3-Clause' "$f" ||
+		die "$f carries no BSD-3-Clause license (text or SPDX identifier)"
 done
-pass "all other sources and headers carry the BSD-3-Clause license text"
+pass "all other sources and headers carry the BSD-3-Clause license"
 
 step "BSD-3-Clause build without the GPLv2 files"
 # "To use library as a BSD3, GPLv2 licensed source files must be removed
