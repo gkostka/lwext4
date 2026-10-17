@@ -1923,6 +1923,10 @@ static int ext4_ext_convert_to_initialized(struct ext4_inode_ref *inode_ref,
 		err = ext4_ext_split_extent_at(inode_ref, ppath, split + blocks,
 					       EXT4_EXT_MARK_UNWRIT1 |
 						   EXT4_EXT_MARK_UNWRIT2);
+		/* Inserting the right part left the path at that part (and
+		 * may have split nodes): look up the left part again. */
+		if (err == EOK)
+			err = ext4_find_extent(inode_ref, split, ppath, 0);
 		if (err == EOK) {
 			err = ext4_ext_split_extent_at(inode_ref, ppath, split,
 						       EXT4_EXT_MARK_UNWRIT1);
