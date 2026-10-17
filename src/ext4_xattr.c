@@ -381,8 +381,11 @@ static int ext4_xattr_set_entry(struct ext4_xattr_info *i,
 		     last = EXT4_XATTR_NEXT(last)) {
 			size_t offs = to_le16(last->e_value_offs);
 
-			/* For zero-value-length entry, offs will be zero. */
-			if (offs < value_offs)
+			/*
+			 * Entries without a value have offset zero, which
+			 * must stay zero.
+			 */
+			if (to_le32(last->e_value_size) && offs < value_offs)
 				last->e_value_offs = to_le16(offs + value_size);
 		}
 	}
