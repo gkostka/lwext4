@@ -272,9 +272,9 @@ int ext4_cache_flush(const char *path);
 
 /**@brief   Remove file by path.
  *
- * @param   path Path to file.
+ * @param   path Path to file. Directories are removed with ext4_dir_rm.
  *
- * @return  Standard error code. */
+ * @return  Standard error code (EISDIR if @p path is a directory). */
 int ext4_fremove(const char *path);
 
 /**@brief   Create a hardlink for a file.
