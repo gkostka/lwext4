@@ -283,6 +283,23 @@ static void ext4_fs_mark_bitmap_end(int start_bit, int end_bit, void *bitmap)
 		memset((char *)bitmap + (i >> 3), 0xff, (end_bit - i) >> 3);
 }
 
+/**@brief Mark a metadata block of a group in the group's block bitmap.
+ * @param bitmap      block bitmap data
+ * @param bitmap_bits number of bits in the bitmap
+ * @param first_bg    first block of the group
+ * @param blk         block to mark
+ * @return Error code (EIO if the block is outside of the bitmap)
+ */
+static int ext4_fs_bitmap_mark_block(uint8_t *bitmap, uint32_t bitmap_bits,
+				     ext4_fsblk_t first_bg, ext4_fsblk_t blk)
+{
+	if (blk < first_bg || blk - first_bg >= bitmap_bits)
+		return EIO;
+
+	ext4_bmap_bit_set(bitmap, (uint32_t)(blk - first_bg));
+	return EOK;
+}
+
 /**@brief Initialize block bitmap in block group.
  * @param bg_ref Reference to block group
  * @return Error code
@@ -311,6 +328,7 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 	bool meta_bg = ext4_sb_feature_incom(sb, EXT4_FINCOM_META_BG);
 
 	uint32_t inode_table_bcnt = inodes_per_group * inode_size / block_size;
+	uint32_t bitmap_bits = block_size * 8;
 
 	struct ext4_block block_bitmap;
 	rc = ext4_trans_block_get_noread(bg_ref->fs->bdev, &block_bitmap, bmp_blk);
@@ -329,6 +347,13 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 	} else { /* For META_BG_BLOCK_GROUPS */
 		bit_max += ext4_bg_num_gdb(sb, bg_ref->index);
 	}
+
+	/* The group's own metadata has to fit in its bitmap */
+	if (bit_max > bitmap_bits) {
+		rc = EIO;
+		goto fail;
+	}
+
 	for (bit = 0; bit < bit_max; bit++)
 		ext4_bmap_bit_set(block_bitmap.data, bit);
 
@@ -349,20 +374,30 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 
 	bool in_bg;
 	in_bg = ext4_block_in_group(sb, bmp_blk, bg_ref->index);
-	if (!flex_bg || in_bg)
-		ext4_bmap_bit_set(block_bitmap.data,
-				  (uint32_t)(bmp_blk - first_bg));
+	if (!flex_bg || in_bg) {
+		rc = ext4_fs_bitmap_mark_block(block_bitmap.data, bitmap_bits,
+					       first_bg, bmp_blk);
+		if (rc != EOK)
+			goto fail;
+	}
 
 	in_bg = ext4_block_in_group(sb, bmp_inode, bg_ref->index);
-	if (!flex_bg || in_bg)
-		ext4_bmap_bit_set(block_bitmap.data,
-				  (uint32_t)(bmp_inode - first_bg));
+	if (!flex_bg || in_bg) {
+		rc = ext4_fs_bitmap_mark_block(block_bitmap.data, bitmap_bits,
+					       first_bg, bmp_inode);
+		if (rc != EOK)
+			goto fail;
+	}
 
         for (i = inode_table; i < inode_table + inode_table_bcnt; i++) {
 		in_bg = ext4_block_in_group(sb, i, bg_ref->index);
-		if (!flex_bg || in_bg)
-			ext4_bmap_bit_set(block_bitmap.data,
-					  (uint32_t)(i - first_bg));
+		if (!flex_bg || in_bg) {
+			rc = ext4_fs_bitmap_mark_block(block_bitmap.data,
+						       bitmap_bits, first_bg,
+						       i);
+			if (rc != EOK)
+				goto fail;
+		}
 	}
         /*
          * Also if the number of blocks within the group is
@@ -377,6 +412,10 @@ static int ext4_fs_init_block_bitmap(struct ext4_block_group_ref *bg_ref)
 
 	/* Save bitmap */
 	return ext4_block_set(bg_ref->fs->bdev, &block_bitmap);
+
+fail:
+	ext4_block_set(bg_ref->fs->bdev, &block_bitmap);
+	return rc;
 }
 
 /**@brief Initialize i-node bitmap in block group.
@@ -400,6 +439,12 @@ static int ext4_fs_init_inode_bitmap(struct ext4_block_group_ref *bg_ref)
 	/* Initialize all bitmap bits to zero */
 	uint32_t block_size = ext4_sb_get_block_size(sb);
 	uint32_t inodes_per_group = ext4_get32(sb, inodes_per_group);
+
+	/* The bitmap of a group has to fit in a single block */
+	if (inodes_per_group > block_size * 8) {
+		ext4_block_set(bg_ref->fs->bdev, &b);
+		return EIO;
+	}
 
 	memset(b.data, 0, (inodes_per_group + 7) / 8);
 

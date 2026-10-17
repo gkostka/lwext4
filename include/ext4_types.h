@@ -353,6 +353,10 @@ struct ext4_bgroup {
 
 #define EXT4_MIN_BLOCK_SIZE 1024  /* 1 KiB */
 #define EXT4_MAX_BLOCK_SIZE 65536 /* 64 KiB */
+#define EXT4_MIN_BLOCK_LOG_SIZE 10
+#define EXT4_MAX_BLOCK_LOG_SIZE 16
+/* Largest cluster size (1 GiB), as log2 */
+#define EXT4_MAX_CLUSTER_LOG_SIZE 30
 #define EXT4_REV0_INODE_SIZE 128
 
 #define EXT4_INODE_BLOCK_SIZE 512
