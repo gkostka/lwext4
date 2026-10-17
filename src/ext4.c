@@ -1051,13 +1051,15 @@ static int ext4_generic_open2(ext4_file *f, const char *path, int flags,
 			}
 		}
 
+		/* On errors ref is released (put) or was not taken (get):
+		 * return without the put below. */
 		r = ext4_fs_put_inode_ref(&ref);
 		if (r != EOK)
-			break;
+			return r;
 
 		r = ext4_fs_get_inode_ref(fs, next_inode, &ref);
 		if (r != EOK)
-			break;
+			return r;
 
 		if (is_goal)
 			break;
@@ -1210,13 +1212,15 @@ static int ext4_create_hardlink(const char *path,
 			break;
 		}
 
+		/* On errors ref is released (put) or was not taken (get):
+		 * return without the put below. */
 		r = ext4_fs_put_inode_ref(&ref);
 		if (r != EOK)
-			break;
+			return r;
 
 		r = ext4_fs_get_inode_ref(fs, next_inode, &ref);
 		if (r != EOK)
-			break;
+			return r;
 
 		if (is_goal)
 			break;
