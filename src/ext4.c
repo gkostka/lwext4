@@ -2443,6 +2443,7 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 	uint32_t sblock;
 	ext4_fsblk_t fblock;
 	uint32_t block_size;
+	bool write_back = false;
 	int r;
 
 	ext4_assert(f && f->mp);
@@ -2468,6 +2469,7 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 	r = ext4_block_cache_write_back(f->mp->fs.bdev, 1);
 	if (r != EOK)
 		goto Finish;
+	write_back = true;
 
 	/*If the size of symlink is smaller than 60 bytes*/
 	if (size < sizeof(ref.inode->blocks)) {
@@ -2487,12 +2489,6 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 			goto Finish;
 	}
 
-	/*Stop write back cache mode*/
-	ext4_block_cache_write_back(f->mp->fs.bdev, 0);
-
-	if (r != EOK)
-		goto Finish;
-
 	ext4_inode_set_size(ref.inode, size);
 	ref.dirty = true;
 
@@ -2501,6 +2497,10 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 		f->fpos = size;
 
 Finish:
+	/*Stop write back cache mode, also on errors*/
+	if (write_back)
+		ext4_block_cache_write_back(f->mp->fs.bdev, 0);
+
 	ext4_fs_put_inode_ref(&ref);
 	return r;
 }
