@@ -40,6 +40,12 @@
 /**@brief   Default filename.*/
 static const char *fname = "ext2";
 
+/**@brief   Byte offset of the partition within the device.*/
+static uint64_t part_offset;
+
+/**@brief   Byte size of the partition. Zero means up to the end of device.*/
+static uint64_t part_size;
+
 /**@brief   IO block size.*/
 #define EXT4_IORAW_BSIZE 512
 
@@ -90,11 +96,19 @@ static int file_open(struct ext4_blockdev *bdev)
 	disk_size = pdg.Cylinders.QuadPart * (ULONG)pdg.TracksPerCylinder *
 		    (ULONG)pdg.SectorsPerTrack * (ULONG)pdg.BytesPerSector;
 
+	/*The partition size is not checked against disk_size: the drive
+	 * geometry may under-report the real size of the device.*/
+	if ((part_offset % pdg.BytesPerSector) ||
+	    (!part_size && part_offset > disk_size)) {
+		CloseHandle(dev_file);
+		return EINVAL;
+	}
+
 	_filedev.bdif->ph_bsize = pdg.BytesPerSector;
 	_filedev.bdif->ph_bcnt = disk_size / pdg.BytesPerSector;
 
-	_filedev.part_offset = 0;
-	_filedev.part_size = disk_size;
+	_filedev.part_offset = part_offset;
+	_filedev.part_size = part_size ? part_size : disk_size - part_offset;
 
 	return EOK;
 }
@@ -164,6 +178,16 @@ struct ext4_blockdev *file_windows_dev_get(void)
 void file_windows_name_set(const char *n)
 {
 	fname = n;
+}
+/******************************************************************************/
+void file_windows_part_offset_set(uint64_t offset)
+{
+	part_offset = offset;
+}
+/******************************************************************************/
+void file_windows_part_size_set(uint64_t size)
+{
+	part_size = size;
 }
 
 /******************************************************************************/

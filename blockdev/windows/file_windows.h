@@ -40,5 +40,18 @@ struct ext4_blockdev *file_windows_dev_get(void);
 /**@brief   Set filrname to open.*/
 void file_windows_name_set(const char *n);
 
+/**@brief   Set the byte offset of the partition within the device.
+ *          Has to be a multiple of the sector size. Default: 0.
+ *          Takes effect the next time the device is opened.
+ * @param   offset partition offset in bytes*/
+void file_windows_part_offset_set(uint64_t offset);
+
+/**@brief   Set the byte size of the partition.
+ *          Default: 0, meaning from the partition offset to the end of
+ *          the device (as reported by the drive geometry).
+ *          Takes effect the next time the device is opened.
+ * @param   size partition size in bytes*/
+void file_windows_part_size_set(uint64_t size);
+
 
 #endif /* FILE_WINDOWS_H_ */
