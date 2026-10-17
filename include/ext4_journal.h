@@ -48,7 +48,10 @@ extern "C" {
 
 struct jbd_fs {
 	struct ext4_blockdev *bdev;
+	/* Detached reference to the journal inode: it does not hold the
+	 * inode table block, inode_ref.inode points to the copy below. */
 	struct ext4_inode_ref inode_ref;
+	struct ext4_inode inode;
 	struct jbd_sb sb;
 
 	bool dirty;
