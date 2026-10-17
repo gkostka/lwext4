@@ -2854,7 +2854,7 @@ int ext4_removexattr(const char *path, const char *name, size_t name_len)
 	EXT4_MP_LOCK(mp);
 	r = ext4_generic_open2(&f, path, O_RDONLY, EXT4_DE_UNKNOWN, NULL, NULL);
 	if (r != EOK) {
-		EXT4_MP_LOCK(mp);
+		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
 
