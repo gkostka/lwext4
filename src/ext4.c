@@ -2456,7 +2456,7 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 
 	/*Sync file size*/
 	block_size = ext4_sb_get_block_size(&f->mp->fs.sb);
-	if (size > block_size) {
+	if (size >= block_size) {
 		r = EINVAL;
 		goto Finish;
 	}
@@ -2475,14 +2475,23 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 		memcpy(ref.inode->blocks, buf, size);
 		ext4_inode_clear_flag(ref.inode, EXT4_INODE_FLAG_EXTENTS);
 	} else {
-		uint64_t off;
+		struct ext4_block b;
+
 		ext4_fs_inode_blocks_init(&f->mp->fs, &ref);
 		r = ext4_fs_append_inode_dblk(&ref, &fblock, &sblock);
 		if (r != EOK)
 			goto Finish;
 
-		off = fblock * block_size;
-		r = ext4_block_writebytes(f->mp->fs.bdev, off, buf, size);
+		/* Zero the rest of the block: it may have been used before and
+		 * the target has to be NUL terminated within the block. */
+		r = ext4_trans_block_get_noread(f->mp->fs.bdev, &b, fblock);
+		if (r != EOK)
+			goto Finish;
+
+		memset(b.data, 0, block_size);
+		memcpy(b.data, buf, size);
+		ext4_trans_set_block_dirty(b.buf);
+		r = ext4_block_set(f->mp->fs.bdev, &b);
 		if (r != EOK)
 			goto Finish;
 	}
