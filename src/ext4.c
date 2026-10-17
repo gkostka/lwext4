@@ -1920,7 +1920,7 @@ int ext4_fwrite(ext4_file *file, const void *buf, size_t size, size_t *wcnt)
 				r = ext4_fs_init_inode_dblk_idx(&ref, iblk_idx,
 								&fblk);
 				if (r != EOK)
-					goto Finish;
+					break;
 			} else {
 				rr = ext4_fs_append_inode_dblk(&ref, &fblk,
 							       &iblk_idx);
@@ -1943,6 +1943,10 @@ int ext4_fwrite(ext4_file *file, const void *buf, size_t size, size_t *wcnt)
 
 			fblock_count++;
 		}
+
+		/* Leave write-back mode below, also on errors. */
+		if (r != EOK)
+			break;
 
 		r = ext4_blocks_set_direct(file->mp->fs.bdev, u8_buf, fblock_start,
 					   fblock_count);
