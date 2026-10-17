@@ -414,7 +414,12 @@ int ext4_mount(const char *dev_name, const char *mount_point,
 	}
 
 	bsize = ext4_sb_get_block_size(&mp->fs.sb);
-	ext4_block_set_lb_size(bd, bsize);
+	r = ext4_block_set_lb_size(bd, bsize);
+	if (r != EOK) {
+		ext4_fs_fini(&mp->fs);
+		ext4_block_fini(bd);
+		return r;
+	}
 	bc = &mp->bc;
 
 	r = ext4_bcache_init_dynamic(bc, CONFIG_BLOCK_DEV_CACHE_SIZE, bsize);
