@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# The installed library (liblwext4, libblockdev, headers, lwext4.pc and the
+# CMake package) used by another project three ways, with a red/green check
+# against the base branch. Runs `ci/run.sh install-package` in the native
+# container, exactly as on a developer machine; see ci/README.md.
+name: Packaging
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  install-package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - run: ci/run.sh install-package
