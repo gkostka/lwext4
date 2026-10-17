@@ -101,7 +101,7 @@ static bool ext4_sb_verify_csum(struct ext4_sblock *s)
 	if (!ext4_sb_feature_ro_com(s, EXT4_FRO_COM_METADATA_CSUM))
 		return true;
 
-	if (s->checksum_type != to_le32(EXT4_CHECKSUM_CRC32C))
+	if (s->checksum_type != EXT4_CHECKSUM_CRC32C)
 		return false;
 
 	return s->checksum == to_le32(ext4_sb_csum(s));
@@ -149,6 +149,13 @@ bool ext4_sb_check(struct ext4_sblock *s)
 		return false;
 
 	if (ext4_get32(s, first_inode) < 11)
+		return false;
+
+	/* With 64 bit block numbers the descriptors have at least 64 bytes
+	 * (which is also the most lwext4 supports). ext4_sb_get_desc_size()
+	 * rounds smaller values up to 32, so test the field itself. */
+	if (ext4_sb_feature_incom(s, EXT4_FINCOM_64BIT) &&
+	    ext4_get16(s, desc_size) < EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE)
 		return false;
 
 	if (ext4_sb_get_desc_size(s) < EXT4_MIN_BLOCK_GROUP_DESCRIPTOR_SIZE)
