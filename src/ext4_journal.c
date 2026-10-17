@@ -1239,7 +1239,11 @@ int jbd_recover(struct jbd_fs *jbd_fs)
 			ext4_get32(&jbd_fs->inode_ref.fs->sb,
 				   features_incompatible);
 		jbd_set32(&jbd_fs->sb, start, 0);
-		jbd_set32(&jbd_fs->sb, sequence, info.last_trans_id);
+		/* The next journal session has to use transaction IDs
+		 * beyond anything that may still be found in the log,
+		 * including a transaction whose commit block never made
+		 * it to disk. */
+		jbd_set32(&jbd_fs->sb, sequence, info.last_trans_id + 1);
 		features_incompatible &= ~EXT4_FINCOM_RECOVER;
 		ext4_set32(&jbd_fs->inode_ref.fs->sb,
 			   features_incompatible,
@@ -1442,8 +1446,16 @@ int jbd_journal_stop(struct jbd_journal *journal)
 	if (r != EOK)
 		return r;
 
+	/*
+	 * The log is empty now, but its blocks still hold the transactions
+	 * of this session. The next session writes the log from its first
+	 * block again, so its transaction IDs must be greater than the ones
+	 * used here: otherwise replaying the log after a crash may walk from
+	 * the new transactions into stale ones that happen to carry the next
+	 * expected ID. Record the next unused transaction ID, like jbd2 does.
+	 */
 	journal->start = 0;
-	journal->trans_id = 0;
+	journal->trans_id = journal->alloc_trans_id;
 	jbd_journal_write_sb(journal);
 	return jbd_write_sb(journal->jbd_fs);
 }
