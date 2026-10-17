@@ -2814,10 +2814,9 @@ int ext4_listxattr(const char *path, char *list, size_t size, size_t *ret_size)
 
 			list_size += prefix_len + entry->name_len + 1;
 		}
-		if (ret_size)
-			*ret_size = list_size;
-
 	}
+	if (r == EOK && ret_size)
+		*ret_size = list_size;
 	ext4_fs_put_inode_ref(&inode_ref);
 Finish:
 	EXT4_MP_UNLOCK(mp);
