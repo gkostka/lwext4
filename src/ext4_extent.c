@@ -506,11 +506,11 @@ static ext4_fsblk_t ext4_new_meta_blocks(struct ext4_inode_ref *inode_ref,
 	return block;
 }
 
-static void ext4_ext_free_blocks(struct ext4_inode_ref *inode_ref,
-				 ext4_fsblk_t block, uint32_t count,
-				 uint32_t flags __unused)
+static int ext4_ext_free_blocks(struct ext4_inode_ref *inode_ref,
+				ext4_fsblk_t block, uint32_t count,
+				uint32_t flags __unused)
 {
-	ext4_balloc_free_blocks(inode_ref, block, count);
+	return ext4_balloc_free_blocks(inode_ref, block, count);
 }
 
 static uint16_t ext4_ext_space_block(struct ext4_inode_ref *inode_ref)
@@ -1513,9 +1513,9 @@ out:
 	return ret;
 }
 
-static void ext4_ext_remove_blocks(struct ext4_inode_ref *inode_ref,
-				   struct ext4_extent *ex, ext4_lblk_t from,
-				   ext4_lblk_t to)
+static int ext4_ext_remove_blocks(struct ext4_inode_ref *inode_ref,
+				  struct ext4_extent *ex, ext4_lblk_t from,
+				  ext4_lblk_t to)
 {
 	ext4_lblk_t len = to - from + 1;
 	ext4_lblk_t num;
@@ -1526,7 +1526,7 @@ static void ext4_ext_remove_blocks(struct ext4_inode_ref *inode_ref,
 		 "Freeing %" PRIu32 " at %" PRIu64 ", %" PRIu32 "\n", from,
 		 start, len);
 
-	ext4_ext_free_blocks(inode_ref, start, len, 0);
+	return ext4_ext_free_blocks(inode_ref, start, len, 0);
 }
 
 static int ext4_ext_remove_idx(struct ext4_inode_ref *inode_ref,
@@ -1553,7 +1553,9 @@ static int ext4_ext_remove_idx(struct ext4_inode_ref *inode_ref,
 
 	ext4_dbg(DEBUG_EXTENT, "IDX: Freeing %" PRIu32 " at %" PRIu64 ", %d\n",
 		 to_le32(path[i].index->first_block), leaf, 1);
-	ext4_ext_free_blocks(inode_ref, leaf, 1, 0);
+	err = ext4_ext_free_blocks(inode_ref, leaf, 1, 0);
+	if (err != EOK)
+		return err;
 
 	/*
 	 * We may need to correct the paths after the first extents/indexes in
@@ -1586,7 +1588,7 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 	struct ext4_extent *start_ex, *ex2 = NULL;
 	struct ext4_extent_header *eh = path[depth].header;
 	int32_t len;
-	int err = EOK;
+	int err = EOK, free_err = EOK;
 	uint16_t new_entries;
 
 	start_ex = ex;
@@ -1595,6 +1597,7 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 	       to_le32(ex->first_block) <= to) {
 		int32_t new_len = 0;
 		int unwritten;
+		bool keep_head = false;
 		ext4_lblk_t start, new_start;
 		ext4_fsblk_t newblock;
 		new_start = start = to_le32(ex->first_block);
@@ -1610,7 +1613,7 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 			len -= from - start;
 			new_len = from - start;
 			start = from;
-			start_ex++;
+			keep_head = true;
 		} else {
 			/*
 			 * The second case:
@@ -1627,7 +1630,17 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 			}
 		}
 
-		ext4_ext_remove_blocks(inode_ref, ex, start, start + len - 1);
+		/*
+		 * If the blocks cannot be released, keep this extent and the
+		 * ones after it as they are, and finish the node with the
+		 * extents removed so far.
+		 */
+		free_err = ext4_ext_remove_blocks(inode_ref, ex, start,
+						  start + len - 1);
+		if (free_err != EOK)
+			break;
+		if (keep_head)
+			start_ex++;
 		/*
 		 * Set the first block of the extent if it is presented.
 		 */
@@ -1673,6 +1686,9 @@ static int ext4_ext_remove_leaf(struct ext4_inode_ref *inode_ref,
 		if (err != EOK)
 			return err;
 	}
+
+	if (free_err != EOK)
+		return free_err;
 
 	/* if this leaf is free, then we should
 	 * remove it from index block above */
@@ -1772,8 +1788,10 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 			if (leaf_to > to)
 				leaf_to = to;
 
-			ext4_ext_remove_leaf(inode_ref, path, leaf_from,
-					     leaf_to);
+			ret = ext4_ext_remove_leaf(inode_ref, path, leaf_from,
+						   leaf_to);
+			if (ret != EOK)
+				goto out;
 			ext4_ext_drop_refs(inode_ref, path + i, 0);
 			i--;
 			continue;
@@ -1809,10 +1827,12 @@ int ext4_extent_remove_space(struct ext4_inode_ref *inode_ref, ext4_lblk_t from,
 				/*
 				 * Garbage entries will finally be cleared here.
 				 */
-				if (!eh->entries_count)
+				if (!eh->entries_count) {
 					ret = ext4_ext_remove_idx(inode_ref,
 								  path, i - 1);
-				else
+					if (ret != EOK)
+						goto out;
+				} else
 					path[i - 1].index++;
 			}
 
