@@ -1175,6 +1175,73 @@ static int ext4_fs_release_inode_block(struct ext4_inode_ref *inode_ref,
 	return ext4_balloc_free_block(inode_ref, fblock);
 }
 
+/**@brief Free the indirect blocks of a block mapped inode that only map
+ *        logical blocks at or past @p keep (whose data blocks have already
+ *        been released).
+ * @param inode_ref I-node
+ * @param blk       Indirect block
+ * @param level     1 if the entries of @p blk are data blocks, 2 if they are
+ *                  single indirect blocks, 3 if double indirect blocks
+ * @param first     First logical block mapped by @p blk
+ * @param keep      Number of logical blocks that stay
+ * @param freed     Set to true if @p blk itself was freed
+ * @return Error code */
+static int ext4_fs_trunc_indirect(struct ext4_inode_ref *inode_ref,
+				  ext4_fsblk_t blk, unsigned int level,
+				  uint64_t first, uint64_t keep, bool *freed)
+{
+	struct ext4_fs *fs = inode_ref->fs;
+	uint32_t count = ext4_sb_get_block_size(&fs->sb) / sizeof(uint32_t);
+	uint64_t per_entry = fs->inode_blocks_per_level[level - 1];
+	int r;
+
+	*freed = false;
+	if (level > 1) {
+		struct ext4_block block;
+		bool dirty = false;
+		uint32_t i;
+
+		r = ext4_trans_block_get(fs->bdev, &block, blk);
+		if (r != EOK)
+			return r;
+
+		for (i = 0; i < count; i++) {
+			uint64_t start = first + i * per_entry;
+			uint32_t *entry = (uint32_t *)block.data + i;
+			bool child_freed;
+
+			if (!*entry || start + per_entry <= keep)
+				continue;
+
+			r = ext4_fs_trunc_indirect(inode_ref, to_le32(*entry),
+						   level - 1, start, keep,
+						   &child_freed);
+			if (r != EOK) {
+				ext4_block_set(fs->bdev, &block);
+				return r;
+			}
+
+			if (child_freed) {
+				*entry = 0;
+				dirty = true;
+			}
+		}
+
+		if (dirty && first < keep)
+			ext4_trans_set_block_dirty(block.buf);
+
+		r = ext4_block_set(fs->bdev, &block);
+		if (r != EOK)
+			return r;
+	}
+
+	if (first < keep)
+		return EOK;
+
+	*freed = true;
+	return ext4_balloc_free_block(inode_ref, blk);
+}
+
 int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 {
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
@@ -1248,6 +1315,27 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 							new_blocks_cnt + i);
 			if (r != EOK)
 				return r;
+		}
+
+		/* Release the indirect blocks that map nothing any more */
+		for (i = 1; i < 4; i++) {
+			ext4_fsblk_t ind;
+			bool freed;
+
+			ind = ext4_inode_get_indirect_block(inode_ref->inode,
+							    i - 1);
+			if (!ind)
+				continue;
+
+			r = ext4_fs_trunc_indirect(inode_ref, ind, i,
+					inode_ref->fs->inode_block_limits[i - 1],
+					new_blocks_cnt, &freed);
+			if (r != EOK)
+				return r;
+
+			if (freed)
+				ext4_inode_set_indirect_block(inode_ref->inode,
+							      i - 1, 0);
 		}
 	}
 
