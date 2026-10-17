@@ -2654,6 +2654,7 @@ Finish:
 	return r;
 }
 
+#if CONFIG_XATTR_ENABLE
 int ext4_setxattr(const char *path, const char *name, size_t name_len,
 		  const void *data, size_t data_size)
 {
@@ -2880,6 +2881,35 @@ Finish:
 	return r;
 
 }
+#else
+/* Extended attributes are compiled out (CONFIG_XATTR_ENABLE=0), e.g. to
+ * build the library without the GPLv2 licensed ext4_xattr.c. */
+int ext4_setxattr(const char *path __unused, const char *name __unused,
+		  size_t name_len __unused, const void *data __unused,
+		  size_t data_size __unused)
+{
+	return ENOTSUP;
+}
+
+int ext4_getxattr(const char *path __unused, const char *name __unused,
+		  size_t name_len __unused, void *buf __unused,
+		  size_t buf_size __unused, size_t *data_size __unused)
+{
+	return ENOTSUP;
+}
+
+int ext4_listxattr(const char *path __unused, char *list __unused,
+		   size_t size __unused, size_t *ret_size __unused)
+{
+	return ENOTSUP;
+}
+
+int ext4_removexattr(const char *path __unused, const char *name __unused,
+		     size_t name_len __unused)
+{
+	return ENOTSUP;
+}
+#endif
 
 /*********************************DIRECTORY OPERATION************************/
 
