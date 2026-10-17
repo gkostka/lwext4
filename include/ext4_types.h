@@ -460,6 +460,7 @@ struct ext4_inode {
 #define EXT4_INODE_FLAG_EXTENTS 0x00080000   /* Inode uses extents */
 #define EXT4_INODE_FLAG_EA_INODE 0x00200000  /* Inode used for large EA */
 #define EXT4_INODE_FLAG_EOFBLOCKS 0x00400000 /* Blocks allocated beyond EOF */
+#define EXT4_INODE_FLAG_INLINE_DATA 0x10000000 /* Inode has inline data */
 #define EXT4_INODE_FLAG_RESERVED 0x80000000  /* reserved for ext4 lib */
 
 #define EXT4_INODE_ROOT_INDEX 2

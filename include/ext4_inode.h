@@ -336,6 +336,14 @@ ext4_inode_set_csum(struct ext4_sblock *sb, struct ext4_inode *inode,
  */
 bool ext4_inode_can_truncate(struct ext4_sblock *sb, struct ext4_inode *inode);
 
+/**@brief Check if i-node is a fast symlink (target stored in i_block).
+ * @param sb    Superblock
+ * @param inode I-node to check
+ * @return true if i-node is a symlink whose target is stored inline
+ */
+bool ext4_inode_is_fast_symlink(struct ext4_sblock *sb,
+				struct ext4_inode *inode);
+
 /**@brief Get extent header from the root of the extent tree.
  * @param inode I-node to get extent header from
  * @return Pointer to extent header of the root node

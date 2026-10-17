@@ -936,6 +936,11 @@ int ext4_fs_free_inode(struct ext4_inode_ref *inode_ref)
 	uint32_t offset;
 	uint32_t suboff;
 	int rc;
+
+	/* Fast symlink: i_block holds the target, not block pointers */
+	if (ext4_inode_is_fast_symlink(&fs->sb, inode_ref->inode))
+		goto finish;
+
 #if CONFIG_EXTENT_ENABLE && CONFIG_EXTENTS_ENABLE
 	/* For extents must be data block destroyed by other way */
 	if ((ext4_sb_feature_incom(&fs->sb, EXT4_FINCOM_EXTENTS)) &&
@@ -1180,7 +1185,6 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 	uint32_t i;
 	int r;
-	bool v;
 
 	/* Check flags, if i-node can be truncated */
 	if (!ext4_inode_can_truncate(sb, inode_ref->inode))
@@ -1195,10 +1199,8 @@ int ext4_fs_truncate_inode(struct ext4_inode_ref *inode_ref, uint64_t new_size)
 	if (old_size < new_size)
 		return EINVAL;
 
-	/* For symbolic link which is small enough */
-	v = ext4_inode_is_type(sb, inode_ref->inode, EXT4_INODE_MODE_SOFTLINK);
-	if (v && old_size < sizeof(inode_ref->inode->blocks) &&
-	    !ext4_inode_get_blocks_count(sb, inode_ref->inode)) {
+	/* Fast symlink: the target is stored in i_block, no data blocks */
+	if (ext4_inode_is_fast_symlink(sb, inode_ref->inode)) {
 		char *content = (char *)inode_ref->inode->blocks + new_size;
 		memset(content, 0,
 		       sizeof(inode_ref->inode->blocks) - (uint32_t)new_size);
