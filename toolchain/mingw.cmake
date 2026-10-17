@@ -10,7 +10,9 @@ set(AS                  ${TOOLCHAIN_PREFIX}-as)
 set(AR                  ${TOOLCHAIN_PREFIX}-as)
 set(OBJCOPY             objcopy)
 set(OBJDUMP             objdump)
-set(SIZE                size)
+# The host's plain "size" may not understand PE objects when cross compiling
+find_program(MINGW_SIZE NAMES ${TOOLCHAIN_PREFIX}-size size)
+set(SIZE                ${MINGW_SIZE})
 
 set(CMAKE_FIND_ROOT_PATH /usr/${TOOLCHAIN_PREFIX})
 

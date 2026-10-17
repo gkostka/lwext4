@@ -101,7 +101,7 @@ static bool ext4_sb_verify_csum(struct ext4_sblock *s)
 	if (!ext4_sb_feature_ro_com(s, EXT4_FRO_COM_METADATA_CSUM))
 		return true;
 
-	if (s->checksum_type != to_le32(EXT4_CHECKSUM_CRC32C))
+	if (s->checksum_type != EXT4_CHECKSUM_CRC32C)
 		return false;
 
 	return s->checksum == to_le32(ext4_sb_csum(s));
