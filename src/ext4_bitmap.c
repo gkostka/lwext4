@@ -91,8 +91,12 @@ int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
 			   uint32_t *bit_id)
 {
 	uint32_t i;
-	uint32_t bcnt = ebit - sbit;
+	uint32_t bcnt;
 
+	if (sbit >= ebit)
+		return ENOSPC;
+
+	bcnt = ebit - sbit;
 	i = sbit;
 
 	while (i & 7) {
@@ -101,7 +105,7 @@ int ext4_bmap_bit_find_clr(uint8_t *bmap, uint32_t sbit, uint32_t ebit,
 			return ENOSPC;
 
 		if (ext4_bmap_is_bit_clr(bmap, i)) {
-			*bit_id = sbit;
+			*bit_id = i;
 			return EOK;
 		}
 
