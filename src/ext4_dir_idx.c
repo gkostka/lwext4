@@ -433,18 +433,20 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 	/* Fill the whole block with empty entry */
 	struct ext4_dir_en *be = (void *)new_block.data;
 
+	/* The block was not read: every field the checksum covers must be
+	 * set before the checksum is computed. */
+	ext4_dir_en_set_inode(be, 0);
+	ext4_dir_en_set_name_len(sb, be, 0);
+	ext4_dir_en_set_inode_type(sb, be, EXT4_DE_UNKNOWN);
+
 	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
 		uint16_t len = block_size - sizeof(struct ext4_dir_entry_tail);
 		ext4_dir_en_set_entry_len(be, len);
-		ext4_dir_en_set_name_len(sb, be, 0);
-		ext4_dir_en_set_inode_type(sb, be, EXT4_DE_UNKNOWN);
 		ext4_dir_init_entry_tail(EXT4_DIRENT_TAIL(be, block_size));
 		ext4_dir_set_csum(dir, be);
 	} else {
 		ext4_dir_en_set_entry_len(be, block_size);
 	}
-
-	ext4_dir_en_set_inode(be, 0);
 
 	ext4_trans_set_block_dirty(new_block.buf);
 	rc = ext4_block_set(dir->fs->bdev, &new_block);
