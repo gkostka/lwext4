@@ -1,11 +1,29 @@
 # Toolchain settings
-set(CMAKE_C_COMPILER    msp430-gcc)
-set(CMAKE_CXX_COMPILER  msp430-g++)
-set(AS                  msp430--gcc)
-set(AR                  msp430-ar)
-set(OBJCOPY             msp430-objcopy)
-set(OBJDUMP             msp430-objdump)
-set(SIZE                msp430-size)
+# The old mspgcc port is called msp430-gcc, TI's current GCC msp430-elf-gcc.
+if(NOT MSP430_PREFIX)
+    find_program(MSP430_LEGACY_GCC msp430-gcc)
+    if(MSP430_LEGACY_GCC)
+        set(MSP430_PREFIX msp430)
+    else()
+        set(MSP430_PREFIX msp430-elf)
+    endif()
+endif()
+set(CMAKE_C_COMPILER    ${MSP430_PREFIX}-gcc)
+set(CMAKE_CXX_COMPILER  ${MSP430_PREFIX}-g++)
+set(AS                  ${MSP430_PREFIX}-as)
+set(AR                  ${MSP430_PREFIX}-ar)
+set(OBJCOPY             ${MSP430_PREFIX}-objcopy)
+set(OBJDUMP             ${MSP430_PREFIX}-objdump)
+set(SIZE                ${MSP430_PREFIX}-size)
+
+# The -mmcu link step pulls in the device linker script, which clashes when
+# CMake's compiler check links a test program; a static library is enough.
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
+# TI's device support files (devices.csv, headers, linker scripts).
+if(DEFINED ENV{MSP430_SUPPORT})
+    set(MCPU_FLAGS "${MCPU_FLAGS} -I$ENV{MSP430_SUPPORT} -L$ENV{MSP430_SUPPORT}")
+endif()
 
 set(CMAKE_C_FLAGS   "${MCPU_FLAGS} -Wall -std=gnu99 -fdata-sections -ffunction-sections" CACHE INTERNAL "c compiler flags")
 set(CMAKE_CXX_FLAGS "${MCPU_FLAGS} -Wall -fdata-sections -ffunction-sections" CACHE INTERNAL "cxx compiler flags")
