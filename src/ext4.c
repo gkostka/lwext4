@@ -3070,7 +3070,7 @@ End:
 		r = ext4_fs_get_inode_ref(&f.mp->fs, inode_current,
 				&act);
 		if (r != EOK) {
-			ext4_fs_put_inode_ref(&act);
+			ext4_fs_put_inode_ref(&parent);
 			goto Finish;
 		}
 
