@@ -300,7 +300,7 @@ static void jbd_commit_csum_set(struct jbd_fs *jbd_fs,
 
 	header->chksum_type = 0;
 	header->chksum_size = 0;
-	header->chksum[0] = jbd_commit_csum(jbd_fs, header);
+	header->chksum[0] = to_be32(jbd_commit_csum(jbd_fs, header));
 }
 
 #if CONFIG_META_CSUM_ENABLE
@@ -333,7 +333,9 @@ static uint32_t jbd_block_csum(struct jbd_fs *jbd_fs, const void *buf,
 		/* First calculate crc32c checksum against fs uuid */
 		checksum = ext4_crc32c(EXT4_CRC32_INIT, jbd_fs->sb.uuid,
 				       sizeof(jbd_fs->sb.uuid));
-		/* Then calculate crc32c checksum against sequence no. */
+		/* Then calculate crc32c checksum against sequence no.,
+		 * big endian as on disk */
+		sequence = to_be32(sequence);
 		checksum = ext4_crc32c(checksum, &sequence,
 				sizeof(uint32_t));
 		/* Calculate crc32c checksum against tho whole block */
@@ -361,7 +363,7 @@ static void jbd_block_tag_csum_set(struct jbd_fs *jbd_fs, void *__tag,
 
 	if (ver == 2) {
 		struct jbd_block_tag *tag = __tag;
-		tag->checksum = (uint16_t)to_be32(checksum);
+		tag->checksum = to_be16((uint16_t)checksum);
 	} else {
 		struct jbd_block_tag3 *tag = __tag;
 		tag->checksum = to_be32(checksum);

@@ -167,6 +167,56 @@ extern "C" {
 #define CONFIG_UNALIGNED_ACCESS 0
 #endif
 
+/**@brief   Byte order of the target: 1 big endian, 0 little endian.
+ *          When not set it is derived from the compiler's predefined
+ *          macros. An explicit value that contradicts the compiler is an
+ *          error. Defining it without a value means big endian (legacy).*/
+#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) &&                \
+    defined(__ORDER_LITTLE_ENDIAN__)
+/* GCC >= 4.6, clang, and compilers imitating them */
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define EXT4_COMPILER_BIG_ENDIAN 1
+#elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define EXT4_COMPILER_BIG_ENDIAN 0
+#endif
+#elif defined(__IAR_SYSTEMS_ICC__) && defined(__LITTLE_ENDIAN__)
+/* IAR defines __LITTLE_ENDIAN__ as 1 or 0 */
+#if __LITTLE_ENDIAN__
+#define EXT4_COMPILER_BIG_ENDIAN 0
+#else
+#define EXT4_COMPILER_BIG_ENDIAN 1
+#endif
+#elif defined(__BIG_ENDIAN__) || defined(__ARMEB__) ||                        \
+    defined(__THUMBEB__) || defined(__AARCH64EB__) || defined(_MIPSEB) ||      \
+    defined(__MIPSEB) || defined(__MIPSEB__) ||                                \
+    (defined(__CC_ARM) && defined(__BIG_ENDIAN))
+#define EXT4_COMPILER_BIG_ENDIAN 1
+#elif defined(__LITTLE_ENDIAN__) || defined(__ARMEL__) ||                     \
+    defined(__THUMBEL__) || defined(__AARCH64EL__) || defined(_MIPSEL) ||      \
+    defined(__MIPSEL) || defined(__MIPSEL__) || defined(_MSC_VER) ||           \
+    defined(__i386__) || defined(__x86_64__) || defined(__AVR__) ||            \
+    defined(__MSP430__) || defined(__CC_ARM)
+#define EXT4_COMPILER_BIG_ENDIAN 0
+#endif
+
+#if defined(CONFIG_BIG_ENDIAN) && (-CONFIG_BIG_ENDIAN - 1 == 1)
+/* "#define CONFIG_BIG_ENDIAN" without a value */
+#undef CONFIG_BIG_ENDIAN
+#define CONFIG_BIG_ENDIAN 1
+#endif
+
+#ifndef CONFIG_BIG_ENDIAN
+#ifdef EXT4_COMPILER_BIG_ENDIAN
+#define CONFIG_BIG_ENDIAN EXT4_COMPILER_BIG_ENDIAN
+#else
+/* Unknown compiler: keep the historical little endian default */
+#define CONFIG_BIG_ENDIAN 0
+#endif
+#elif defined(EXT4_COMPILER_BIG_ENDIAN) &&                                     \
+    ((CONFIG_BIG_ENDIAN != 0) != (EXT4_COMPILER_BIG_ENDIAN != 0))
+#error "CONFIG_BIG_ENDIAN contradicts the byte order of the compiler target"
+#endif
+
 /**@brief Switches use of malloc/free functions family
  *        from standard library to user provided*/
 #ifndef CONFIG_USE_USER_MALLOC
