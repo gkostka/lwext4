@@ -4,7 +4,7 @@
 BUILD_TYPE = Release
 
 ifneq ($(shell test -d .git), 0)
-GIT_SHORT_HASH:= $(shell git rev-parse --short HEAD)
+GIT_SHORT_HASH:= $(shell git rev-parse --short HEAD 2>/dev/null)
 endif
 
 VERSION_MAJOR = 1

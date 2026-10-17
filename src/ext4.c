@@ -282,6 +282,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 				return EIO;
 
 			ext4_dir_en_set_inode(res.dentry, parent->index);
+			ext4_dir_set_csum(ch, (void *)res.block.data);
 			ext4_trans_set_block_dirty(res.block.buf);
 			r = ext4_dir_destroy_result(ch, &res);
 			if (r != EOK)
@@ -830,6 +831,30 @@ static int ext4_trunc_inode(struct ext4_mountpoint *mp,
 
 	inode_size = ext4_inode_get_size(&fs->sb, inode_ref.inode);
 	ext4_fs_put_inode_ref(&inode_ref);
+
+	/*
+	 * A truncate that fits into a single step stays in the caller's
+	 * transaction, so that e.g. unlinking a file or directory and
+	 * releasing its blocks and inode are committed atomically. Only
+	 * truncates larger than CONFIG_MAX_TRUNCATE_SIZE are split into
+	 * several transactions.
+	 */
+	if (has_trans && inode_size <= new_size + CONFIG_MAX_TRUNCATE_SIZE) {
+		if (inode_size <= new_size)
+			return EOK;
+
+		r = ext4_fs_get_inode_ref(fs, index, &inode_ref);
+		if (r != EOK)
+			return r;
+
+		r = ext4_fs_truncate_inode(&inode_ref, new_size);
+		if (r != EOK) {
+			ext4_fs_put_inode_ref(&inode_ref);
+			return r;
+		}
+		return ext4_fs_put_inode_ref(&inode_ref);
+	}
+
 	if (has_trans)
 		ext4_trans_stop(mp);
 
@@ -1186,7 +1211,7 @@ static int ext4_create_hardlink(const char *path,
 			break;
 		}
 
-		next_inode = result.dentry->inode;
+		next_inode = ext4_dir_en_get_inode(result.dentry);
 		if (ext4_sb_feature_incom(sb, EXT4_FINCOM_FILETYPE)) {
 			uint8_t t;
 			t = ext4_dir_en_get_inode_type(sb, result.dentry);
@@ -2456,7 +2481,7 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 
 	/*Sync file size*/
 	block_size = ext4_sb_get_block_size(&f->mp->fs.sb);
-	if (size > block_size) {
+	if (size >= block_size) {
 		r = EINVAL;
 		goto Finish;
 	}
@@ -2475,14 +2500,23 @@ static int ext4_fsymlink_set(ext4_file *f, const void *buf, uint32_t size)
 		memcpy(ref.inode->blocks, buf, size);
 		ext4_inode_clear_flag(ref.inode, EXT4_INODE_FLAG_EXTENTS);
 	} else {
-		uint64_t off;
+		struct ext4_block b;
+
 		ext4_fs_inode_blocks_init(&f->mp->fs, &ref);
 		r = ext4_fs_append_inode_dblk(&ref, &fblock, &sblock);
 		if (r != EOK)
 			goto Finish;
 
-		off = fblock * block_size;
-		r = ext4_block_writebytes(f->mp->fs.bdev, off, buf, size);
+		/* Zero the rest of the block: it may have been used before and
+		 * the target has to be NUL terminated within the block. */
+		r = ext4_trans_block_get_noread(f->mp->fs.bdev, &b, fblock);
+		if (r != EOK)
+			goto Finish;
+
+		memset(b.data, 0, block_size);
+		memcpy(b.data, buf, size);
+		ext4_trans_set_block_dirty(b.buf);
+		r = ext4_block_set(f->mp->fs.bdev, &b);
 		if (r != EOK)
 			goto Finish;
 	}
@@ -2654,6 +2688,7 @@ Finish:
 	return r;
 }
 
+#if CONFIG_XATTR_ENABLE
 int ext4_setxattr(const char *path, const char *name, size_t name_len,
 		  const void *data, size_t data_size)
 {
@@ -2880,6 +2915,35 @@ Finish:
 	return r;
 
 }
+#else
+/* Extended attributes are compiled out (CONFIG_XATTR_ENABLE=0), e.g. to
+ * build the library without the GPLv2 licensed ext4_xattr.c. */
+int ext4_setxattr(const char *path __unused, const char *name __unused,
+		  size_t name_len __unused, const void *data __unused,
+		  size_t data_size __unused)
+{
+	return ENOTSUP;
+}
+
+int ext4_getxattr(const char *path __unused, const char *name __unused,
+		  size_t name_len __unused, void *buf __unused,
+		  size_t buf_size __unused, size_t *data_size __unused)
+{
+	return ENOTSUP;
+}
+
+int ext4_listxattr(const char *path __unused, char *list __unused,
+		   size_t size __unused, size_t *ret_size __unused)
+{
+	return ENOTSUP;
+}
+
+int ext4_removexattr(const char *path __unused, const char *name __unused,
+		     size_t name_len __unused)
+{
+	return ENOTSUP;
+}
+#endif
 
 /*********************************DIRECTORY OPERATION************************/
 

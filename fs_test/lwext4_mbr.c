@@ -60,6 +60,8 @@ Usage:                                                          \n\
 [-i] --input   - input file name (or blockdevice)               \n\
 [-w] --wpart   - windows partition mode                         \n\
 [-v] --verbose - verbose mode		                        \n\
+[-x] --version - print the version                              \n\
+[-h] --help    - print this help                                \n\
 \n";
 
 
@@ -106,9 +108,10 @@ static bool parse_opt(int argc, char **argv)
 	    {"wpart", no_argument, 0, 'w'},
 	    {"verbose", no_argument, 0, 'v'},
 	    {"version", no_argument, 0, 'x'},
+	    {"help", no_argument, 0, 'h'},
 	    {0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "i:wvx",
+	while (-1 != (c = getopt_long(argc, argv, "i:wvxh",
 				      long_options, &option_index))) {
 
 		switch (c) {
@@ -120,6 +123,10 @@ static bool parse_opt(int argc, char **argv)
 			break;
 		case 'v':
 			verbose = true;
+			break;
+		case 'h':
+			printf("%s", usage);
+			exit(0);
 			break;
 		case 'x':
 			puts(VERSION);

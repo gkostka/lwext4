@@ -70,6 +70,8 @@ Usage:                                                          \n\
 [-v] --verbose - verbose mode		                        \n\
 [-b] --block   - block size: 1024, 2048, 4096 (default 1024)    \n\
 [-e] --ext     - fs type (ext2: 2, ext3: 3 ext4: 4))  	        \n\
+[-x] --version - print the version                              \n\
+[-h] --help    - print this help                                \n\
 \n";
 
 
@@ -118,9 +120,10 @@ static bool parse_opt(int argc, char **argv)
 	    {"wpart", no_argument, 0, 'w'},
 	    {"verbose", no_argument, 0, 'v'},
 	    {"version", no_argument, 0, 'x'},
+	    {"help", no_argument, 0, 'h'},
 	    {0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "i:b:e:wvx",
+	while (-1 != (c = getopt_long(argc, argv, "i:b:e:wvxh",
 				      long_options, &option_index))) {
 
 		switch (c) {
@@ -138,6 +141,10 @@ static bool parse_opt(int argc, char **argv)
 			break;
 		case 'v':
 			verbose = true;
+			break;
+		case 'h':
+			printf("%s", usage);
+			exit(0);
 			break;
 		case 'x':
 			puts(VERSION);
@@ -190,6 +197,9 @@ int main(int argc, char **argv)
 		ext4_dmask_set(DEBUG_ALL);
 
 	printf("ext4_mkfs: ext%d\n", fs_type);
+	/* ext2 has no journal (with one it would be ext3) */
+	info.journal = fs_type != F_SET_EXT2;
+
 	r = ext4_mkfs(&fs, bd, &info, fs_type);
 	if (r != EOK) {
 		printf("ext4_mkfs error: %d\n", r);

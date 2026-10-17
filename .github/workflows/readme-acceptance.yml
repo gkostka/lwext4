@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# README acceptance tests: everything README.md claims or tells the reader
+# to run, checked mechanically (tests/acceptance/README.md has the claim ->
+# test inventory). Each job runs in its repository-defined container through
+# ci/run.sh, exactly as it runs locally.
+name: README acceptance
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  readme:
+    name: ${{ matrix.job }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - readme-docs
+          - readme-debian
+          - readme-native
+          - readme-api
+          - readme-tools
+          - readme-cross-linux
+          - readme-arm-none-eabi
+          - readme-avr
+    steps:
+      - uses: actions/checkout@v7
+      - name: ci/run.sh ${{ matrix.job }}
+        run: ci/run.sh ${{ matrix.job }}

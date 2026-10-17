@@ -1,0 +1,130 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Every job runs `ci/run.sh <job> [args]`: it builds the job's container from
+# ci/envs/ and runs ci/jobs/<job>.sh in it, exactly as it runs on a developer
+# machine with only docker installed. See ci/README.md.
+#
+# All jobs are required; nothing is allowed to fail.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  # Other workflows (integration, release) run the same jobs on a given ref.
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Host build (x86_64): CTest suite + e2fsprogs round trip, plain and with
+  # AddressSanitizer/UndefinedBehaviorSanitizer.
+  native:
+    name: native / ${{ matrix.variant }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [gcc, clang, asan-ubsan]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh native ${{ matrix.variant }}
+
+  # Linux cross builds run under qemu-user; mke2fs/e2fsck run natively, so
+  # images cross the byte order/word size boundary in both directions.
+  # s390x, powerpc and mips are big endian (byte order from the compiler),
+  # s390x-explicit-big-endian checks the CONFIG_BIG_ENDIAN override.
+  qemu-user:
+    name: qemu-user / ${{ matrix.arch }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - armhf
+          - aarch64
+          - i686
+          - riscv64
+          - ppc64le
+          - s390x
+          - powerpc
+          - mips
+          - s390x-explicit-big-endian
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh qemu-user ${{ matrix.arch }}
+
+  # Bare-metal Cortex-M firmware (tests/baremetal) on emulated MPS2 boards.
+  cortex-m:
+    name: qemu-system / ${{ matrix.toolchain }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain:
+          - cortex-m0
+          - cortex-m0+
+          - cortex-m3
+          - cortex-m4
+          - cortex-m4f
+          - cortex-m7
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh cortex-m ${{ matrix.toolchain }}
+
+  # Simulated targets without an operating system: arm-sim (ARM7TDMI) on
+  # qemu-arm, AVR on simavr, MSP430 on the GDB simulator, plus the library
+  # builds for AVR XMEGA and the MSP430G2210.
+  # Windows: MinGW-w64 build, tests and round trip under Wine.
+  target:
+    name: ${{ matrix.job }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        job: [arm-sim, avr, msp430, mingw]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh ${{ matrix.job }}
+
+  # The tests a branch adds must fail against its base and pass on it.
+  red-green:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0
+      - run: ci/run.sh red-green
+
+  # ci/run.sh itself: base image chain, job lookup.
+  runner-selftest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh runner-selftest

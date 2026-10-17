@@ -234,7 +234,10 @@ int ext4_get_sblock(const char *mount_point, struct ext4_sblock **sb);
  *          ext4_cache_write_back(..., 1);
  *          ext4_fopen(...);
  *          ext4_fwrite(...);
- *                           < --- data is NOT flushed to physical drive
+ *                           < --- metadata (inodes, bitmaps, directories)
+ *                                 is NOT flushed to physical drive; the
+ *                                 file data written by ext4_fwrite is not
+ *                                 cached and is always written directly
  *          ext4_cache_write_back(..., 0);
  *                           < --- when write back mode is disabled all
  *                                 cache data will be flushed

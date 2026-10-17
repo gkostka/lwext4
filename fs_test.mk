@@ -2,9 +2,11 @@
 ifeq ($(OS),Windows_NT)
 LWEXT4_CLIENT = @build_generic\\fs_test\\lwext4-client
 LWEXT4_SERVER = @build_generic\\fs_test\\lwext4-server
+LWEXT4_SERVER_BIN = build_generic\\fs_test\\lwext4-server
 else
 LWEXT4_CLIENT = @build_generic/fs_test/lwext4-client
 LWEXT4_SERVER = @build_generic/fs_test/lwext4-server
+LWEXT4_SERVER_BIN = build_generic/fs_test/lwext4-server
 endif
 
 TEST_DIR = /test
@@ -579,86 +581,77 @@ server_ext4:
 server_kill:
 	-killall lwext4-server
 
+# The test images are plain files: neither creating nor checking them needs
+# root. mke2fs/e2fsck often live in /sbin, which is not in PATH of normal
+# users on some distributions.
+export PATH := $(PATH):/sbin:/usr/sbin
+
+E2FSCK = e2fsck -f -n
+
+# mke2fs <fs type> <image>
+# e2fsprogs >= 1.47 enables orphan_file and metadata_csum_seed by default,
+# lwext4 supports neither. Older versions do not know these features, so fall
+# back to the plain defaults there.
+define mke2fs_image
+	mke2fs -q -F -t $(1) -O ^orphan_file,^metadata_csum_seed $(2) 2>/dev/null || \
+		mke2fs -q -F -t $(1) $(2)
+endef
+
+# Run a test set against a server serving one image. The server is stopped
+# whether the test set passes or not, and the test set's result is kept.
+# $(1): image, $(2): test set target
+define run_test_set
+	@echo "lwext4-server -i $(1)"
+	@$(LWEXT4_SERVER_BIN) -i $(1) & pid=$$!; sleep 1; \
+	$(MAKE) --no-print-directory $(2); rc=$$?; \
+	kill $$pid; wait $$pid 2>/dev/null; \
+	if [ $$rc -ne 0 ]; then echo "$(2) failed on $(1)"; fi; exit $$rc
+endef
+
 fsck_images:
-	sudo fsck.ext2 ext_images/ext2 -v -f
-	sudo fsck.ext3 ext_images/ext3 -v -f
-	sudo fsck.ext4 ext_images/ext4 -v -f
+	$(E2FSCK) ext_images/ext2
+	$(E2FSCK) ext_images/ext3
+	$(E2FSCK) ext_images/ext4
+
+# $(1): image size in MB
+define make_images
+	rm -rf ext_images
+	mkdir ext_images
+	dd if=/dev/zero of=ext_images/ext2 bs=1M count=0 seek=$(1)
+	dd if=/dev/zero of=ext_images/ext3 bs=1M count=0 seek=$(1)
+	dd if=/dev/zero of=ext_images/ext4 bs=1M count=0 seek=$(1)
+	$(call mke2fs_image,ext2,ext_images/ext2)
+	$(call mke2fs_image,ext3,ext_images/ext3)
+	$(call mke2fs_image,ext4,ext_images/ext4)
+endef
 
 images_small:
-	rm -rf ext_images
-	mkdir ext_images
-	dd if=/dev/zero of=ext_images/ext2 bs=1M count=128
-	dd if=/dev/zero of=ext_images/ext3 bs=1M count=128
-	dd if=/dev/zero of=ext_images/ext4 bs=1M count=128
-	sudo mkfs.ext2 ext_images/ext2
-	sudo mkfs.ext3 ext_images/ext3
-	sudo mkfs.ext4 ext_images/ext4
+	$(call make_images,128)
 
 images_big:
-	rm -rf ext_images
-	mkdir ext_images
-	dd if=/dev/zero of=ext_images/ext2 bs=1M count=1024
-	dd if=/dev/zero of=ext_images/ext3 bs=1M count=1024
-	dd if=/dev/zero of=ext_images/ext4 bs=1M count=1024
-	sudo mkfs.ext2 ext_images/ext2
-	sudo mkfs.ext3 ext_images/ext3
-	sudo mkfs.ext4 ext_images/ext4
+	$(call make_images,1024)
 	
 test_set_small: t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20
 test_set_full: t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26
 
 test_ext2_full:
-	make server_kill
-	$(LWEXT4_SERVER) -i ext_images/ext2 &
-	sleep 1
-	make test_set_full
-	make server_kill
-
+	$(call run_test_set,ext_images/ext2,test_set_full)
 
 test_ext3_full:
-	make server_kill
-	$(LWEXT4_SERVER) -i ext_images/ext3 &
-	sleep 1
-	make test_set_full
-	make server_kill
+	$(call run_test_set,ext_images/ext3,test_set_full)
 
 test_ext4_full:
-	make server_kill
-	$(LWEXT4_SERVER) -i ext_images/ext4 &
-	sleep 1
-	make test_set_full
-	make server_kill
+	$(call run_test_set,ext_images/ext4,test_set_full)
 
 test_all: images_big test_ext2_full test_ext3_full test_ext4_full fsck_images
 
-
 test_ext2_small:
-	make server_kill
-	$(LWEXT4_SERVER) -i ext_images/ext2 &
-	sleep 1
-	make test_set_small
-	make server_kill
-
+	$(call run_test_set,ext_images/ext2,test_set_small)
 
 test_ext3_small:
-	make server_kill
-	$(LWEXT4_SERVER) -i ext_images/ext3 &
-	sleep 1
-	make test_set_small
-	make server_kill
+	$(call run_test_set,ext_images/ext3,test_set_small)
 
 test_ext4_small:
-	make server_kill
-	$(LWEXT4_SERVER) -i ext_images/ext4 &
-	sleep 1
-	make test_set_small
-	make server_kill
+	$(call run_test_set,ext_images/ext4,test_set_small)
 	
 test: images_small test_ext2_small test_ext3_small test_ext4_small
-	
-	
-
-
-
-
-

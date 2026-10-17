@@ -335,7 +335,7 @@ static int ext4_xattr_set_entry(struct ext4_xattr_info *i,
 	/* Calculate free space in the block. */
 	free = min_offs - ((char *)last - (char *)s->base) - sizeof(uint32_t);
 	if (!s->not_found)
-		free += EXT4_XATTR_SIZE(s->here->e_value_size) +
+		free += EXT4_XATTR_SIZE(to_le32(s->here->e_value_size)) +
 			EXT4_XATTR_LEN(s->here->e_name_len);
 
 	if (i->value) {
@@ -1022,7 +1022,7 @@ int ext4_xattr_get(struct ext4_inode_ref *inode_ref, uint8_t name_index,
 
 	if (!ibody_finder.s.not_found) {
 		value_len = to_le32(ibody_finder.s.here->e_value_size);
-		value_offs = to_le32(ibody_finder.s.here->e_value_offs);
+		value_offs = to_le16(ibody_finder.s.here->e_value_offs);
 		if (buf_len && buf) {
 			void *data_loc =
 			    (char *)ibody_finder.s.base + value_offs;
@@ -1058,7 +1058,7 @@ int ext4_xattr_get(struct ext4_inode_ref *inode_ref, uint8_t name_index,
 		}
 
 		value_len = to_le32(block_finder.s.here->e_value_size);
-		value_offs = to_le32(block_finder.s.here->e_value_offs);
+		value_offs = to_le16(block_finder.s.here->e_value_offs);
 		if (buf_len && buf) {
 			void *data_loc =
 			    (char *)block_finder.s.base + value_offs;
@@ -1260,8 +1260,14 @@ int ext4_xattr_remove(struct ext4_inode_ref *inode_ref, uint8_t name_index,
 		}
 
 	} else {
+		/* Return ENODATA if entry is not found */
+		if (ibody_finder.s.not_found) {
+			ret = ENODATA;
+			goto out;
+		}
+
 		/* Now remove the entry */
-		ext4_xattr_set_entry(&i, &block_finder.s, false);
+		ext4_xattr_set_entry(&i, &ibody_finder.s, false);
 		inode_ref->dirty = true;
 	}
 out:
