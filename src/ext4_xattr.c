@@ -179,7 +179,7 @@ static uint32_t ext4_xattr_block_checksum(struct ext4_inode_ref *inode_ref,
 					  struct ext4_xattr_header *header)
 {
 	uint32_t checksum = 0;
-	uint64_t le64_blocknr = blocknr;
+	uint64_t le64_blocknr = to_le64(blocknr);
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
 	if (ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM)) {
@@ -215,7 +215,7 @@ static void ext4_xattr_set_block_checksum(struct ext4_inode_ref *inode_ref,
 		return;
 
 	header->h_checksum =
-	    ext4_xattr_block_checksum(inode_ref, blocknr, header);
+	    to_le32(ext4_xattr_block_checksum(inode_ref, blocknr, header));
 }
 
 struct xattr_prefix {
