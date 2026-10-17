@@ -78,6 +78,10 @@ static inline int log_2(int j)
 	return i - 1;
 }
 
+/* ext4_mkfs_read_info() frees its superblock copy, so the label it reports
+ * lives here: NUL terminated, valid until the next call. */
+static char sb_label[sizeof(((struct ext4_sblock *)0)->volume_name) + 1];
+
 static int sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info)
 {
         if (to_le16(sb->magic) != EXT4_SUPERBLOCK_MAGIC)
@@ -92,7 +96,9 @@ static int sb2info(struct ext4_sblock *sb, struct ext4_mkfs_info *info)
 	info->feat_compat = to_le32(sb->features_compatible);
 	info->feat_incompat = to_le32(sb->features_incompatible);
 	info->bg_desc_reserve_blocks = to_le16(sb->s_reserved_gdt_blocks);
-	info->label = sb->volume_name;
+	memcpy(sb_label, sb->volume_name, sizeof(sb->volume_name));
+	sb_label[sizeof(sb->volume_name)] = '\0';
+	info->label = sb_label;
 	info->len = (uint64_t)info->block_size * ext4_sb_get_blocks_cnt(sb);
 	info->dsc_size = to_le16(sb->desc_size);
 	memcpy(info->uuid, sb->uuid, UUID_SIZE);
@@ -714,6 +720,13 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 
 	if (info->block_size == 0)
 		info->block_size = 4096; /*Set block size to default value*/
+
+	/* Every filesystem block must cover whole physical device blocks
+	 * (e.g. 4 KiB flash sectors cannot hold a 1 KiB block filesystem). */
+	if (info->block_size % bd->bdif->ph_bsize) {
+		r = EINVAL;
+		goto block_fini;
+	}
 
 	/* Round down the filesystem length to be a multiple of the block size */
 	info->len &= ~((uint64_t)info->block_size - 1);

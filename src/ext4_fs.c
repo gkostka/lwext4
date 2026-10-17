@@ -82,6 +82,11 @@ int ext4_fs_init(struct ext4_fs *fs, struct ext4_blockdev *bdev,
 	if (bsize > EXT4_MAX_BLOCK_SIZE)
 		return ENXIO;
 
+	/* Every filesystem block must cover whole physical device blocks,
+	 * see ext4_block_set_lb_size(). */
+	if (bsize % bdev->bdif->ph_bsize)
+		return ENOTSUP;
+
 	r = ext4_fs_check_features(fs, &read_only);
 	if (r != EOK)
 		return r;
