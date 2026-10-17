@@ -1310,7 +1310,8 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 	/* Check if insert operation passed */
 	r = ext4_dir_try_insert_entry(&fs->sb, parent, &target_block, child,
 					name, name_len);
-	if (r == EOK)
+	/* Inserted, or the leaf is corrupted: do not try to split it */
+	if (r != ENOSPC)
 		goto release_target_index;
 
 	/* Split entries to two blocks (includes sorting by hash value) */

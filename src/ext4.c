@@ -3200,7 +3200,10 @@ const ext4_direntry *ext4_dir_entry_next(ext4_dir *dir)
 	}
 
 	r = ext4_dir_iterator_init(&it, &dir_inode, dir->next_off);
-	if (r != EOK) {
+	if (r != EOK || !it.curr) {
+		/* Corrupted entry or no entry at all (e.g. empty directory):
+		 * either way, there is nothing more to return. */
+		dir->next_off = EXT4_DIR_ENTRY_OFFSET_TERM;
 		ext4_fs_put_inode_ref(&dir_inode);
 		goto Finish;
 	}
