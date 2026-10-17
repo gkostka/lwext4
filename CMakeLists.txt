@@ -1,6 +1,15 @@
 project(lwext4 C)
 cmake_minimum_required(VERSION 3.4)
 
+option(LWEXT4_BUILD_TESTS "Build the regression tests (generic target only)" ON)
+set(LWEXT4_SANITIZE "" CACHE STRING
+    "Comma separated -fsanitize= list for all targets, e.g. address,undefined")
+if(LWEXT4_SANITIZE)
+    set(SANITIZE_FLAGS "-fsanitize=${LWEXT4_SANITIZE} -fno-omit-frame-pointer")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SANITIZE_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZE_FLAGS}")
+endif()
+
 
 include_directories(include)
 include_directories(${PROJECT_BINARY_DIR}/include)
@@ -78,6 +87,11 @@ add_subdirectory(blockdev)
 
 #Library build
 add_subdirectory(src)
+
+if(LWEXT4_BUILD_TESTS AND BLOCKDEV_TYPE STREQUAL linux)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 #Detect all possible warnings for lwext4 target
 if (NOT CMAKE_COMPILER_IS_GNUCC)
     set_target_properties(lwext4 PROPERTIES COMPILE_FLAGS "")
