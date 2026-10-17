@@ -1,0 +1,7 @@
+# Minimum line and branch coverage (percent) of src/ reached by the CTest
+# suite plus the e2fsprogs round trip, enforced by ci/jobs/coverage.sh.
+# Coverage can only go up: a change that adds tests raises these to the new
+# measured values (rounded down to a whole percent, which absorbs small
+# differences between compilers/architectures); nothing may lower them.
+line 78
+branch 60
