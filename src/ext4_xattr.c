@@ -836,6 +836,31 @@ static void ext4_xattr_try_free_block(struct ext4_inode_ref *inode_ref)
 	}
 }
 
+/*
+ * Alignment of struct ext4_xattr_list_entry: the entry follows a char, so
+ * it starts at its alignment, and the structure is that plus the entry.
+ * (sizeof rather than offsetof: the offsetof fallback of ext4_misc.h
+ * dereferences a null pointer, which is undefined.)
+ */
+struct ext4_xattr_list_entry_align {
+	char c;
+	struct ext4_xattr_list_entry entry;
+};
+
+/**
+ * @brief Space one entry of the list built by ext4_xattr_list() takes:
+ *        the entry, the name and its terminating NUL, rounded up so that
+ *        the next entry is suitably aligned.
+ */
+static size_t ext4_xattr_list_entry_size(size_t name_len)
+{
+	const size_t align = sizeof(struct ext4_xattr_list_entry_align) -
+			     sizeof(struct ext4_xattr_list_entry);
+	size_t size = sizeof(struct ext4_xattr_list_entry) + name_len + 1;
+
+	return (size + align - 1) / align * align;
+}
+
 /**
  * @brief Put a list of EA entries into a caller-provided buffer
  * 	  In order to make sure that @list buffer can fit in the data,
@@ -896,16 +921,12 @@ int ext4_xattr_list(struct ext4_inode_ref *inode_ref,
 
 				list_prev = list;
 				list = (struct ext4_xattr_list_entry
-					    *)(list->name + name_len + 1);
+					    *)((char *)list +
+					       ext4_xattr_list_entry_size(
+						   name_len));
 			}
 
-			/*
-			 * Size calculation by pointer arithmetics.
-			 */
-			buf_len +=
-			    (char *)((struct ext4_xattr_list_entry *)0 + 1) +
-			    name_len + 1 -
-			    (char *)(struct ext4_xattr_list_entry *)0;
+			buf_len += ext4_xattr_list_entry_size(name_len);
 		}
 	}
 
@@ -956,16 +977,12 @@ int ext4_xattr_list(struct ext4_inode_ref *inode_ref,
 
 				list_prev = list;
 				list = (struct ext4_xattr_list_entry
-					    *)(list->name + name_len + 1);
+					    *)((char *)list +
+					       ext4_xattr_list_entry_size(
+						   name_len));
 			}
 
-			/*
-			 * Size calculation by pointer arithmetics.
-			 */
-			buf_len +=
-			    (char *)((struct ext4_xattr_list_entry *)0 + 1) +
-			    name_len + 1 -
-			    (char *)(struct ext4_xattr_list_entry *)0;
+			buf_len += ext4_xattr_list_entry_size(name_len);
 		}
 	}
 	if (list_prev)
