@@ -2902,6 +2902,7 @@ int ext4_dir_rm(const char *path)
 	bool has_children;
 	bool is_goal;
 	bool dir_end;
+	bool last_link;
 
 	if (!mp)
 		return ENOENT;
@@ -2991,11 +2992,18 @@ int ext4_dir_rm(const char *path)
 				inode_type = ext4_inode_type(&mp->fs.sb,
 						child.inode);
 
+				/* A file with names outside of the tree (hard
+				 * links) only loses this name. */
+				last_link = inode_type ==
+						EXT4_INODE_MODE_DIRECTORY ||
+					    ext4_inode_get_links_cnt(
+						child.inode) <= 1;
+
 				/* Truncate */
-				if (inode_type != EXT4_INODE_MODE_DIRECTORY)
-					r = ext4_trunc_inode(mp, child.index, 0);
-				else
+				if (inode_type == EXT4_INODE_MODE_DIRECTORY)
 					r = ext4_trunc_dir(mp, &act, &child);
+				else if (last_link)
+					r = ext4_trunc_inode(mp, child.index, 0);
 
 				if (r != EOK) {
 					ext4_fs_put_inode_ref(&child);
@@ -3012,14 +3020,18 @@ int ext4_dir_rm(const char *path)
 					goto End;
 				}
 
-				ext4_inode_set_del_time(child.inode, -1L);
-				ext4_inode_set_links_cnt(child.inode, 0);
-				child.dirty = true;
+				if (last_link) {
+					ext4_inode_set_del_time(child.inode,
+								-1L);
+					ext4_inode_set_links_cnt(child.inode,
+								 0);
+					child.dirty = true;
 
-				r = ext4_fs_free_inode(&child);
-				if (r != EOK) {
-					ext4_fs_put_inode_ref(&child);
-					goto End;
+					r = ext4_fs_free_inode(&child);
+					if (r != EOK) {
+						ext4_fs_put_inode_ref(&child);
+						goto End;
+					}
 				}
 
 				r = ext4_fs_put_inode_ref(&child);
