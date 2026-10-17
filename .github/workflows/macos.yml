@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# macOS (arm64, Apple clang and ld): library, fs_test tools and the CTest
+# suite, plus the e2fsprogs round trip (lwext4-mkfs -> e2fsck -fn and
+# mke2fs -> lwext4-generic -> e2fsck -fn), and lwext4-mkfs on a disk
+# device (/dev/rdiskN of an image attached with hdiutil) -> e2fsck -fn.
+#
+# THE EXCEPTION TO THE CONTAINERS-ONLY RULE. Every other job runs in a
+# container through ci/run.sh; macOS cannot run in docker, so this job runs
+# ci/host/macos.sh directly on the GitHub macOS runner. Its only host
+# dependencies are the preinstalled Xcode command line tools and cmake,
+# plus from Homebrew e2fsprogs, and util-linux (sfdisk) and pkgconf for
+# tests that build partition tables or use pkg-config. See ci/README.md.
+name: macOS
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: macos / ${{ matrix.variant }}
+    runs-on: macos-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [clang, asan-ubsan]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install e2fsprogs, util-linux, pkgconf
+        run: |
+          brew install e2fsprogs util-linux pkgconf
+          # keg-only: mke2fs, e2fsck, debugfs and sfdisk are not linked
+          # into PATH
+          for keg in e2fsprogs util-linux; do
+            echo "$(brew --prefix $keg)/sbin" >> "$GITHUB_PATH"
+            echo "$(brew --prefix $keg)/bin" >> "$GITHUB_PATH"
+          done
+      - run: ci/host/macos.sh ${{ matrix.variant }}
