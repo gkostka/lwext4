@@ -1608,10 +1608,8 @@ static int ext4_ftruncate_no_lock(ext4_file *file, uint64_t size)
 
 
 	r = ext4_fs_get_inode_ref(&file->mp->fs, file->inode, &ref);
-	if (r != EOK) {
-		EXT4_MP_UNLOCK(file->mp);
+	if (r != EOK)
 		return r;
-	}
 
 	/*Sync file size*/
 	file->fsize = ext4_inode_get_size(&file->mp->fs.sb, ref.inode);
@@ -1626,18 +1624,14 @@ static int ext4_ftruncate_no_lock(ext4_file *file, uint64_t size)
 		goto Finish;
 
 	r = ext4_trunc_inode(file->mp, ref.index, size);
-	if (r != EOK)
-		goto Finish;
+	if (r == EOK) {
+		file->fsize = size;
+		if (file->fpos > size)
+			file->fpos = size;
+	}
 
-	file->fsize = size;
-	if (file->fpos > size)
-		file->fpos = size;
-
-	/*Stop write back cache mode*/
+	/*Stop write back cache mode, also when the truncation failed*/
 	ext4_block_cache_write_back(file->mp->fs.bdev, 0);
-
-	if (r != EOK)
-		goto Finish;
 
 Finish:
 	ext4_fs_put_inode_ref(&ref);
