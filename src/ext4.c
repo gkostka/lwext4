@@ -1205,6 +1205,13 @@ static int ext4_create_hardlink(const char *path,
 		if (r != EOK)
 			break;
 
+		/* The new name must not be inside the directory being
+		 * renamed: its subtree can only be reached through it. */
+		if (rename && next_inode == child_ref->index) {
+			r = EINVAL;
+			break;
+		}
+
 		if (inode_mode != EXT4_INODE_MODE_DIRECTORY) {
 			r = is_goal ? EEXIST : ENOENT;
 			break;
