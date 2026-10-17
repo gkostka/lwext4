@@ -38,7 +38,11 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
-static int inet_pton(int af, const char *src, void *dst);
+/* Newer MinGW headers declare inet_pton() themselves (Vista+ targets), older
+ * ones do not. Always use our own implementation under a private name so it
+ * cannot clash with the system declaration. */
+static int lwext4_inet_pton(int af, const char *src, void *dst);
+#define inet_pton lwext4_inet_pton
 
 #else
 #include <sys/socket.h>
@@ -191,7 +195,7 @@ static void winsock_fini(void)
 }
 
 #if WIN32
-static int inet_pton(int af, const char *src, void *dst)
+static int lwext4_inet_pton(int af, const char *src, void *dst)
 {
 	struct sockaddr_storage ss;
 	int size = sizeof(ss);
