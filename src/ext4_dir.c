@@ -457,9 +457,16 @@ int ext4_dir_find_entry(struct ext4_dir_search_result *result,
 	result->dentry = NULL;
 
 #if CONFIG_DIR_INDEX_ENABLE
+	/* "." and ".." are not in the hash tree: they are the first two
+	 * entries of block 0 (the index root), where the linear search below
+	 * finds them. */
+	bool dots = name_len && name_len <= 2 && name[0] == '.' &&
+		    (name_len == 1 || name[1] == '.');
+
 	/* Index search */
 	if ((ext4_sb_feature_com(sb, EXT4_FCOM_DIR_INDEX)) &&
-	    (ext4_inode_has_flag(parent->inode, EXT4_INODE_FLAG_INDEX))) {
+	    (ext4_inode_has_flag(parent->inode, EXT4_INODE_FLAG_INDEX)) &&
+	    !dots) {
 		r = ext4_dir_dx_find_entry(result, parent, name_len, name);
 		/* Check if index is not corrupted */
 		if (r != EXT4_ERR_BAD_DX_DIR) {
