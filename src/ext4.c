@@ -1875,6 +1875,20 @@ int ext4_fwrite(ext4_file *file, const void *buf, size_t size, size_t *wcnt)
 	file->fsize = ext4_inode_get_size(sb, ref.inode);
 	block_size = ext4_sb_get_block_size(sb);
 
+	/*
+	 * The file may have been truncated behind this handle's back, leaving
+	 * fpos past EOF. New blocks are appended at i_size, not at fpos, so
+	 * the block loop below would map more blocks than the request covers
+	 * and write past the end of buf. Seeking past EOF is not supported
+	 * either, so refuse the write.
+	 */
+	if (file->fpos > file->fsize) {
+		ext4_fs_put_inode_ref(&ref);
+		ext4_trans_abort(file->mp);
+		EXT4_MP_UNLOCK(file->mp);
+		return EINVAL;
+	}
+
 	iblock_last = (uint32_t)((file->fpos + size) / block_size);
 	iblk_idx = (uint32_t)(file->fpos / block_size);
 	ifile_blocks = (uint32_t)((file->fsize + block_size - 1) / block_size);
