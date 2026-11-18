@@ -40,4 +40,19 @@ struct ext4_blockdev *file_dev_get(void);
 /**@brief   Set filename to open.*/
 void file_dev_name_set(const char *n);
 
+/**@brief   Set the byte offset of the partition within the file.
+ *          Has to be a multiple of 512. Default: 0.
+ *          Takes effect the next time the device is opened.
+ * @param   offset partition offset in bytes*/
+void file_dev_part_offset_set(uint64_t offset);
+
+/**@brief   Set the byte size of the partition.
+ *          Default: 0, meaning from the partition offset to the end of file.
+ *          Opening the device fails with EINVAL if the partition does
+ *          not fit in the file. Block reads and writes outside of the
+ *          partition are rejected with EINVAL.
+ *          Takes effect the next time the device is opened.
+ * @param   size partition size in bytes*/
+void file_dev_part_size_set(uint64_t size);
+
 #endif /* FILE_DEV_H_ */
