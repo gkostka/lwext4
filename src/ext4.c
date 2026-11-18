@@ -2437,6 +2437,14 @@ int ext4_ctime_get(const char *path, uint32_t *ctime)
 	return r;
 }
 
+static bool ext4_inode_has_crtime(struct ext4_sblock *sb,
+				  struct ext4_inode *inode)
+{
+	return ext4_inode_get_extra_isize(sb, inode) >=
+	       offsetof(struct ext4_inode, crtime) + sizeof(inode->crtime) -
+	       EXT4_GOOD_OLD_INODE_SIZE;
+}
+
 int ext4_crtime_set(const char *path, uint32_t crtime)
 {
 	struct ext4_inode_ref inode_ref;
@@ -2449,16 +2457,17 @@ int ext4_crtime_set(const char *path, uint32_t crtime)
 	if (mp->fs.read_only)
 		return EROFS;
 
-	/* crtime only exists in extended inodes (inode_size > 128) */
-	uint16_t inode_size = ext4_get16(&mp->fs.sb, inode_size);
-	if (inode_size <= EXT4_GOOD_OLD_INODE_SIZE)
-		return ENOTSUP;
-
 	EXT4_MP_LOCK(mp);
 
 	r = ext4_trans_get_inode_ref(path, mp, &inode_ref);
 	if (r != EOK)
 		goto Finish;
+
+	if (!ext4_inode_has_crtime(&mp->fs.sb, inode_ref.inode)) {
+		ext4_trans_put_inode_ref(mp, &inode_ref);
+		r = ENOTSUP;
+		goto Finish;
+	}
 
 	ext4_inode_set_crtime(inode_ref.inode, crtime);
 	inode_ref.dirty = true;
@@ -2480,13 +2489,6 @@ int ext4_crtime_get(const char *path, uint32_t *crtime)
 	if (!mp)
 		return ENOENT;
 
-	/* crtime only exists in extended inodes (inode_size > 128) */
-	uint16_t inode_size = ext4_get16(&mp->fs.sb, inode_size);
-	if (inode_size <= EXT4_GOOD_OLD_INODE_SIZE) {
-		*crtime = 0;
-		return ENOTSUP;
-	}
-
 	EXT4_MP_LOCK(mp);
 
 	r = ext4_generic_open2(&f, path, O_RDONLY, EXT4_DE_UNKNOWN, NULL, NULL);
@@ -2497,8 +2499,13 @@ int ext4_crtime_get(const char *path, uint32_t *crtime)
 	if (r != EOK)
 		goto Finish;
 
-	*crtime = ext4_inode_get_crtime(inode_ref.inode);
-	r = ext4_fs_put_inode_ref(&inode_ref);
+	if (ext4_inode_has_crtime(&mp->fs.sb, inode_ref.inode)) {
+		*crtime = ext4_inode_get_crtime(inode_ref.inode);
+		r = ext4_fs_put_inode_ref(&inode_ref);
+	} else {
+		ext4_fs_put_inode_ref(&inode_ref);
+		r = ENOTSUP;
+	}
 
 	Finish:
 	EXT4_MP_UNLOCK(mp);
