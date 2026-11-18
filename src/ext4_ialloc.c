@@ -297,6 +297,9 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *idx, bool is_dir)
 				if (rc != EOK)
 					return rc;
 
+				/* The descriptor's free count disagrees with
+				 * the bitmap, try the next block group */
+				++bgid;
 				continue;
 			}
 
@@ -307,7 +310,7 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *idx, bool is_dir)
 						    b.data);
 			ext4_trans_set_block_dirty(b.buf);
 
-			ext4_block_set(fs->bdev, &b);
+			rc = ext4_block_set(fs->bdev, &b);
 			if (rc != EOK) {
 				ext4_fs_put_block_group_ref(&bg_ref);
 				return rc;
@@ -355,7 +358,7 @@ int ext4_ialloc_alloc_inode(struct ext4_fs *fs, uint32_t *idx, bool is_dir)
 
 		/* Block group not modified, put it and jump to the next block
 		 * group */
-		ext4_fs_put_block_group_ref(&bg_ref);
+		rc = ext4_fs_put_block_group_ref(&bg_ref);
 		if (rc != EOK)
 			return rc;
 
