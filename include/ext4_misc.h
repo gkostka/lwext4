@@ -42,6 +42,8 @@
 extern "C" {
 #endif
 
+#include "ext4_config.h"
+
 #include <stdint.h>
 
 /**************************************************************/
@@ -77,7 +79,7 @@ static inline uint16_t reorder16(uint16_t n)
 		((n & 0xff00) >> 8);
 }
 
-#ifdef CONFIG_BIG_ENDIAN
+#if CONFIG_BIG_ENDIAN
 #define to_le64(_n) reorder64(_n)
 #define to_le32(_n) reorder32(_n)
 #define to_le16(_n) reorder16(_n)

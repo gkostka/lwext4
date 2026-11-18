@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Every job runs `ci/run.sh <job> [args]`: it builds the job's container from
+# ci/envs/ and runs ci/jobs/<job>.sh in it, exactly as it runs on a developer
+# machine with only docker installed. See ci/README.md.
+#
+# All jobs are required; nothing is allowed to fail.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  # Other workflows (integration, release) run the same jobs on a given ref.
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Host build (x86_64): CTest suite + e2fsprogs round trip, plain and with
+  # AddressSanitizer/UndefinedBehaviorSanitizer (with gcc and with clang:
+  # their instrumentation and headers differ).
+  native:
+    name: native / ${{ matrix.variant }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [gcc, clang, asan-ubsan, clang-asan-ubsan]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh native ${{ matrix.variant }}
+
+  # The tests a branch adds must fail against its base and pass on it.
+  red-green:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0
+      - run: ci/run.sh red-green
+
+  # ci/run.sh itself: base image chain, job lookup.
+  runner-selftest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh runner-selftest

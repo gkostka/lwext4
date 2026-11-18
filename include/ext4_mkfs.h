@@ -69,6 +69,9 @@ struct ext4_mkfs_info {
 };
 
 
+/**@brief Read the parameters of an existing filesystem into info.
+ * info->label points to a static buffer that is overwritten by the next
+ * call.*/
 int ext4_mkfs_read_info(struct ext4_blockdev *bd, struct ext4_mkfs_info *info);
 
 int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,

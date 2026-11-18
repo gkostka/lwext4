@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# LeakSanitizer suppressions for CI.
+# ext4_mkfs() calls ext4_bcache_fini_dynamic() without ext4_bcache_cleanup(),
+# so buffers still held by the block cache are leaked (~17 KiB per mkfs).
+leak:ext4_mkfs
