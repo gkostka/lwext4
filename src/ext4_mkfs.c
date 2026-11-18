@@ -121,7 +121,15 @@ static uint32_t compute_inodes_per_group(struct ext4_mkfs_info *info)
 	uint32_t blocks = (uint32_t)EXT4_DIV_ROUND_UP(info->len, info->block_size);
 	uint32_t block_groups = EXT4_DIV_ROUND_UP(blocks, info->blocks_per_group);
 	uint32_t inodes = EXT4_DIV_ROUND_UP(info->inodes, block_groups);
-	inodes = EXT4_ALIGN(inodes, (info->block_size / info->inode_size));
+	uint32_t align = info->block_size / info->inode_size;
+
+	/* Fill whole inode table blocks and keep the inode bitmap byte
+	 * aligned: e2fsck expects the bitmap padding to start on a byte
+	 * boundary.
+	 */
+	if (align < 8)
+		align = 8;
+	inodes = EXT4_ALIGN(inodes, align);
 
 	/* After properly rounding up the number of inodes/group,
 	 * make sure to update the total inodes field in the info struct.
@@ -172,7 +180,9 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 
 	aux_info->default_i_flags = EXT4_INODE_FLAG_NOATIME;
 
-	uint32_t last_group_size = aux_info->len_blocks % info->blocks_per_group;
+	/* Drop a partial last group too small to hold its own metadata */
+	uint32_t last_group_size = (aux_info->len_blocks -
+			aux_info->first_data_block) % info->blocks_per_group;
 	uint32_t last_header_size = 2 + aux_info->inode_table_blocks;
 	if (has_superblock(info, aux_info->groups - 1))
 		last_header_size += 1 + aux_info->bg_desc_blocks +
@@ -181,6 +191,9 @@ static int create_fs_aux_info(struct fs_aux_info *aux_info,
 	if (last_group_size > 0 && last_group_size < last_header_size) {
 		aux_info->groups--;
 		aux_info->len_blocks -= last_group_size;
+		aux_info->bg_desc_blocks =
+			EXT4_DIV_ROUND_UP(aux_info->groups * info->dsc_size,
+				info->block_size);
 	}
 
 	aux_info->sb = ext4_calloc(1, EXT4_SUPERBLOCK_SIZE);
@@ -316,17 +329,13 @@ static int write_bgroup_block(struct ext4_blockdev *bd,
 	uint32_t block_size = ext4_sb_get_block_size(aux_info->sb);
 
 	for (j = 0; j < aux_info->groups; j++) {
-		uint64_t bg_start_block = aux_info->first_data_block +
-					  j * info->blocks_per_group;
-		uint32_t blk_off = 0;
+		if (!has_superblock(info, j))
+			continue;
 
-		blk_off += aux_info->bg_desc_blocks;
-		if (has_superblock(info, j)) {
-			bg_start_block++;
-			blk_off += info->bg_desc_reserve_blocks;
-		}
-
-		uint64_t dsc_blk = bg_start_block + blk;
+		/* Descriptor table follows the (backup) superblock */
+		uint64_t dsc_blk = aux_info->first_data_block +
+				   (uint64_t)j * info->blocks_per_group +
+				   1 + blk;
 
 		r = ext4_block_get_noread(bd, &b, dsc_blk);
 		if (r != EOK)
@@ -361,35 +370,35 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 
 	for (i = 0; i < aux_info->groups; i++) {
 		uint64_t bg_start_block = aux_info->first_data_block +
-			aux_info->first_data_block + i * info->blocks_per_group;
+			(uint64_t)i * info->blocks_per_group;
+		uint32_t bg_blocks = info->blocks_per_group;
 		uint32_t blk_off = 0;
 
-		bg_desc = (void *)(aux_info->bg_desc_blk + k * dsc_size);
-		bg_free_blk = info->blocks_per_group -
-				aux_info->inode_table_blocks;
-
-		bg_free_blk -= 2;
-		blk_off += aux_info->bg_desc_blocks;
-
+		/* The last group may be partial */
 		if (i == (aux_info->groups - 1))
-			bg_free_blk -= aux_info->first_data_block;
+			bg_blocks = (uint32_t)(aux_info->len_blocks -
+					       bg_start_block);
 
-		if (has_superblock(info, i)) {
-			bg_start_block++;
-			blk_off += info->bg_desc_reserve_blocks;
-			bg_free_blk -= info->bg_desc_reserve_blocks + 1;
-			bg_free_blk -= aux_info->bg_desc_blocks;
-		}
+		/* Superblock, descriptor table and reserved GDT blocks */
+		if (has_superblock(info, i))
+			blk_off += 1 + aux_info->bg_desc_blocks +
+				   info->bg_desc_reserve_blocks;
+
+		bg_desc = (void *)(aux_info->bg_desc_blk + k * dsc_size);
+
+		/* Block bitmap, inode bitmap and inode table follow */
+		bg_free_blk = bg_blocks - blk_off - 2 -
+			      aux_info->inode_table_blocks;
 
 		ext4_bg_set_block_bitmap(bg_desc, aux_info->sb,
-					 bg_start_block + blk_off + 1);
+					 bg_start_block + blk_off);
 
 		ext4_bg_set_inode_bitmap(bg_desc, aux_info->sb,
-					 bg_start_block + blk_off + 2);
+					 bg_start_block + blk_off + 1);
 
 		ext4_bg_set_inode_table_first_block(bg_desc,
 						aux_info->sb,
-						bg_start_block + blk_off + 3);
+						bg_start_block + blk_off + 2);
 
 		ext4_bg_set_free_blocks_count(bg_desc, aux_info->sb,
 					      bg_free_blk);
@@ -405,7 +414,7 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 
 		sb_free_blk += bg_free_blk;
 
-		r = ext4_block_get_noread(bd, &b, bg_start_block + blk_off + 1);
+		r = ext4_block_get_noread(bd, &b, bg_start_block + blk_off);
 		if (r != EOK)
 			return r;
 		memset(b.data, 0, block_size);
@@ -413,7 +422,7 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 		r = ext4_block_set(bd, &b);
 		if (r != EOK)
 			return r;
-		r = ext4_block_get_noread(bd, &b, bg_start_block + blk_off + 2);
+		r = ext4_block_get_noread(bd, &b, bg_start_block + blk_off + 1);
 		if (r != EOK)
 			return r;
 		memset(b.data, 0, block_size);
@@ -430,11 +439,15 @@ static int write_bgroups(struct ext4_blockdev *bd, struct fs_aux_info *aux_info,
 		if (r != EOK)
 			return r;
 
+		memset(aux_info->bg_desc_blk, 0, block_size);
 	}
 
-	r = write_bgroup_block(bd, aux_info, info, i / dsc_per_block);
-	if (r != EOK)
-		return r;
+	/* Write out the last, partially filled descriptor block */
+	if (k) {
+		r = write_bgroup_block(bd, aux_info, info, i / dsc_per_block);
+		if (r != EOK)
+			return r;
+	}
 
 	ext4_sb_set_free_blocks_cnt(aux_info->sb, sb_free_blk);
 	return r;
@@ -858,6 +871,7 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 
 	cache_fini:
 	ext4_block_cache_write_back(bd, 0);
+	ext4_bcache_cleanup(&bc);
 	ext4_bcache_fini_dynamic(&bc);
 
 	block_fini:
