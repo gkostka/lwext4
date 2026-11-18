@@ -127,6 +127,18 @@ uint32_t ext4_inode_get_modif_time(struct ext4_inode *inode);
  */
 void ext4_inode_set_modif_time(struct ext4_inode *inode, uint32_t time);
 
+/**@brief Get file creation time (crtime).
+ * @param inode I-node
+ * @return Creation time (POSIX), or 0 if not available
+ */
+uint32_t ext4_inode_get_crtime(struct ext4_inode *inode);
+
+/**@brief Set file creation time (crtime).
+ * @param inode I-node
+ * @param time  Creation time (POSIX)
+ */
+void ext4_inode_set_crtime(struct ext4_inode *inode, uint32_t time);
+
 /**@brief Get time, when i-node was deleted.
  * @param inode I-node
  * @return Time of the delete action (POSIX)

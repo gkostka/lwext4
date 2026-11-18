@@ -163,6 +163,15 @@ void ext4_inode_set_modif_time(struct ext4_inode *inode, uint32_t time)
 	inode->modification_time = to_le32(time);
 }
 
+uint32_t ext4_inode_get_crtime(struct ext4_inode *inode)
+{
+	return to_le32(inode->crtime);
+}
+void ext4_inode_set_crtime(struct ext4_inode *inode, uint32_t time)
+{
+	inode->crtime = to_le32(time);
+}
+
 uint32_t ext4_inode_get_del_time(struct ext4_inode *inode)
 {
 	return to_le32(inode->deletion_time);
