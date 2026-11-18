@@ -1653,7 +1653,7 @@ int ext4_ftruncate(ext4_file *f, uint64_t size)
 	if (f->mp->fs.read_only)
 		return EROFS;
 
-	if (f->flags & O_RDONLY)
+	if (!(f->flags & (O_WRONLY | O_RDWR)))
 		return EPERM;
 
 	EXT4_MP_LOCK(f->mp);
@@ -1849,7 +1849,7 @@ int ext4_fwrite(ext4_file *file, const void *buf, size_t size, size_t *wcnt)
 	if (file->mp->fs.read_only)
 		return EROFS;
 
-	if (!((file->flags & O_WRONLY) || (file->flags & O_RDWR)))
+	if (!(file->flags & (O_WRONLY | O_RDWR)))
 		return EPERM;
 
 	if (!size)
