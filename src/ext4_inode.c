@@ -295,7 +295,7 @@ uint64_t ext4_inode_get_file_acl(struct ext4_inode *inode,
 	uint64_t v = to_le32(inode->file_acl_lo);
 
 	if (ext4_get32(sb, creator_os) == EXT4_SUPERBLOCK_OS_LINUX)
-		v |= (uint32_t)to_le16(inode->osd2.linux2.file_acl_high) << 16;
+		v |= (uint64_t)to_le16(inode->osd2.linux2.file_acl_high) << 32;
 
 	return v;
 }
