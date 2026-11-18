@@ -117,13 +117,15 @@ int ext4_block_bind_bcache(struct ext4_blockdev *bdev, struct ext4_bcache *bc)
 	return EOK;
 }
 
-void ext4_block_set_lb_size(struct ext4_blockdev *bdev, uint32_t lb_bsize)
+int ext4_block_set_lb_size(struct ext4_blockdev *bdev, uint32_t lb_bsize)
 {
 	/*Logical block size has to be multiply of physical */
-	ext4_assert(!(lb_bsize % bdev->bdif->ph_bsize));
+	if (!lb_bsize || (lb_bsize % bdev->bdif->ph_bsize))
+		return EINVAL;
 
 	bdev->lg_bsize = lb_bsize;
 	bdev->lg_bcnt = bdev->part_size / lb_bsize;
+	return EOK;
 }
 
 int ext4_block_fini(struct ext4_blockdev *bdev)

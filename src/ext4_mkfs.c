@@ -826,7 +826,9 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	struct ext4_bcache bc;
 
 	memset(&bc, 0, sizeof(struct ext4_bcache));
-	ext4_block_set_lb_size(bd, info->block_size);
+	r = ext4_block_set_lb_size(bd, info->block_size);
+	if (r != EOK)
+		goto block_fini;
 
 	r = ext4_bcache_init_dynamic(&bc, CONFIG_BLOCK_DEV_CACHE_SIZE,
 				      info->block_size);

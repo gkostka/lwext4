@@ -128,6 +128,90 @@ int ext4_sb_read(struct ext4_blockdev *bdev, struct ext4_sblock *s)
 				    EXT4_SUPERBLOCK_SIZE);
 }
 
+/**@brief Sanity check the block size and block group geometry. Every per
+ *        group bitmap has to fit in a single block and the group descriptor
+ *        related fields have to be consistent with the group count
+ *        (mostly the checks Linux does in ext4_fill_super).*/
+static bool ext4_sb_check_geometry(struct ext4_sblock *s)
+{
+	uint32_t log_block_size = ext4_get32(s, log_block_size);
+	uint32_t log_cluster_size = ext4_get32(s, log_cluster_size);
+	uint32_t block_size, bits_per_block, inodes_per_block;
+	uint32_t blocks_per_group = ext4_get32(s, blocks_per_group);
+	uint32_t inodes_per_group = ext4_get32(s, inodes_per_group);
+	uint32_t first_data_block = ext4_get32(s, first_data_block);
+	uint32_t inode_size = ext4_get16(s, inode_size);
+	uint64_t blocks_count = ext4_sb_get_blocks_cnt(s);
+	uint64_t groups;
+	uint32_t dsc_per_block, db_count;
+
+	/* Everything below depends on a sane block size (1 KiB..64 KiB).
+	 * Larger values would also overflow 1024 << log_block_size. */
+	if (log_block_size >
+	    EXT4_MAX_BLOCK_LOG_SIZE - EXT4_MIN_BLOCK_LOG_SIZE)
+		return false;
+
+	block_size = ext4_sb_get_block_size(s);
+	bits_per_block = block_size * 8;
+
+	if (ext4_sb_feature_ro_com(s, EXT4_FRO_COM_BIGALLOC)) {
+		uint32_t cluster_bits;
+
+		if (log_cluster_size < log_block_size ||
+		    log_cluster_size >
+		    EXT4_MAX_CLUSTER_LOG_SIZE - EXT4_MIN_BLOCK_LOG_SIZE)
+			return false;
+
+		cluster_bits = log_cluster_size - log_block_size;
+		if (ext4_get32(s, frags_per_group) == 0 ||
+		    ext4_get32(s, frags_per_group) > bits_per_block)
+			return false;
+
+		if ((uint64_t)ext4_get32(s, frags_per_group) << cluster_bits !=
+		    blocks_per_group)
+			return false;
+	} else {
+		if (log_cluster_size != log_block_size)
+			return false;
+
+		if (blocks_per_group > bits_per_block)
+			return false;
+	}
+
+	/* Inode size must be a power of 2 no larger than a block */
+	if (inode_size > block_size || (inode_size & (inode_size - 1)))
+		return false;
+
+	inodes_per_block = block_size / inode_size;
+	if (inodes_per_group < inodes_per_block ||
+	    inodes_per_group > bits_per_block)
+		return false;
+
+	if (first_data_block >= blocks_count)
+		return false;
+
+	/* Same rounding as ext4_block_group_cnt() */
+	groups = blocks_count / blocks_per_group;
+	if (blocks_count % blocks_per_group)
+		groups++;
+	if (groups > UINT32_MAX)
+		return false;
+
+	if (ext4_get32(s, inodes_count) > groups * inodes_per_group)
+		return false;
+
+	if (ext4_get16(s, s_reserved_gdt_blocks) > block_size / 4)
+		return false;
+
+	dsc_per_block = block_size / ext4_sb_get_desc_size(s);
+	db_count = (uint32_t)((groups + dsc_per_block - 1) / dsc_per_block);
+	if (ext4_sb_feature_incom(s, EXT4_FINCOM_META_BG) &&
+	    ext4_sb_first_meta_bg(s) > db_count)
+		return false;
+
+	return true;
+}
+
 bool ext4_sb_check(struct ext4_sblock *s)
 {
 	if (ext4_get16(s, magic) != EXT4_SUPERBLOCK_MAGIC)
@@ -155,6 +239,9 @@ bool ext4_sb_check(struct ext4_sblock *s)
 		return false;
 
 	if (ext4_sb_get_desc_size(s) > EXT4_MAX_BLOCK_GROUP_DESCRIPTOR_SIZE)
+		return false;
+
+	if (!ext4_sb_check_geometry(s))
 		return false;
 
 	if (!ext4_sb_verify_csum(s))
