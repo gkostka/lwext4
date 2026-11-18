@@ -45,6 +45,7 @@ jobs:
 
   # The tests a branch adds must fail against its base and pass on it.
   red-green:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -52,7 +53,7 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
-      - run: ci/run.sh red-green
+      - run: ci/run.sh red-green origin/${{ github.base_ref }}
 
   # ci/run.sh itself: base image chain, job lookup.
   runner-selftest:
