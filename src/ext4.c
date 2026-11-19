@@ -282,6 +282,7 @@ static int ext4_link(struct ext4_mountpoint *mp, struct ext4_inode_ref *parent,
 				return EIO;
 
 			ext4_dir_en_set_inode(res.dentry, parent->index);
+			ext4_dir_set_csum(ch, (void *)res.block.data);
 			ext4_trans_set_block_dirty(res.block.buf);
 			r = ext4_dir_destroy_result(ch, &res);
 			if (r != EOK)
