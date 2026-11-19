@@ -20,6 +20,93 @@ leveled memory types. However it is not good for raw flash devices.
 Feel free to contact me:
 kostka.grzegorz@gmail.com
 
+Getting started
+=====
+
+lwext4 is a library: your program registers a *block device* (a struct
+with read/write callbacks for your storage), formats or mounts it, and then
+uses a file API much like stdio. Everything below runs on a PC first.
+
+1. Build the library, the tools and the examples (see [Compile](#compile)
+   for the dependencies):
+   ```bash
+    make generic
+    cd build_generic
+    make
+    ```
+2. Run the basic example and check its result with e2fsprogs:
+   ```bash
+    ./examples/lwext4-example-basic disk.img
+    e2fsck -fn disk.img
+    debugfs -R 'ls -l /docs' disk.img
+    ```
+   [examples/basic/main.c](examples/basic/main.c) walks through the whole
+   life cycle step by step: block device, `ext4_mkfs`, mount, journal,
+   write-back cache, directories and files, unmount.
+3. Port it to your hardware by writing a block device:
+   [examples/blockdev-template](examples/blockdev-template/my_blockdev.c)
+   is an annotated skeleton that CI runs on a RAM disk.
+4. Pick the features and buffer sizes you need with the `CONFIG_*`
+   options of [include/ext4_config.h](include/ext4_config.h) and build for
+   your target with a toolchain file from [toolchain/](toolchain), e.g.
+   `make cortex-m4`.
+
+The core of a program, as a function (CI compiles this snippet, like every
+C snippet in this file):
+```c
+#include <ext4.h>
+#include <ext4_mkfs.h>
+#include <blockdev/file_dev.h>
+
+/* Format an image file as ext4, then write "hello" to /mp/hello.txt. */
+int format_and_write(const char *image)
+{
+	static struct ext4_fs fs; /* used by ext4_mkfs only; large */
+	struct ext4_mkfs_info info = {.block_size = 1024, .journal = true};
+	struct ext4_blockdev *bd;
+	ext4_file f;
+	size_t written;
+	int r;
+
+	file_dev_name_set(image);  /* the block device: a file */
+	bd = file_dev_get();
+
+	r = ext4_mkfs(&fs, bd, &info, F_SET_EXT4);
+	if (r != EOK)
+		return r;
+
+	r = ext4_device_register(bd, "disk");
+	if (r != EOK)
+		return r;
+	r = ext4_mount("disk", "/mp/", false);
+	if (r == EOK) {
+		ext4_recover("/mp/");       /* replay the journal if needed */
+		ext4_journal_start("/mp/");
+
+		r = ext4_fopen(&f, "/mp/hello.txt", "wb");
+		if (r == EOK) {
+			r = ext4_fwrite(&f, "hello\n", 6, &written);
+			ext4_fclose(&f);
+		}
+
+		ext4_journal_stop("/mp/");
+		ext4_umount("/mp/");
+	}
+	ext4_device_unregister("disk");
+	return r;
+}
+```
+
+More examples:
+* [examples/](examples/README.md) - the host examples above and how to
+  check what they write.
+* ESP32, ESP32-C3 and ESP32-S3 (ESP-IDF): an lwext4 component with block
+  devices for SPI flash partitions and SD cards, and an example firmware
+  that CI runs in Espressif's QEMU:
+  [examples/esp-idf in antimatter-studios/lwext4](https://github.com/antimatter-studios/lwext4/tree/integration/examples/esp-idf).
+* [fs_test/](fs_test) - the `lwext4-generic`, `lwext4-mkfs` and
+  `lwext4-mbr` tools (see below) are complete programs too.
+
 Credits
 =====
 
@@ -96,6 +183,7 @@ read-only:
 Project tree
 =====
 *  blockdev         - block devices set, supported blockdev
+*  examples         - example programs (see [Getting started](#getting-started))
 *  fs_test          - test suite, mkfs and demo application
 *  src              - source files
 *  include          - header files
