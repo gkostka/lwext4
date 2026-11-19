@@ -554,6 +554,9 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 	int r;
 
 	struct ext4_dir_idx_block *tmp_dx_blk = dx_blocks;
+	/* The root block stays the caller's, index nodes below it are loaded
+	 * into child_blk and handed over to dx_blocks[1...]. */
+	struct ext4_block child_blk;
 	struct ext4_block *tmp_blk = root_block;
 	struct ext4_sblock *sb = &inode_ref->fs->sb;
 
@@ -563,11 +566,18 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 	limit = ext4_dir_dx_climit_get_limit((void *)entries);
 	ind_level = ext4_dir_dx_rinfo_get_indirect_levels(&root->info);
 
+	/* dx_blocks has room for the root and one level of index nodes */
+	if (ind_level > 1)
+		return EXT4_ERR_BAD_DX_DIR;
+
 	/* Walk through the index tree */
 	while (true) {
 		uint16_t cnt = ext4_dir_dx_climit_get_count((void *)entries);
-		if ((cnt == 0) || (cnt > limit))
+		if ((cnt == 0) || (cnt > limit)) {
+			if (tmp_blk != root_block)
+				ext4_block_set(inode_ref->fs->bdev, tmp_blk);
 			return EXT4_ERR_BAD_DX_DIR;
+		}
 
 		/* Do binary search in every node */
 		p = entries + 1;
@@ -603,10 +613,11 @@ static int ext4_dir_dx_get_leaf(struct ext4_hash_info *hinfo,
 		if (r != EOK)
 			return r;
 
-		r = ext4_trans_block_get(inode_ref->fs->bdev, tmp_blk, fblk);
+		r = ext4_trans_block_get(inode_ref->fs->bdev, &child_blk, fblk);
 		if (r != EOK)
 			return r;
 
+		tmp_blk = &child_blk;
 		entries = ((struct ext4_dir_idx_node *)tmp_blk->data)->entries;
 		limit = ext4_dir_dx_climit_get_limit((void *)entries);
 
@@ -1085,9 +1096,13 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 
 	uint32_t block_size = ext4_sb_get_block_size(&ino_ref->fs->sb);
 	uint32_t entry_space = block_size - sizeof(struct ext4_fake_dir_entry);
-	uint32_t node_limit =  entry_space / sizeof(struct ext4_dir_idx_entry);
-
 	bool meta_csum = ext4_sb_feature_ro_com(sb, EXT4_FRO_COM_METADATA_CSUM);
+
+	/* With metadata_csum the node ends with a checksum tail */
+	if (meta_csum)
+		entry_space -= sizeof(struct ext4_dir_idx_tail);
+
+	uint32_t node_limit =  entry_space / sizeof(struct ext4_dir_idx_entry);
 
 	if (dxb == dx_blks)
 		e = ((struct ext4_dir_idx_root *)dxb->b.data)->en;
@@ -1155,9 +1170,6 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 			ext4_dir_dx_climit_set_count(left_climit, count_left);
 			ext4_dir_dx_climit_set_count(right_climit, count_right);
 
-			if (meta_csum)
-				entry_space -= sizeof(struct ext4_dir_idx_tail);
-
 			ext4_dir_dx_climit_set_limit(right_climit, node_limit);
 
 			/* Which index block is target for new entry */
@@ -1199,8 +1211,6 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 			memcpy(new_en, e, sz);
 
 			struct ext4_dir_idx_climit *new_climit = (void*)new_en;
-			if (meta_csum)
-				entry_space -= sizeof(struct ext4_dir_idx_tail);
 
 			ext4_dir_dx_climit_set_limit(new_climit, node_limit);
 
@@ -1275,8 +1285,9 @@ int ext4_dir_dx_add_entry(struct ext4_inode_ref *parent,
 
 	r = ext4_dir_dx_get_leaf(&hinfo, parent, &root_blk, &dx_blk, dx_blks);
 	if (r != EOK) {
-		r = EXT4_ERR_BAD_DX_DIR;
-		goto release_index;
+		/* No path was set up, only the root is held */
+		ext4_block_set(fs->bdev, &root_blk);
+		return EXT4_ERR_BAD_DX_DIR;
 	}
 
 	/* Try to insert to existing data block */
