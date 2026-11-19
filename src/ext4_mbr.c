@@ -62,8 +62,9 @@ struct ext4_part_entry {
 };
 
 struct ext4_mbr {
-	uint8_t bootstrap[442];
+	uint8_t bootstrap[440];
 	uint32_t disk_id;
+	uint16_t reserved;
 	struct ext4_part_entry part_entry[4];
 	uint16_t signature;
 };
@@ -77,11 +78,19 @@ int ext4_mbr_scan(struct ext4_blockdev *parent, struct ext4_mbr_bdevs *bdevs)
 
 	ext4_dbg(DEBUG_MBR, DBG_INFO "ext4_mbr_scan\n");
 	memset(bdevs, 0, sizeof(struct ext4_mbr_bdevs));
+
+	/*The MBR is the first 512 bytes of the first sector*/
+	if (parent->bdif->ph_bsize < sizeof(struct ext4_mbr))
+		return ENOTSUP;
+
 	r = ext4_block_init(parent);
 	if (r != EOK)
 		return r;
 
-	r = ext4_block_readbytes(parent, 0, parent->bdif->ph_bbuf, 512);
+	/*Read the whole sector: a partial read would be copied out of
+	 * ph_bbuf into ph_bbuf itself*/
+	r = ext4_block_readbytes(parent, 0, parent->bdif->ph_bbuf,
+				 parent->bdif->ph_bsize);
 	if (r != EOK) {
 		goto blockdev_fini;
 	}
@@ -162,6 +171,10 @@ int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts, u
 	if (division_sum > 100)
 		return EINVAL;
 
+	/*The MBR is the first 512 bytes of the first sector*/
+	if (parent->bdif->ph_bsize < sizeof(struct ext4_mbr))
+		return ENOTSUP;
+
 	ext4_dbg(DEBUG_MBR, DBG_INFO "ext4_mbr_write\n");
 	r = ext4_block_init(parent);
 	if (r != EOK)
@@ -185,7 +198,7 @@ int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts, u
 	const uint32_t cyl_count = disk_sectors / cyl_size;
 
 	struct ext4_mbr *mbr = (void *)parent->bdif->ph_bbuf;
-	memset(mbr, 0, sizeof(struct ext4_mbr));
+	memset(mbr, 0, parent->bdif->ph_bsize);
 
 	mbr->disk_id = to_le32(disk_id);
 
@@ -217,7 +230,10 @@ int ext4_mbr_write(struct ext4_blockdev *parent, struct ext4_mbr_parts *parts, u
 	}
 
 	mbr->signature = to_le16(MBR_SIGNATURE);
-	r = ext4_block_writebytes(parent, 0, parent->bdif->ph_bbuf, 512);
+	/*Write the whole sector: a partial write would read the sector into
+	 * ph_bbuf first, over the new MBR*/
+	r = ext4_block_writebytes(parent, 0, parent->bdif->ph_bbuf,
+				  parent->bdif->ph_bsize);
 	if (r != EOK)
 		goto blockdev_fini;
 
