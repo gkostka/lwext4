@@ -37,3 +37,12 @@ foreach(test_src ${LWEXT4_TEST_SOURCES})
                      ${CMAKE_CROSSCOMPILING_EMULATOR}
                      $<TARGET_FILE:${test_name}>)
 endforeach()
+
+# "cmake --install --prefix" must be honoured, so every install() rule needs
+# a DESTINATION relative to CMAKE_INSTALL_PREFIX (gkostka/lwext4#48).
+if(NOT CMAKE_VERSION VERSION_LESS 3.15)
+    add_test(NAME install_prefix
+             COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/install_prefix.sh
+                     ${CMAKE_COMMAND} ${PROJECT_BINARY_DIR}
+                     ${CMAKE_CURRENT_BINARY_DIR}/work/install_prefix)
+endif()

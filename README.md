@@ -135,6 +135,13 @@ Compile & install tools
  sudo make install
  ```
 
+Installation goes to /usr/local by default. To install somewhere else, pick
+the prefix at install time or when configuring:
+```bash
+ cmake --install build_generic --prefix $HOME/.local
+ cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local build_generic
+ ```
+
 lwext4-generic demo application
 =====
 Simple lwext4 library test application:
