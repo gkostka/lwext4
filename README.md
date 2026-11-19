@@ -100,10 +100,6 @@ int format_and_write(const char *image)
 More examples:
 * [examples/](examples/README.md) - the host examples above and how to
   check what they write.
-* ESP32, ESP32-C3 and ESP32-S3 (ESP-IDF): an lwext4 component with block
-  devices for SPI flash partitions and SD cards, and an example firmware
-  that CI runs in Espressif's QEMU:
-  [examples/esp-idf in antimatter-studios/lwext4](https://github.com/antimatter-studios/lwext4/tree/integration/examples/esp-idf).
 * [fs_test/](fs_test) - the `lwext4-generic`, `lwext4-mkfs` and
   `lwext4-mbr` tools (see below) are complete programs too.
 

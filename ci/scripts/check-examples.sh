@@ -109,11 +109,6 @@ if run_example blockdev-template \
 	expect_file /data/hello.txt 'Written through my_blockdev.\n'
 fi
 
-# Examples with their own CI workflow (firmware for boards/emulators).
-check esp-idf    # firmware, built and run in QEMU by its own workflow (esp32.yml)
-check baremetal-sdcard    # firmware, built and run in Renode by its own workflow (renode.yml)
-check zephyr    # firmware, built and run in QEMU by its own workflow (zephyr.yml)
-
 for d in examples/*/; do
 	d=${d%/}
 	d=${d#examples/}
