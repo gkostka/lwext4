@@ -1,6 +1,7 @@
 # Common ground for every lwext4 environment: a C build system and the
 # e2fsprogs tools used as an independent oracle (mke2fs builds test images,
-# e2fsck/debugfs check what lwext4 wrote). Toolchain- or emulator-specific
+# e2fsck/debugfs check what lwext4 wrote), plus sfdisk to write the partition
+# tables of test disk images. Toolchain- or emulator-specific
 # environments build on this one with "# base: base".
 FROM debian:trixie-slim
 
@@ -9,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	ca-certificates \
 	cmake \
 	e2fsprogs \
+	fdisk \
 	git \
 	make \
 	python3 \

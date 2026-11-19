@@ -7,6 +7,7 @@ every lwext4 test scenario needs regardless of the target:
 |---|---|
 | cmake, make | lwext4's build system |
 | e2fsprogs | `mke2fs` creates test images, `e2fsck`/`debugfs` independently verify what lwext4 wrote |
+| fdisk | `sfdisk` (util-linux) writes the MBR and GPT partition tables of the disk images the partition table tests scan |
 | python3 | small helper scripts (image patching, output checks) |
 | git, xz-utils, ca-certificates | fetching and unpacking pinned toolchains in derived environments |
 

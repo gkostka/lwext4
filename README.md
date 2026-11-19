@@ -147,6 +147,8 @@ Features
 * various CPU architectures supported (x86/64, cortex-mX, msp430 ...)
 * small memory footprint
 * flexible configurations
+* partition tables: MBR including logical partitions, and GPT
+  (`ext4_partition_scan` in `ext4_partition.h`)
 
 Memory footprint
 ------------
@@ -297,8 +299,8 @@ Run regression tests
 =====
 
 Small self-contained tests live in `tests/` and run through CTest. They need
-`mke2fs` (e2fsprogs) on the host to build their images; no root access is
-required:
+`mke2fs` (e2fsprogs), `sfdisk` (util-linux) and `python3` on the host to
+build their images; no root access is required:
 ```bash
  make generic
  cd build_generic
