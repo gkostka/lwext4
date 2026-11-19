@@ -1146,7 +1146,7 @@ ext4_dir_dx_split_index(struct ext4_inode_ref *ino_ref,
 		struct ext4_dir_idx_entry *new_en = new_node->entries;
 
 		memset(&new_node->fake, 0, sizeof(struct ext4_fake_dir_entry));
-		new_node->fake.entry_length = block_size;
+		new_node->fake.entry_length = to_le16(block_size);
 
 		/* Split leaf node */
 		if (levels > 0) {

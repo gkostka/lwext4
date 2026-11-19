@@ -1053,9 +1053,9 @@ static int ext4_ext_split_node(struct ext4_inode_ref *inode_ref,
 	ext4_assert(at > 0);
 
 	if (path[depth].extent != EXT_MAX_EXTENT(path[depth].header))
-		insert_index = path[depth].extent[1].first_block;
+		insert_index = to_le32(path[depth].extent[1].first_block);
 	else
-		insert_index = newext->first_block;
+		insert_index = to_le32(newext->first_block);
 
 	for (i = depth; i >= at; i--, npath_at--) {
 		struct ext4_block bh = EXT4_BLOCK_ZERO();

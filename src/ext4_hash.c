@@ -266,8 +266,15 @@ int ext2_htree_hash(const char *name, int len, const uint32_t *hash_seed,
 	hash[2] = 0x98BADCFE;
 	hash[3] = 0x10325476;
 
-	if (hash_seed)
-		memcpy(hash, hash_seed, sizeof(hash));
+	/* hash_seed is the superblock's s_hash_seed, i.e. little endian. An
+	 * all-zero seed means "use the default", as in Linux/e2fsprogs. */
+	if (hash_seed && (hash_seed[0] | hash_seed[1] | hash_seed[2] |
+			  hash_seed[3])) {
+		int i;
+
+		for (i = 0; i < 4; i++)
+			hash[i] = to_le32(hash_seed[i]);
+	}
 
 	switch (hash_version) {
 	case EXT2_HTREE_TEA_UNSIGNED:

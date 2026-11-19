@@ -1216,7 +1216,7 @@ static int ext4_create_hardlink(const char *path,
 			break;
 		}
 
-		next_inode = result.dentry->inode;
+		next_inode = ext4_dir_en_get_inode(result.dentry);
 		if (ext4_sb_feature_incom(sb, EXT4_FINCOM_FILETYPE)) {
 			uint8_t t;
 			t = ext4_dir_en_get_inode_type(sb, result.dentry);
