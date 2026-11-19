@@ -734,6 +734,13 @@ int ext4_mkfs(struct ext4_fs *fs, struct ext4_blockdev *bd,
 	if (info->block_size == 0)
 		info->block_size = 4096; /*Set block size to default value*/
 
+	/* Every filesystem block must cover whole physical device blocks
+	 * (e.g. 4 KiB flash sectors cannot hold a 1 KiB block filesystem). */
+	if (info->block_size % bd->bdif->ph_bsize) {
+		r = EINVAL;
+		goto block_fini;
+	}
+
 	/* Round down the filesystem length to be a multiple of the block size */
 	info->len &= ~((uint64_t)info->block_size - 1);
 
