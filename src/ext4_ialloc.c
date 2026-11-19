@@ -175,8 +175,10 @@ int ext4_ialloc_free_inode(struct ext4_fs *fs, uint32_t index, bool is_dir)
 
 	struct ext4_block b;
 	rc = ext4_trans_block_get(fs->bdev, &b, bitmap_block_addr);
-	if (rc != EOK)
+	if (rc != EOK) {
+		ext4_fs_put_block_group_ref(&bg_ref);
 		return rc;
+	}
 
 	if (!ext4_ialloc_verify_bitmap_csum(sb, bg, b.data)) {
 		ext4_dbg(DEBUG_IALLOC,
