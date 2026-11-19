@@ -183,9 +183,36 @@ required:
 To run them with AddressSanitizer/UBSan, configure with
 `-DLWEXT4_SANITIZE=address,undefined`.
 
-The CI jobs run in containers defined in `ci/`, so they can be reproduced
-with only docker installed, e.g. `ci/run.sh native asan-ubsan` (see
-`ci/README.md`).
+Other Linux architectures can be tested under qemu-user with the
+`toolchain/linux-cross.cmake` toolchain (`gcc-<triple>` and `qemu-user`
+packages). The byte order is taken from the compiler:
+```bash
+ cmake -S . -B build_s390x -DCMAKE_TOOLCHAIN_FILE=toolchain/linux-cross.cmake \
+       -DCROSS_TRIPLE=s390x-linux-gnu -DCROSS_EMULATOR=qemu-s390x
+ cmake --build build_s390x
+ ctest --test-dir build_s390x --output-on-failure
+ ci/scripts/fs-roundtrip.sh build_s390x qemu-s390x -L /usr/s390x-linux-gnu
+   ```
+`fs-roundtrip.sh` formats images with mke2fs and lwext4-mkfs, exercises them
+with lwext4-generic and checks the result with e2fsck.
+
+The bare-metal and simulator toolchains build `tests/baremetal`, a test
+firmware (unit tests, read-only mounts of mke2fs images, ext4_mkfs and
+read/write tests on a RAM disk where there is RAM for one) that `ctest`
+runs on an emulator: `cortex-m*` on QEMU MPS2 boards, `arm-sim` on
+qemu-arm, `atmega1284` on simavr and `msp430-sim` on msp430-elf-run. The
+MinGW build runs its tests under Wine.
+
+Every CI job runs in a container defined in `ci/`, so the whole chain runs
+locally with only docker installed, exactly as in GitHub Actions
+(`.github/workflows/ci.yml`):
+```bash
+ ci/run.sh --list
+ ci/run.sh qemu-user s390x
+ ci/run.sh avr
+   ```
+See `ci/README.md`.
+
 Using lwext4-mkfs tool
 =====
 It is possible to create ext2/3/4 partition by internal library tool.

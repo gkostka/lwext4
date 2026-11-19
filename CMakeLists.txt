@@ -1,7 +1,7 @@
 project(lwext4 C)
 cmake_minimum_required(VERSION 3.4)
 
-option(LWEXT4_BUILD_TESTS "Build the regression tests (generic target only)" ON)
+option(LWEXT4_BUILD_TESTS "Build the regression tests (generic, bare-metal and simulator targets)" ON)
 set(LWEXT4_SANITIZE "" CACHE STRING
     "Comma separated -fsanitize= list for all targets, e.g. address,undefined")
 if(LWEXT4_SANITIZE)
@@ -34,6 +34,18 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  bf518)
     #...
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  avrxmega7)
     add_definitions(-DCONFIG_HAVE_OWN_ERRNO=1)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  atmega1284)
+    # simavr test target: 16 KiB of RAM, 128 KiB of flash
+    add_definitions(-DCONFIG_HAVE_OWN_ERRNO=1)
+    add_definitions(-DCONFIG_JOURNALING_ENABLE=0)
+    add_definitions(-DCONFIG_XATTR_ENABLE=0)
+    add_definitions(-DCONFIG_DEBUG_PRINTF=0)
+    add_definitions(-DCONFIG_DEBUG_ASSERT=0)
+    add_definitions(-DCONFIG_BLOCK_DEV_CACHE_SIZE=4)
+    add_definitions(-DCONFIG_EXT4_BLOCKDEVS_COUNT=1)
+    add_definitions(-DCONFIG_EXT4_MOUNTPOINTS_COUNT=1)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  msp430-sim)
+    add_definitions(-DCONFIG_DEBUG_PRINTF=0)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL  msp430g2210)
     add_definitions(-DCONFIG_DEBUG_PRINTF=0)
     add_definitions(-DCONFIG_DEBUG_ASSERT=0)
@@ -88,9 +100,15 @@ add_subdirectory(blockdev)
 #Library build
 add_subdirectory(src)
 
-if(LWEXT4_BUILD_TESTS AND BLOCKDEV_TYPE STREQUAL linux)
+if(LWEXT4_BUILD_TESTS AND BLOCKDEV_TYPE MATCHES "^(linux|windows)$")
     enable_testing()
     add_subdirectory(tests)
+elseif(LWEXT4_BUILD_TESTS AND
+       ((CMAKE_SYSTEM_PROCESSOR MATCHES "^(cortex-m.*|arm-sim)$"
+         AND CMAKE_C_COMPILER MATCHES "arm-none-eabi-gcc")
+        OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(atmega1284|msp430-sim)$"))
+    enable_testing()
+    add_subdirectory(tests/baremetal)
 endif()
 #Detect all possible warnings for lwext4 target
 if (NOT CMAKE_COMPILER_IS_GNUCC)
