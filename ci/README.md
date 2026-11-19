@@ -33,7 +33,8 @@ ci/run.sh --shell <env>   # interactive shell in an environment
   container. The `# env:` header selects the image; an optional
   `# platform: linux/amd64` header is only for tools without an arm64 build.
 
-GitHub Actions workflows call `ci/run.sh <job>` and nothing else, so CI and
+GitHub Actions workflows call `ci/run.sh <job>` and nothing else (the one
+exception is macOS, see below), so CI and
 local runs are identical.
 
 ## Running on a shared machine
@@ -45,3 +46,21 @@ and still only use capacity other work leaves idle. Running `nice` on the
 host has no effect on containers, whose processes are started by the
 docker daemon. Set `CI_PRIORITY=normal` to run at normal priority, and
 `CI_JOBS=<n>` to cap build parallelism.
+
+## The one exception: macOS
+
+macOS cannot run in a container, so the macOS job
+(`.github/workflows/macos.yml`) runs `host/macos.sh` directly on the GitHub
+macOS runner (arm64, Apple clang and ld). It is the only job that needs
+anything on the host: the Xcode command line tools, cmake, and e2fsprogs
+from Homebrew (keg-only, so its `sbin` has to be put on `PATH`). To run it
+on a Mac:
+
+```sh
+brew install e2fsprogs
+PATH="$(brew --prefix e2fsprogs)/sbin:$PATH" ci/host/macos.sh [clang|asan-ubsan]
+```
+
+It uses the same `scripts/` as the container jobs, which is why those stay
+portable (POSIX sh, BSD userland: no GNU-only tools such as `nproc`).
+Everything else stays in `ci/run.sh`.

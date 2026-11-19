@@ -36,6 +36,35 @@
 #include <stdbool.h>
 #include <string.h>
 
+#if defined(__APPLE__)
+#include <sys/disk.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+
+/**@brief   ftello() for the end of the device. On macOS seeking to the end
+ *          of a disk device (/dev/diskN, /dev/rdiskN) yields offset 0, so
+ *          for those the size comes from the disk driver.*/
+static off_t file_dev_ftello(FILE *f)
+{
+	off_t pos = ftello(f);
+	struct stat st;
+	uint32_t bsize;
+	uint64_t bcount;
+	int fd = fileno(f);
+
+	if (pos != 0 || fstat(fd, &st) ||
+	    !(S_ISBLK(st.st_mode) || S_ISCHR(st.st_mode)))
+		return pos;
+	if (ioctl(fd, DKIOCGETBLOCKSIZE, &bsize) ||
+	    ioctl(fd, DKIOCGETBLOCKCOUNT, &bcount))
+		return -1;
+	return (off_t)((uint64_t)bsize * bcount);
+}
+
+/* The device size is read with fseeko(SEEK_END) + ftello() below. */
+#define ftello(f) file_dev_ftello(f)
+#endif
+
 /**@brief   Default filename.*/
 static const char *fname = "ext2";
 

@@ -16,5 +16,5 @@ ci_build_dir()
 # Parallel build jobs (CI_JOBS overrides, e.g. on a shared machine).
 ci_jobs()
 {
-	echo "${CI_JOBS:-$(nproc)}"
+	echo "${CI_JOBS:-$(getconf _NPROCESSORS_ONLN)}" # nproc is not on macOS
 }

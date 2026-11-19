@@ -16,6 +16,12 @@ img="$work/image"
 if [ -f "$setup" ]; then
 	(
 		PATH="$PATH:/sbin:/usr/sbin"
+		# Setup scripts produce bytes. The BSD tools of macOS (tr, sed,
+		# sort) are locale aware: in a UTF-8 locale tr '\000' '\245'
+		# writes two bytes per input byte. Use the C locale, as the
+		# Linux CI containers do.
+		LC_ALL=C
+		export LC_ALL
 		set -- "$img"
 		. "$(dirname "$0")/common/mkimage.sh"
 		. "$setup"
