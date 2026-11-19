@@ -461,6 +461,25 @@ int jbd_get_fs(struct ext4_fs *fs,
 	if (rc != EOK)
 		return rc;
 
+	/*
+	 * The journal inode is never modified while the journal is in use,
+	 * so keep a private copy of it for block mapping instead of pinning
+	 * its inode table block in the block cache for the whole session.
+	 * A pinned buffer is never written back, which would keep every
+	 * transaction touching an inode in that block (the root directory,
+	 * the first regular files...) on the checkpoint queue until the
+	 * journal wraps around.
+	 */
+	memcpy(&jbd_fs->inode, jbd_fs->inode_ref.inode,
+	       sizeof(struct ext4_inode));
+	rc = ext4_fs_put_inode_ref(&jbd_fs->inode_ref);
+	if (rc != EOK) {
+		memset(jbd_fs, 0, sizeof(struct jbd_fs));
+		return rc;
+	}
+	memset(&jbd_fs->inode_ref.block, 0, sizeof(struct ext4_block));
+	jbd_fs->inode_ref.inode = &jbd_fs->inode;
+
 	rc = jbd_sb_read(jbd_fs, &jbd_fs->sb);
 	if (rc != EOK)
 		goto Error;
@@ -475,7 +494,6 @@ int jbd_get_fs(struct ext4_fs *fs,
 
 	return rc;
 Error:
-	ext4_fs_put_inode_ref(&jbd_fs->inode_ref);
 	memset(jbd_fs, 0, sizeof(struct jbd_fs));
 
 	return rc;
@@ -486,11 +504,7 @@ Error:
  * @return standard error code*/
 int jbd_put_fs(struct jbd_fs *jbd_fs)
 {
-	int rc = EOK;
-	rc = jbd_write_sb(jbd_fs);
-
-	ext4_fs_put_inode_ref(&jbd_fs->inode_ref);
-	return rc;
+	return jbd_write_sb(jbd_fs);
 }
 
 /**@brief  Data block lookup helper.
