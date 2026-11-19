@@ -836,6 +836,30 @@ static int ext4_trunc_inode(struct ext4_mountpoint *mp,
 
 	inode_size = ext4_inode_get_size(&fs->sb, inode_ref.inode);
 	ext4_fs_put_inode_ref(&inode_ref);
+
+	/*
+	 * A truncate that fits into a single step stays in the caller's
+	 * transaction, so that e.g. unlinking a file or directory and
+	 * releasing its blocks and inode are committed atomically. Only
+	 * truncates larger than CONFIG_MAX_TRUNCATE_SIZE are split into
+	 * several transactions.
+	 */
+	if (has_trans && inode_size <= new_size + CONFIG_MAX_TRUNCATE_SIZE) {
+		if (inode_size <= new_size)
+			return EOK;
+
+		r = ext4_fs_get_inode_ref(fs, index, &inode_ref);
+		if (r != EOK)
+			return r;
+
+		r = ext4_fs_truncate_inode(&inode_ref, new_size);
+		if (r != EOK) {
+			ext4_fs_put_inode_ref(&inode_ref);
+			return r;
+		}
+		return ext4_fs_put_inode_ref(&inode_ref);
+	}
+
 	if (has_trans)
 		ext4_trans_stop(mp);
 
