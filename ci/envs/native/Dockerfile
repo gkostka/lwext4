@@ -13,4 +13,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	gcc \
 	libc6-dev \
 	libclang-rt-dev \
+	pkgconf \
 	&& rm -rf /var/lib/apt/lists/*

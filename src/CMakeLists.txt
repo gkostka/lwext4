@@ -17,7 +17,14 @@ else()
 endif()
 
 if  (DEFINED INSTALL_LIB)
-INSTALL(TARGETS lwext4 DESTINATION lib)
+# Consumers of the installed library (cmake/package.cmake) include
+# <ext4.h> from include/lwext4.
+target_include_directories(lwext4 INTERFACE
+                           $<INSTALL_INTERFACE:include/lwext4>)
+INSTALL(TARGETS lwext4 EXPORT lwext4Targets
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin)
 INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/include/. ${PROJECT_BINARY_DIR}/include/.
         DESTINATION include/lwext4)
 endif()

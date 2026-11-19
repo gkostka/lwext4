@@ -142,6 +142,36 @@ the prefix at install time or when configuring:
  cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local build_generic
  ```
 
+Using the installed library
+------------
+`make install` puts the library, the file block device library and their
+headers below the prefix, together with a pkg-config file and a CMake
+package:
+```
+ include/lwext4/                 ext4.h, ext4_mkfs.h, ... generated/ext4_config.h
+ include/lwext4/blockdev/        blockdev.h, file_dev.h (file_windows.h on Windows)
+ lib/liblwext4.a                 the library (liblwext4.so with -DLWEXT4_BUILD_SHARED_LIB=ON)
+ lib/libblockdev.a               file_dev_get(): an image file or device as ext4_blockdev
+ lib/pkgconfig/lwext4.pc
+ lib/cmake/lwext4/               lwext4Config.cmake, lwext4ConfigVersion.cmake, targets
+ ```
+Both package files find the prefix relative to their own location, so an
+install tree can be moved or unpacked elsewhere. A program includes
+`<ext4.h>` (and `<blockdev/file_dev.h>` for the file block device) and is
+built with any of:
+```bash
+ cc app.c $(pkg-config --cflags --libs lwext4)
+ cc app.c -I$PREFIX/include/lwext4 -L$PREFIX/lib -lblockdev -llwext4
+ ```
+```cmake
+ find_package(lwext4 1.0 CONFIG REQUIRED)
+ target_link_libraries(app lwext4::blockdev lwext4::lwext4)
+ ```
+(set `PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig` or
+`CMAKE_PREFIX_PATH=$PREFIX` for a prefix outside the default search path).
+The `install_package` CTest test builds and runs such a program in all
+three ways; `tests/package/` is a complete example.
+
 lwext4-generic demo application
 =====
 Simple lwext4 library test application:

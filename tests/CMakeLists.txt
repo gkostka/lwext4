@@ -46,3 +46,16 @@ if(NOT CMAKE_VERSION VERSION_LESS 3.15)
                      ${CMAKE_COMMAND} ${PROJECT_BINARY_DIR}
                      ${CMAKE_CURRENT_BINARY_DIR}/work/install_prefix)
 endif()
+
+# The installed library must be usable by other projects through
+# pkg-config, find_package(lwext4) and plain -I/-L flags (gkostka/lwext4#66).
+# The consumers are built and run on the build machine, so not when cross
+# compiling.
+if(NOT CMAKE_CROSSCOMPILING)
+    add_test(NAME install_package
+             COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/install_package.sh
+                     ${CMAKE_COMMAND} ${PROJECT_BINARY_DIR}
+                     ${CMAKE_CURRENT_BINARY_DIR}/work/install_package
+                     ${PROJECT_SOURCE_DIR} ${CMAKE_C_COMPILER}
+                     "${CMAKE_C_FLAGS}" "${CMAKE_EXE_LINKER_FLAGS}")
+endif()

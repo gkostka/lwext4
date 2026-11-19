@@ -130,3 +130,8 @@ include(CPack)
 
 
 add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
+
+# pkg-config file and CMake package of the installed library
+if(DEFINED INSTALL_LIB)
+    include(cmake/package.cmake)
+endif()

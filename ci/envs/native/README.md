@@ -8,6 +8,7 @@ Builds on [base](../base). Adds the host compilers:
 | clang, libclang-rt-dev | second compiler with different warnings and code generation; sanitizer runtimes |
 | llvm | `llvm-symbolizer`: clang's sanitizers need it for function names in their reports, and LeakSanitizer to match `ci/lsan.supp` |
 | file | shows what was built |
+| pkgconf | `pkg-config`, for the `install_package` test that builds a program against the installed library |
 
 Used by `ci/jobs/native.sh <gcc|clang|asan-ubsan|clang-asan-ubsan>`: build the generic target
 for the machine the container runs on (x86_64 in GitHub Actions, arm64 on a
