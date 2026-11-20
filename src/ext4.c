@@ -1520,14 +1520,14 @@ int ext4_fremove(const char *path)
 		EXT4_MP_UNLOCK(mp);
 		return r;
 	}
-	/* We do not allow opening files here. */
+	/* Directories are removed with ext4_dir_rm. */
 	if (ext4_inode_type(&mp->fs.sb, child.inode) ==
 	    EXT4_INODE_MODE_DIRECTORY) {
 		ext4_fs_put_inode_ref(&parent);
 		ext4_fs_put_inode_ref(&child);
 		ext4_trans_abort(mp);
 		EXT4_MP_UNLOCK(mp);
-		return r;
+		return EISDIR;
 	}
 
 	/*Link count will be zero, the inode should be freed. */
