@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Line and branch coverage of src/ by the CTest suite and the e2fsprogs
+# round trip (ci/jobs/coverage.sh). Fails if coverage drops below
+# ci/coverage-floor. The per-file table is in the job log and the run
+# summary; the annotated HTML report is uploaded as an artifact.
+name: Coverage
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh coverage
+      - if: always()
+        run: |
+          if [ -f build-ci/coverage/summary.md ]; then
+            cat build-ci/coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: |
+            build-ci/coverage/report/
+            build-ci/coverage/summary.md
+            build-ci/coverage/coverage.json
+          if-no-files-found: ignore
