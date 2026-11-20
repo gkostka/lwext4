@@ -2,7 +2,9 @@
 # test. If a tests/test_<name>.sh exists next to it, it is run first (on the
 # host) with the path of a scratch image as $1, and that image path is passed
 # to the test executable as argv[1]. Setup scripts can use lwext4_mke2fs from
-# common/mkimage.sh to create lwext4-compatible images.
+# common/mkimage.sh to create lwext4-compatible images. A tests/test_<name>.cmake
+# next to it is included after the test is defined (with test_name set), for
+# tests that need the library built or run differently.
 
 file(GLOB LWEXT4_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/test_*.c)
 
@@ -36,6 +38,9 @@ foreach(test_src ${LWEXT4_TEST_SOURCES})
                      ${CMAKE_CURRENT_BINARY_DIR}/work/${test_name}
                      ${CMAKE_CROSSCOMPILING_EMULATOR}
                      $<TARGET_FILE:${test_name}>)
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${test_name}.cmake)
+        include(${CMAKE_CURRENT_SOURCE_DIR}/${test_name}.cmake)
+    endif()
 endforeach()
 
 # "cmake --install --prefix" must be honoured, so every install() rule needs
