@@ -1538,6 +1538,7 @@ int ext4_fremove(const char *path)
 	if (ext4_inode_get_links_cnt(child.inode) == 1) {
 		ext4_block_cache_write_back(mp->fs.bdev, 1);
 		r = ext4_trunc_inode(mp, child.index, 0);
+		ext4_block_cache_write_back(mp->fs.bdev, 0);
 		if (r != EOK) {
 			ext4_fs_put_inode_ref(&parent);
 			ext4_fs_put_inode_ref(&child);
@@ -1545,7 +1546,6 @@ int ext4_fremove(const char *path)
 			EXT4_MP_UNLOCK(mp);
 			return r;
 		}
-		ext4_block_cache_write_back(mp->fs.bdev, 0);
 	}
 
 	/*Set path*/
