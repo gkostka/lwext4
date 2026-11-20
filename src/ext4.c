@@ -1888,6 +1888,7 @@ int ext4_fwrite(ext4_file *file, const void *buf, size_t size, size_t *wcnt)
 	struct ext4_inode_ref ref;
 	const uint8_t *u8_buf = buf;
 	int r, rr = EOK;
+	bool commit = false;
 
 	ext4_assert(file && file->mp);
 
@@ -2023,12 +2024,16 @@ int ext4_fwrite(ext4_file *file, const void *buf, size_t size, size_t *wcnt)
 			 * more blocks might be written. But node size
 			 * should be updated.*/
 			r = rr;
-			goto out_fsize;
+			break;
 		}
 	}
 
 	/*Stop write back cache mode*/
 	ext4_block_cache_write_back(file->mp->fs.bdev, 0);
+
+	/* No more blocks: keep what was written */
+	if (r != EOK && r == rr)
+		goto out_fsize;
 
 	if (r != EOK)
 		goto Finish;
@@ -2064,13 +2069,19 @@ out_fsize:
 		ref.dirty = true;
 	}
 
-Finish:
-	r = ext4_fs_put_inode_ref(&ref);
+	/* Everything up to fpos is written and accounted for: keep it, also
+	 * when the rest did not fit (r is ENOSPC then). */
+	commit = true;
 
-	if (r != EOK)
-		ext4_trans_abort(file->mp);
-	else
+Finish:
+	rr = ext4_fs_put_inode_ref(&ref);
+	if (r == EOK)
+		r = rr;
+
+	if (commit && rr == EOK)
 		ext4_trans_stop(file->mp);
+	else
+		ext4_trans_abort(file->mp);
 
 	EXT4_MP_UNLOCK(file->mp);
 	return r;
