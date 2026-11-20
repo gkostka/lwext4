@@ -84,13 +84,16 @@ Welcome in ext4 generic demo.                                   \n\
 Copyright (c) 2013 Grzegorz Kostka (kostka.grzegorz@gmail.com)  \n\
 Usage:                                                          \n\
 [-i] --input    - input file         (default = ext2)           \n\
-[-w] --rw_size  - single R/W size    (default = 1024 * 1024)    \n\
+[-s] --rw_size  - single R/W size    (default = 1024 * 1024)    \n\
 [-c] --rw_count - R/W count          (default = 10)             \n\
 [-d] --dirs   - directory test count (default = 0)              \n\
 [-l] --clean  - clean up after test                             \n\
 [-b] --bstat  - block device stats                              \n\
 [-t] --sbstat - superblock stats                                \n\
 [-w] --wpart  - windows partition mode                          \n\
+[-v] --verbose - verbose mode                                   \n\
+[-x] --version - print the version                              \n\
+[-h] --help   - print this help                                 \n\
 \n";
 
 void io_timings_clear(void)
@@ -165,9 +168,10 @@ static bool parse_opt(int argc, char **argv)
 	    {"wpart", no_argument, 0, 'w'},
 	    {"verbose", no_argument, 0, 'v'},
 	    {"version", no_argument, 0, 'x'},
+	    {"help", no_argument, 0, 'h'},
 	    {0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "i:s:c:q:d:lbtwvx",
+	while (-1 != (c = getopt_long(argc, argv, "i:s:c:d:lbtwvxh",
 				      long_options, &option_index))) {
 
 		switch (c) {
@@ -197,6 +201,10 @@ static bool parse_opt(int argc, char **argv)
 			break;
 		case 'v':
 			verbose = true;
+			break;
+		case 'h':
+			printf("%s", usage);
+			exit(0);
 			break;
 		case 'x':
 			puts(VERSION);

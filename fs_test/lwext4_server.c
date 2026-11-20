@@ -92,6 +92,8 @@ Usage:                                                          \n\
     --verbose   (-v) - verbose mode                             \n\
     --winpart   (-w) - windows_partition mode                   \n\
     --cache_wb  (-c) - cache writeback_mode                     \n\
+    --version   (-x) - print the version                        \n\
+    --help      (-h) - print this help                          \n\
 \n";
 
 /**@brief   Open file instance descriptor.*/
@@ -303,9 +305,10 @@ static bool parse_opt(int argc, char **argv)
 	    {"winpart", no_argument, 0, 'w'},
 	    {"cache_wb", no_argument, 0, 'c'},
 	    {"version", no_argument, 0, 'x'},
+	    {"help", no_argument, 0, 'h'},
 	    {0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "i:p:vcwx", long_options,
+	while (-1 != (c = getopt_long(argc, argv, "i:p:vcwxh", long_options,
 				      &option_index))) {
 
 		switch (c) {
@@ -323,6 +326,10 @@ static bool parse_opt(int argc, char **argv)
 			break;
 		case 'w':
 			winpart = true;
+			break;
+		case 'h':
+			printf("%s", usage);
+			exit(0);
 			break;
 		case 'x':
 			puts(VERSION);

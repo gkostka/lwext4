@@ -70,6 +70,8 @@ Usage:                                                          \n\
     --call (-c) - call opt                                      \n\
     --port (-p) - server port                                   \n\
     --addr (-a) - server ip address                             \n\
+    --version (-x) - print the version                          \n\
+    --help (-h) - print this help                               \n\
 \n";
 
 static int client_connect(void)
@@ -115,9 +117,10 @@ static bool parse_opt(int argc, char **argv)
 			{"port", required_argument, 0, 'p'},
 			{"addr", required_argument, 0, 'a'},
 			{"version", no_argument, 0, 'x'},
+			{"help", no_argument, 0, 'h'},
 			{0, 0, 0, 0}};
 
-	while (-1 != (c = getopt_long(argc, argv, "c:p:a:x", long_options,
+	while (-1 != (c = getopt_long(argc, argv, "c:p:a:xh", long_options,
 			&option_index))) {
 
 		switch (c) {
@@ -129,6 +132,10 @@ static bool parse_opt(int argc, char **argv)
 			break;
 		case 'c':
 			op_code = optarg;
+			break;
+		case 'h':
+			printf("%s", usage);
+			exit(0);
 			break;
 		case 'x':
 			puts(VERSION);
