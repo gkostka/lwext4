@@ -979,7 +979,7 @@ static void ext4_ext_init_header(struct ext4_inode_ref *inode_ref,
 	eh->entries_count = 0;
 	eh->max_entries_count = to_le16(ext4_ext_max_entries(inode_ref, depth));
 	eh->magic = to_le16(EXT4_EXTENT_MAGIC);
-	eh->depth = depth;
+	eh->depth = to_le16(depth);
 }
 
 static int ext4_ext_insert_index(struct ext4_inode_ref *inode_ref,
