@@ -220,27 +220,36 @@ int ext4_block_get_noread(struct ext4_blockdev *bdev, struct ext4_block *b,
 
 	ext4_assert(bdev && b);
 
-	if (!bdev->bdif->ph_refctr)
-		return EIO;
+	if (!bdev->bdif->ph_refctr) {
+		r = EIO;
+		goto Fail;
+	}
 
-	if (!(lba < bdev->lg_bcnt))
-		return ENXIO;
+	if (!(lba < bdev->lg_bcnt)) {
+		r = ENXIO;
+		goto Fail;
+	}
 
 	b->lb_id = lba;
 
 	/*If cache is full we have to (flush and) drop it anyway :(*/
 	r = ext4_block_cache_shake(bdev);
 	if (r != EOK)
-		return r;
+		goto Fail;
 
 	r = ext4_bcache_alloc(bdev->bc, b, &is_new);
 	if (r != EOK)
-		return r;
+		goto Fail;
 
 	if (!b->data)
 		return ENOMEM;
 
 	return EOK;
+
+Fail:
+	/* No buffer is held: callers must not release this block. */
+	b->lb_id = 0;
+	return r;
 }
 
 int ext4_block_get(struct ext4_blockdev *bdev, struct ext4_block *b,
