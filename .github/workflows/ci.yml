@@ -4,7 +4,7 @@
 # ci/envs/ and runs ci/jobs/<job>.sh in it, exactly as it runs on a developer
 # machine with only docker installed. See ci/README.md.
 #
-# All jobs are required; nothing is allowed to fail.
+# All jobs are required; nothing is allowed to fail, except msp430 (below).
 name: CI
 
 on:
@@ -99,6 +99,8 @@ jobs:
     name: ${{ matrix.job }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
+    # TI's download server fails TLS verification from GitHub's runners.
+    continue-on-error: ${{ matrix.job == 'msp430' }}
     strategy:
       fail-fast: false
       matrix:
