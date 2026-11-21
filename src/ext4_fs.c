@@ -528,6 +528,8 @@ static ext4_fsblk_t ext4_fs_get_descriptor_block(struct ext4_sblock *s,
 	if (!meta_bg || dsc_id < first_meta_bg)
 		return ext4_get32(s, first_data_block) + dsc_id + 1;
 
+	/* The descriptor block of a meta group is in its first group. */
+	bgid = dsc_id * dsc_per_block;
 	if (ext4_sb_is_super_in_bg(s, bgid))
 		has_super = 1;
 
