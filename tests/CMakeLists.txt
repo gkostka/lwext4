@@ -12,6 +12,9 @@ add_library(lwext4_test_util STATIC common/test_util.c)
 target_include_directories(lwext4_test_util PUBLIC common)
 target_link_libraries(lwext4_test_util lwext4 blockdev)
 
+# Helper program of the README acceptance tests (not a CTest test).
+add_subdirectory(acceptance)
+
 # Tests that use POSIX APIs or run host tools (e2fsck) through system()
 # cannot run as Windows programs. On Windows they are registered as
 # DISABLED, so CTest lists them as "Not Run (Disabled)" instead of hiding
