@@ -7,7 +7,8 @@
 #  - the Debian dependency commands in README.md are the ones the
 #    acceptance-debian container installs,
 #  - the files and directories README.md's "Project tree" lists exist,
-#  - every Makefile target README.md mentions exists.
+#  - every Makefile target README.md mentions exists,
+#  - CI enables the documented suites and this job depends on their jobs.
 set -eu
 . "$(dirname "$0")/lib.sh"
 
@@ -54,22 +55,11 @@ for target in $(cat "$WORK/readme-targets.txt"); do
 	pass "Makefile has target $target"
 done
 
-step "ci/run.sh jobs named in README.md"
-# README.md shows "ci/run.sh <job> [arg]"; the job has to exist and be one
-# of the jobs .github/workflows/ci.yml runs (with that matrix value).
+step "CI jobs and suites named in README.md"
 for key in $(sh "$ACC_DIR/readme-blocks.sh" list | cut -f1); do
 	sh "$ACC_DIR/readme-blocks.sh" show "$key"
-done | sed -n 's/^ci\/run\.sh \([a-z0-9][a-z0-9_-]*\) *\([a-z0-9_-]*\)$/\1 \2/p' >"$WORK/jobs.txt"
-[ -s "$WORK/jobs.txt" ] || die "no ci/run.sh jobs found in README.md"
-ci_yml="$TOP_DIR/.github/workflows/ci.yml"
-while read -r job arg; do
-	[ -f "$TOP_DIR/ci/jobs/$job.sh" ] ||
-		die "README.md runs 'ci/run.sh $job', there is no ci/jobs/$job.sh"
-	grep -Eq "ci/run.sh $job( |\$)|job: \[.*\b$job\b" "$ci_yml" ||
-		die "ci.yml does not run the job '$job' README.md shows"
-	[ -z "$arg" ] || grep -Eq "^ *(- |(arch|toolchain): )$arg\$" "$ci_yml" ||
-		die "ci.yml does not run '$job $arg'"
-	pass "README.md's 'ci/run.sh $job $arg' is a job ci.yml runs"
-done <"$WORK/jobs.txt"
+done | sed -n 's|^ci/run\.sh \([a-z0-9].*\)$|\1|p' >"$WORK/jobs.txt"
+python3 "$ACC_DIR/check-ci.py" "$WORK/jobs.txt"
+pass "CI runs the documented suites before this job"
 
 finish

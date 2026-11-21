@@ -52,5 +52,11 @@ cmake -S . -B "$build" \
 cmake --build "$build" -j"$(ci_jobs)"
 file "$build/fs_test/lwext4-generic"
 $qemu -L "$sysroot" "$build/fs_test/lwext4-generic" -x
-ctest --test-dir "$build"
+ctest --test-dir "$build" --no-tests=error
 ci/scripts/fs-roundtrip.sh "$build" $qemu -L "$sysroot"
+
+if [ "$arch" = s390x ]; then
+	export BUILD="$build" EMU="$qemu -L $sysroot"
+	sh tests/acceptance/test-features.sh
+	CRASH_STEP=3 sh tests/acceptance/test-journal.sh
+fi

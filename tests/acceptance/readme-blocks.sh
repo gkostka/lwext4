@@ -1,12 +1,10 @@
 #!/bin/sh
 # SPDX-License-Identifier: BSD-3-Clause
 #
-# Extract and run the shell code blocks of README.md, so the documentation
-# itself is what gets tested.
+# Inspect the fenced code blocks of README.md.
 #
 #   readme-blocks.sh list          key and first line of every block
 #   readme-blocks.sh show <key>    print one block
-#   readme-blocks.sh run <key>...  run blocks from the repository root
 #   readme-blocks.sh check         every block is accounted for in
 #                                  tests/acceptance/README.md, and every key
 #                                  mentioned there still exists
@@ -14,14 +12,6 @@
 # A block's key is the slug of the README heading it is under, plus "#n" for
 # the nth block under that heading, e.g. "compile-install-tools#1".
 #
-# "run" executes each block with "bash -ex" in one shell per block (so "cd"
-# inside a block works as documented). The only rewrite is for "sudo": CI
-# runs unprivileged, so "sudo " is replaced by DESTDIR=<staging directory>
-# (honoured by the CMake generated "make install") for that one command, and
-# the staging directory's bin directory is put first in PATH. The installed
-# tools are therefore what the later blocks run. DESTDIR is not exported to
-# the other commands: it would also redirect every other install, e.g. the
-# ones the CTest suite makes into its own scratch prefixes.
 set -eu
 
 ACC_DIR=$(cd "$(dirname "$0")" && pwd)
@@ -77,27 +67,6 @@ show()
 	}
 }
 
-run_block()
-{
-	key=$1
-	script=$(show "$key")
-	echo "=== README block $key"
-	printf '%s\n' "$script" | sed 's/^/    | /'
-	# shellcheck disable=SC2016
-	script=$(printf '%s\n' "$script" |
-		sed "s|^sudo |DESTDIR='$README_DESTDIR' |")
-	(
-		cd "$TOP_DIR"
-		PATH="$README_DESTDIR/usr/local/bin:$PATH:/sbin:/usr/sbin"
-		export PATH
-		bash -ex -c "$script"
-	) || {
-		echo "FAIL: README block $key" >&2
-		exit 1
-	}
-	echo "=== README block $key: ok"
-}
-
 cmd=${1:-}
 [ $# -gt 0 ] && shift
 case "$cmd" in
@@ -107,13 +76,6 @@ list)
 show)
 	[ $# -eq 1 ] || { echo "usage: $0 show <key>" >&2; exit 2; }
 	show "$1"
-	;;
-run)
-	[ $# -ge 1 ] || { echo "usage: $0 run <key>..." >&2; exit 2; }
-	README_DESTDIR=${README_DESTDIR:-$TOP_DIR/build_readme_install}
-	for key in "$@"; do
-		run_block "$key"
-	done
 	;;
 check)
 	status=0

@@ -31,5 +31,14 @@ cmake -S . -B "$build/b" \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DLWEXT4_SANITIZE="$sanitize"
 cmake --build "$build/b" -j"$(ci_jobs)"
-ctest --test-dir "$build/b"
+ctest --test-dir "$build/b" --no-tests=error
 ci/scripts/fs-roundtrip.sh "$build/b"
+
+if [ "$variant" = gcc ]; then
+	export BUILD="$build/b"
+	sh tests/acceptance/test-legacy.sh
+	sh tests/acceptance/test-features.sh
+	sh tests/acceptance/test-journal.sh
+	sh tests/acceptance/test-tools.sh
+	sh tests/acceptance/test-build.sh
+fi

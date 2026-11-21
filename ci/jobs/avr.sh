@@ -23,4 +23,4 @@ cmake -S . -B "$build" -DCMAKE_TOOLCHAIN_FILE=toolchain/atmega1284.cmake \
 	-DCMAKE_BUILD_TYPE=Release
 cmake --build "$build" -j"$(ci_jobs)"
 avr-size "$build/tests/baremetal/baremetal_test.elf"
-ctest --test-dir "$build" -V
+ctest --test-dir "$build" --no-tests=error -V

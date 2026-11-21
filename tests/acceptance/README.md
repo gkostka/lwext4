@@ -1,34 +1,26 @@
 # README acceptance tests
 
-Everything README.md says lwext4 can do, or tells the reader to run, is
-tested here mechanically. The oracle is e2fsprogs: `e2fsck -fn` must find
-nothing to fix after lwext4 wrote to an image, and `debugfs` must read back
-what lwext4 wrote (and lwext4 must read back what e2fsprogs wrote).
-
-The tests run in the containers of [ci/](../../ci), locally exactly as in
-GitHub Actions ([readme-acceptance.yml](../../.github/workflows/readme-acceptance.yml)):
+The [CI workflow](../../.github/workflows/ci.yml) runs the suites that
+support the README claims below. The `readme-docs` job depends on their
+results and checks the README against the CI configuration and this
+inventory. Run the jobs locally with:
 
 ```sh
-ci/run.sh readme-docs          # README.md vs. repository and this inventory
-ci/run.sh readme-debian        # README's commands with only README's Debian packages
-ci/run.sh readme-native        # README's commands in README order, checked by e2fsprogs
-ci/run.sh readme-api           # feature claims through the API, journal, power loss
-ci/run.sh readme-tools         # every tool option, library build claims
-ci/run.sh readme-cross-linux   # README's big endian example, then the API tests on s390x
-ci/run.sh readme-arm-none-eabi # Cortex-M builds, memory footprint, baremetal on QEMU
-ci/run.sh readme-avr           # AVR build
+ci/run.sh readme-docs          # documentation and CI configuration
+ci/run.sh debian-install       # build and install with the documented Debian packages
+ci/run.sh examples             # run examples and compile the README C snippets
+ci/run.sh native gcc           # native regression, client/server, API and CLI suites
+ci/run.sh qemu-user s390x      # big-endian regression, feature and journal suites
+ci/run.sh cortex-m cortex-m4   # bare-metal tests and memory footprint
+ci/run.sh avr                  # AVR builds and simulator tests
 ```
 
-## How README.md's commands are run
+## How README.md is checked
 
-[readme-blocks.sh](readme-blocks.sh) extracts the fenced code blocks from
-README.md and runs them unmodified with `bash -ex`, one shell per block. A
-block's key is the slug of its heading plus its number under that heading.
-The only rewrite: CI is unprivileged, so `sudo` is replaced by a `DESTDIR`
-that points that one `make install` at a staging directory whose `bin` comes
-first in `PATH` (the later blocks run the installed tools). `readme-blocks.sh check`
-(job readme-docs) fails when a README.md block is missing from the table
-below or the table names a block that no longer exists.
+[readme-blocks.sh](readme-blocks.sh) identifies each block by the slug of
+its heading and its number under that heading. The docs job checks the
+inventory and uses [check-ci.py](check-ci.py) to verify that the documented
+jobs and matrix variants invoke their suites and are in its `needs` list.
 
 ## Scripts
 
@@ -36,14 +28,14 @@ below or the table names a block that no longer exists.
 |---|---|
 | [lwext4_acceptance.c](lwext4_acceptance.c) | `lwext4-acceptance`: runs a script of lwext4 API calls, with power loss injection and block I/O counters |
 | [lib.sh](lib.sh) | helpers: e2fsck/debugfs oracles, test data pattern |
-| [readme-blocks.sh](readme-blocks.sh) | extracts and runs README.md code blocks |
-| [test-docs.sh](test-docs.sh) | README.md vs. repository (blocks, Debian packages, project tree, make targets) |
-| [test-readme-native.sh](test-readme-native.sh) | README.md commands in order, results checked by e2fsprogs |
+| [readme-blocks.sh](readme-blocks.sh) | extracts README.md code blocks and checks the inventory |
+| [test-docs.sh](test-docs.sh) | checks code blocks, Debian packages, project tree, make targets and CI configuration |
+| [test-legacy.sh](test-legacy.sh) | client/server suites using the native CI build |
 | [test-features.sh](test-features.sh) | feature claims, both directions of e2fsprogs interoperability |
 | [test-journal.sh](test-journal.sh) | journal replay, power loss at every block write, cache modes |
 | [test-tools.sh](test-tools.sh) | every option of the five fs_test tools |
 | [test-build.sh](test-build.sh) | lib_only, shared library, C library only dependency, licensing |
-| [test-cortex-m.sh](test-cortex-m.sh) | Cortex-M libraries, memory footprint, tests/baremetal |
+| [test-cortex-m.sh](test-cortex-m.sh) | Cortex-M4 text size, RAM and stack usage |
 
 ## Inventory: README.md claim → test
 
@@ -55,33 +47,32 @@ been corrected; **n/a** = cannot be verified in CI, reason given.
 
 | README block | Claim | Test | Status |
 |---|---|---|---|
-| `readme:getting-started#1` | `make generic; cd build_generic; make` builds the library, tools and examples | readme-debian, readme-native; examples job builds both documented examples | pass |
+| `readme:getting-started#1` | `make generic; cd build_generic; make` builds the library, tools and examples | native and examples CI jobs build with the generic toolchain | pass |
 | `readme:getting-started#2` | run the basic example and inspect the image with e2fsprogs | examples job runs the basic example and checks its image with e2fsck/debugfs | pass |
 | `readme:getting-started#3` | the documented format-and-write API example | examples job compiles every C snippet in README.md | pass |
 | `readme:dependencies#1` | MSYS2: `pacman -S make gcc cmake` | not run: needs Windows. The MinGW build of the same sources is covered by `ci.yml` (build / mingw) | n/a |
-| `readme:dependencies#2` | Debian build dependencies: `apt-get install make gcc cmake` | test-docs.sh compares the command with the Dockerfile, and readme-debian builds and installs in that image | doc (p7zip removed: the 7z image archive is gone) |
-| `readme:dependencies#3` | Debian regression test dependencies: `apt-get install e2fsprogs fdisk python3 pkgconf` | test-docs.sh compares the command with the Dockerfile, and readme-debian runs CTest in that image | pass |
-| `readme:compile-install-tools#1` | `make generic; cd build_generic; make; sudo make install` | readme-debian, readme-native: run as is (see sudo above); the five installed tools must run | pass |
+| `readme:dependencies#2` | Debian build dependencies: `apt-get install make gcc cmake` | test-docs.sh compares the command with the Dockerfile, and debian-install builds and installs in that image | doc (p7zip removed: the 7z image archive is gone) |
+| `readme:dependencies#3` | Debian regression test dependencies: `apt-get install e2fsprogs fdisk python3 pkgconf` | test-docs.sh compares the command with the Dockerfile, and debian-install checks the tools are available | pass |
+| `readme:compile-install-tools#1` | build and install the tools | debian-install builds, installs and starts each tool | pass |
 | `readme:compile-install-tools#2` | install under a custom prefix | `cmake --install` is covered by CMake's install rules; the package install test checks the installed package | pass |
 | `readme:using-the-installed-library#1` | installed include directory and generated config header | install-package test checks installed headers and config header | pass |
 | `readme:using-the-installed-library#2` | link an application with `pkg-config` | install-package test builds and runs a pkg-config consumer | pass |
 | `readme:using-the-installed-library#3` | link an application with `find_package(lwext4)` | install-package test builds and runs a CMake package consumer | pass |
-| `readme:lwext4-generic-demo-application#1` | `lwext4-generic -i ext_images/ext2..4` | readme-native, after `make test` created the images; e2fsck clean, debugfs reads back /test1 and /hello.txt | doc (images come from `make test`/`images_small`, not from the removed ext_images.7z) |
-| `readme:lwext4-generic-demo-application#2` | `lwext4-generic --help` shows the full option set | readme-native, readme-debian; test-tools.sh checks every option is documented | fixed (exited 1 as unknown option; `-w` listed twice, `-s`, `-v`, `-x` missing) |
-| `readme:run-automatic-tests#1` | `make test` runs the suite on the ext2/3/4 images | readme-native: t0..t20 on 128 MiB images, then e2fsck clean and nothing left behind | fixed, fix/fs-test-mk-rootless (needed `sudo mkfs`; left the server running on failure) |
-| `readme:run-automatic-tests#2` | `make test_all`: 1 GiB images + fsck | readme-native: t0..t26 including 512 MiB file, 50000 files/dirs, then e2fsck | fixed, fix/fs-test-mk-rootless (as above; `sudo fsck` replaced by `e2fsck -fn`) |
-| `readme:run-regression-tests#1` | `make generic; cd build_generic; make; ctest --output-on-failure` | readme-native, readme-debian | pass |
-| `readme:run-regression-tests#2` | s390x cross build, ctest and fs-roundtrip.sh under qemu-user | readme-cross-linux, verbatim; then test-features.sh and test-journal.sh with the s390x build | fixed (fix/ondisk-byte-order) |
-| `readme:run-regression-tests#3` | `ci/run.sh --list`, `ci/run.sh qemu-user s390x`, `ci/run.sh avr` | needs docker, so not run inside a container; test-docs.sh checks every job README.md shows exists in ci/jobs and is a job (with that matrix value) of ci.yml, which runs exactly these commands | pass |
-| `readme:using-lwext4-mkfs-tool#1` | `dd ... count=1024` makes a 1 GiB image | readme-native, readme-debian | pass |
-| `readme:using-lwext4-mkfs-tool#2` | `lwext4-mkfs -i ext_image -e 2` creates ext2 | readme-native: e2fsck clean, no journal, no extents; lwext4-generic then works on it | fixed (created a journal, i.e. ext3) |
-| `readme:using-lwext4-mkfs-tool#3` | `-e 3` creates ext3 | readme-native: journal, no extents | pass |
-| `readme:using-lwext4-mkfs-tool#4` | `-e 4` creates ext4 | readme-native, readme-debian: journal and extents, e2fsck clean | pass |
-| `readme:using-lwext4-mkfs-tool#5` | `lwext4-mkfs --help` shows the full option set | readme-native, test-tools.sh | fixed (exited 1) |
-| `readme:build-avrxmega7-library#1` | `make avrxmega7; cd build_avrxmega7; make lwext4` | readme-avr: AVR liblwext4.a | pass |
-| `readme:build-cortex-m0-library#1` | `make cortex-m0 ...` | readme-arm-none-eabi: ARM liblwext4.a | pass |
-| `readme:build-cortex-m3-library#1` | `make cortex-m3 ...` | readme-arm-none-eabi | pass |
-| `readme:build-cortex-m4-library#1` | `make cortex-m4 ...` | readme-arm-none-eabi | pass |
+| `readme:lwext4-generic-demo-application#1` | `lwext4-generic -i ext_images/ext2..4` | test-tools.sh and fs-roundtrip.sh exercise the same image path | pass |
+| `readme:lwext4-generic-demo-application#2` | `lwext4-generic --help` shows the full option set | test-tools.sh checks every option is documented | fixed (exited 1 as unknown option; `-w` listed twice, `-s`, `-v`, `-x` missing) |
+| `readme:run-automatic-tests#1` | `make test` runs the suite on the ext2/3/4 images | test-legacy.sh: t0..t20 on 128 MiB images, then e2fsck clean and nothing left behind | fixed (fix/fs-test-mk-rootless) |
+| `readme:run-automatic-tests#2` | `make test_all`: 1 GiB images + fsck | test-legacy.sh: t0..t26 on 1 GiB images, then e2fsck | fixed (fix/fs-test-mk-rootless) |
+| `readme:run-regression-tests#1` | host build and CTest | native matrix runs CTest against its generic builds | pass |
+| `readme:run-regression-tests#2` | documented CI commands for native, s390x, Cortex-M and AVR | readme-docs verifies the workflow invokes each suite and depends on the jobs | pass |
+| `readme:using-lwext4-mkfs-tool#1` | `dd ... count=1024` makes a 1 GiB image | example uses the system dd command | n/a |
+| `readme:using-lwext4-mkfs-tool#2` | `lwext4-mkfs -i ext_image -e 2` creates ext2 | test-tools.sh checks the resulting filesystem and exercises it with lwext4-generic | fixed (created a journal, i.e. ext3) |
+| `readme:using-lwext4-mkfs-tool#3` | `-e 3` creates ext3 | test-tools.sh | pass |
+| `readme:using-lwext4-mkfs-tool#4` | `-e 4` creates ext4 | test-tools.sh | pass |
+| `readme:using-lwext4-mkfs-tool#5` | `lwext4-mkfs --help` shows the full option set | test-tools.sh | fixed (exited 1) |
+| `readme:build-avrxmega7-library#1` | `make avrxmega7; cd build_avrxmega7; make lwext4` | AVR job builds the XMEGA library | pass |
+| `readme:build-cortex-m0-library#1` | `make cortex-m0 ...` | Cortex-M0 matrix build | pass |
+| `readme:build-cortex-m3-library#1` | `make cortex-m3 ...` | Cortex-M3 matrix build | pass |
+| `readme:build-cortex-m4-library#1` | `make cortex-m4 ...` | Cortex-M4 matrix build | pass |
 
 ### Statements
 
@@ -93,10 +84,10 @@ been corrected; **n/a** = cannot be verified in CI, reason given.
 | journal recovery of journals written by others | test-journal.sh: debugfs writes transactions (with and without journal checksums, with a revoke record), ext4_recover replays them | pass |
 | filetypes: regular, directories, softlinks; hardlinks (Features) | test-features.sh: created by lwext4 and verified by debugfs (fast and slow symlinks, link counts, same inode), created by e2fsprogs and read by lwext4 | fixed (slow symlink blocks were not zero padded, e2fsck cleared them) |
 | multiple blocksize supported: 1KB ... 64KB (Features) | test-features.sh: ext4 with 1, 2, 4, 8, 16, 32, 64 KiB blocks | pass |
-| little/big endian architectures supported (Features) | readme-cross-linux: test-features.sh and test-journal.sh on s390x under qemu-user | fixed (fix/ondisk-byte-order: hardlinks/renames, htree hash seed and index nodes, xattr value offsets, extent splits, uid/gid) |
+| little/big endian architectures supported (Features) | native GCC and qemu-user s390x run test-features.sh and test-journal.sh | fixed (fix/ondisk-byte-order: hardlinks/renames, htree hash seed and index nodes, xattr value offsets, extent splits, uid/gid) |
 | multiple configurations (ext2/ext3/ext4) (Features) | test-features.sh on ext2, ext3, ext4 images; test-cortex-m.sh builds an ext2 only configuration | fixed (CONFIG_XATTR_ENABLE=0 did not link) |
 | only C standard library dependency (Features) | test-build.sh: undefined symbols of liblwext4.a (lib_only) are C library functions only | pass |
-| various CPU architectures (Features) | readme-cross-linux, readme-arm-none-eabi, readme-avr; ci.yml covers more | pass |
+| various CPU architectures (Features) | qemu-user, Cortex-M and target matrices in ci.yml | pass |
 | Memory footprint: cortex-m4 .text, RAM, stack | test-cortex-m.sh measures .text of ext2 only and full builds, and peak heap + static data + stack of a workload on QEMU mps2-an386 (footprint.c); README.md's numbers must be within 25% | doc (README said 20/50 KB .text and 8/12 KB .data; measured 48/65 KiB .text, 13/19 KiB RAM, <1 KiB stack) |
 | block cache should not allocate more than CONFIG_BLOCK_DEV_CACHE_SIZE | test-features.sh (`cache_check` after every workload), test-tools.sh (`--bstat`) | pass |
 | Supported features, incompatible **yes** (filetype, recover, meta_bg, extents, 64bit, flex_bg) | test-features.sh: images with each feature (and without), written by lwext4, e2fsck clean, debugfs reads back; recover: test-journal.sh | fixed (see above) |
@@ -115,7 +106,7 @@ been corrected; **n/a** = cannot be verified in CI, reason given.
 | Makefile targets lib_only and the LWEXT4_BUILD_SHARED_LIB option | test-build.sh | fixed, fix/shared-lib-size (shared library build failed on the size step) |
 | include/ext4.h: mount, recover, journal_start/stop, umount usage | test-features.sh, test-journal.sh follow exactly this sequence; ext4_journal_start/stop on ext2 (no journal) succeed | pass |
 | include/ext4.h: write-through by default, write back "data is NOT flushed", nested enable/disable, ext4_cache_flush | test-journal.sh: block write counters and power loss | doc (file data written by ext4_fwrite is never cached; the comment now says so) |
-| The Cortex-M toolchains also build tests/baremetal, ctest runs it on QEMU (Run regression tests) | test-cortex-m.sh | pass |
+| The Cortex-M toolchains also build tests/baremetal, ctest runs it on QEMU (Run regression tests) | Cortex-M matrix in ci.yml | pass |
 
 ## Findings
 
@@ -137,5 +128,4 @@ red/green regression test (`ci/run.sh red-green`), and included here:
 | fix/shared-lib-size | `LWEXT4_BUILD_SHARED_LIB=ON` builds failed in the `lib_size` step |
 | fix/fs-test-mk-rootless | `make test`/`make test_all` needed sudo, made images lwext4 cannot mount with e2fsprogs 1.47 and left the server running on failure |
 
-The acceptance scripts check the same behaviour end to end (test-build.sh,
-readme-native).
+The native CI job runs test-build.sh and the legacy client/server suites.

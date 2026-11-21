@@ -111,6 +111,36 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
       - run: ci/run.sh ${{ matrix.job }}
 
+  debian-install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh debian-install
+
+  examples:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh examples
+
+  # Use the results of the jobs documented in README.md. The docs step
+  # checks their configuration without running any of their suites.
+  readme-docs:
+    needs: [native, qemu-user, cortex-m, target, debian-install, examples]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: ci/run.sh readme-docs
+
   # The tests a branch adds must fail against its base and pass on it.
   red-green:
     if: github.event_name == 'pull_request'

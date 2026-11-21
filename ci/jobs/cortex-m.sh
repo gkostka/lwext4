@@ -27,4 +27,8 @@ cmake -S . -B "$build" \
 	-DLWEXT4_QEMU_MACHINE="$machine"
 cmake --build "$build" -j"$(ci_jobs)"
 arm-none-eabi-size "$build/tests/baremetal/baremetal_test.elf"
-ctest --test-dir "$build" -V
+ctest --test-dir "$build" --no-tests=error -V
+
+if [ "$toolchain" = cortex-m4 ]; then
+	BUILD="$build" sh tests/acceptance/test-cortex-m.sh
+fi

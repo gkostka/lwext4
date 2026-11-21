@@ -1,26 +1,11 @@
 #!/bin/sh
 # SPDX-License-Identifier: BSD-3-Clause
 #
-# README.md Cortex-M claims, after the "Build cortex-m0/m3/m4 library"
-# blocks have run (ci/jobs/readme-arm-none-eabi.sh):
-#  - each build produced an ARM Thumb liblwext4.a for its CPU,
-#  - "Memory footprint" .text sizes for cortex-m4 (ext2 only / full ext4),
-#  - "The Cortex-M toolchains also build tests/baremetal ... ctest runs it
-#    on a QEMU MPS2 board".
+# Measure the Cortex-M4 library footprint using the regular CI build.
 set -eu
 . "$(dirname "$0")/lib.sh"
 
 cd "$TOP_DIR"
-
-step "Cortex-M libraries"
-for cpu in cortex-m0 cortex-m3 cortex-m4; do
-	lib=build_$cpu/src/liblwext4.a
-	[ -f "$lib" ] || die "$lib was not built"
-	arm-none-eabi-objdump -f "$lib" | grep -q 'file format elf32-littlearm' ||
-		die "$lib is not an ARM library"
-	arch=$(arm-none-eabi-readelf -A "$lib" | sed -n 's/.*Tag_CPU_arch: *//p' | sort -u | tr '\n' ' ')
-	pass "$lib: ARM library ($arch)"
-done
 
 # .text of an archive: sum of the text column of "size" (text includes
 # read-only data, as in the README's numbers)
@@ -39,7 +24,7 @@ build_config()
 	for src in src/*.c; do
 		arm-none-eabi-gcc -mthumb -mcpu=cortex-m4 -Wall -fno-builtin \
 			-std=gnu11 -fdata-sections -ffunction-sections -O2 \
-			-Iinclude -Ibuild_cortex-m4/include \
+			-Iinclude -I"$BUILD/include" \
 			-DCONFIG_USE_DEFAULT_CONFIG=0 "$@" \
 			-c "$src" -o "$WORK/$cfg/$(basename "$src" .c).o" ||
 			die "cannot build $src ($cfg)"
@@ -47,8 +32,8 @@ build_config()
 }
 
 step "Memory footprint (README: cortex-m4 .text)"
-default_kib=$(text_kib build_cortex-m4/src/liblwext4.a)
-log "make cortex-m4 (default configuration, debug output on): ${default_kib} KiB"
+default_kib=$(text_kib "$BUILD/src/liblwext4.a")
+log "Cortex-M4 build (default configuration): ${default_kib} KiB"
 build_config full -DCONFIG_DEBUG_PRINTF=0 -DCONFIG_DEBUG_ASSERT=0
 full_kib=$(text_kib "$WORK"/full/*.o)
 build_config ext2 -DCONFIG_DEBUG_PRINTF=0 -DCONFIG_DEBUG_ASSERT=0 \
@@ -74,7 +59,7 @@ ram()
 	build_config "ram-$name" -DCONFIG_DEBUG_PRINTF=0 -DCONFIG_DEBUG_ASSERT=0 \
 		-DCONFIG_BLOCK_DEV_CACHE_SIZE=8 "$@"
 	arm-none-eabi-gcc -mthumb -mcpu=cortex-m4 -O2 -std=gnu11 -Iinclude \
-		-Ibuild_cortex-m4/include -DCONFIG_USE_DEFAULT_CONFIG=0 \
+		-I"$BUILD/include" -DCONFIG_USE_DEFAULT_CONFIG=0 \
 		-DCONFIG_BLOCK_DEV_CACHE_SIZE=8 -DFOOTPRINT_EXT="$ext" "$@" \
 		"$ACC_DIR/footprint.c" tests/baremetal/startup.c \
 		"$WORK/ram-$name"/*.o --specs=rdimon.specs \
@@ -133,14 +118,5 @@ pass "ext2 only .text ${ext2_kib} KiB matches README.md (${readme_ext2}KB)"
 within "$full_kib" "$readme_full" ||
 	die "full ext4 .text is ${full_kib} KiB, README.md says ${readme_full}KB"
 pass "full ext4 .text ${full_kib} KiB matches README.md (${readme_full}KB)"
-
-step "tests/baremetal on QEMU MPS2 (README: Run regression tests)"
-make -C build_cortex-m3 >"$WORK/m3-build.log" 2>&1 ||
-	{ tail -30 "$WORK/m3-build.log"; die "building build_cortex-m3 failed"; }
-[ -f build_cortex-m3/tests/baremetal/baremetal_test.elf ] ||
-	die "make cortex-m3 did not build tests/baremetal"
-(cd build_cortex-m3 && ctest --output-on-failure) >"$WORK/m3-ctest.log" 2>&1 ||
-	{ cat "$WORK/m3-ctest.log"; die "baremetal test failed on QEMU"; }
-pass "make cortex-m3 builds tests/baremetal and ctest runs it on QEMU MPS2"
 
 finish

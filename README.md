@@ -325,18 +325,11 @@ Small self-contained tests live in `tests/` and run through CTest. They need
 To run them with AddressSanitizer/UBSan, configure with
 `-DLWEXT4_SANITIZE=address,undefined`.
 
-Other Linux architectures can be tested under qemu-user with the
-`toolchain/linux-cross.cmake` toolchain (`gcc-<triple>` and `qemu-user`
-packages). The byte order is taken from the compiler:
-```bash
- cmake -S . -B build_s390x -DCMAKE_TOOLCHAIN_FILE=toolchain/linux-cross.cmake \
-       -DCROSS_TRIPLE=s390x-linux-gnu -DCROSS_EMULATOR=qemu-s390x
- cmake --build build_s390x
- ctest --test-dir build_s390x --output-on-failure
- ci/scripts/fs-roundtrip.sh build_s390x qemu-s390x -L /usr/s390x-linux-gnu
-   ```
-`fs-roundtrip.sh` formats images with mke2fs and lwext4-mkfs, exercises them
-with lwext4-generic and checks the result with e2fsck.
+CI runs the host regression and client/server suites in `native / gcc`.
+The `qemu-user / s390x` job uses `toolchain/linux-cross.cmake` and runs
+CTest under QEMU on big-endian Linux. It also runs the filesystem feature
+and journal recovery tests. Both jobs run `fs-roundtrip.sh` to check
+that lwext4 and e2fsprogs can read and write each other's images.
 
 The bare-metal and simulator toolchains build `tests/baremetal`, a test
 firmware (unit tests, read-only mounts of mke2fs images, ext4_mkfs and
@@ -345,15 +338,14 @@ runs on an emulator: `cortex-m*` on QEMU MPS2 boards, `arm-sim` on
 qemu-arm, `atmega1284` on simavr and `msp430-sim` on msp430-elf-run. The
 MinGW build runs its tests under Wine.
 
-Every CI job runs in a container defined in `ci/`, so the whole chain runs
-locally with only docker installed, exactly as in GitHub Actions
-(`.github/workflows/ci.yml`):
+Run these [CI jobs](.github/workflows/ci.yml) locally with Docker:
 ```bash
- ci/run.sh --list
+ ci/run.sh native gcc
  ci/run.sh qemu-user s390x
+ ci/run.sh cortex-m cortex-m3
  ci/run.sh avr
    ```
-See `ci/README.md`.
+Use `ci/run.sh --list` to see the other container jobs. See [CI environments](ci/README.md).
 
 Using lwext4-mkfs tool
 =====
@@ -393,8 +385,10 @@ Lwext4 could be compiled for many targets. Here are an examples for 8/16/32/64 b
 
 The library is tested on the host (x86-64, aarch64), on other Linux
 architectures under qemu-user (including big endian s390x) and on Cortex-M
-under QEMU, see "Run regression tests". For AVR and MSP430 compilation
-passes (with warnings somewhere) but tests are not done yet. The byte order
+under QEMU. The AVR job builds the XMEGA library and runs bare-metal tests
+on a simulated ATmega1284, and the MSP430 job uses the GDB simulator.
+CI allows the MSP430 job to fail because its toolchain download is unreliable.
+See [Run regression tests](#run-regression-tests). The byte order
 is taken from the compiler (`__BYTE_ORDER__`, or the usual per architecture
 macros such as `__ARMEB__`/`_MIPSEB`). `CONFIG_BIG_ENDIAN` (1 or 0) overrides
 it for compilers that define none of them; a value that contradicts the

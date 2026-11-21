@@ -1,12 +1,13 @@
 
+LWEXT4_BUILD_DIR ?= build_generic
 ifeq ($(OS),Windows_NT)
-LWEXT4_CLIENT = @build_generic\\fs_test\\lwext4-client
-LWEXT4_SERVER = @build_generic\\fs_test\\lwext4-server
-LWEXT4_SERVER_BIN = build_generic\\fs_test\\lwext4-server
+LWEXT4_CLIENT = @$(LWEXT4_BUILD_DIR)\\fs_test\\lwext4-client
+LWEXT4_SERVER = @$(LWEXT4_BUILD_DIR)\\fs_test\\lwext4-server
+LWEXT4_SERVER_BIN = $(LWEXT4_BUILD_DIR)\\fs_test\\lwext4-server
 else
-LWEXT4_CLIENT = @build_generic/fs_test/lwext4-client
-LWEXT4_SERVER = @build_generic/fs_test/lwext4-server
-LWEXT4_SERVER_BIN = build_generic/fs_test/lwext4-server
+LWEXT4_CLIENT = @$(LWEXT4_BUILD_DIR)/fs_test/lwext4-client
+LWEXT4_SERVER = @$(LWEXT4_BUILD_DIR)/fs_test/lwext4-server
+LWEXT4_SERVER_BIN = $(LWEXT4_BUILD_DIR)/fs_test/lwext4-server
 endif
 
 TEST_DIR = /test

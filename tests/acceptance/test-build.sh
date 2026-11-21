@@ -5,9 +5,7 @@
 #  - "only C standard library dependency" (checked on the LIB_ONLY build),
 #  - the licensing statement: exactly the listed files are GPLv2, and a
 #    BSD-3-Clause library can be built without them,
-#  - the Makefile's lib_only target and the LWEXT4_BUILD_SHARED_LIB option,
-#  - "make install" installs working tools (the README "Compile & install
-#    tools" block itself runs in readme-native/readme-debian).
+#  - the Makefile's lib_only target and the LWEXT4_BUILD_SHARED_LIB option.
 set -eu
 . "$(dirname "$0")/lib.sh"
 

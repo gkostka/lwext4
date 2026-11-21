@@ -6,7 +6,7 @@ to install:
     apt-get install make gcc cmake                  # build dependencies
     apt-get install e2fsprogs fdisk python3 pkgconf  # regression test dependencies
 
-Nothing else (in particular not [base](../base)), so the `readme-debian` job
-proves that these instructions are sufficient: the README's build, install
-and regression test commands run in this image unmodified. The `readme-docs`
-job fails if README.md and this Dockerfile disagree.
+The `debian-install` job builds and installs the tools in this image, starts
+each installed binary and checks that the regression test tools are
+available. The native CI job runs the regression suite. `readme-docs` checks
+that README.md and this Dockerfile list the same packages.
