@@ -240,7 +240,7 @@ the prefix at install time or when configuring:
 
 Using the installed library
 ------------
-`make install` puts the library, the file block device library and their
+Installing puts the library, the file block device library and their
 headers below the prefix, together with a pkg-config file and a CMake
 package:
 ```
@@ -310,7 +310,8 @@ Run regression tests
 
 Small self-contained tests live in `tests/` and run through CTest. They need
 `mke2fs` (e2fsprogs), `sfdisk` (util-linux) and `python3` on the host to
-build their images; no root access is required:
+build their images, and `pkg-config` for the installed package test; no
+root access is required:
 ```bash
  make generic
  cd build_generic

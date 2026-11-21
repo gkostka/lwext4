@@ -24,8 +24,8 @@ docker_deps=$(sed -n 's/^RUN \(apt-get install\) -y /\1 /p' "$dockerfile" | head
 pass "README.md Debian package list is what acceptance-debian installs"
 tr '\n' ' ' <"$TOP_DIR/README.md" | grep -q 'need `mke2fs` (e2fsprogs)' ||
 	die "README.md no longer says the regression tests need e2fsprogs"
-grep -q '^RUN apt-get install -y e2fsprogs$' "$dockerfile" ||
-	die "acceptance-debian does not install e2fsprogs"
+grep -q '^RUN apt-get install -y e2fsprogs fdisk python3 pkg-config$' "$dockerfile" ||
+	die "acceptance-debian does not install the regression test tools"
 pass "README.md e2fsprogs requirement is what acceptance-debian installs"
 
 step "README.md project tree"
