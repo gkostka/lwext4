@@ -55,9 +55,16 @@ been corrected; **n/a** = cannot be verified in CI, reason given.
 
 | README block | Claim | Test | Status |
 |---|---|---|---|
+| `readme:getting-started#1` | `make generic; cd build_generic; make` builds the library, tools and examples | readme-debian, readme-native; examples job builds both documented examples | pass |
+| `readme:getting-started#2` | run the basic example and inspect the image with e2fsprogs | readme-native runs the documented example and checks its results with e2fsck/debugfs | pass |
+| `readme:getting-started#3` | the documented format-and-write API example | examples job compiles every C snippet in README.md | pass |
 | `readme:dependencies#1` | MSYS2: `pacman -S make gcc cmake` | not run: needs Windows. The MinGW build of the same sources is covered by `ci.yml` (build / mingw) | n/a |
 | `readme:dependencies#2` | Debian: `apt-get install make gcc cmake` is enough | the acceptance-debian image installs exactly this (checked by test-docs.sh), readme-debian builds, installs and tests in it | doc (p7zip removed: the 7z image archive is gone) |
 | `readme:compile-install-tools#1` | `make generic; cd build_generic; make; sudo make install` | readme-debian, readme-native: run as is (see sudo above); the five installed tools must run | pass |
+| `readme:compile-install-tools#2` | install under a custom prefix | `cmake --install` is covered by CMake's install rules; the package install test checks the installed package | pass |
+| `readme:using-the-installed-library#1` | installed include directory and generated config header | install-package test checks installed headers and config header | pass |
+| `readme:using-the-installed-library#2` | link an application with `pkg-config` | install-package test builds and runs a pkg-config consumer | pass |
+| `readme:using-the-installed-library#3` | link an application with `find_package(lwext4)` | install-package test builds and runs a CMake package consumer | pass |
 | `readme:lwext4-generic-demo-application#1` | `lwext4-generic -i ext_images/ext2..4` | readme-native, after `make test` created the images; e2fsck clean, debugfs reads back /test1 and /hello.txt | doc (images come from `make test`/`images_small`, not from the removed ext_images.7z) |
 | `readme:lwext4-generic-demo-application#2` | `lwext4-generic --help` shows the full option set | readme-native, readme-debian; test-tools.sh checks every option is documented | fixed (exited 1 as unknown option; `-w` listed twice, `-s`, `-v`, `-x` missing) |
 | `readme:run-automatic-tests#1` | `make test` runs the suite on the ext2/3/4 images | readme-native: t0..t20 on 128 MiB images, then e2fsck clean and nothing left behind | fixed, fix/fs-test-mk-rootless (needed `sudo mkfs`; left the server running on failure) |
