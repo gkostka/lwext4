@@ -11,6 +11,5 @@ FROM debian:trixie-slim
 RUN apt-get update
 # README.md, "Compile" / "Dependencies" / "Linux"
 RUN apt-get install -y make gcc cmake
-# README.md, "Run regression tests": the tests need mke2fs, sfdisk, python3
-# and pkg-config.
+# README.md, "Compile" / "Dependencies" / "Linux" (regression tests)
 RUN apt-get install -y e2fsprogs fdisk python3 pkgconf

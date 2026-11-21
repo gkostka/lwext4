@@ -17,16 +17,14 @@ pass "every README.md code block is in the inventory"
 
 step "README.md Debian dependencies vs. ci/envs/acceptance-debian"
 dockerfile="$TOP_DIR/ci/envs/acceptance-debian/Dockerfile"
-readme_deps=$(sh "$ACC_DIR/readme-blocks.sh" show dependencies#2)
-docker_deps=$(sed -n 's/^RUN \(apt-get install\) -y /\1 /p' "$dockerfile" | head -n 1)
+readme_deps=$(
+	sh "$ACC_DIR/readme-blocks.sh" show dependencies#2 &&
+	sh "$ACC_DIR/readme-blocks.sh" show dependencies#3
+)
+docker_deps=$(sed -n 's/^RUN \(apt-get install\) -y /\1 /p' "$dockerfile")
 [ "$readme_deps" = "$docker_deps" ] ||
 	die "README: '$readme_deps', Dockerfile: '$docker_deps'"
-pass "README.md Debian package list is what acceptance-debian installs"
-tr '\n' ' ' <"$TOP_DIR/README.md" | grep -q 'need `mke2fs` (e2fsprogs)' ||
-	die "README.md no longer says the regression tests need e2fsprogs"
-grep -q '^RUN apt-get install -y e2fsprogs$' "$dockerfile" ||
-	die "acceptance-debian does not install e2fsprogs"
-pass "README.md e2fsprogs requirement is what acceptance-debian installs"
+pass "README.md Debian build and regression test packages match acceptance-debian"
 
 step "README.md project tree"
 sed -n '/^Project tree/,/^Compile/p' "$TOP_DIR/README.md" |

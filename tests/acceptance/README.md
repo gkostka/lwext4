@@ -56,10 +56,11 @@ been corrected; **n/a** = cannot be verified in CI, reason given.
 | README block | Claim | Test | Status |
 |---|---|---|---|
 | `readme:getting-started#1` | `make generic; cd build_generic; make` builds the library, tools and examples | readme-debian, readme-native; examples job builds both documented examples | pass |
-| `readme:getting-started#2` | run the basic example and inspect the image with e2fsprogs | readme-native runs the documented example and checks its results with e2fsck/debugfs | pass |
+| `readme:getting-started#2` | run the basic example and inspect the image with e2fsprogs | examples job runs the basic example and checks its image with e2fsck/debugfs | pass |
 | `readme:getting-started#3` | the documented format-and-write API example | examples job compiles every C snippet in README.md | pass |
 | `readme:dependencies#1` | MSYS2: `pacman -S make gcc cmake` | not run: needs Windows. The MinGW build of the same sources is covered by `ci.yml` (build / mingw) | n/a |
-| `readme:dependencies#2` | Debian: `apt-get install make gcc cmake` is enough | the acceptance-debian image installs exactly this (checked by test-docs.sh), readme-debian builds, installs and tests in it | doc (p7zip removed: the 7z image archive is gone) |
+| `readme:dependencies#2` | Debian build dependencies: `apt-get install make gcc cmake` | test-docs.sh compares the command with the Dockerfile, and readme-debian builds and installs in that image | doc (p7zip removed: the 7z image archive is gone) |
+| `readme:dependencies#3` | Debian regression test dependencies: `apt-get install e2fsprogs fdisk python3 pkgconf` | test-docs.sh compares the command with the Dockerfile, and readme-debian runs CTest in that image | pass |
 | `readme:compile-install-tools#1` | `make generic; cd build_generic; make; sudo make install` | readme-debian, readme-native: run as is (see sudo above); the five installed tools must run | pass |
 | `readme:compile-install-tools#2` | install under a custom prefix | `cmake --install` is covered by CMake's install rules; the package install test checks the installed package | pass |
 | `readme:using-the-installed-library#1` | installed include directory and generated config header | install-package test checks installed headers and config header | pass |

@@ -221,6 +221,11 @@ Package installation (Debian):
 ```bash
  apt-get install make gcc cmake
   ```
+
+For the [regression tests](#run-regression-tests), install these packages too:
+```bash
+ apt-get install e2fsprogs fdisk python3 pkgconf
+ ```
  
 Compile & install tools
 ------------
@@ -240,9 +245,9 @@ the prefix at install time or when configuring:
 
 Using the installed library
 ------------
-`make install` puts the library, the file block device library and their
-headers below the prefix, together with a pkg-config file and a CMake
-package:
+The install step above puts the library, the file block device library and
+their headers below the prefix, together with a pkg-config file and a
+CMake package:
 ```
  include/lwext4/                 ext4.h, ext4_mkfs.h, ... generated/ext4_config.h
  include/lwext4/blockdev/        blockdev.h, file_dev.h (file_windows.h on Windows)

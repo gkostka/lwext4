@@ -3,8 +3,8 @@
 `debian:trixie-slim` plus exactly the packages README.md tells a Debian user
 to install:
 
-    apt-get install make gcc cmake           # "Compile / Dependencies"
-    apt-get install e2fsprogs fdisk python3 pkgconf  # "Run regression tests"
+    apt-get install make gcc cmake                  # build dependencies
+    apt-get install e2fsprogs fdisk python3 pkgconf  # regression test dependencies
 
 Nothing else (in particular not [base](../base)), so the `readme-debian` job
 proves that these instructions are sufficient: the README's build, install
