@@ -2028,19 +2028,26 @@ static int ext4_ext_zero_unwritten_range(struct ext4_inode_ref *inode_ref,
 	int err = EOK;
 	uint32_t i;
 	uint32_t block_size = ext4_sb_get_block_size(&inode_ref->fs->sb);
-	for (i = 0; i < blocks_count; i++) {
-		struct ext4_block bh = EXT4_BLOCK_ZERO();
-		err = ext4_trans_block_get_noread(inode_ref->fs->bdev, &bh,
-						  block + i);
-		if (err != EOK)
-			break;
+	void *zeros;
 
-		memset(bh.data, 0, block_size);
-		ext4_trans_set_block_dirty(bh.buf);
-		err = ext4_block_set(inode_ref->fs->bdev, &bh);
+	/*
+	 * Write the zeros straight to the device, like the file data that is
+	 * written to these blocks next. A zeroed copy in the block cache
+	 * (write-back mode) or in the journal would be written back over that
+	 * data later.
+	 */
+	zeros = ext4_calloc(1, block_size);
+	if (!zeros)
+		return ENOMEM;
+
+	for (i = 0; i < blocks_count; i++) {
+		err = ext4_blocks_set_direct(inode_ref->fs->bdev, zeros,
+					     block + i, 1);
 		if (err != EOK)
 			break;
 	}
+
+	ext4_free(zeros);
 	return err;
 }
 
