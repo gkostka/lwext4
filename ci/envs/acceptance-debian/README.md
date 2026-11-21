@@ -4,7 +4,7 @@
 to install:
 
     apt-get install make gcc cmake           # "Compile / Dependencies"
-    apt-get install e2fsprogs                # "Run regression tests"
+    apt-get install e2fsprogs fdisk python3 pkgconf  # "Run regression tests"
 
 Nothing else (in particular not [base](../base)), so the `readme-debian` job
 proves that these instructions are sufficient: the README's build, install
