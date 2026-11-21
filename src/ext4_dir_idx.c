@@ -346,26 +346,42 @@ static void ext4_dir_set_dx_csum(struct ext4_inode_ref *inode_ref,
 
 /****************************************************************************/
 
+/**@brief Physical block of directory block iblock, which is added to the
+ *        directory if it does not have that many blocks yet.*/
+static int ext4_dir_dx_init_dblk(struct ext4_inode_ref *dir, uint32_t iblock,
+				 ext4_fsblk_t *fblock)
+{
+	uint32_t block_size = ext4_sb_get_block_size(&dir->fs->sb);
+	uint64_t size = ext4_inode_get_size(&dir->fs->sb, dir->inode);
+	ext4_lblk_t new_iblock;
+	int rc;
+
+	if ((uint64_t)iblock * block_size < size)
+		return ext4_fs_init_inode_dblk_idx(dir, iblock, fblock);
+
+	rc = ext4_fs_append_inode_dblk(dir, fblock, &new_iblock);
+	if (rc != EOK)
+		return rc;
+
+	return new_iblock == iblock ? EOK : EIO;
+}
+
 int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 {
 	/* Load block 0, where will be index root located */
 	ext4_fsblk_t fblock;
 	uint32_t iblock = 0;
-	bool need_append =
-		(ext4_inode_get_size(&dir->fs->sb, dir->inode)
-			< EXT4_DIR_DX_INIT_BCNT)
-		? true : false;
 	struct ext4_sblock *sb = &dir->fs->sb;
 	uint32_t block_size = ext4_sb_get_block_size(&dir->fs->sb);
 	struct ext4_block block;
 
 	int rc;
 
-	if (!need_append)
-		rc = ext4_fs_init_inode_dblk_idx(dir, iblock, &fblock);
-	else
-		rc = ext4_fs_append_inode_dblk(dir, &fblock, &iblock);
-
+	/* Blocks 0 and 1: the ones the directory has, the others appended.
+	 * (Comparing the size in bytes with the number of blocks made every
+	 * existing directory look big enough: a block mapped directory then
+	 * got physical block 0 for its missing block 1.) */
+	rc = ext4_dir_dx_init_dblk(dir, iblock, &fblock);
 	if (rc != EOK)
 		return rc;
 
@@ -413,11 +429,7 @@ int ext4_dir_dx_init(struct ext4_inode_ref *dir, struct ext4_inode_ref *parent)
 
 	/* Append new block, where will be new entries inserted in the future */
 	iblock++;
-	if (!need_append)
-		rc = ext4_fs_init_inode_dblk_idx(dir, iblock, &fblock);
-	else
-		rc = ext4_fs_append_inode_dblk(dir, &fblock, &iblock);
-
+	rc = ext4_dir_dx_init_dblk(dir, iblock, &fblock);
 	if (rc != EOK) {
 		ext4_block_set(dir->fs->bdev, &block);
 		return rc;
